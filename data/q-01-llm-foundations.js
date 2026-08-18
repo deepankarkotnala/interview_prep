@@ -8,7 +8,7 @@ window.IR.q = window.IR.q || {};
 window.IR.q["01-llm-foundations"] = {
   lede: "These are the questions that open a technical round. They look basic, which is exactly why they are dangerous — a vague answer here sets the tone for the next forty minutes. The bar for a senior candidate is not the definition, it is the consequence.",
   grounding: "baseline assumed by every GenAI JD + documented inference behaviour",
-  evening: ["llm-01", "llm-03", "llm-05", "llm-08", "llm-10"],
+  evening: ["llm-01", "llm-03", "llm-05", "llm-11", "llm-14"],
 
   cards: [
     {
@@ -260,6 +260,185 @@ window.IR.q["01-llm-foundations"] = {
       numbers: "Run the golden set at least weekly, and always after any provider announcement. The cost of a 100-example run is small against finding out from a user.",
       wrong: "\"We would update the prompt to fix it.\" That is step four. Steps one to three are detection, quantification and rollback, and skipping them is the actual failure.",
       follow: "How would you detect quality drift automatically, without a user complaining?"
+    }
+,
+
+    {
+      id: "llm-11",
+      q: "What are temperature, top-p and top-k actually doing to the probability distribution?",
+      round: ["tech1", "tech2"],
+      level: "2-5",
+      tags: ["sampling", "inference", "decoding"],
+      why: "Everyone sets these. This checks whether you know what they do to the distribution or only that one makes output 'more creative'.",
+      simple:
+        "At every step the model produces a score for every token in its vocabulary. Softmax turns those into probabilities. These three parameters each modify that distribution before a token is sampled — and they act at different points, which is why combining them carelessly is confused.\n\n" +
+        "Temperature rescales the logits before softmax. Divide by a number below 1 and the gaps between scores widen, so the distribution sharpens and the top token dominates. Divide by a number above 1 and the gaps narrow, flattening the distribution so unlikely tokens get a real chance. Temperature 0 means always take the highest — greedy.\n\n" +
+        "Top-k truncates. Keep only the k highest-probability tokens, discard the rest, renormalise. A blunt instrument: k=50 keeps fifty candidates whether the model was certain or completely unsure.\n\n" +
+        "Top-p, or nucleus sampling, truncates adaptively. Sort by probability and keep the smallest set whose cumulative probability reaches p. When the model is confident, that might be two tokens; when it is uncertain, forty. That adaptivity is why top-p largely replaced top-k.\n\n" +
+        "The senior point: temperature and top-p do different jobs — one reshapes, one truncates — so setting both to unusual values makes the effect hard to reason about. Pick one to tune. The common convention is to vary temperature and leave top-p near its default, or vice versa.\n\n" +
+        "For production, the practical answer is that most structured or factual work wants temperature at or near 0, and the creativity argument matters far less than people expect.",
+      points: [
+        "Temperature rescales logits before softmax — sharpens or flattens.",
+        "Top-k keeps a fixed number of candidates regardless of confidence.",
+        "Top-p keeps the smallest set reaching cumulative probability p.",
+        "Top-p is adaptive to model confidence, which is why it won.",
+        "Tune one, not both — they interact confusingly."
+      ],
+      say: "Temperature rescales the logits before softmax, so below one it sharpens the distribution and above one it flattens it. Top-k keeps a fixed number of candidates regardless of how confident the model was. Top-p keeps the smallest set whose cumulative probability reaches p, so it adapts to confidence — which is why it largely replaced top-k. They do different jobs, so I tune one and leave the other at default.",
+      numbers: "Temperature 0 for extraction, classification and structured output. Around 0.7 with top-p 0.9 is a common creative default. Tuning both at once makes behaviour hard to reason about.",
+      wrong: "'Temperature controls creativity.' It describes the effect and not the mechanism, and the follow-up about top-p usually ends there.",
+      follow: "You need deterministic JSON extraction. What do you set, and is that enough?"
+    },
+
+    {
+      id: "llm-12",
+      q: "What is quantisation, and what does INT8 or INT4 actually cost you?",
+      round: ["tech2"],
+      level: "5-10",
+      tags: ["quantisation", "serving", "cost"],
+      why: "The main lever for self-hosting on affordable hardware, and the quality trade is what gets probed.",
+      simple:
+        "Model weights are usually stored as 16-bit floats. Quantisation stores them in fewer bits — 8-bit or 4-bit integers — which shrinks the model roughly proportionally.\n\n" +
+        "The arithmetic is what makes it matter. A 70-billion-parameter model at FP16 needs about 140 GB just for weights, so two 80 GB GPUs. At INT4 it is roughly 35 GB and fits on one. That is the difference between a two-GPU bill and a one-GPU bill, or between running locally and not running at all.\n\n" +
+        "The mechanism: map a range of float values onto a small set of integers with a scale factor per group of weights. Smaller groups preserve more accuracy and cost slightly more overhead.\n\n" +
+        "What it costs you. INT8 is close to free — quality loss is usually negligible and it is a safe default for serving. INT4 is where judgement starts: often acceptable, with measurable degradation on harder reasoning, long-context tasks and code. Below 4 bits, degradation is real.\n\n" +
+        "Two distinctions worth making. Post-training quantisation is applied to a finished model and is what you normally use. Quantisation-aware training bakes it into training and preserves more quality, at the cost of training. And weight-only quantisation shrinks memory while computing in higher precision, which is the common case — activations are often left alone because they are more sensitive.\n\n" +
+        "The honest framing: quantisation trades quality for memory and cost, the curve is not linear, and you validate on your own eval set rather than trusting a benchmark table. A model that scores well on public benchmarks at INT4 can still degrade on your specific task.",
+      points: [
+        "Fewer bits per weight — memory shrinks roughly proportionally.",
+        "70B at FP16 is ~140 GB; at INT4 roughly 35 GB — one GPU instead of two.",
+        "INT8 is near-free; INT4 is usually acceptable with real edge cases.",
+        "Reasoning, long context and code degrade first.",
+        "Validate on your own eval set, not a published benchmark."
+      ],
+      say: "Quantisation stores weights in fewer bits, so memory shrinks roughly proportionally — a 70B model goes from about 140 GB at FP16 to around 35 GB at INT4, which is one GPU instead of two. INT8 costs almost nothing in quality and is a safe default. INT4 is usually acceptable but degrades first on reasoning, long context and code. I validate on my own eval set rather than trusting a benchmark table.",
+      numbers: "Rough weight memory: FP16 is 2 bytes per parameter, INT8 1 byte, INT4 half a byte. Add KV cache on top — at long context that often exceeds the weight savings.",
+      wrong: "'INT4 halves quality.' The trade is far better than that and highly task-dependent, and stating it as a fixed cost shows you have not measured it.",
+      follow: "You quantised to INT4 and your eval dropped 3 points. What are your options?"
+    },
+
+    {
+      id: "llm-13",
+      q: "What is speculative decoding, and why is it effectively free latency?",
+      round: ["tech2"],
+      level: "5-10",
+      tags: ["inference", "latency", "serving"],
+      why: "A serving optimisation that sounds like it should cost quality and does not. Explaining why is the test.",
+      simple:
+        "Decoding is sequential — one token at a time, each needing a full forward pass through the model. That is why generation is slow, and the bottleneck is memory bandwidth rather than compute: you read the entire model's weights to produce a single token.\n\n" +
+        "Speculative decoding exploits that waste. A small fast draft model proposes several tokens ahead. Then the large model verifies all of them in one forward pass — because verifying k tokens in parallel costs almost the same as generating one, since you were bandwidth-bound anyway.\n\n" +
+        "    draft model:  proposes  ' the cat sat on the'\n" +
+        "    target model: verifies all 5 in one pass\n" +
+        "    -> accepts the matching prefix, rejects from the first mismatch\n\n" +
+        "The crucial property is that the acceptance test is designed so the output distribution is mathematically identical to what the large model would have produced alone. You are not approximating. The large model still decides every token — it just checks several at once instead of generating them one by one.\n\n" +
+        "That is why it is free: same output distribution, fewer sequential passes.\n\n" +
+        "What determines the gain is the acceptance rate. If the draft model agrees with the target often, you accept long runs and go much faster. On predictable text — code, structured output, formulaic prose — acceptance is high. On genuinely surprising content it is lower and the speedup shrinks.\n\n" +
+        "The costs: you run two models, so memory goes up, and a poorly matched draft model can make things slower by proposing tokens that are constantly rejected. Variants like Medusa avoid the separate model by adding prediction heads to the target itself.",
+      points: [
+        "Decoding is memory-bandwidth bound, not compute bound.",
+        "Verifying k tokens in one pass costs about the same as generating one.",
+        "The acceptance test preserves the target model's exact distribution.",
+        "Gain depends on draft-model acceptance rate.",
+        "Costs extra memory; a mismatched draft model can be slower."
+      ],
+      say: "Decoding is bandwidth-bound — you read all the weights to produce one token — so verifying several tokens in one pass costs about the same as generating one. A small draft model proposes tokens ahead and the large model verifies them in a single pass. The acceptance test is constructed so the output distribution is identical to the large model alone, so it is genuinely free rather than approximate. The gain scales with acceptance rate.",
+      numbers: "Typical speedups are around 2–3× on predictable text like code, less on surprising content. The draft model must be small enough that proposing is cheap relative to verifying.",
+      wrong: "'It trades a little accuracy for speed.' It does not — the acceptance test preserves the exact output distribution, and that is the whole reason it is interesting.",
+      follow: "Your acceptance rate is 30%. Is speculative decoding still helping?"
+    },
+
+    {
+      id: "llm-14",
+      q: "Explain prefill and decode, and why they need different optimisations.",
+      round: ["tech2"],
+      level: "5-10",
+      tags: ["inference", "serving", "latency"],
+      why: "The distinction that explains almost every serving decision, from batching to why long prompts behave differently from long outputs.",
+      simple:
+        "Generation has two phases with completely different performance characteristics, and conflating them makes serving decisions look arbitrary.\n\n" +
+        "Prefill processes your entire prompt at once. Every token can be computed in parallel because they are all already known, so the GPU does a large matrix multiplication and is compute-bound. It produces the first output token and populates the KV cache.\n\n" +
+        "Decode generates the rest, one token at a time. Each step depends on the previous token, so there is no parallelism within a sequence. You read the entire model's weights plus the KV cache to produce a single token, which makes it memory-bandwidth-bound. The GPU's compute units are mostly idle.\n\n" +
+        "That difference explains a lot.\n\n" +
+        "Why time-to-first-token scales with prompt length but per-token speed does not: prefill work grows with input size, decode does not.\n\n" +
+        "Why batching helps decode enormously and prefill much less: in decode you are reading the same weights for every request in the batch, so batching amortises the bandwidth cost across many sequences almost for free. In prefill you are already saturating compute.\n\n" +
+        "Why continuous batching exists: requests finish at different times, so you want to swap new ones in mid-flight rather than waiting for the whole batch.\n\n" +
+        "Why prompt caching is so effective: a cached prefix skips prefill entirely for that portion.\n\n" +
+        "And why some systems physically separate prefill and decode onto different hardware pools — they want different things from a GPU.",
+      points: [
+        "Prefill: whole prompt in parallel, compute-bound, sets TTFT.",
+        "Decode: one token at a time, memory-bandwidth-bound.",
+        "Batching helps decode far more than prefill.",
+        "Long prompts hurt TTFT; long outputs hurt total time.",
+        "Prompt caching works by skipping prefill for a cached prefix."
+      ],
+      say: "Prefill processes the whole prompt in parallel and is compute-bound — it sets time to first token and scales with prompt length. Decode generates one token at a time, reading all the weights per token, so it is memory-bandwidth-bound and the compute units sit idle. That is why batching helps decode enormously but prefill much less, why long prompts hurt TTFT while long outputs hurt total time, and why prompt caching pays off.",
+      numbers: "Prefill cost scales with input length; decode cost scales with output length. If TTFT is your problem, look at prompt size and caching, not at the model's speed.",
+      wrong: "Treating generation as one uniform process. It leaves you unable to explain why a long prompt and a long answer degrade different metrics.",
+      follow: "Your TTFT is fine but total response time is bad. Which phase, and what do you do?"
+    },
+
+    {
+      id: "llm-15",
+      q: "What is prompt caching, and how do you structure a prompt to actually benefit?",
+      round: ["tech1", "tech2"],
+      level: "2-5",
+      tags: ["cost", "latency", "caching"],
+      why: "A direct cost lever that most candidates know exists and cannot say how to exploit.",
+      simple:
+        "Providers can cache the computed state of a prompt prefix. If your next request starts with exactly the same tokens, that portion skips prefill — you pay much less for those input tokens and time-to-first-token drops.\n\n" +
+        "The mechanism dictates the design rule: it is a prefix match, and it must be exact. The cache breaks at the first differing token, and everything after that point is recomputed.\n\n" +
+        "So structure the prompt static-first, variable-last:\n\n" +
+        "    [ system prompt        ]  stable\n" +
+        "    [ tool definitions     ]  stable\n" +
+        "    [ few-shot examples    ]  stable\n" +
+        "    [ retrieved documents  ]  varies\n" +
+        "    [ conversation history ]  grows\n" +
+        "    [ user question        ]  varies\n\n" +
+        "Everything above the first variable element is cacheable. Put a timestamp or a user id at the top of your system prompt and you have destroyed the cache for every request — that is the single most common mistake, and it is invisible until you look at the bill.\n\n" +
+        "Where it pays most: agents, because the system prompt and tool definitions are re-sent on every step of the loop and never change. Long stable few-shot blocks. Multi-turn chat, where the prefix grows monotonically.\n\n" +
+        "Practical details worth knowing: caches have a short time-to-live, typically minutes, so benefit depends on request frequency; there is usually a minimum cacheable length, so tiny prompts do not qualify; and some providers charge slightly more to write the cache, so a prefix used once can cost marginally more.\n\n" +
+        "Measure the hit rate rather than assuming it. A cache you believe in and never hit is a cost estimate that is quietly wrong.",
+      points: [
+        "Caches an exact token prefix; it breaks at the first difference.",
+        "Order static content first, variable content last.",
+        "A timestamp or user id at the top destroys every cache hit.",
+        "Highest payoff in agent loops — tool definitions resent each step.",
+        "Short TTL and a minimum length; measure the hit rate."
+      ],
+      say: "The provider caches the computed prefix, so an identical opening to a prompt skips prefill and costs much less. Because it is an exact prefix match that breaks at the first differing token, I order the prompt static-first — system prompt, tools, few-shot examples — then retrieved context and the question last. Putting a timestamp at the top destroys every hit. It pays most in agent loops where tool definitions are resent every step.",
+      numbers: "Cached input tokens are billed at a large discount versus uncached. Caches typically expire in minutes, so benefit depends on request frequency.",
+      wrong: "Enabling caching and assuming the saving arrives. If a variable element sits near the top of the prompt, the hit rate is near zero and nothing tells you.",
+      follow: "Your cache hit rate is 5%. Where would you look first?"
+    },
+
+    {
+      id: "llm-16",
+      q: "Open-weight or closed API model — how do you actually decide?",
+      round: ["tech2", "manager"],
+      level: "5-10",
+      tags: ["decision", "cost", "architecture"],
+      why: "A senior architecture decision that a hiring manager will press on, and the naive answer is always cost.",
+      simple:
+        "Most candidates answer cost. Cost usually turns out not to be the deciding factor, and leading with it signals you have not made this decision for real.\n\n" +
+        "The things that actually decide it, roughly in order.\n\n" +
+        "Data residency and control. If contracts or regulation require that data never leaves your infrastructure or the country, that decides it before any other factor. For Indian BFSI, defence and some healthcare, this is the whole conversation.\n\n" +
+        "Capability. For the hardest reasoning tasks the frontier closed models still lead. If your task needs that ceiling, self-hosting means accepting lower quality.\n\n" +
+        "Volume economics. Self-hosting is a large fixed cost — GPUs, engineers, on-call — against a per-token variable cost. There is a break-even volume. Below it the API is cheaper; above it, self-hosting wins. Most teams are below it and are surprised.\n\n" +
+        "Latency and control of the tail. Self-hosting removes provider queueing and rate limits, and lets you tune batching. If you need predictable p99, that is a real argument.\n\n" +
+        "Operational capacity. Running inference well is a specialist skill — quantisation, batching, GPU capacity planning, upgrades. A team without it will underperform the API on both cost and reliability.\n\n" +
+        "Model stability. A closed model can change under you or be deprecated; open weights are yours indefinitely. For long-lived regulated products that predictability matters.\n\n" +
+        "My default recommendation: start on the API, instrument cost and volume, and revisit when volume approaches break-even or a compliance requirement forces it. Migrating later is far cheaper than building GPU infrastructure for a product that has not proven demand.",
+      points: [
+        "Residency and control decide it outright when they apply.",
+        "Frontier closed models still lead on the hardest reasoning.",
+        "Self-hosting is fixed cost vs per-token — there is a break-even volume.",
+        "Serving well is a specialist skill; a team without it underperforms.",
+        "Default: start on the API, revisit at break-even or on compliance."
+      ],
+      say: "I would not lead with cost. Data residency decides it outright where it applies — Indian BFSI or defence contracts often end the discussion there. Then capability, since frontier closed models still lead on hard reasoning, then volume economics, because self-hosting is fixed cost against per-token and most teams sit below break-even. Also whether the team can actually run inference well. My default is start on the API and revisit at break-even.",
+      numbers: "Self-hosting is fixed GPU and engineering cost; API is per token. Compute your own break-even volume — it is usually higher than teams expect.",
+      wrong: "'Self-hosting is cheaper.' Only above break-even, and only if you have the team to run it. Below that it is more expensive and less reliable.",
+      follow: "Your client insists on on-premise but wants frontier-model quality. What do you tell them?"
     }
   ]
 };

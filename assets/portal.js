@@ -530,10 +530,62 @@
   }
   IR.renderCard = renderCard;
 
+  /* ---------- filter bar auto-hide ----------
+     Reading a page means going down it, so the bar gets out of the way on the
+     way down and returns the instant you scroll back up — filtering is almost
+     always something you decide to do after looking back at something. The
+     small threshold keeps the trackpad's own jitter from flickering it. */
+  function autoHideOnScroll(bar) {
+    var last = window.pageYOffset || 0;
+    var ticking = false;
+    var THRESHOLD = 6;
+
+    function busy() {
+      /* An active filter session is the caret sitting in the bar. Hiding it
+         mid-edit would pull the field out from under the person typing. */
+      return bar.contains(document.activeElement);
+    }
+
+    function update() {
+      ticking = false;
+      var y = window.pageYOffset || 0;
+      var delta = y - last;
+      if (Math.abs(delta) < THRESHOLD) return;
+      last = y;
+      if (busy()) return;
+      /* Near the top there is nothing to gain by hiding, and the collapse
+         reads as a glitch on a short page. */
+      if (delta > 0 && y > 120) bar.classList.add("is-hidden");
+      else if (delta < 0) bar.classList.remove("is-hidden");
+    }
+
+    window.addEventListener("scroll", function () {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(update);
+    }, { passive: true });
+
+    /* A hidden bar is visibility:hidden, so tabbing skips it entirely and
+       focusin can never fire on it — the keyboard route back has to be an
+       explicit one. "/" brings it back and puts the caret in the box, which is
+       what then keeps it open via busy(). */
+    document.addEventListener("keydown", function (ev) {
+      if (ev.key !== "/" || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+      var t = ev.target;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      ev.preventDefault();
+      bar.classList.remove("is-hidden");
+      var input = bar.querySelector("input");
+      /* Deferred: focus() does not take on an element the browser still had as
+         visibility:hidden when the key was dispatched. */
+      if (input) setTimeout(function () { input.focus(); }, 0);
+    });
+  }
+
   /* ---------- filter bar + list ---------- */
   function mountList(host, cards, opts) {
     opts = opts || {};
-    var state = { text: "", round: "", level: "", tag: "" };
+    var state = { text: "", tag: "" };
 
     var tags = {};
     cards.forEach(function (c) { (c.tags || []).forEach(function (t) { tags[t] = (tags[t] || 0) + 1; }); });
@@ -542,22 +594,13 @@
     var bar = el("div", "filters");
     bar.innerHTML =
       '<div class="search-wrap"><span class="search-icon">⌕</span>' +
-      '<input type="search" placeholder="Search questions, e.g. chunking, hallucination, latency" aria-label="Search questions"></div>' +
-      '<div class="filter-row" data-row="round"><b>Round</b>' +
-      (IR.rounds || []).map(function (r) {
-        return '<button class="pill" type="button" aria-pressed="false" data-round="' + r.key + '" title="' + esc(r.hint) + '">' + esc(r.label) + "</button>";
-      }).join("") + "</div>" +
-      '<div class="filter-row" data-row="level"><b>Level</b>' +
-      (IR.levels || []).map(function (l) {
-        return '<button class="pill" type="button" aria-pressed="false" data-level="' + l.key + '">' + esc(l.label) + "</button>";
-      }).join("") +
-      '<span class="filter-actions"><span class="result-count"></span>' +
-      '<button class="mini-btn" type="button" data-expand>Expand all</button>' +
-      '<button class="mini-btn" type="button" data-reset>Reset</button></span></div>' +
-      (topTags.length ? '<div class="filter-row" data-row="tag"><b>Tag</b>' +
+      '<input type="search" placeholder="Search questions" aria-label="Search questions"></div>' +
+      (topTags.length ? '<div class="filter-tags" data-row="tag">' +
         topTags.map(function (t) {
           return '<button class="pill" type="button" aria-pressed="false" data-tag="' + esc(t) + '">' + esc(t) + "</button>";
-        }).join("") + "</div>" : "");
+        }).join("") + "</div>" : '<div class="filter-tags"></div>') +
+      '<span class="filter-actions"><span class="result-count"></span>' +
+      '<button class="mini-btn" type="button" data-reset>Reset</button></span>';
 
     var list = el("div", "q-list");
     var empty = el("div", "q-empty", "No question matches those filters. Reset and try a shorter word.");
@@ -576,8 +619,6 @@
       Array.prototype.forEach.call(list.children, function (n) {
         var ok = true;
         if (state.text && n.getAttribute("data-search").indexOf(state.text) < 0) ok = false;
-        if (ok && state.round && (" " + n.getAttribute("data-rounds") + " ").indexOf(" " + state.round + " ") < 0) ok = false;
-        if (ok && state.level && n.getAttribute("data-level") !== state.level) ok = false;
         if (ok && state.tag && (" " + n.getAttribute("data-tags") + " ").indexOf(" " + state.tag + " ") < 0) ok = false;
         n.hidden = !ok;
         if (ok) shown++;
@@ -593,25 +634,17 @@
     bar.addEventListener("click", function (e) {
       var p = e.target.closest(".pill");
       if (p) {
-        var kind = p.hasAttribute("data-round") ? "round" : p.hasAttribute("data-level") ? "level" : "tag";
-        var val = p.getAttribute("data-" + kind);
-        var on = state[kind] !== val;
-        state[kind] = on ? val : "";
-        Array.prototype.forEach.call(bar.querySelectorAll("[data-" + kind + "]"), function (x) {
+        var val = p.getAttribute("data-tag");
+        var on = state.tag !== val;
+        state.tag = on ? val : "";
+        Array.prototype.forEach.call(bar.querySelectorAll("[data-tag]"), function (x) {
           x.setAttribute("aria-pressed", String(on && x === p));
         });
         apply();
         return;
       }
-      if (e.target.closest("[data-expand]")) {
-        var btn = e.target.closest("[data-expand]");
-        var opening = btn.textContent === "Expand all";
-        Array.prototype.forEach.call(list.children, function (n) { if (!n.hidden) n.open = opening; });
-        btn.textContent = opening ? "Collapse all" : "Expand all";
-        return;
-      }
       if (e.target.closest("[data-reset]")) {
-        state = { text: "", round: "", level: "", tag: "" };
+        state = { text: "", tag: "" };
         bar.querySelector("input").value = "";
         Array.prototype.forEach.call(bar.querySelectorAll(".pill"), function (x) {
           x.setAttribute("aria-pressed", "false");
@@ -621,6 +654,7 @@
     });
 
     apply();
+    autoHideOnScroll(bar);
 
     /* deep link: #card-id opens that card */
     if (location.hash) {
@@ -718,7 +752,11 @@
     var h = "";
     IR.tracks.forEach(function (t) {
       h += '<section class="track" id="track-' + esc(t.key) + '">';
-      h += "<h2>" + esc(t.label) + "</h2>";
+      /* The id sits on the heading as well as the section: the right rail
+         indexes `h2[id]`, and an id one level up leaves this page — the longest
+         one in the portal — without a contents list. The section keeps its own
+         id so existing #track-… links still land. */
+      h += '<h2 id="h-track-' + esc(t.key) + '">' + esc(t.label) + "</h2>";
       h += '<div class="chip-row"><span class="chip">Grounded in: ' + esc(t.grounding) + "</span></div>";
       h += "<p><strong>Type includes:</strong> " + esc(t.includes) + "</p>";
       h += "<p><strong>What they press on:</strong> " + fmt(t.skew) + "</p>";
@@ -747,6 +785,189 @@
     host.innerHTML = h;
   }
 
+
+  /* ---------- right rail: "on this page" ----------
+     The parent portal's chapter-contents rail (assets/app.js buildTOC), ported
+     with its behaviour intact: a filterable list on desktop, a "Jump to
+     section" dropdown on tablet and phone, an IntersectionObserver marking the
+     active entry, and the scroll-direction auto-hide on the mobile bar.
+
+     What it indexes differs, and has to. The parent's chapters are prose under
+     `h2[id]`. A topic page here is a flat list of question cards, so those are
+     the sections — the rail lists `h2[id]` when a page has them (rounds,
+     tracks) and falls back to the question cards when it does not. Either way
+     each entry is a numbered anchor, which is what the parent's rail is.
+
+     `.toc-open` goes on `.toc` rather than on `.toc-rail`, which is the
+     parent's convention: the mobile dropdown CSS is written against the <nav>,
+     and putting the class one level up makes it silently never open. */
+  function buildRail() {
+    var content = document.querySelector(".content");
+    if (!content || document.querySelector(".toc-rail")) return;
+
+    /* Section headings in the document flow. A card's <summary> is not one. */
+    var heads = Array.prototype.filter.call(
+      content.querySelectorAll("h2[id]"),
+      function (h) { return !h.closest("dialog") && !h.closest(".q-card"); }
+    );
+    var kind = "section";
+    if (!heads.length) {
+      heads = Array.prototype.slice.call(content.querySelectorAll(".q-card[id]"));
+      kind = "question";
+    }
+    /* One entry is not a table of contents. */
+    if (heads.length < 2) return;
+
+    function labelFor(node) {
+      if (kind === "section") return node.textContent.trim();
+      var t = node.querySelector(".q-title");
+      if (!t) return node.id;
+      /* .q-meta is the chip row inside the title; it is not part of the question. */
+      var clone = t.cloneNode(true);
+      var meta = clone.querySelector(".q-meta");
+      if (meta) meta.remove();
+      return clone.textContent.trim();
+    }
+
+    var rail = el("aside", "toc-rail");
+    var nav = el("nav", "toc");
+    nav.setAttribute("aria-label", "On this page");
+    rail.appendChild(nav);
+
+    var items = heads.map(function (node, i) {
+      var full = labelFor(node);
+      var m = full.match(/^\s*(\d+)\s*[.·)]\s*/);
+      var num = String(m ? m[1] : i + 1);
+      if (num.length < 2) num = "0" + num;
+      return { id: node.id, num: num, full: full };
+    });
+
+    nav.innerHTML =
+      '<button type="button" class="toc-toggle" aria-expanded="false" ' +
+        'aria-label="Jump to a section on this page">' +
+        '<svg class="toc-toggle-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" ' +
+          'stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
+          '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>' +
+        '<span class="toc-toggle-label">Jump to ' + (kind === "question" ? "question" : "section") + "</span>" +
+        '<svg class="toc-toggle-caret" viewBox="0 0 24 24" aria-hidden="true" fill="none" ' +
+          'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+          '<path d="m6 9 6 6 6-6"/></svg>' +
+      "</button>" +
+      '<div class="toc-book-head">' +
+        '<div><span class="toc-kicker">On this page</span>' +
+        "<strong>" + items.length + " " + (kind === "question" ? "questions" : "topics") + "</strong></div>" +
+        '<button type="button" class="toc-top" aria-label="Back to top" title="Back to top">↑</button>' +
+      "</div>" +
+      '<label class="toc-filter">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/>' +
+          '<path d="m16 16 4 4"/></svg>' +
+        '<input type="search" placeholder="Find on this page" aria-label="Find on this page">' +
+      "</label>" +
+      '<div class="toc-list">' +
+        items.map(function (it) {
+          return '<a href="#' + esc(it.id) + '" data-toc="' + esc(it.id) + '" title="' + esc(it.full) + '">' +
+            '<span class="toc-num">' + esc(it.num) + "</span>" +
+            '<span class="toc-label">' + esc(it.full) + "</span></a>";
+        }).join("") +
+        '<div class="toc-empty" hidden>No match on this page</div>' +
+      "</div>";
+
+    /* The rail is a grid sibling of .content, so both move into a wrapper. */
+    var main = content.parentNode;
+    var wrap = el("div", "content-wrap");
+    main.insertBefore(wrap, content);
+    wrap.appendChild(content);
+    wrap.appendChild(rail);
+
+    var toggle = nav.querySelector(".toc-toggle");
+    var toggleLabel = nav.querySelector(".toc-toggle-label");
+    var links = Array.prototype.slice.call(nav.querySelectorAll("[data-toc]"));
+    var filter = nav.querySelector(".toc-filter input");
+    var empty = nav.querySelector(".toc-empty");
+    var top = nav.querySelector(".toc-top");
+
+    function setOpen(open) {
+      nav.classList.toggle("toc-open", open);
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+    toggle.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      setOpen(!nav.classList.contains("toc-open"));
+    });
+    links.forEach(function (a) {
+      a.addEventListener("click", function () {
+        setOpen(false);
+        /* On a question page the target is a <details>; jumping to a closed one
+           lands on a bare summary, so open it the way a deep link does. */
+        var t = document.getElementById(a.getAttribute("data-toc"));
+        if (t && t.tagName === "DETAILS") t.open = true;
+      });
+    });
+    document.addEventListener("click", function (ev) {
+      if (!nav.contains(ev.target)) setOpen(false);
+    });
+    document.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape") setOpen(false);
+    });
+
+    if (top) top.addEventListener("click", function () {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    if (filter) filter.addEventListener("input", function () {
+      var q = filter.value.trim().toLowerCase();
+      var shown = 0;
+      links.forEach(function (a) {
+        var vis = !q || (a.title || "").toLowerCase().indexOf(q) >= 0 ||
+                  a.textContent.toLowerCase().indexOf(q) >= 0;
+        a.hidden = !vis;
+        if (vis) shown++;
+      });
+      if (empty) empty.hidden = shown !== 0;
+    });
+
+    if (typeof IntersectionObserver === "function") {
+      var list = nav.querySelector(".toc-list");
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (!en.isIntersecting) return;
+          var active = null;
+          links.forEach(function (a) {
+            var on = a.getAttribute("data-toc") === en.target.id;
+            a.classList.toggle("active", on);
+            if (on) active = a;
+          });
+          if (active && list) active.scrollIntoView({ block: "nearest" });
+          if (active && toggleLabel) {
+            var lbl = active.querySelector(".toc-label");
+            if (lbl) toggleLabel.textContent = lbl.textContent;
+          }
+        });
+      }, { rootMargin: "-72px 0px -72% 0px" });
+      heads.forEach(function (h) { obs.observe(h); });
+    }
+
+    /* Mobile bar auto-hide: slide away on scroll-down, return on scroll-up.
+       The hidden transform is mobile-only in CSS, so this is inert on desktop. */
+    var lastY = window.scrollY;
+    var ticking = false;
+    function evaluate() {
+      ticking = false;
+      var y = Math.max(0, window.scrollY);
+      var d = y - lastY;
+      if (Math.abs(d) < 6) return;
+      if (y <= 100 || d < 0) {
+        rail.classList.remove("toc-rail-hidden");
+      } else {
+        rail.classList.add("toc-rail-hidden");
+        setOpen(false);
+      }
+      lastY = y;
+    }
+    window.addEventListener("scroll", function () {
+      if (!ticking) { ticking = true; window.requestAnimationFrame(evaluate); }
+    }, { passive: true });
+  }
+
   /* ---------- go ---------- */
   function boot() {
     IR.initTheme();
@@ -757,6 +978,9 @@
     else if (page === "home") bootIndex();
     else if (page === "rounds") bootRounds();
     else if (page === "tracks") bootTracks();
+    /* After the page bootstraps, never before: the rail indexes rendered
+       content, and on a topic page none of it exists until bootTopic runs. */
+    buildRail();
     document.dispatchEvent(new CustomEvent("ir:ready"));
   }
 

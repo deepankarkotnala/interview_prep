@@ -357,5 +357,238 @@ window.IR.q["18-system-design"] = {
       wrong: "\"I have another offer at a higher number, can you beat it?\" It converts a collaborative conversation into a bidding one, and this panel is imagining how you will negotiate with their clients.",
       follow: "We cannot match it. Would you still join?"
     }
+,
+
+    {
+      id: "sd-14",
+      q: "Design a document intelligence platform for an insurance company.",
+      round: ["tech2"],
+      level: "5-10",
+      tags: ["design", "insurance", "ingestion"],
+      why: "An ingestion-heavy design in a regulated vertical. The messy input is the problem, not the model.",
+      simple:
+        "Scope it first, out loud. Ask what documents, what volume, what decisions depend on the output, and what the accuracy bar is. Assume claim documents, policy schedules and scanned hospital bills at a few thousand a day, feeding a human adjudication queue.\n\n" +
+        "The architecture, and the weight sits at the front:\n\n" +
+        "    intake -> classify -> extract -> validate -> route -> review UI\n\n" +
+        "Intake normalises formats and captures provenance. Classify identifies the document type, which decides the extraction schema — a claim form and a discharge summary need different fields.\n\n" +
+        "Extraction is the hard part and it is mostly not an LLM problem. Scanned Indian hospital bills are photographs, often skewed, sometimes handwritten, frequently in mixed scripts. So: OCR with a layout-aware model, then a vision-language model for the fields OCR mangles, and a deterministic parser for anything structured. Return confidence per field, not per document.\n\n" +
+        "Validate is where correctness is enforced. Cross-check totals arithmetically in code, verify the policy number exists, confirm dates are consistent. Any field below a confidence threshold goes to human review rather than through.\n\n" +
+        "Route by confidence: high-confidence complete extractions to straight-through processing, anything else to a reviewer with the field highlighted on the source image.\n\n" +
+        "Then the things that make it real. Every extracted field links back to a bounding box on the source page, because a reviewer must verify without reading the whole document. PHI stays in-region with restricted logging. Full audit of what was extracted, by which model version, and who confirmed it.\n\n" +
+        "State the honest metric: not accuracy, but the share of documents processed without human touch at the required precision. That is what the business is buying.",
+      points: [
+        "Extraction quality dominates — OCR and layout, not the LLM.",
+        "Confidence per field, not per document.",
+        "Validate arithmetically in code; low confidence routes to review.",
+        "Link every field to a bounding box for fast human verification.",
+        "The business metric is straight-through rate at a precision bar."
+      ],
+      say: "I would scope volume and the accuracy bar first, then design around extraction, because scanned Indian hospital bills are the hard part, not the model. OCR with layout awareness, a vision model for what OCR mangles, and per-field confidence. Validation checks totals in code and routes anything low-confidence to human review with the field highlighted on the source image. The metric that matters is straight-through rate at the required precision.",
+      numbers: "Report confidence per field rather than per document. Set the straight-through threshold with the business — start conservative and raise it as measured precision justifies.",
+      wrong: "Designing around the LLM and treating ingestion as a preprocessing detail. On scanned documents, extraction is where the project succeeds or fails.",
+      follow: "Ten percent of bills are handwritten. What does that do to your design?"
+    },
+
+    {
+      id: "sd-15",
+      q: "Design a multilingual customer assistant for tier-2 and tier-3 cities.",
+      round: ["tech2"],
+      level: "5-10",
+      tags: ["design", "multilingual", "india"],
+      why: "An India-specific design where language, cost and bandwidth constraints interact.",
+      simple:
+        "Clarify first: which languages, what channel, and what the assistant is allowed to do. Assume Hindi and English plus two regional languages, on WhatsApp and a low-bandwidth web view, handling account queries and support.\n\n" +
+        "Channel shapes everything. WhatsApp means asynchronous messaging, short turns, and users on intermittent connections — so no long streaming responses, and state must survive a user disappearing for an hour. That means durable session state, not an in-memory conversation.\n\n" +
+        "Language handling. Detect language per message rather than per session, because code-switching mid-conversation is normal — users mix Hindi and English in one sentence constantly. Transliteration matters: users type Hindi in Latin script far more often than in Devanagari, so normalise both forms for retrieval.\n\n" +
+        "Retrieval needs cross-lingual alignment. Content is usually authored in English while questions arrive in Hindi, so the embedding model must retrieve English documents from a Hindi query. Test that explicitly.\n\n" +
+        "Cost is the constraint people miss. Devanagari costs two to three times the tokens of equivalent English, so a Hindi conversation costs materially more than the same conversation in English. Budget from Hindi, not English, and lean hard on a small model for routine turns with escalation to a larger one only when needed.\n\n" +
+        "Voice matters here more than in a metro-facing product — many users prefer speaking. Speech-to-text for Indian languages is weaker than for English, so design for imperfect transcripts and confirm intent before acting.\n\n" +
+        "Then the safety floor: never guess on financial actions, always offer a human handoff, and answer in the language the user wrote in.",
+      points: [
+        "WhatsApp means async and durable state, not in-memory sessions.",
+        "Detect language per message — code-switching is normal.",
+        "Handle Latin-script transliteration, not just native script.",
+        "Budget cost from Hindi tokens, which run 2–3× English.",
+        "Design for imperfect speech transcripts; confirm before acting."
+      ],
+      say: "The channel drives it — WhatsApp means asynchronous turns and durable session state, since users disappear and return. I detect language per message because code-switching is normal, and normalise Latin-script transliteration since users rarely type Devanagari. Retrieval needs genuine cross-lingual alignment because content is in English and questions are in Hindi. And I budget from Hindi token counts, which run two to three times English.",
+      numbers: "Hindi costs roughly 2–3× the tokens of equivalent English. Any cost model built on English benchmarks understates a Hindi-majority product badly.",
+      wrong: "Treating multilingual as a translation layer bolted on at the edges. Language affects retrieval, cost, tokenisation and evaluation simultaneously.",
+      follow: "A user writes one sentence mixing Hindi and English. What does your pipeline do?"
+    },
+
+    {
+      id: "sd-16",
+      q: "Design a code assistant for an internal 500-engineer codebase.",
+      round: ["tech2"],
+      level: "5-10",
+      tags: ["design", "code", "retrieval"],
+      why: "Repo-scale retrieval with hard latency and IP constraints. Different from document RAG in instructive ways.",
+      simple:
+        "Scope: what does it do — answer questions, review, or generate? Assume question answering and code explanation over a large monorepo, in the IDE.\n\n" +
+        "Code retrieval differs from document retrieval in ways that matter.\n\n" +
+        "Chunk on syntax, not characters. Parse to an AST and chunk by function or class, so a chunk is a complete unit. A function split in half is useless. Include the signature, docstring and imports with each chunk, since imports tell you what the code depends on.\n\n" +
+        "Hybrid search is mandatory, not optional. Developers search for exact identifiers — a function name, an error string, a config key — and dense embeddings are weak at exact tokens. BM25 carries that load.\n\n" +
+        "Exploit the graph. Code has explicit structure that documents lack: call graphs, imports, definitions. When retrieving a function, pull its callers and callees too. That structural expansion typically beats adding more semantic neighbours.\n\n" +
+        "Freshness is a real constraint. The codebase changes hourly, so incremental indexing on merge, keyed by file hash. A stale index that describes deleted code is actively harmful.\n\n" +
+        "Latency budget is tight because it sits in the IDE. Under a second or developers stop using it — that is a product requirement, not a nice-to-have. So aggressive caching and a small fast model for routine queries.\n\n" +
+        "Then the constraints specific to this setting. Source code is IP, so self-hosted or a zero-retention endpoint, and check what the contract permits. Respect repository permissions — not everyone can see every repo. And cite file and line so the developer can verify, because a plausible wrong answer about code is expensive.",
+      points: [
+        "Chunk on AST boundaries — functions and classes, with imports.",
+        "Hybrid search is mandatory: developers search exact identifiers.",
+        "Expand along the call graph, not just semantic neighbours.",
+        "Incremental reindex on merge — stale code answers are harmful.",
+        "Sub-second latency in the IDE, and source code is IP."
+      ],
+      say: "Code retrieval differs from documents. I chunk on AST boundaries so each chunk is a complete function with its signature and imports, and hybrid search is mandatory because developers search exact identifiers that dense vectors handle poorly. I expand along the call graph rather than just semantic neighbours. The index reindexes incrementally on merge, latency has to stay under a second for IDE use, and source code being IP forces self-hosting or zero retention.",
+      numbers: "Target sub-second response in the IDE. Reindex incrementally on merge — a nightly rebuild is already stale for an active monorepo.",
+      wrong: "Applying a document RAG design unchanged. Character chunking splits functions, and pure dense retrieval fails on the identifier searches developers actually make.",
+      follow: "A developer asks why a function exists. Does your retrieval find the answer?"
+    },
+
+    {
+      id: "sd-17",
+      q: "Design an agent that files expense reports end to end.",
+      round: ["tech2"],
+      level: "5-10",
+      tags: ["design", "agents", "workflow"],
+      why: "A bounded agentic task where the right answer is mostly workflow with narrow agentic steps.",
+      simple:
+        "The first design decision, and I would say it explicitly: this is largely a workflow, not an open-ended agent. The steps are known — extract the receipt, classify the category, apply policy, submit, handle rejection. Only a few points genuinely need model judgement.\n\n" +
+        "    receipt -> extract -> categorise -> policy check -> submit -> track\n\n" +
+        "Extraction from a photographed receipt: vision model, per-field confidence, and a human confirmation step for anything uncertain. Receipts are crumpled and badly lit.\n\n" +
+        "Categorisation is a classification problem with a fixed taxonomy, so constrain the output to an enum rather than letting the model free-text a category.\n\n" +
+        "Policy check is deterministic code, not a model. Per-diem limits, approval thresholds and eligible categories are rules, and rules belong in code where they are testable and auditable. The model may explain a rejection; it does not decide it.\n\n" +
+        "Submission is a tool call into the expense system, and it must be idempotent — an idempotency key on the receipt hash, so a retry cannot file the same expense twice. Duplicate submissions are the failure that erodes trust fastest.\n\n" +
+        "Where the agentic part actually earns its place: handling the unhappy path. A rejected claim needing clarification, a missing field the user must supply, a currency conversion, an out-of-policy item needing justification. Those branches are hard to enumerate, which is exactly the condition for an agent.\n\n" +
+        "Guardrails: never submit above a value threshold without explicit user confirmation, show the user what will be filed before filing, and keep an audit trail. And design the correction path — the user must be able to fix a misread amount easily, because they will need to.",
+      points: [
+        "Mostly workflow; agentic only on the unhappy paths.",
+        "Categorise into a fixed enum, not free text.",
+        "Policy limits are deterministic code, never model judgement.",
+        "Idempotency key on the receipt hash — never file twice.",
+        "Show the user what will be submitted before submitting."
+      ],
+      say: "I would build this mostly as a workflow, because the steps are known — extract, categorise, policy check, submit. Categorisation is constrained to a fixed enum and the policy limits are deterministic code, since rules belong where they are testable. Submission is idempotent on the receipt hash so a retry cannot double-file. The genuinely agentic part is the unhappy path: clarifications, missing fields, out-of-policy justifications.",
+      numbers: "Use an idempotency key derived from the receipt hash. Require explicit confirmation above a value threshold set with finance.",
+      wrong: "Building it as an open-ended agent because the brief said agent. Most of this is a known sequence, and an agent makes it slower, costlier and harder to audit.",
+      follow: "The agent misreads an amount as 5,000 instead of 500. Where does that get caught?"
+    },
+
+    {
+      id: "sd-18",
+      q: "How do you gather requirements when the client says 'we want AI'?",
+      round: ["manager"],
+      level: "5-10",
+      tags: ["consulting", "scoping", "stakeholders"],
+      why: "The services-company staple. Scoping is the actual skill being hired for.",
+      simple:
+        "'We want AI' is not a requirement, and taking it at face value is how projects fail. My job is to convert it into a problem with a measurable outcome, and the conversation runs roughly like this.\n\n" +
+        "Start with the pain, not the technology. What takes too long today, what costs too much, where do errors happen. Ask them to walk me through the current process step by step with a real example. That single request surfaces more than any requirements document.\n\n" +
+        "Then quantify. How many times a day does this happen, how long does each take, what does an error cost. Without numbers there is no business case and no way to size the work.\n\n" +
+        "Define success before design. What number moves, by how much, by when. 'Reduce average handling time from 8 minutes to 5' is a project. 'Improve customer experience' is not.\n\n" +
+        "Then the questions that decide feasibility, and these are the ones that matter. Where is the data, who owns it, and can we actually access it — data access is the most common thing that kills a timeline. What is the accuracy bar, and what happens when the system is wrong. Who is accountable for a wrong output. What regulatory constraints apply. And what does the current process do that nobody documented.\n\n" +
+        "Establish the human's role early. Assist or automate — that decides the entire architecture and the acceptance criteria.\n\n" +
+        "Then be willing to say the answer is not AI. Often the real problem is a broken form, a missing integration or an unindexed knowledge base. Saying so builds more credibility than delivering an impressive system that solves nothing — and it is what distinguishes a consultant from an order-taker.",
+      points: [
+        "Ask them to walk through the current process with a real example.",
+        "Quantify volume, time and error cost — no numbers, no business case.",
+        "Define the measurable success metric before designing anything.",
+        "Data access is the most common timeline killer — confirm it early.",
+        "Be willing to conclude the answer is not AI."
+      ],
+      say: "I start from the pain rather than the technology — walk me through the current process with a real example, then quantify volume, handling time and error cost. Then define success as a number that must move by a date. The questions that decide feasibility are data access, the accuracy bar, who is accountable when it is wrong, and whether the human assists or is replaced. And I stay willing to say the answer is not AI.",
+      numbers: "Without volume, handling time and error cost, there is no business case. Get those three numbers before proposing an architecture.",
+      wrong: "Taking the brief literally and proposing a chatbot. It wins the meeting and produces a pilot that never reaches production because nobody defined what success was.",
+      follow: "You conclude their problem does not need AI. How do you say that to the client?"
+    },
+
+    {
+      id: "sd-19",
+      q: "How do you estimate effort and timeline for a GenAI project?",
+      round: ["manager"],
+      level: "5-10",
+      tags: ["consulting", "estimation", "delivery"],
+      why: "Asked directly in services-company interviews, and the honest structure is what earns credit.",
+      simple:
+        "The honest framing first: GenAI projects are harder to estimate than conventional software because quality is discovered rather than specified. You do not know how good retrieval will be until you build it on real data. So I estimate in phases with decision points, not as one number.\n\n" +
+        "Discovery, one to two weeks. Data access, a sample corpus, feasibility on twenty real examples, and a defined success metric. The deliverable is a go or no-go with evidence, and this phase de-risks everything after it.\n\n" +
+        "Pilot, four to six weeks. A working end-to-end system on real data with a real eval set, tested by actual users rather than the project team. The deliverable is a measured quality number against the agreed metric.\n\n" +
+        "Hardening, six to ten weeks, and this is the phase everyone underestimates. Security review, permissions, guardrails, observability, cost controls, error handling, load testing, integration with the real systems. It is routinely as long as the pilot and it is where prototypes go to die.\n\n" +
+        "Rollout and stabilisation, four or more weeks. Phased users, monitoring, feedback loop, tuning against real traffic.\n\n" +
+        "The estimation rules I would state: pilot to production is typically two to three times the pilot effort, not a small increment. Data access delays are the most common overrun and they are outside your control, so flag them as a dependency with a named owner. And evaluation infrastructure is real work that must be in the plan rather than assumed.\n\n" +
+        "Give a range with the assumptions written down, and put the go or no-go gate after discovery so the client is not committing to a full build before feasibility is known.",
+      points: [
+        "Quality is discovered, not specified — estimate in phases with gates.",
+        "Discovery 1–2 weeks, pilot 4–6, hardening 6–10, rollout 4+.",
+        "Hardening is routinely as long as the pilot and always underestimated.",
+        "Data access delays are the most common overrun.",
+        "Give a range with assumptions, and gate after discovery."
+      ],
+      say: "I estimate in phases with decision gates, because quality is discovered rather than specified. Discovery is one to two weeks to prove feasibility on real examples and agree a metric. Pilot is four to six weeks to a measured number. Hardening — security, permissions, observability, cost controls — is six to ten and is what teams underestimate. Then phased rollout. I give a range with assumptions and gate the commitment after discovery.",
+      numbers: "Pilot to production is typically 2–3× the pilot effort. Hardening is commonly as long as the pilot itself.",
+      wrong: "Quoting a single number for the whole project. It signals you have not shipped one, and it sets up the conversation where hardening looks like scope creep.",
+      follow: "The client wants a fixed price for the whole thing. What do you propose?"
+    },
+
+    {
+      id: "sd-20",
+      q: "Tell me about a time you said a GenAI approach would not work.",
+      round: ["manager"],
+      level: "5-10",
+      tags: ["behavioural", "judgement", "communication"],
+      why: "A strong differentiator. Panels are wary of candidates who think every problem is an LLM problem.",
+      simple:
+        "This is a judgement question, and it wants a real example with a real cost to saying no. Structure it as situation, your analysis, how you communicated it, and the outcome.\n\n" +
+        "What makes a strong answer is the analysis being specific and quantified rather than a general reservation. Good reasons to say no, with the shape of the evidence:\n\n" +
+        "The accuracy bar was unreachable. The process needed near-perfect extraction and measurement on a real sample showed a gap too large to close with the available data.\n\n" +
+        "The economics did not work. Cost per transaction exceeded the value of the transaction — that is a calculation you can put in front of a finance stakeholder.\n\n" +
+        "A deterministic solution was better. The real problem was an unindexed knowledge base or a missing integration, and search or a rules engine solved it more reliably and far cheaper.\n\n" +
+        "The data was not there. No labelled examples, no ground truth, no way to evaluate — so nobody could tell whether it was working.\n\n" +
+        "Regulation forbade it. The decision legally required a human, so automation was not on the table regardless of quality.\n\n" +
+        "Then the part that actually distinguishes the answer: how you said it. Bring evidence, not opinion — a measurement on their data beats an argument. Offer the alternative rather than only the refusal; 'this will not work, and here is what will' keeps you a partner. And frame it as protecting them from a failed programme.\n\n" +
+        "Close with the outcome. Ideally the alternative shipped and worked. If they overruled you, say what happened and what you learned — that is also a real answer, and honest.",
+      points: [
+        "Bring quantified evidence measured on their data, not opinion.",
+        "Common valid reasons: accuracy bar, economics, determinism, no data, regulation.",
+        "Always pair the no with a concrete alternative.",
+        "Frame it as protecting them from a failed programme.",
+        "State the outcome, including if you were overruled."
+      ],
+      say: "I would give a specific example where I measured on their data rather than arguing from principle — for instance an extraction task where the required accuracy was unreachable with the available labelled examples, or where cost per transaction exceeded the transaction's value. The key is bringing evidence and pairing the no with a concrete alternative that does work, so it reads as protecting the programme rather than declining the work.",
+      numbers: "A measurement on twenty real examples from their data carries more weight than any argument from principle.",
+      wrong: "A generic answer about managing expectations. The question wants a specific decision with a cost attached, and vagueness reads as never having made the call.",
+      follow: "They disagreed and went ahead anyway. What did you do?"
+    },
+
+    {
+      id: "sd-21",
+      q: "Describe a production incident you owned end to end.",
+      round: ["manager"],
+      level: "5-10",
+      tags: ["behavioural", "incident", "ownership"],
+      why: "Ownership is what separates a senior hire from a capable engineer. The structure of the answer reveals it.",
+      simple:
+        "Use a clear structure and keep it to a few minutes: what broke, how you found it, what you did, what the outcome was, and what changed afterwards.\n\n" +
+        "What makes an answer strong.\n\n" +
+        "Detection. Say how you found out. 'A user told us' is an honest but weak detection story, and acknowledging that is fine if you then fixed the monitoring. 'An alert fired on refusal rate' is stronger.\n\n" +
+        "Triage before diagnosis. Say what you did to stop the bleeding first — rolled back, disabled the feature, switched to a fallback — before explaining root cause. Senior engineers restore service and then investigate. Juniors debug while users suffer.\n\n" +
+        "The diagnosis, with the actual mechanism. Be specific: a provider model update changed output formatting and broke a downstream parser, an index rebuild silently dropped a filter, a prompt change increased refusals. Vagueness here reads as not having been the person who fixed it.\n\n" +
+        "Communication. Who you told and when. Stakeholders finding out from customers is a failure mode of its own.\n\n" +
+        "The outcome with a number. Duration, users affected, what recovered.\n\n" +
+        "And the part that matters most: what changed structurally. A fix that only repairs the instance is incomplete. Did you add an alert, a regression test, a rollback path, a canary? For GenAI specifically, the strongest close is adding the failing case to the eval set so it cannot silently return.\n\n" +
+        "Own your part honestly. If your change caused it, say so plainly. Panels trust candidates who can describe their own mistake without deflecting far more than candidates whose incidents were always someone else's fault.",
+      points: [
+        "State detection honestly — and fix it if it was a user report.",
+        "Triage before diagnosis: restore service, then investigate.",
+        "Name the specific mechanism, not a vague category.",
+        "Quantify duration and impact.",
+        "Close with the structural fix — for GenAI, the eval-set addition."
+      ],
+      say: "I would structure it as detection, triage, diagnosis, outcome and the structural fix. The important parts are that I restored service before diagnosing — rollback or fallback first — and that I name the actual mechanism rather than a vague category. Then quantify duration and users affected, and close with what changed so it cannot recur: an alert, a rollback path, and for GenAI, adding the failing case to the eval set.",
+      numbers: "Quantify duration and users affected. An incident story without numbers sounds like a story rather than something you owned.",
+      wrong: "An incident where nothing was your fault and nothing changed afterwards. It reads as either not having been involved or not having learned anything.",
+      follow: "What would have caught it an hour earlier?"
+    }
   ]
 };
