@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f3f4f6">
+<title>By interview round — Interview Room</title>
+<meta name="description" content="Every question in the portal, filtered by the interview round it belongs to: screening, technical 1, technical 2, hiring manager, HR.">
+<script>(function(){try{var d=document.documentElement;var t=localStorage.getItem("ir.theme")||"light";d.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==="dark"?"#17191e":"#f3f4f6";var r={};try{r=JSON.parse(localStorage.getItem("ir.reading"))||{};}catch(e){}var dz=matchMedia("(max-width:860px)").matches?"s":"xs";d.setAttribute("data-reading-size",["xs","s","m","l","xl"].indexOf(r.size)<0?dz:r.size);d.setAttribute("data-reading-width",["default","wide","full"].indexOf(r.width)<0?"default":r.width);d.setAttribute("data-reading-align",r.align==="justify"?"justify":"left");}catch(e){}})();</script>
+<link rel="stylesheet" href="assets/portal.css">
+<script defer src="data/topics.js"></script>
+<script defer src="data/q-01-llm-foundations.js"></script>
+<script defer src="data/q-02-transformers.js"></script>
+<script defer src="data/q-03-prompting.js"></script>
+<script defer src="data/q-04-embeddings.js"></script>
+<script defer src="data/q-05-rag.js"></script>
+<script defer src="data/q-06-advanced-rag.js"></script>
+<script defer src="data/q-07-agents.js"></script>
+<script defer src="data/q-08-langchain-langgraph.js"></script>
+<script defer src="data/q-09-mcp.js"></script>
+<script defer src="data/q-10-fine-tuning.js"></script>
+<script defer src="data/q-11-evaluation.js"></script>
+<script defer src="data/q-12-llmops.js"></script>
+<script defer src="data/q-13-guardrails.js"></script>
+<script defer src="data/q-14-cost-latency.js"></script>
+<script defer src="data/q-15-cloud.js"></script>
+<script defer src="data/q-16-ml-fundamentals.js"></script>
+<script defer src="data/q-17-python-coding.js"></script>
+<script defer src="data/q-18-system-design.js"></script>
+<script defer src="assets/portal.js"></script>
+</head>
+<body data-page="rounds">
+<a class="skip" href="#main">Skip to content</a>
+<div class="app">
+  <aside class="sidebar" data-sidebar></aside>
+  <div class="main">
+    <header class="topbar" data-topbar data-crumbs="By interview round"></header>
+    <main class="content" id="main">
+
+      <div class="page-head">
+        <div class="eyebrow">Route 02</div>
+        <h1>By interview round</h1>
+        <p class="lede">
+          The same question wants a different answer depending on who is asking. A recruiter
+          wants thirty seconds and no jargon. A staff engineer in round two wants the mechanism
+          and the trade-off you rejected. Filter to the round you have on Thursday.
+        </p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Round</th><th>Typical</th><th>What it tests</th><th>Shape of a good answer</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Screening</strong></td>
+              <td>20–30 min, recruiter or junior engineer</td>
+              <td>Whether the claims on your CV are real</td>
+              <td>Thirty seconds. No jargon. One number. Stop talking.</td>
+            </tr>
+            <tr>
+              <td><strong>Technical 1</strong></td>
+              <td>45–60 min, senior engineer</td>
+              <td>Fundamentals, and whether you built it yourself or watched someone build it</td>
+              <td>Two minutes. Mechanism first, then one trade-off you actually made.</td>
+            </tr>
+            <tr>
+              <td><strong>Technical 2 / design</strong></td>
+              <td>60 min, staff engineer or architect</td>
+              <td>Whether you can architect a system and defend the choices</td>
+              <td>Requirements before technology names. Say the constraint you are optimising for.</td>
+            </tr>
+            <tr>
+              <td><strong>Hiring manager</strong></td>
+              <td>45 min</td>
+              <td>Ownership, incidents, judgement, how you behave when it breaks</td>
+              <td>A story with a decision in it, and a consequence you carried.</td>
+            </tr>
+            <tr>
+              <td><strong>HR / fitment</strong></td>
+              <td>30 min</td>
+              <td>Stability, expectations, notice period</td>
+              <td>Short and consistent. No negotiation detail here.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <strong>The mistake that costs most offers:</strong> giving the round-two answer in the
+        screening call. The recruiter cannot evaluate depth, so a three-minute technical answer
+        does not read as strong — it reads as someone who cannot judge their audience. Match the
+        answer to the room.
+      </div>
+
+      <h2>Every question, filtered by round</h2>
+      <div data-round-body></div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

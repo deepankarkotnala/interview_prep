@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f3f4f6">
+<title>Rehearsal room — Interview Room</title>
+<meta name="description" content="Draw a random interview question, start the timer, and say the answer out loud from memory. Tracks what you have delivered without notes.">
+<script>(function(){try{var d=document.documentElement;var t=localStorage.getItem("ir.theme")||"light";d.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==="dark"?"#17191e":"#f3f4f6";var r={};try{r=JSON.parse(localStorage.getItem("ir.reading"))||{};}catch(e){}var dz=matchMedia("(max-width:860px)").matches?"s":"xs";d.setAttribute("data-reading-size",["xs","s","m","l","xl"].indexOf(r.size)<0?dz:r.size);d.setAttribute("data-reading-width",["default","wide","full"].indexOf(r.width)<0?"default":r.width);d.setAttribute("data-reading-align",r.align==="justify"?"justify":"left");}catch(e){}})();</script>
+<link rel="stylesheet" href="assets/portal.css">
+<script defer src="data/topics.js"></script>
+<script defer src="data/q-01-llm-foundations.js"></script>
+<script defer src="data/q-02-transformers.js"></script>
+<script defer src="data/q-03-prompting.js"></script>
+<script defer src="data/q-04-embeddings.js"></script>
+<script defer src="data/q-05-rag.js"></script>
+<script defer src="data/q-06-advanced-rag.js"></script>
+<script defer src="data/q-07-agents.js"></script>
+<script defer src="data/q-08-langchain-langgraph.js"></script>
+<script defer src="data/q-09-mcp.js"></script>
+<script defer src="data/q-10-fine-tuning.js"></script>
+<script defer src="data/q-11-evaluation.js"></script>
+<script defer src="data/q-12-llmops.js"></script>
+<script defer src="data/q-13-guardrails.js"></script>
+<script defer src="data/q-14-cost-latency.js"></script>
+<script defer src="data/q-15-cloud.js"></script>
+<script defer src="data/q-16-ml-fundamentals.js"></script>
+<script defer src="data/q-17-python-coding.js"></script>
+<script defer src="data/q-18-system-design.js"></script>
+<script defer src="assets/portal.js"></script>
+<script defer src="assets/rehearsal.js"></script>
+</head>
+<body data-page="rehearsal">
+<a class="skip" href="#main">Skip to content</a>
+<div class="app">
+  <aside class="sidebar" data-sidebar></aside>
+  <div class="main">
+    <header class="topbar" data-topbar data-crumbs="Rehearsal room"></header>
+    <main class="content" id="main">
+
+      <div class="page-head">
+        <div class="eyebrow">Route 04</div>
+        <h1>Rehearsal room</h1>
+        <p class="lede">
+          Reading an answer and delivering it are different skills, and only the second one is
+          tested in an interview. Draw a question, start the timer, and say the answer out loud
+          before you open the card. If you stumble, you do not know it yet.
+        </p>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat"><b data-done-count>0</b><span>delivered out loud</span></div>
+        <div class="stat"><b data-pool-count>0</b><span>questions available</span></div>
+        <div class="stat"><b data-pct>0%</b><span>of the bank</span></div>
+        <div class="stat"><b data-target>60s</b><span>target for this one</span></div>
+      </div>
+
+      <div class="timer-box">
+        <div class="timer-face" data-timer>0:00</div>
+        <div class="btn-row">
+          <button class="btn" type="button" data-start>Start timer</button>
+          <button class="btn is-ghost" type="button" data-stop>Stop</button>
+          <button class="btn is-ghost" type="button" data-reset>Reset</button>
+          <button class="btn" type="button" data-draw>Next question</button>
+        </div>
+        <div class="btn-row">
+          <label class="chip">
+            Round&nbsp;
+            <select data-round-filter style="border:0;background:transparent;color:inherit;font:inherit;font-weight:700">
+              <option value="">any</option>
+              <option value="screening">Screening</option>
+              <option value="tech1">Technical 1</option>
+              <option value="tech2">Technical 2</option>
+              <option value="manager">Hiring manager</option>
+              <option value="hr">HR</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div data-stage></div>
+
+      <div class="note">
+        <strong>How to score yourself honestly.</strong> Mark a question delivered only if you said
+        the whole answer out loud, from memory, without reading, inside the target time, and
+        without a filler word every five seconds. That is the bar in the room. Marking it because
+        you understood it is how people arrive at an interview surprised.
+      </div>
+
+      <p style="margin-top:26px">
+        <button class="mini-btn" type="button" data-clear>Clear all delivered marks</button>
+      </p>
+      <p style="color:var(--text-muted);font-size:.88rem">
+        Progress is stored in this browser only, under <code>ir.delivered</code>. Nothing leaves
+        your machine and there is no account.
+      </p>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

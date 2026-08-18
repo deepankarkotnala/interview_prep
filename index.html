@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f3f4f6">
+<title>Interview Room — GenAI interview questions for senior engineers in India</title>
+<meta name="description" content="Current GenAI, AI and ML interview questions for senior engineer roles in India, answered in simple language, with the exact words to say in the room.">
+<!-- theme before first paint, so dark mode does not flash white -->
+<script>(function(){try{var d=document.documentElement;var t=localStorage.getItem("ir.theme")||"light";d.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==="dark"?"#17191e":"#f3f4f6";var r={};try{r=JSON.parse(localStorage.getItem("ir.reading"))||{};}catch(e){}var dz=matchMedia("(max-width:860px)").matches?"s":"xs";d.setAttribute("data-reading-size",["xs","s","m","l","xl"].indexOf(r.size)<0?dz:r.size);d.setAttribute("data-reading-width",["default","wide","full"].indexOf(r.width)<0?"default":r.width);d.setAttribute("data-reading-align",r.align==="justify"?"justify":"left");}catch(e){}})();</script>
+<link rel="stylesheet" href="assets/portal.css">
+<script defer src="data/topics.js"></script>
+<script defer src="data/q-01-llm-foundations.js"></script>
+<script defer src="data/q-02-transformers.js"></script>
+<script defer src="data/q-03-prompting.js"></script>
+<script defer src="data/q-04-embeddings.js"></script>
+<script defer src="data/q-05-rag.js"></script>
+<script defer src="data/q-06-advanced-rag.js"></script>
+<script defer src="data/q-07-agents.js"></script>
+<script defer src="data/q-08-langchain-langgraph.js"></script>
+<script defer src="data/q-09-mcp.js"></script>
+<script defer src="data/q-10-fine-tuning.js"></script>
+<script defer src="data/q-11-evaluation.js"></script>
+<script defer src="data/q-12-llmops.js"></script>
+<script defer src="data/q-13-guardrails.js"></script>
+<script defer src="data/q-14-cost-latency.js"></script>
+<script defer src="data/q-15-cloud.js"></script>
+<script defer src="data/q-16-ml-fundamentals.js"></script>
+<script defer src="data/q-17-python-coding.js"></script>
+<script defer src="data/q-18-system-design.js"></script>
+<script defer src="assets/portal.js"></script>
+</head>
+<body data-page="home">
+<a class="skip" href="#main">Skip to content</a>
+<div class="app">
+  <aside class="sidebar" data-sidebar></aside>
+  <div class="main">
+    <header class="topbar" data-topbar></header>
+    <main class="content" id="main">
+
+      <div class="page-head">
+        <div class="eyebrow">GenAI · AI · ML — India · senior engineer</div>
+        <h1>The questions you will actually be asked, and the words to answer them with</h1>
+        <p class="lede">
+          Every question here carries six things: what the interviewer is really testing,
+          an explanation in plain language, the fifty-odd words you say out loud in the room,
+          a real number to attach, the wrong answer that loses the offer, and the follow-up
+          that comes next.
+        </p>
+        <div class="chip-row">
+          <span class="chip is-accent"><b data-total-count>0</b>&nbsp;questions</span>
+          <span class="chip"><b data-delivered-count>0</b>&nbsp;delivered out loud</span>
+          <span class="chip">5–10 years experience</span>
+          <span class="chip">Independent portal</span>
+        </div>
+      </div>
+
+      <div class="note">
+        <strong>How to use this.</strong> Read the plain-language explanation until the mechanism is
+        obvious to you. Then close it and say the <em>Say this in the room</em> version out loud,
+        from memory. If you stumble, you do not know it yet. Knowing an answer and being able to
+        deliver it under pressure are different skills, and only the second one gets you selected.
+      </div>
+
+      <h2>Three ways in</h2>
+      <div class="card-grid">
+        <a class="tile" href="#topics">
+          <span class="tile-num">ROUTE 01</span>
+          <h3>By topic</h3>
+          <p>Eighteen subjects, GenAI first. Use this when you know which area you are weak in.</p>
+          <div class="tile-foot">Jump to the topic list ↓</div>
+        </a>
+        <a class="tile" href="rounds.html">
+          <span class="tile-num">ROUTE 02</span>
+          <h3>By interview round</h3>
+          <p>Screening, technical 1, technical 2, hiring manager, HR. The same question has a
+             different answer in round 1 and round 3.</p>
+          <div class="tile-foot">Filter every question by round →</div>
+        </a>
+        <a class="tile" href="tracks.html">
+          <span class="tile-num">ROUTE 03</span>
+          <h3>By employer type</h3>
+          <p>A healthcare payer, a bank and a services firm interview the same role very
+             differently. Five tracks for what each one presses on.</p>
+          <div class="tile-foot">See the five tracks →</div>
+        </a>
+        <a class="tile" href="rehearsal.html">
+          <span class="tile-num">ROUTE 04</span>
+          <h3>Rehearsal room</h3>
+          <p>A timer, a random question, and a record of what you have delivered out loud
+             without notes. This is the part most people skip.</p>
+          <div class="tile-foot">Start rehearsing →</div>
+        </a>
+      </div>
+
+      <h2 id="topics">Topics</h2>
+      <p class="lede" style="font-size:.98rem;margin-bottom:18px">
+        Live topics are written and ready. The rest are on the roadmap in
+        <a href="PLAN.md">PLAN.md</a>, in wave order.
+      </p>
+      <div class="card-grid" data-topic-grid></div>
+
+      <h2>An honest note on where these questions come from</h2>
+      <p>
+        No page here claims "this was asked at company X." Anything sold as a leaked company
+        question bank is either invented or one person's recollection, and walking in prepared for
+        the wrong interview is worse than walking in unprepared.
+      </p>
+      <p>What these questions are actually built from:</p>
+      <ul>
+        <li><strong>Public job descriptions</strong> for GenAI, AI Engineer and ML Engineer roles at
+            India centres — the panel is briefed from these.</li>
+        <li><strong>The domain the employer works in.</strong> A healthcare payer asks about PHI and
+            a locked Azure tenant because that is the system they run.</li>
+        <li><strong>Published interview processes</strong> — round structure and duration that
+            companies document themselves.</li>
+        <li><strong>What the technology forces you to know.</strong> If you run retrieval in
+            production you will be asked why it fails silently, because it does.</li>
+      </ul>
+      <p>
+        Every topic page carries its grounding label. If you have real questions from your own
+        interviews, they belong in the data files with a date against them — that is how this turns
+        from an inferred bank into a real one.
+      </p>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

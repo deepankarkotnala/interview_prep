@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f3f4f6">
+<title>By employer type — Interview Room</title>
+<meta name="description" content="The same GenAI role interviews differently at a healthcare payer, a bank, a retailer, a product company and a services firm. Five tracks, each with its ten most likely questions and a worked scenario.">
+<script>(function(){try{var d=document.documentElement;var t=localStorage.getItem("ir.theme")||"light";d.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==="dark"?"#17191e":"#f3f4f6";var r={};try{r=JSON.parse(localStorage.getItem("ir.reading"))||{};}catch(e){}var dz=matchMedia("(max-width:860px)").matches?"s":"xs";d.setAttribute("data-reading-size",["xs","s","m","l","xl"].indexOf(r.size)<0?dz:r.size);d.setAttribute("data-reading-width",["default","wide","full"].indexOf(r.width)<0?"default":r.width);d.setAttribute("data-reading-align",r.align==="justify"?"justify":"left");}catch(e){}})();</script>
+<link rel="stylesheet" href="assets/portal.css">
+<script defer src="data/topics.js"></script>
+<script defer src="data/q-01-llm-foundations.js"></script>
+<script defer src="data/q-02-transformers.js"></script>
+<script defer src="data/q-03-prompting.js"></script>
+<script defer src="data/q-04-embeddings.js"></script>
+<script defer src="data/q-05-rag.js"></script>
+<script defer src="data/q-06-advanced-rag.js"></script>
+<script defer src="data/q-07-agents.js"></script>
+<script defer src="data/q-08-langchain-langgraph.js"></script>
+<script defer src="data/q-09-mcp.js"></script>
+<script defer src="data/q-10-fine-tuning.js"></script>
+<script defer src="data/q-11-evaluation.js"></script>
+<script defer src="data/q-12-llmops.js"></script>
+<script defer src="data/q-13-guardrails.js"></script>
+<script defer src="data/q-14-cost-latency.js"></script>
+<script defer src="data/q-15-cloud.js"></script>
+<script defer src="data/q-16-ml-fundamentals.js"></script>
+<script defer src="data/q-17-python-coding.js"></script>
+<script defer src="data/q-18-system-design.js"></script>
+<script defer src="data/tracks.js"></script>
+<script defer src="assets/portal.js"></script>
+</head>
+<body data-page="tracks">
+<a class="skip" href="#main">Skip to content</a>
+<div class="app">
+  <aside class="sidebar" data-sidebar></aside>
+  <div class="main">
+    <header class="topbar" data-topbar data-crumbs="By employer type"></header>
+    <main class="content" id="main">
+
+      <div class="page-head">
+        <div class="eyebrow">Route 03</div>
+        <h1>By employer type</h1>
+        <p class="lede">
+          The job title is the same. The interview is not. What a company sells decides which
+          half of your answer they care about — and preparing for the wrong half is the most
+          expensive preparation mistake there is. Each track below gives the round structure,
+          the ten questions most likely in that context, and one worked forty-minute scenario.
+        </p>
+        <div class="chip-row">
+          <span class="chip">Five tracks</span>
+          <span class="chip">Company names are examples of the type, not sources</span>
+        </div>
+      </div>
+
+      <div class="note is-warn">
+        <strong>Read this before the tracks.</strong> The companies named are examples of each
+        <em>type</em>. Nothing here claims a specific company asked a specific question. What is
+        honest, and useful, is the inference: an employer interviews about the system they actually
+        run. A healthcare payer runs PHI through a locked Azure tenant, so that is what the panel
+        presses on. That inference is sound. A leaked question list would not be.
+      </div>
+
+      <nav class="chip-row" aria-label="Jump to a track">
+        <a class="chip is-accent" href="#track-healthcare">Healthcare</a>
+        <a class="chip is-accent" href="#track-banking">Banking</a>
+        <a class="chip is-accent" href="#track-retail">Retail</a>
+        <a class="chip is-accent" href="#track-product">Product</a>
+        <a class="chip is-accent" href="#track-services">Services</a>
+      </nav>
+
+      <div data-tracks-body></div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>
