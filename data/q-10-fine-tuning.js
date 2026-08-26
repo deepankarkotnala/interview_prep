@@ -195,6 +195,35 @@ window.IR.q["10-fine-tuning"] = {
       numbers: "Re-compare against the current general model at least quarterly. Base models improve fast enough that a fine-tune can stop being worth its operational cost within a year.",
       wrong: "\"We deployed it and it works.\" It skips versioning, drift, deprecation and the exit plan, which together are most of the real cost.",
       follow: "The new general model beats your fine-tune. What do you do?"
+    },
+
+    {
+      id: "ft-08",
+      q: "How do you evaluate a fine-tuned model and prove it is actually better?",
+      round: ["tech2"],
+      level: "5-10",
+      tags: ["fine-tuning", "evaluation", "process", "judgement"],
+      why: "Everyone can describe running a fine-tune. Far fewer can prove the result was worth shipping, which is the actual decision.",
+      simple:
+        "The trap is judging it on training loss. Loss going down means the model learned to imitate your training set; it says nothing about whether the product got better, and it will keep falling while quality degrades.\n\n" +
+        "So: a held-out test set the model never saw, split before any training, and split by the right unit. If you split randomly across rows that came from the same customers or the same documents, near-duplicates land on both sides and your score is inflated. Split by document or by customer or by time.\n\n" +
+        "Then always compare against the base model on the same set, with the same prompt. A fine-tune that beats nothing is not an achievement. This is the number that decides shipping, and surprisingly often the honest result is that a good prompt on the base model matches it — which is a legitimate finding worth reporting, since it saves you a training pipeline and a model artefact forever.\n\n" +
+        "Test three things, not one. The target task, obviously. General capability, to detect catastrophic forgetting — the model got better at your extraction task and worse at following instructions. And format and safety behaviour, because SFT on a narrow dataset routinely erodes refusal behaviour that the instruct model had.\n\n" +
+        "Then the operational half. Fix the decoding parameters across every comparison or you are measuring temperature. Report cost and latency alongside quality, because a fine-tuned 7B that matches GPT-class quality at a fraction of the cost is the whole business case. And run a shadow or canary against real traffic before committing, since offline sets never contain the queries that break you.\n\n" +
+        "Finally, keep the eval set versioned and frozen. If it drifts between runs, you cannot compare this month's model with last month's.",
+      points: [
+        "Training loss is not evaluation. It falls while product quality degrades.",
+        "Held-out set split by document, customer or time — never randomly across near-duplicates.",
+        "Always benchmark against the base model with the same prompt and decoding settings.",
+        "'A good prompt matched it' is a real and valuable result — it saves owning a model.",
+        "Test the target task, general capability (forgetting) and safety behaviour separately.",
+        "Report cost and latency next to quality — that is usually the actual business case.",
+        "Canary on real traffic before committing; freeze and version the eval set."
+      ],
+      say: "Not on training loss — that measures imitation of the training set. I use a held-out set split by document or customer so near-duplicates do not leak, and I always compare against the base model with the same prompt and decoding settings. I test three things: the target task, general capability to catch forgetting, and safety behaviour, which SFT erodes. Then I report cost and latency beside quality and canary on real traffic.",
+      numbers: "If the fine-tuned model does not clearly beat a well-engineered prompt on the base model, do not ship it. You would be taking on a training pipeline and a permanent model artefact for nothing.",
+      wrong: "'Loss went down and the samples look good.' Eyeballing samples finds what you hoped for, and loss measures the wrong thing entirely.",
+      follow: "Your fine-tune wins on the task set and loses on general instruction following. Ship or not?"
     }
   ]
 };

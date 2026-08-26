@@ -271,6 +271,62 @@ window.IR.q["11-evaluation"] = {
       numbers: "Always slice quality metrics by language, document type and user segment. A 0.9 average routinely hides a 0.6 segment, and that segment is the one complaining.",
       wrong: "\"The users do not understand what the system can do.\" It may even be partly true, and it is the wrong instinct in this round. It ends the diagnostic conversation.",
       follow: "How would you stop your eval set drifting away from production again?"
+    },
+
+    {
+      id: "ev-11",
+      q: "BLEU, ROUGE, BERTScore — what are they and would you use them?",
+      round: ["tech1", "tech2"],
+      level: "5-10",
+      tags: ["evaluation", "metrics", "theory", "judgement"],
+      why: "Asked by name in almost every evaluation round. The mark is not the definition — it is knowing they mostly do not apply to what you build.",
+      simple:
+        "Know the definitions, then know why you rarely reach for them.\n\n" +
+        "BLEU is precision over n-grams against a reference, built for machine translation. ROUGE is the recall counterpart, built for summarisation — ROUGE-L uses longest common subsequence rather than fixed n-grams. Both compare surface word overlap. BERTScore replaces exact matching with embedding similarity, so a paraphrase scores well where BLEU would score zero.\n\n" +
+        "Now the part that scores. All three need a reference answer, and most GenAI features do not have one. A support reply, a summary, an extracted field, an agent trajectory — there is no single correct string, so a metric that measures distance from one reference is measuring the wrong thing. Worse, on RAG they are actively misleading: an answer can overlap heavily with the reference and still be ungrounded, and a correct answer phrased differently scores badly. High ROUGE with a hallucinated number is entirely possible.\n\n" +
+        "Where they genuinely fit: translation, and summarisation where you have real reference summaries and want a cheap regression signal in CI. They are fast and deterministic, which is worth something when you run them on every commit.\n\n" +
+        "What I actually use instead: for RAG, faithfulness and context precision and recall. For subjective output, a rubric with an LLM judge, validated against human labels. For extraction, exact field accuracy, which is the one place a hard metric works cleanly. The senior answer names the metric, then says why the task decides it.",
+      points: [
+        "BLEU: n-gram precision, built for translation. ROUGE: recall, built for summarisation. BERTScore: embedding similarity, so paraphrase survives.",
+        "All three need a reference answer. Most GenAI tasks have no single correct output.",
+        "On RAG they mislead: high overlap with a hallucinated number is possible.",
+        "Legitimate use: translation, and summarisation with real references as a cheap CI regression signal.",
+        "For RAG use faithfulness, context precision and context recall instead.",
+        "For extraction, exact field accuracy is the honest hard metric.",
+        "Name the metric, then say what the task actually requires."
+      ],
+      say: "BLEU is n-gram precision for translation, ROUGE is the recall counterpart for summarisation, and BERTScore swaps exact matching for embedding similarity so paraphrases survive. But all three need a reference answer, and most of what we build has no single correct output. On RAG they actively mislead, because an answer can overlap the reference and still be ungrounded. I use faithfulness and context metrics instead, and a validated rubric judge for subjective work.",
+      numbers: "If you do use ROUGE in CI, treat it as a regression tripwire rather than a quality score — watch for sudden drops, do not chase the absolute number.",
+      wrong: "Listing all three confidently as your RAG evaluation plan. It signals textbook knowledge with no production experience, and the follow-up about reference answers ends the conversation.",
+      follow: "You have no reference answers and no budget for human labelling. What is your first metric?"
+    },
+
+    {
+      id: "ev-12",
+      q: "How do you red team a GenAI application before launch?",
+      round: ["tech2"],
+      level: "5-10",
+      tags: ["evaluation", "red-team", "guardrails", "safety", "process"],
+      why: "Increasingly a named requirement in enterprise and BFSI JDs, and most candidates conflate it with ordinary testing.",
+      simple:
+        "The distinction to open with: testing checks that the system does what it should. Red teaming checks what it does when someone actively tries to make it misbehave. Different mindset, different people, different success criterion — a red team that finds nothing has failed, not passed.\n\n" +
+        "Structure it by attack class rather than improvising. Prompt injection, direct and indirect — the indirect case matters most for RAG, where the malicious instruction sits inside an ingested document rather than in the user's message. Jailbreaks: role-play framing, hypothetical framing, encoding tricks, slow escalation across turns. Data extraction: attempts to make it reveal the system prompt, other tenants' data, or training data. Harmful output for your domain specifically — a bank cares about unauthorised financial advice, a health product about diagnosis. And for agents, the highest-stakes class: can you talk it into a destructive tool call?\n\n" +
+        "Run it as a campaign, not a checklist. Mix automated adversarial generation for volume with human creativity for the attacks nobody scripted, and include people from outside the build team, because authors are blind to their own assumptions. Time-box it and log every attempt with its outcome.\n\n" +
+        "Then the part that makes it engineering rather than theatre: every successful attack becomes a permanent regression test. The red team runs before launch; that suite runs on every deploy forever. Without that, you have an anecdote instead of a control.\n\n" +
+        "And decide the launch criteria in advance — which severities block, which get accepted with mitigation — otherwise the findings get argued away under shipping pressure.",
+      points: [
+        "Testing checks intended behaviour; red teaming checks adversarial behaviour.",
+        "A red team that finds nothing has failed.",
+        "Cover: direct and indirect injection, jailbreaks, data extraction, domain-specific harm, destructive tool calls.",
+        "Indirect injection through ingested documents is the RAG-specific one people miss.",
+        "Mix automated generation for volume with humans for creativity; include outsiders.",
+        "Every successful attack becomes a permanent regression test.",
+        "Agree severity thresholds that block launch before you start, not after."
+      ],
+      say: "Testing checks the system does what it should; red teaming checks what it does when someone tries to break it, so a red team that finds nothing has failed. I structure it by attack class — direct and indirect injection, jailbreaks, data extraction, domain-specific harm, and destructive tool calls for agents. I mix automated generation with human creativity and outsiders, and every successful attack becomes a permanent regression test.",
+      numbers: "Indirect injection through an ingested document is the one to demonstrate. If your corpus accepts user-uploaded files, that is a live path from an attacker to your system prompt.",
+      wrong: "Describing it as running the guardrail test suite again. That is testing your known controls, which is the opposite of looking for the unknown ones.",
+      follow: "Red teaming found a jailbreak you cannot fully fix. Do you launch?"
     }
   ]
 };

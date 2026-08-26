@@ -110,6 +110,32 @@ window.IR.q["13-guardrails"] = {
         "Define the failure action per check — block, regenerate, strip, escalate.",
         "Measure false positives. Over-blocking guarantees the guardrail gets disabled."
       ],
+      /* The card's first line is that guardrails live in code around the call,
+         not in the prompt. That is a claim about placement, which is the one
+         kind of claim a picture settles instantly. Output checks are drawn
+         cheapest-first because that ordering is the answer. */
+      diagram: {
+        alt: "Guardrails around the model call: input gate, then deterministic output checks, then model-based checks, each with a defined failure action.",
+        rows: [
+          [{ id: "in", label: "Request" }],
+          [{ id: "ing", label: "Input gate", note: "length, rate, injection, topic", accent: "warn" }],
+          [{ id: "model", label: "Model call", note: "the prompt is NOT the guardrail" }],
+          [{ id: "det", label: "Deterministic checks", note: "schema, sections, citations, PII", accent: "warn" },
+           { id: "mb", label: "Model-based checks", note: "groundedness, toxicity, policy", accent: "warn" }],
+          [{ id: "act", label: "Failure action", note: "block, regenerate, strip, escalate", accent: "bad" },
+           { id: "ok", label: "Deliver", accent: "accent" }]
+        ],
+        edges: [
+          { from: "in", to: "ing" },
+          { from: "ing", to: "model", label: "pass" },
+          { from: "model", to: "det" },
+          { from: "det", to: "mb", label: "pass" },
+          { from: "mb", to: "ok", label: "pass" },
+          { from: "mb", to: "act", label: "fail" },
+          { from: "act", to: "model", label: "regenerate once", kind: "back" }
+        ],
+        caption: "Deterministic checks run **before** the model-based ones because they are free. And a guardrail with no defined failure action is just a metric - every check needs its own choice of block, regenerate, strip or escalate. Measure the false positive rate: guardrails that block legitimate answers get switched off by whoever is on call, and then you have none."
+      },
       say: "In code around the model call, never in the prompt. Inbound: length, rate, injection patterns and topic scope. Outbound, cheapest first — schema parse, required sections, citation resolution against what was actually retrieved, banned terms and PII patterns — then model-based groundedness and policy checks. Each check has a defined action: block, regenerate, strip or escalate. And I measure false positives, because over-blocking gets guardrails switched off.",
       numbers: "Deterministic checks cost microseconds and should run on 100% of responses. Model-based checks cost a call — sample them if volume demands, but never sample citation validation.",
       wrong: "\"We instruct the model not to produce unsafe content.\" That is the model's own alignment doing the work, with nothing of yours behind it.",

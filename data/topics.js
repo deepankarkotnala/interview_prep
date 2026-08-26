@@ -42,9 +42,17 @@ window.IR.topics = [
     blurb: "What makes something an agent, tool design, termination, memory, multi-agent, and why most agent demos fail in production.",
     status: "live" },
 
-  { num: "08", slug: "langchain-langgraph",
-    title: "LangChain and LangGraph",
-    blurb: "LCEL, chains vs graphs, state, checkpointers, human in the loop, streaming — and when to drop the framework entirely.",
+  { num: "08", slug: "langchain",
+    title: "LangChain",
+    blurb: "Chains, Runnables, LCEL, testing, cost and latency — and the judgement call about when to drop the framework entirely.",
+    status: "live" },
+
+  /* Numbered 19 but placed here on purpose: the sidebar renders this array in
+     order, not by number, so LangGraph reads as the section after LangChain
+     while topics 09–18 keep the numbers their URLs and deep links already use. */
+  { num: "19", slug: "langgraph",
+    title: "LangGraph",
+    blurb: "State and reducers, checkpointers, tool wiring, subgraphs, human in the loop, streaming — the graph questions, on their own.",
     status: "live" },
 
   { num: "09", slug: "mcp",

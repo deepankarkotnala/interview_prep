@@ -308,6 +308,33 @@ window.IR.q["05-rag"] = {
         "Cache embeddings for repeated queries and answers for repeated questions, keyed with entitlements.",
         "Have a rollback: index versions and a cutover, not in-place mutation."
       ],
+      /* An open design question, so the picture is the architecture you would
+         actually draw in the room - with requirements as the first box,
+         because `why` says the marking is on whether you start from
+         requirements or from a list of product names. */
+      diagram: {
+        alt: "RAG at fifty million documents: requirements first, then a sharded index with metadata pre-filter, two-stage retrieval, and ingestion as a separate queued service.",
+        rows: [
+          [{ id: "req", label: "Requirements first", note: "QPS, latency, freshness, permissions, cost", accent: "warn" }],
+          [{ id: "ing", label: "Ingestion service", note: "own queue, own scaling, DLQ" },
+           { id: "idx", label: "Sharded vector index", note: "HNSW, or IVF-PQ if memory-bound" }],
+          [{ id: "filt", label: "Metadata pre-filter", note: "tenant, date, access group", accent: "warn" }],
+          [{ id: "rec", label: "Cheap recall", note: "top ~100" },
+           { id: "rr", label: "Rerank", note: "top ~5" }],
+          [{ id: "cache", label: "Caches", note: "keyed with entitlements", accent: "muted" },
+           { id: "gen", label: "Generate", accent: "accent" }]
+        ],
+        edges: [
+          { from: "req", to: "ing" },
+          { from: "ing", to: "idx" },
+          { from: "idx", to: "filt" },
+          { from: "filt", to: "rec" },
+          { from: "rec", to: "rr" },
+          { from: "rr", to: "gen" },
+          { from: "rr", to: "cache", label: "warm" }
+        ],
+        caption: "**Pre-filter before the vector search**, not after - filtering afterwards means you searched fifty million vectors to throw most of them away. Then say the operational half out loud: monitoring on recall, latency and cost per query, and index **versions with a cutover** so a bad ingestion run is rolled back rather than mutated in place."
+      },
       say: "First I ask for peak QPS, latency budget, freshness requirement, permission model and cost per query, because those decide the design. Then: a sharded vector index with approximate search, hard metadata pre-filters to shrink the candidate space, two-stage retrieve-and-rerank, and ingestion as a separately scaled service with a queue. Plus index versioning so a bad ingestion run can be rolled back instead of debugged live.",
       numbers: "50M documents at ~4 chunks each is 200M vectors. At 1024 dimensions in float32 that is roughly 800 GB raw — which is exactly why quantisation and sharding come up.",
       wrong: "Naming a vector database in the first sentence. The panel is testing whether you gather requirements. Products come after constraints.",
@@ -414,6 +441,24 @@ window.IR.q["05-rag"] = {
         "Silent truncation at embedding is the most-missed failure.",
         "Always measure retrieval separately from generation."
       ],
+      /* The spine question gets the spine picture: seven stages left to right
+         with each failure mode hanging under its own box. The point the card
+         makes - that these fail silently - is only visible when you can see a
+         failure attached to every single stage. */
+      diagram: {
+        kind: "lanes",
+        alt: "The seven RAG stages - parse, chunk, embed, index, retrieve, rerank, generate - each with its characteristic silent failure.",
+        lanes: [
+          { label: "Parse", note: "scans, tables, column order", accent: "bad" },
+          { label: "Chunk", note: "cuts mid-sentence" },
+          { label: "Embed", note: "silent truncation", accent: "bad" },
+          { label: "Index", note: "stale after update" },
+          { label: "Retrieve", note: "vocabulary mismatch", accent: "warn" },
+          { label: "Rerank", note: "latency, no gain" },
+          { label: "Generate", note: "ignores context", accent: "warn" }
+        ],
+        caption: "Almost none of these raise an error - they degrade quietly, which is why the picture is worth drawing. The discipline that follows: **measure retrieval separately from generation.** If the right chunk was never retrieved, no amount of prompt engineering saves you, and that one split resolves most RAG problems."
+      },
       say: "Seven stages: parse, chunk, embed, index, retrieve, rerank, generate. What matters is that nearly all of them fail silently — a scanned PDF parses to noise, an oversized chunk gets truncated at embedding, a filter quietly excludes the right document. So when debugging I split retrieval from generation first and check whether the correct chunk was even retrieved, because if it was not, no amount of prompt work will fix the answer.",
       numbers: "In practice most RAG quality problems are retrieval problems, not generation problems. Measure recall@k before touching the prompt.",
       wrong: "Describing it as retrieve-then-generate. It is technically true and useless for debugging, because it collapses five distinct failure modes into one box.",
@@ -1104,6 +1149,120 @@ window.IR.q["05-rag"] = {
       numbers: "Twenty failing queries is usually enough to see the pattern. Most RAG quality problems resolve to retrieval rather than generation.",
       wrong: "'I would improve the prompt.' It is the most common instinct and it is the wrong first move — you may be instructing a model that never received the answer.",
       follow: "You check and the right chunk was there every time. Where do you go next?"
+    },
+
+    {
+      id: "rag-41",
+      q: "The client wants a summary of 5,000 pages. Walk me through it.",
+      round: ["tech2"],
+      level: "5-10",
+      tags: ["rag", "summarisation", "long-context", "cost", "architecture"],
+      why: "The question that catches people who have only built question-answering. Retrieval is the reflex answer and it is the wrong one.",
+      simple:
+        "The first thing to say is that this is not a retrieval problem, and saying so is most of the mark. Retrieval answers a question by finding the few chunks that matter. A summary needs every page to have been read — you cannot summarise a corpus from its top ten chunks, because the pages you skipped are exactly the ones nobody asked about.\n\n" +
+        "So the shape is map-reduce. Map: summarise each document, or each section, independently. Those calls are independent, so they parallelise, and a cheap model is fine for this pass. Reduce: summarise the summaries, in a tree if the intermediate set is still too large for one context — combine ten at a time until one remains. The final reduce is where you spend the good model, because that is the output the client actually reads.\n\n" +
+        "Refine is the alternative — carry a running summary forward document by document. It preserves narrative order, which matters for something like a chronological case file, but it is strictly sequential, so it is slow, and one bad early summary poisons everything after it. I default to map-reduce and reach for refine only when order genuinely carries meaning.\n\n" +
+        "Then the parts people forget. Cost is knowable in advance: you pay for every page at least once, so quote it before you build. Detail loss is real — each reduce level throws away specifics, so carry citations back to the source page at every level, or the final summary cannot be audited. And ask what the summary is for, because 'summarise everything' is usually a proxy for a real question, and if it is, a targeted query is cheaper and better.",
+      points: [
+        "Say it first: summarisation is not retrieval. Every page must be read.",
+        "Map-reduce: parallel per-document summaries on a cheap model, then a tree reduce.",
+        "Spend the expensive model only on the final reduce.",
+        "Refine preserves order but is sequential and propagates early errors — use it only when order matters.",
+        "Cost is predictable: every page is paid for at least once. Quote it up front.",
+        "Carry citations through every reduce level, or the output cannot be audited.",
+        "Ask what the summary is for — it is often a proxy for one specific question."
+      ],
+      say: "First I would say this is not a retrieval problem, because a summary needs every page read and retrieval only finds the few that match. So map-reduce: summarise each document independently on a cheap model, in parallel, then reduce those summaries in a tree, spending the good model only on the final pass. I carry citations through every level so the output stays auditable, and I quote the cost up front, because every page gets paid for at least once.",
+      numbers: "5,000 pages is roughly 2.5M tokens. One map pass on a cheap model is a few dollars; the same corpus through a frontier model on every request is not something you do twice.",
+      wrong: "'I would retrieve the most relevant chunks and summarise those.' That is a summary of what the retriever liked, not of the corpus, and it will silently omit whole documents.",
+      follow: "The client wants that summary refreshed daily and 20 pages changed. What do you re-run?"
+    },
+
+    {
+      id: "rag-42",
+      q: "Two retrieved documents contradict each other. What should the system do?",
+      round: ["tech2"],
+      level: "5-10",
+      tags: ["rag", "generation", "trust", "citations", "judgement"],
+      why: "Guaranteed in any real corpus with history, and the default behaviour — silently picking one — is the worst possible outcome.",
+      simple:
+        "First, understand what the model does by default: it picks one, usually the one that appears earlier or reads more confidently, and presents it as settled fact. The user has no idea a conflict existed. That is the failure to name.\n\n" +
+        "Most contradictions are not real disagreements, so triage first. Usually one document is simply superseded — an old policy and its revision, both ingested. That is a metadata problem, not a reasoning problem, and it is solved at ingestion with effective dates and a current-version flag, then filtered at retrieval so the stale one never competes. Fixing this in the prompt is fixing it in the wrong place.\n\n" +
+        "Second class: both are current but scoped differently. A leave policy for permanent staff and one for contractors genuinely differ, and the right response is to ask which applies, or to answer with both scopes stated. That is a chunking and metadata failure too — the scope was in a heading that got separated from the text.\n\n" +
+        "Third class: genuinely conflicting current sources. Now the model must not arbitrate. It should surface the conflict, cite both, and say they disagree. In regulated domains that is the only defensible behaviour, and 'I found two conflicting answers, here they are' is far more useful than a confident wrong one.\n\n" +
+        "So the instruction in the prompt is explicit: if retrieved context conflicts, do not choose — report both with citations. And detect it, because you cannot fix what you cannot see: log when retrieved chunks disagree, and route repeat offenders to whoever owns the content. The real fix is usually upstream, in the corpus.",
+      points: [
+        "Default behaviour is silently picking one. That is the failure to name first.",
+        "Triage: superseded versions, different scopes, or genuine conflict.",
+        "Superseded is a metadata fix — effective dates, current-version flag, filter at retrieval.",
+        "Different scopes is a chunking fix — the qualifier got separated from the text.",
+        "Genuine conflict: surface both with citations. The model must not arbitrate.",
+        "Instruct explicitly in the prompt: on conflict, report both rather than choose.",
+        "Log detected conflicts and route them to the content owner — the real fix is upstream."
+      ],
+      say: "By default it picks one and states it as fact, which is the worst outcome because the user never learns there was a conflict. So I triage: most contradictions are superseded versions, which is a metadata fix with effective dates and filtering at retrieval. Some are different scopes, which is a chunking fix. For genuine conflicts the model must not arbitrate — it surfaces both with citations and says they disagree, and I log it for the content owner.",
+      numbers: "In a corpus with any history, superseded documents are the majority of apparent contradictions. Fix ingestion metadata before you touch the prompt.",
+      wrong: "Instructing the model to 'use the most reliable source'. It has no basis for that judgement, so it invents one and you get a confident answer chosen at random.",
+      follow: "Both documents are current, both are in scope, and the user needs one answer now. What do you return?"
+    },
+
+    {
+      id: "rag-43",
+      q: "Your input is PDFs, Word files, Excel sheets, images and CSVs. Design the ingestion.",
+      round: ["tech1", "tech2"],
+      level: "5-10",
+      tags: ["rag", "ingestion", "parsing", "multimodal", "architecture"],
+      why: "The most common real enterprise brief, and the answer reveals immediately whether you have ingested anything beyond clean PDFs.",
+      simple:
+        "The instinct is to find one loader that handles everything. Resist it — the formats fail in genuinely different ways, and a single parser handles all of them badly.\n\n" +
+        "So: a router by file type, format-specific parsers behind it, and one normalised internal document that everything converges to. That contract is the design. Every parser, whatever it consumed, emits the same thing: text, a structural path, a source id, a page or sheet or slide reference, and permissions. Downstream chunking and embedding then never know or care what the original format was, which is what keeps the pipeline maintainable as formats get added.\n\n" +
+        "Per format, the thing that actually breaks. PDFs are the worst case — a text layer if you are lucky, OCR if not, plus two-column layouts that scramble reading order and tables that become jumbled lines. Word files are structurally easy and carry a real heading hierarchy you should keep, but watch tracked changes and comments, which you almost certainly do not want indexed as content. Excel is not prose and should not be treated as prose: a sheet is either a table, which belongs in a database for aggregation as in ar-11, or it is a form with labelled cells, which you serialise per row into sentences. Getting that call wrong is the classic Excel mistake. Images need a vision model to produce a caption or an extraction, and you index that text while keeping a pointer back to the image. CSVs are the same decision as Excel — usually aggregation, so usually not the vector store.\n\n" +
+        "Then the operational half that separates senior answers. Every parser fails on something, so quarantine rather than crash: a dead-letter queue with the file and the error, because in a real corpus a few percent will not parse and you need to see which. Keep a per-format quality metric — characters extracted per page is a cheap and effective smoke test for a silently empty OCR run. Make ingestion idempotent with a content hash so re-runs are safe. And process out of a queue, since one 800-page scanned PDF should not block a thousand small files.\n\n" +
+        "Finally, say that ingestion is where RAG quality is won or lost. If the parser dropped a table, no amount of reranking recovers it.",
+      points: [
+        "Router by file type, format-specific parsers, one normalised internal document.",
+        "The normalised contract is the design: text, structure path, source id, location, permissions.",
+        "PDF is the hard case: OCR, reading order, tables. Word is easy but strip tracked changes.",
+        "Excel and CSV are a decision, not a parse: table for aggregation, or form to serialise per row.",
+        "Images: caption or extract with a vision model, index the text, keep a pointer to the original.",
+        "Quarantine failures in a dead-letter queue — a few percent always fail and you need to see them.",
+        "Track characters extracted per page to catch silently empty OCR.",
+        "Content-hash for idempotent re-runs; queue-based so one huge file blocks nothing."
+      ],
+      say: "I route by file type into format-specific parsers that all emit one normalised document — text, structure path, source id, page or sheet reference and permissions — so chunking never knows the original format. PDFs need OCR and reading-order care, Word needs tracked changes stripped, and Excel and CSV are a decision rather than a parse: aggregation goes to a database, forms get serialised per row. Failures go to a dead-letter queue, because a few percent always fail.",
+      numbers: "Expect a few percent of any real corpus to fail parsing. Characters-per-page is the cheapest early warning that OCR silently produced nothing.",
+      wrong: "\"I'd use a loader that handles all formats.\" It parses everything and understands nothing — Excel becomes prose, tables dissolve, and the failures are silent rather than loud.",
+      follow: "The same contract exists as a PDF and a Word file, both ingested. What happens at retrieval?"
+    },
+
+    {
+      id: "rag-44",
+      q: "A single 800-page scanned PDF has to be ingested. Walk me through it.",
+      round: ["tech2"],
+      level: "5-10",
+      tags: ["rag", "ingestion", "ocr", "operations", "cost"],
+      why: "Tests whether you have run ingestion as an operational process rather than a notebook cell.",
+      simple:
+        "Scanned means no text layer, so every page is an image and OCR is the whole job. That reframes it: this is not a parsing task measured in seconds, it is a batch job measured in minutes to hours, and the answer should sound like one.\n\n" +
+        "Do not load it into memory whole. Stream page by page, or split it into page ranges and process them as independent units. This matters for more than memory — it gives you per-page progress, per-page retry, and the ability to resume rather than restart when something fails at page 600.\n\n" +
+        "OCR each page, and keep the confidence score. That score is the most useful number in the pipeline: pages below a threshold get flagged for review rather than silently entering the index as garbage. A page of noise that OCR rendered as random characters will embed happily and pollute retrieval forever.\n\n" +
+        "Then the structure problem, which is the part people miss. A scanned document has no headings, no bookmarks, no metadata — everything rag-21 relies on is gone. So you reconstruct: detect headings from font size and position if the OCR engine gives layout, or run a cheap model over each page to label its section. Without that you are left with page-number-only citations and flat chunks, which is a materially worse product.\n\n" +
+        "Operationally: run it as a queued background job with checkpointing per page range, make it idempotent on a content hash so a retry does not duplicate chunks, and write results incrementally rather than at the end. Budget it — 800 pages of OCR plus vision captioning is a real cost, and it should be quoted before it is run, once, not per query.\n\n" +
+        "And the honest check first: is it actually scanned? Many PDFs that look scanned have a partial text layer, and testing that takes seconds and can save the entire OCR bill.",
+      points: [
+        "Check whether it is genuinely scanned first — a partial text layer saves the whole OCR cost.",
+        "Stream or split by page range; never load 800 pages into memory at once.",
+        "Per-page units give progress, retry and resume instead of restart.",
+        "Keep the OCR confidence score and flag low-confidence pages for review.",
+        "Garbage OCR embeds happily and pollutes retrieval permanently.",
+        "Scanned documents have no heading structure — reconstruct it or lose citation quality.",
+        "Queued background job, checkpointed, idempotent on content hash, incremental writes.",
+        "Quote the one-time OCR and captioning cost up front."
+      ],
+      say: "First I check it is genuinely scanned, because a partial text layer saves the entire OCR bill. Then it is a batch job, not a parse: stream page by page so I get progress, retry and resume rather than restart at page 600. I keep OCR confidence per page and quarantine low-confidence ones, because garbage OCR embeds happily and pollutes retrieval forever. Scanned files have no headings, so I reconstruct structure or citations degrade to page numbers.",
+      numbers: "Expect 5-15% of pages in a real scanned corpus to need review. That percentage is a data-quality SLA worth agreeing with the client before ingestion.",
+      wrong: "Treating it as a single synchronous parse. It times out, it restarts from zero on any failure, and nobody discovers the OCR quality problem until users complain.",
+      follow: "OCR confidence is low on 200 of the 800 pages. Do you index them?"
     }
   ]
 };

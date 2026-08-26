@@ -74,6 +74,70 @@ IR.topics.forEach(function (t) {
     if (c.level && !IR.levels.some(function (x) { return x.key === c.level; })) {
       problems.push(where + ": unknown level \"" + c.level + "\"");
     }
+
+    /* A diagram is optional, but a broken one renders as a picture with a
+       missing box or an arrow pointing at nothing — which is worse than no
+       diagram, because the reader would take it to the whiteboard. So the
+       spec is validated as strictly as any other slot. */
+    if (c.diagram) {
+      var g = c.diagram;
+      var gw = where + " diagram";
+      if (!g.alt) problems.push(gw + ": missing alt (it is the only text a screen reader gets)");
+      if (!g.caption) problems.push(gw + ": missing caption");
+
+      if (g.kind === "lanes") {
+        if (!g.lanes || !g.lanes.length) problems.push(gw + ": lanes diagram has no lanes");
+        else if (g.lanes.length > 8) problems.push(gw + ": " + g.lanes.length + " lanes — too many to stay legible (max 8)");
+        (g.lanes || []).forEach(function (l, i) {
+          if (!l.label) problems.push(gw + ": lane " + i + " has no label");
+        });
+      } else {
+        if (!g.rows || !g.rows.length) { problems.push(gw + ": no rows"); return; }
+        var seen = {};
+        g.rows.forEach(function (row, r) {
+          if (row.length > 3) problems.push(gw + ": row " + r + " has " + row.length + " nodes — boxes get too narrow (max 3)");
+          row.forEach(function (n) {
+            if (!n.id) problems.push(gw + ": a node in row " + r + " has no id");
+            else if (seen[n.id]) problems.push(gw + ": duplicate node id \"" + n.id + "\"");
+            else seen[n.id] = true;
+            if (!n.label) problems.push(gw + ": node \"" + n.id + "\" has no label");
+          });
+        });
+        /* A node label has to fit its box at BOTH rendered widths, and the
+           narrow one collapses every row to a single column. Rather than
+           re-implement the layout here, cap the longest single word: wrapping
+           handles the rest, but one unbreakable word wider than its box is the
+           only case wrapping cannot save. */
+        g.rows.forEach(function (row) {
+          row.forEach(function (n) {
+            var longest = String(n.label || "").split(/\s+/).reduce(function (m, w) {
+              return Math.max(m, w.length);
+            }, 0);
+            if (longest > 22) problems.push(gw + ": node \"" + n.id + "\" has an unbreakable " + longest + "-character word");
+          });
+        });
+        /* An edge naming a node that does not exist draws nothing, silently. */
+        (g.edges || []).forEach(function (e) {
+          if (!seen[e.from]) problems.push(gw + ": edge from unknown node \"" + e.from + "\"");
+          if (!seen[e.to]) problems.push(gw + ": edge to unknown node \"" + e.to + "\"");
+        });
+        /* A box with no path into it reads as though it belongs to a different
+           drawing. Walk forward from the first row and flag anything missed. */
+        var reach = {};
+        g.rows[0].forEach(function (n) { reach[n.id] = true; });
+        var changed = true;
+        while (changed) {
+          changed = false;
+          (g.edges || []).forEach(function (e) {
+            if (reach[e.from] && !reach[e.to]) { reach[e.to] = true; changed = true; }
+          });
+        }
+        Object.keys(seen).forEach(function (id) {
+          if (!reach[id]) problems.push(gw + ": node \"" + id + "\" is unreachable — nothing points at it");
+        });
+      }
+    }
+
   });
 
   (set.evening || []).forEach(function (id) {
@@ -151,6 +215,42 @@ function scan(dir) {
   });
 }
 scan(root);
+
+/* The search index is generated from the card data, so it can silently fall
+   behind an edit and leave the sidebar searching a corpus that no longer
+   matches the pages. Compare card ids rather than timestamps — a rebuild that
+   changed nothing is not a failure, and a file mtime says nothing about
+   content. */
+(function checkSearchIndex() {
+  var idxFile = path.join(root, "data/search-index.js");
+  if (!fs.existsSync(idxFile)) {
+    problems.push("data/search-index.js is missing — run: node tools/build-search-index.js");
+    return;
+  }
+  delete global.window.IR.searchIndex;
+  require(idxFile);
+  var idx = global.window.IR.searchIndex;
+  if (!idx || !idx.cards) {
+    problems.push("data/search-index.js is unreadable — run: node tools/build-search-index.js");
+    return;
+  }
+  var live = {}, nLive = 0;
+  IR.topics.forEach(function (t) {
+    var key = t.num + "-" + t.slug;
+    var set = IR.q[key];
+    if (!set || !set.cards) return;
+    set.cards.forEach(function (c) { live[c.id] = 1; nLive++; });
+  });
+  var indexed = {};
+  idx.cards.forEach(function (c) { indexed[c.i] = 1; });
+  var missing = Object.keys(live).filter(function (id) { return !indexed[id]; });
+  var stale = Object.keys(indexed).filter(function (id) { return !live[id]; });
+  if (missing.length || stale.length) {
+    problems.push("data/search-index.js is out of date ("
+      + missing.length + " card(s) missing, " + stale.length
+      + " removed) — run: node tools/build-search-index.js");
+  }
+})();
 
 if (problems.length) {
   console.log("\n" + problems.length + " problem(s):");

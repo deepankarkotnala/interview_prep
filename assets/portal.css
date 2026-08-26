@@ -264,19 +264,26 @@ code, pre { font-family: var(--font-mono); font-size: .88em; }
   background: var(--bg-subtle);
   border-bottom: 1px solid var(--border);
 }
-/* Flat accent square with the shared logo inside — the parent portal's
-   office-theme flattens the old gradient-and-glow mark to exactly this. */
+/* The shared logo, free-standing on a transparent ground — matched to the AI
+   Engineering portal's office-theme mark: 31px, contain (never cropped), and a
+   soft blue drop-shadow instead of a filled tile behind it. */
 .brand-mark {
-  width: 28px; height: 28px; flex: none;
+  width: 31px; height: 31px; flex: 0 0 31px;
   display: grid; place-items: center;
-  overflow: hidden;
-  border: 0; border-radius: 7px;
-  background: var(--accent);
-  color: #fff;
+  overflow: visible;
+  padding: 0;
+  border: 0; border-radius: 10px;
+  background: transparent;
+  color: var(--accent);
   font-size: 10px; font-weight: 900; letter-spacing: -.04em; line-height: .78;
   box-shadow: none;
 }
-.brand-mark img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.brand-mark img {
+  display: block;
+  width: 100%; height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 7px rgba(37, 99, 235, .16));
+}
 .brand-text strong { display: block; font-size: 14px; line-height: 1.2; letter-spacing: -.01em; }
 .brand-text span {
   display: block; margin-top: 1px;
@@ -284,6 +291,100 @@ code, pre { font-family: var(--font-mono); font-size: .88em; }
   font-size: 11.5px; line-height: 1.13; font-weight: 500;
   letter-spacing: 0; text-transform: none;
 }
+
+
+/* ---------- sidebar search ----------
+   Sits between the brand and the nav. Deliberately quieter than the filter bar
+   on a topic page: that one is a primary control on its own page, this one is
+   a way out of wherever you are, and it should not compete with the topic list
+   for attention until it is being used. */
+.sb-search {
+  position: relative;
+  display: flex; align-items: center; gap: 6px;
+  height: 30px;
+  margin: 10px 10px 4px; padding: 0 7px;
+  border: 1px solid var(--border); border-radius: 5px;
+  background: var(--bg-elevated);
+  transition: border-color .16s var(--ease), box-shadow .16s var(--ease);
+}
+.sb-search:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+.sb-icon {
+  flex: none; display: grid; place-items: center;
+  color: var(--text-muted);
+}
+.sb-search input {
+  min-width: 0; flex: 1;
+  border: 0; background: transparent; color: var(--text);
+  font-family: inherit; font-size: 12px;
+}
+.sb-search input:focus { outline: none; }
+.sb-search input::placeholder { color: var(--text-muted); }
+/* The native clear affordance would sit alongside ours. */
+.sb-search input::-webkit-search-cancel-button { display: none; }
+.sb-clear {
+  flex: none;
+  display: grid; place-items: center;
+  width: 17px; height: 17px; padding: 0;
+  border: 0; border-radius: 4px;
+  background: transparent; color: var(--text-muted);
+  font-size: 15px; line-height: 1; cursor: pointer;
+}
+.sb-clear:hover { background: var(--surface); color: var(--text); }
+
+/* Results replace the nav rather than pushing it down — see buildSearch. The
+   rail is one column, and a result list stacked above eighteen topic rows puts
+   the answer below the fold on a laptop. */
+.sb-results {
+  padding: 4px 10px 30px;
+  animation: sb-in .16s var(--ease) both;
+}
+@keyframes sb-in { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+
+.sb-sec {
+  padding: 11px 7px 4px;
+  color: var(--text-muted);
+  font-size: 8.5px; font-weight: 700;
+  letter-spacing: .09em; text-transform: uppercase;
+}
+.sb-sec:first-child { padding-top: 3px; }
+
+.sb-hit {
+  position: relative;
+  display: flex; align-items: baseline; gap: 7px;
+  padding: 6px 7px 6px 11px;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 11.5px; line-height: 1.38;
+  text-decoration: none;
+  transition: background .18s var(--ease), color .18s var(--ease);
+}
+.sb-hit:hover { background: var(--surface); color: var(--text); text-decoration: none; }
+/* Keyboard cursor. Same treatment as hover plus the left bar the nav uses for
+   the current page, so arrowing through results reads like moving through nav. */
+.sb-hit.is-active { background: var(--excel-soft); color: var(--text); }
+.sb-hit.is-active::before {
+  content: "";
+  position: absolute; left: 0; top: 5px; bottom: 5px;
+  width: 2px; border-radius: 2px; background: var(--excel);
+}
+.sb-hit-topic { font-weight: 600; color: var(--text); }
+.sb-num {
+  flex: none;
+  color: var(--excel);
+  font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+}
+.sb-hit-t { min-width: 0; }
+.sb-hit.is-planned { opacity: .5; pointer-events: none; }
+
+.sb-empty {
+  margin: 0; padding: 12px 8px;
+  color: var(--text-muted);
+  font-size: 11.5px; line-height: 1.5;
+}
+.sb-empty strong { color: var(--text-secondary); font-weight: 600; }
 
 .nav-group { padding: 0 10px; }
 .nav-group:first-of-type { padding-top: 8px; }
@@ -611,9 +712,82 @@ html[data-reading-size] {
   --fs-h3:   calc(15px * var(--reading-scale));
   --fs-lead: calc(clamp(15px, 1.2vw, 17px) * var(--reading-scale));
 }
-/* The card title states its own size, so it needs scaling explicitly. The card
-   body carries none and inherits --fs-base, which is already scaled above. */
+/* Components that state their own px size do not ride --fs-base, so the
+   multiplier has to reach them explicitly. Two families were missed and stayed
+   frozen at every step of the slider: the left rail (brand, section labels,
+   links, badges, counts) and the cards (tiles on the hubs, question cards and
+   every slot inside them, plus the filter bar that sits above them). Each rule
+   below restates that component's own base px times the scale, so the internal
+   ladder — title over body over label — survives the scaling intact. */
+
+/* --- left sidebar --- */
+/* The rail is a fixed track. Left at 238px, larger text would only wrap the
+   topic labels onto three lines instead of reading bigger, so the track grows
+   with the type — dampened (half the excess) and capped, because the rail is
+   navigation and must not start eating the reading column. */
+html[data-reading-size] {
+  --sidebar-w: min(320px, calc(238px * (1 + (var(--reading-scale) - 1) * .5)));
+}
+html[data-reading-size] .brand-text strong { font-size: calc(14px * var(--reading-scale)); }
+html[data-reading-size] .brand-text span   { font-size: calc(11.5px * var(--reading-scale)); }
+html[data-reading-size] .nav-label { font-size: calc(8.5px * var(--reading-scale)); }
+html[data-reading-size] .nav-link  { font-size: calc(12.5px * var(--reading-scale)); }
+html[data-reading-size] .nav-num   { font-size: calc(9px * var(--reading-scale)); }
+html[data-reading-size] .nav-chev  { font-size: calc(12px * var(--reading-scale)); }
+html[data-reading-size] .nav-count { font-size: calc(10px * var(--reading-scale)); }
+html[data-reading-size] .sb-search input { font-size: calc(12px * var(--reading-scale)); }
+html[data-reading-size] .sb-sec   { font-size: calc(8.5px * var(--reading-scale)); }
+html[data-reading-size] .sb-hit   { font-size: calc(11.5px * var(--reading-scale)); }
+html[data-reading-size] .sb-num   { font-size: calc(9px * var(--reading-scale)); }
+html[data-reading-size] .sb-empty { font-size: calc(11.5px * var(--reading-scale)); }
+/* The rows are min-height boxes; without growing the box too, larger text
+   crowds its own row rather than opening it up. */
+html[data-reading-size] .nav-link { min-height: calc(29px * var(--reading-scale)); }
+html[data-reading-size] .nav-num,
+html[data-reading-size] .nav-chev {
+  min-width: calc(23px * var(--reading-scale));
+  height: calc(19px * var(--reading-scale));
+}
+
+/* --- hub tiles --- */
+html[data-reading-size] .tile-num  { font-size: calc(10px * var(--reading-scale)); }
+html[data-reading-size] .tile h3   { font-size: calc(14.5px * var(--reading-scale)); }
+html[data-reading-size] .tile p    { font-size: calc(13px * var(--reading-scale)); }
+html[data-reading-size] .tile-foot { font-size: calc(11.5px * var(--reading-scale)); }
+
+/* --- question cards --- */
 html[data-reading-size] .q-title { font-size: calc(14.5px * var(--reading-scale)); }
+html[data-reading-size] .q-no    { font-size: calc(11px * var(--reading-scale)); }
+html[data-reading-size] .q-chev  { font-size: calc(12px * var(--reading-scale)); }
+html[data-reading-size] .q-meta span   { font-size: calc(10.5px * var(--reading-scale)); }
+html[data-reading-size] .slot-label    { font-size: calc(9px * var(--reading-scale)); }
+html[data-reading-size] .q-why         { font-size: calc(13px * var(--reading-scale)); }
+html[data-reading-size] .q-numbers,
+html[data-reading-size] .q-wrong,
+html[data-reading-size] .q-follow      { font-size: calc(13px * var(--reading-scale)); }
+html[data-reading-size] .q-empty       { font-size: calc(13.5px * var(--reading-scale)); }
+html[data-reading-size] .note          { font-size: calc(13.5px * var(--reading-scale)); }
+html[data-reading-size] .chip          { font-size: calc(11.5px * var(--reading-scale)); }
+html[data-reading-size] .eyebrow       { font-size: calc(10px * var(--reading-scale)); }
+html[data-reading-size] .btn,
+html[data-reading-size] .mini-btn      { font-size: calc(11.5px * var(--reading-scale)); }
+
+/* --- filter bar above the cards --- */
+html[data-reading-size] .search-wrap input { font-size: calc(12.5px * var(--reading-scale)); }
+html[data-reading-size] .pill              { font-size: calc(11px * var(--reading-scale)); }
+html[data-reading-size] .result-count      { font-size: calc(11px * var(--reading-scale)); }
+
+/* --- right rail ("on this page") --- */
+html[data-reading-size] .toc-kicker         { font-size: calc(9px * var(--reading-scale)); }
+html[data-reading-size] .toc-book-head strong { font-size: calc(11.5px * var(--reading-scale)); }
+html[data-reading-size] .toc-filter input   { font-size: calc(11.5px * var(--reading-scale)); }
+html[data-reading-size] .toc a              { font-size: calc(11.5px * var(--reading-scale)); }
+html[data-reading-size] .toc-num            { font-size: calc(9px * var(--reading-scale)); }
+html[data-reading-size] .toc-empty          { font-size: calc(11.5px * var(--reading-scale)); }
+
+/* --- tables inside cards and prose --- */
+html[data-reading-size] table { font-size: calc(12.5px * var(--reading-scale)); }
+html[data-reading-size] th    { font-size: calc(9px * var(--reading-scale)); }
 
 /* Width applies to the reading column. "full" removes the cap entirely. */
 html[data-reading-width="default"] .content { max-width: 1040px; }
@@ -729,15 +903,34 @@ html[data-reading-width="default"] body.focus-mode .content { max-width: 1320px;
   box-shadow: var(--shadow-sm);
   color: inherit;
   overflow: hidden;
-  transition: border-color .18s var(--ease), box-shadow .18s var(--ease);
+  transition: border-color .18s var(--ease), box-shadow .18s var(--ease),
+              transform .18s var(--ease);
+  /* Promoted up front rather than on hover: switching layers at the moment the
+     lift starts is what makes the text visibly re-rasterise mid-animation. */
+  will-change: transform;
 }
-/* Hover is a shadow bloom only — no lift. The parent portal removed the
-   translate on every card, so this one does not move either. */
+/* A tile is an <a> — it navigates. The lift says so: 2px is enough to read as
+   "this one is live" at a glance and small enough that crossing a dense grid
+   does not feel like walking over piano keys. The shadow bloom was already
+   here and still does most of the work; the movement only sharpens it. */
 .tile:hover {
   text-decoration: none;
   border-color: var(--border-strong);
   box-shadow: var(--card-hover-shadow);
+  transform: translateY(-2px);
 }
+/* Pressing puts it back down. Without this the card stays lifted through the
+   click and the tile feels stuck rather than pressed. */
+.tile:active { transform: translateY(0); transition-duration: .06s; }
+/* Keyboard tabbing gets the same affordance as the mouse — the lift is what
+   marks a tile as live, and it should not be mouse-only. */
+.tile:focus-visible {
+  border-color: var(--border-strong);
+  box-shadow: var(--card-hover-shadow);
+  transform: translateY(-2px);
+}
+/* A planned tile is inert (pointer-events: none below), so it must never lift. */
+.tile.is-planned:hover { transform: none; }
 .tile-num {
   color: var(--excel);
   font-family: var(--font-mono); font-size: 10px; font-weight: 700;
@@ -834,11 +1027,36 @@ html[data-reading-width="default"] body.focus-mode .content { max-width: 1320px;
   background: var(--bg-elevated);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
-  transition: border-color .18s var(--ease), box-shadow .18s var(--ease);
+  transition: border-color .18s var(--ease), box-shadow .18s var(--ease),
+              transform .18s var(--ease);
+  will-change: transform;
 }
 .q-card[hidden] { display: none; }
-.q-card:hover { border-color: var(--border-strong); }
+/* A question card expands in place rather than navigating, and only its
+   summary row is clickable — so it gets a shallower 1px lift than a tile's 2px.
+   The distinction is deliberate: the depth of the movement tracks how far the
+   click takes you. An open card is already the thing you are reading and stops
+   responding to hover entirely — lifting it would be reporting an affordance
+   the card no longer has. */
+.q-card:hover:not([open]) {
+  border-color: var(--border-strong);
+  box-shadow: var(--card-hover-shadow);
+  transform: translateY(-1px);
+}
+.q-card:not([open]):has(> summary:active) { transform: translateY(0); transition-duration: .06s; }
+/* Keyboard parity: the summary is the focusable element, so the lift keys off
+   its focus rather than the card's. */
+.q-card:not([open]):has(> summary:focus-visible) {
+  border-color: var(--border-strong);
+  box-shadow: var(--card-hover-shadow);
+  transform: translateY(-1px);
+}
 .q-card[open] { border-color: var(--border-strong); box-shadow: var(--shadow-md); }
+/* During a close the element is still [open] — the content has to exist to be
+   animated out — so these three restore the closed look for the duration of
+   the animation. Without them the chevron, badge and border all snap on the
+   final frame instead of easing back with everything else. */
+.q-card.is-closing { border-color: var(--border); box-shadow: var(--shadow-sm); }
 .q-card > summary {
   display: grid; grid-template-columns: 30px minmax(0, 1fr) 26px;
   gap: 12px; align-items: start;
@@ -856,6 +1074,13 @@ html[data-reading-width="default"] body.focus-mode .content { max-width: 1320px;
   font-variant-numeric: tabular-nums;
 }
 .q-card[open] .q-no { border-color: var(--excel); background: var(--excel); color: #fff; }
+.q-card.is-closing .q-no {
+  border-color: var(--border); background: var(--surface); color: var(--text-secondary);
+}
+/* The badge and chevron carry no transition of their own, so they would jump
+   between the two states. Matched to the close duration so they travel with
+   the height rather than arriving ahead of it. */
+.q-no { transition: background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease); }
 .q-title { color: var(--heading); font-size: 14.5px; font-weight: 650; line-height: 1.45; }
 .q-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
 .q-meta span {
@@ -872,12 +1097,30 @@ html[data-reading-width="default"] body.focus-mode .content { max-width: 1320px;
   border: 1px solid var(--border); border-radius: var(--radius-sm);
   background: var(--bg-elevated); color: var(--text-secondary);
   font-size: 12px; font-weight: 700;
-  transition: transform .22s var(--ease), background .22s var(--ease), color .22s var(--ease);
+  /* border-color was missing from this list, so the accent edge snapped while
+     the fill and the glyph eased. All four travel together now. */
+  transition: transform .22s var(--ease), background .22s var(--ease),
+              color .22s var(--ease), border-color .22s var(--ease);
 }
 .q-card[open] .q-chev { transform: rotate(45deg); border-color: var(--excel); background: var(--excel); color: #fff; }
+.q-card.is-closing .q-chev {
+  transform: none;
+  border-color: var(--border); background: var(--bg-elevated); color: var(--text-secondary);
+}
 
-.q-body { padding: 0 18px 18px 57px; animation: q-in .26s var(--ease) both; }
-@keyframes q-in { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
+/* The old rule ran a fade-and-slide keyframe here on every open. It has been
+   removed rather than tuned: the jump being complained about was the layout,
+   not the fade — <details> reflows to full height in one frame — so the body's
+   height is now animated in JS (see the card open/close block in portal.js) and
+   a second animation on the same element would only fight it. */
+.q-body { padding: 0 18px 18px 57px; }
+/* Held only while the JS animation runs. The overflow clip is what makes a
+   partial height show a partial card instead of the content spilling past the
+   card's edge on the way open. */
+.q-card.is-animating .q-body { overflow: hidden; }
+/* A card mid-animation must not also be resizing for another reason — the
+   hover lift would compound with the height change and read as a wobble. */
+.q-card.is-animating { transform: none !important; }
 
 .slot-label {
   display: block; margin: 0 0 5px;
@@ -1074,7 +1317,7 @@ tr:last-child td { border-bottom: 0; }
     background: rgba(17, 20, 26, .38);
   }
   .brand { min-height: 52px; padding: 0 10px 0 12px; border-radius: 0; }
-  .brand-mark { width: 30px; height: 30px; border-radius: 7px; }
+  .brand-mark { width: 31px; height: 31px; flex: 0 0 31px; border-radius: 10px; }
   .brand-text strong { font-size: 14px; }
   .brand-text span { font-size: 11.5px; }
   .menu-btn { display: inline-grid; }
@@ -1146,9 +1389,12 @@ tr:last-child td { border-bottom: 0; }
   .reader-btn { width: 30px; min-width: 30px; height: 30px; min-height: 30px; }
 }
 
-/* Touch devices get no hover border change — it sticks after a tap. */
+/* Touch devices get no hover border change — it sticks after a tap. The lift
+   has exactly the same problem, and worse: a card left floating with no cursor
+   on screen to explain it just looks misrendered. */
 @media (hover: none) {
   .tile:hover, .q-card:hover { border-color: var(--border); box-shadow: var(--shadow-sm); }
+  .tile:hover, .q-card:hover:not([open]) { transform: none; }
 }
 
 @media print {
@@ -1164,6 +1410,12 @@ tr:last-child td { border-bottom: 0; }
     transition-duration: .01ms !important;
     scroll-behavior: auto !important;
   }
+  /* Zeroing the duration alone would still move the card — instantly, which is
+     the one thing this setting is asking us not to do. The border and shadow
+     stay, so the hover is still fully legible without any motion at all. */
+  .tile:hover, .tile:focus-visible,
+  .q-card:hover:not([open]),
+  .q-card:not([open]):has(> summary:focus-visible) { transform: none; }
 }
 
 /* ---------- employer tracks ----------
@@ -1468,6 +1720,216 @@ body.focus-mode .content-wrap:has(.toc-rail) { grid-template-columns: minmax(0, 
   .toc .toc-list, .toc-toggle, .toc-toggle-caret { transition-duration: .01ms !important; }
 }
 
+/* ---------- whiteboard diagram ----------
+   Austere on purpose. This is a picture the reader has to reproduce on a
+   whiteboard while talking, so it is drawn the way a marker draws: thin
+   strokes, plain boxes, flat tints. Anything more decorative would be
+   something you cannot reproduce in the room, which makes the card misleading
+   rather than helpful.
+
+   Every colour is a token, so light and dark work from one definition and a
+   theme switch needs no re-render — the SVG is in the document, not an <img>,
+   so it inherits like any other element. */
+.q-diagram { margin: 0 0 14px; }
+.q-diagram .slot-label { color: var(--text-muted); }
+.dg-frame {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  padding: 4px 6px;
+}
+/* The drawing scales to the column; it never scrolls sideways and never sets a
+   min-width. An earlier version pinned 480px and pushed a horizontal scrollbar
+   onto every phone — the fix is a second, single-column rendering of the same
+   spec, swapped below, not a scroll container. */
+.dg { display: block; width: 100%; height: auto; font-family: var(--font-sans); }
+.dg-narrow { display: none; }
+@media (max-width: 640px) {
+  .dg-wide { display: none; }
+  .dg-narrow { display: block; }
+  /* The narrow SVG is a 700-unit canvas painted into roughly 320 CSS pixels,
+     so every glyph lands at well under half its authored size — 11.5px of
+     label renders around 5px, which is what made the phone view unreadable.
+     Scaling the type up in USER UNITS is the fix: the viewBox does the
+     shrinking, so authoring at ~2.2x lands back near the intended size on
+     glass. Only the narrow layout is touched; the wide one is already
+     rendering close to 1:1. */
+  .dg-narrow .dg-label { font-size: 25px; }
+  .dg-narrow .dg-note { font-size: 20px; }
+  .dg-narrow .dg-elabel { font-size: 21px; }
+}
+
+.dg-node rect {
+  fill: var(--bg-elevated);
+  stroke: var(--border-strong);
+  stroke-width: 1.25;
+}
+.dg-label {
+  fill: var(--heading);
+  font-size: 11.5px; font-weight: 650;
+  text-anchor: middle;
+}
+.dg-note {
+  fill: var(--text-muted);
+  font-size: 9px; font-weight: 600;
+  text-anchor: middle;
+}
+/* Four accents, each carrying one meaning across every diagram in the bank:
+   accent = the happy path, warn = a decision or a gate, bad = a failure or a
+   give-up branch, muted = optional or skipped. Consistency is what lets a
+   reader skim a diagram they have not seen before. */
+.dg-node.is-accent rect { stroke: var(--accent); fill: var(--accent-soft); }
+.dg-node.is-accent .dg-label { fill: var(--accent-strong); }
+.dg-node.is-warn rect { stroke: var(--amber); fill: var(--amber-soft); }
+.dg-node.is-bad rect { stroke: var(--red); fill: var(--red-soft); }
+.dg-node.is-muted rect { stroke: var(--border); fill: var(--surface); stroke-dasharray: 4 3; }
+.dg-node.is-muted .dg-label { fill: var(--text-muted); }
+
+.dg-edge { fill: none; stroke: var(--border-strong); stroke-width: 1.25; }
+/* A back edge is a loop — the retry, the rewrite, the hand-back. Colouring and
+   dashing it is what stops a graph reading as a chain at a glance, which is
+   precisely the distinction these questions ask about. */
+.dg-edge.is-back { stroke: var(--amber); stroke-dasharray: 5 4; }
+.dg marker path { fill: var(--border-strong); }
+
+/* ---- flow pulse ----
+   A second copy of each connector, dashed and animated along its own length,
+   so data visibly travels in the direction of the arrow. It is decoration on
+   top of a drawing that is already complete and correct: it sits under the
+   labels, is not announced to assistive tech, and switching it off (below)
+   loses nothing but the movement. */
+.dg-flow {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-dasharray: 5 95;      /* one short mark travelling a long gap */
+  stroke-dashoffset: 100;
+  opacity: .75;
+  animation: dg-travel 2.6s linear infinite;
+  pointer-events: none;
+}
+.dg-flow.is-back { stroke: var(--amber); animation-duration: 3.2s; }
+@keyframes dg-travel { to { stroke-dashoffset: 0; } }
+/* Stagger so the whole drawing does not pulse in lockstep, which reads as a
+   blink rather than as flow. */
+.dg-flow:nth-of-type(3n+2) { animation-delay: -.85s; }
+.dg-flow:nth-of-type(3n)   { animation-delay: -1.7s; }
+
+/* A plate behind an edge label, so a connector never reads through the text
+   where the two cross. */
+.dg-eplate { fill: var(--surface); stroke: none; }
+.dg-elabel {
+  fill: var(--text-secondary);
+  font-size: 9.5px; font-weight: 600;
+}
+
+.q-diagram figcaption {
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 12px; line-height: 1.55;
+}
+.q-diagram figcaption strong { color: var(--text-secondary); }
+
+/* Motion is the first thing to go: the diagram must be fully readable static,
+   and for anyone who asks not to see movement it simply is. */
+@media (prefers-reduced-motion: reduce) {
+  .dg-flow { animation: none; opacity: 0; }
+}
+/* Printed, the drawing is the point — keep it, drop the pulse, let it break
+   cleanly, and always print the wide layout regardless of viewport. */
 @media print {
-  .toc-rail { display: none !important; }
+  .dg-flow { display: none; }
+  .q-diagram { break-inside: avoid; }
+  .dg-wide { display: block !important; }
+  .dg-narrow { display: none !important; }
+}
+
+/* ---------- previous / next pager ----------
+   A wrapping flex row at the foot of every page. The step line takes a full
+   basis of its own and sits as a caption above; the cards below then share
+   what is left, equal width and equal height.
+
+   Flex, not grid: `repeat(auto-fit, minmax(…, 1fr))` only collapses a track
+   nothing occupies, and a full-width caption occupies every one of them — so a
+   wide column would keep three tracks alive for two cards and stop the row
+   short. `flex: 1 1 220px` has no track to leave empty.
+
+   Both titles read left, including "next". Mirroring one card's text to the
+   right is what makes the row look ragged. */
+.page-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 12px;
+  margin: 40px 0 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.page-nav .pn-progress {
+  flex: 0 0 100%;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+.page-nav .pn-link {
+  flex: 1 1 220px;
+  min-width: 0;               /* a long title shrinks the card, not the row */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 13px 15px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm);
+  color: inherit;
+  transition: border-color .18s var(--ease), box-shadow .18s var(--ease),
+              transform .18s var(--ease);
+  will-change: transform;
+}
+/* Same affordance as a .tile — these navigate, and the lift is what says so. */
+.page-nav .pn-link:hover,
+.page-nav .pn-link:focus-visible {
+  text-decoration: none;
+  border-color: var(--border-strong);
+  box-shadow: var(--card-hover-shadow);
+  transform: translateY(-2px);
+}
+.page-nav .pn-link:active { transform: translateY(0); transition-duration: .06s; }
+.page-nav .pn-dir {
+  color: var(--excel);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.page-nav .pn-ttl {
+  margin-top: auto;
+  color: var(--heading);
+  font-size: 14.5px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+.page-nav .pn-num {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+/* When only "next" exists (the first page) it would otherwise stretch the full
+   width and read as a banner rather than a step. Keeping it to half leaves the
+   prev slot visibly empty, which is the honest signal: there is nothing before
+   this. Below the wrap point both cards are full width anyway. */
+.page-nav .pn-next:only-of-type { flex: 0 1 calc(50% - 6px); }
+@media (max-width: 620px) {
+  .page-nav .pn-link,
+  .page-nav .pn-next:only-of-type { flex: 1 1 100%; }
+}
+
+@media print {
+  .toc-rail, .page-nav { display: none !important; }
 }

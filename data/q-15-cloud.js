@@ -171,6 +171,34 @@ window.IR.q["15-cloud"] = {
       numbers: "No number applies. The two things to establish first are which regulator binds and which models exist in-region.",
       wrong: "\"We host in the Mumbai region.\" One line of a design. It leaves the trace store, the vector index, retention terms and the deletion path unaddressed, and a reviewer will ask about every one.",
       follow: "The customer asks you to prove a deleted record is gone. What do you show them?"
+    },
+
+    {
+      id: "cd-07",
+      q: "Your first request after a quiet period takes 40 seconds. What is happening?",
+      round: ["tech2"],
+      level: "5-10",
+      tags: ["cloud", "deployment", "latency", "serving", "cost"],
+      why: "Cold start is the classic scale-to-zero trap, and it is how people discover that GenAI infrastructure does not behave like a web service.",
+      simple:
+        "Cold start, and the reason it is so much worse for GenAI than for an ordinary service is that the model weights have to get onto the GPU before anything can happen. Pulling a multi-gigabyte container image, downloading weights from object storage, loading them into GPU memory, and warming the runtime — that is tens of seconds to minutes, not the hundreds of milliseconds a stateless web container takes.\n\n" +
+        "So the honest first question is whether you should scale to zero at all. If traffic is steady, do not — keep a warm minimum of one replica and accept the cost, because a 40-second first request is a worse problem than an idle GPU. Scale-to-zero belongs to genuinely intermittent internal tools, not customer-facing paths.\n\n" +
+        "If you do need it, attack each stage. Bake the weights into the image rather than downloading at startup, or mount them from a fast shared volume. Keep the image small — most GenAI images are enormous because someone installed a full CUDA toolchain they do not need at runtime. Use provisioned concurrency or a warm pool where the platform offers it. And add a health-check warmup that runs one dummy inference so the first real user is not the one paying to initialise the runtime.\n\n" +
+        "There is also a cheaper architectural answer: keep a small always-warm model for the first response and let the large one scale from zero behind it. The user gets something immediately.\n\n" +
+        "And note the same problem appears with serverless functions calling an API — there it is the container, not the weights, so the fix is different and much easier.",
+      points: [
+        "GenAI cold start is dominated by getting weights onto the GPU, not by container boot.",
+        "First question: should this scale to zero at all? For steady traffic, no.",
+        "Warm minimum of one replica is usually cheaper than the user-facing cost of a 40-second wait.",
+        "Bake weights into the image or mount from a fast volume — do not download at startup.",
+        "Shrink the image; runtime rarely needs the full build toolchain.",
+        "Warm up with a dummy inference in the health check, before traffic arrives.",
+        "Scale-to-zero suits intermittent internal tools, not customer-facing paths."
+      ],
+      say: "That is cold start, and for GenAI it is dominated by loading model weights onto the GPU rather than by container boot, so it is tens of seconds rather than milliseconds. My first question is whether this should scale to zero at all — for steady traffic a warm replica is cheaper than the user-facing cost. If it must, I bake weights into the image, shrink it, use provisioned concurrency, and warm up with a dummy inference in the health check.",
+      numbers: "Loading a 13B model from object storage to GPU is commonly 30-90 seconds. Baking weights into the image and warming on health check typically brings the first real request under a couple of seconds.",
+      wrong: "Treating it like a normal autoscaling problem and just raising the replica count. That spends money without addressing why any single replica takes 40 seconds to become useful.",
+      follow: "Traffic is spiky and unpredictable. How do you size the warm pool?"
     }
   ]
 };

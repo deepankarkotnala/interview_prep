@@ -55,6 +55,29 @@ window.IR.q["07-agents"] = {
         "Observation: \"90 continuous days...\"\n" +
         "Thought:  I have enough to answer.\n" +
         "Final:    Eligible from 30 May 2025.",
+      /* The loop is the answer, so it has to close on the board. The dashed
+         edge back to Thought is what makes this ReAct rather than one function
+         call. Runtime is drawn as its own box on purpose: `simple` makes the
+         point that the model never executes anything, and that boundary is
+         where all validation and security live. */
+      diagram: {
+        alt: "ReAct loop: the model reasons, emits an action, the runtime executes the tool, and the observation returns to the model.",
+        rows: [
+          [{ id: "think", label: "Thought", note: "model reasons", accent: "accent" }],
+          [{ id: "act", label: "Action", note: "model emits tool + args" },
+           { id: "run", label: "Runtime executes tool", note: "YOUR code - validate here", accent: "warn" }],
+          [{ id: "obs", label: "Observation", note: "result appended to history" },
+           { id: "done", label: "Final answer", accent: "accent" }]
+        ],
+        edges: [
+          { from: "think", to: "act" },
+          { from: "act", to: "run" },
+          { from: "run", to: "obs" },
+          { from: "obs", to: "think", label: "loop", kind: "back" },
+          { from: "think", to: "done", label: "no tool needed" }
+        ],
+        caption: "Two things to say while you draw it. The **model never runs anything** - it emits a request and your runtime executes it, which is why the boundary between those two boxes is where validation and security live. And every trip round the loop **re-sends the entire history**, so cost grows with step count, not with task size."
+      },
       say: "ReAct alternates reasoning and acting. The model writes a thought, then emits a tool call. My runtime executes that tool and feeds the result back as an observation, and the model reasons again. Two things matter: the model never executes anything itself, so my runtime is where validation lives, and every iteration re-sends the whole history, so cost grows with each step.",
       numbers: "Each loop step re-sends the full history. A 6-step loop on a 2k-token context costs roughly 6× the input tokens of a single call, not 1×.",
       wrong: "\"The agent runs the tool.\" It does not. It returns a structured request and your code decides whether to run it. Getting this wrong signals you have only used a high-level wrapper.",
@@ -347,6 +370,27 @@ window.IR.q["07-agents"] = {
         "The test: can you draw the flowchart? Then build the flowchart.",
         "Most production 'agents' are workflows, and that is fine."
       ],
+      /* `simple` ends on "can I draw the flowchart?" as the deciding test, so
+         the card should show the two things being compared. Fixed path on the
+         left, model-decided path on the right. */
+      diagram: {
+        alt: "A workflow has a fixed path written in code; an agent decides its own path at runtime.",
+        rows: [
+          [{ id: "wf", label: "Workflow - you write the path", accent: "accent" },
+           { id: "ag", label: "Agent - the model writes it", accent: "warn" }],
+          [{ id: "ws", label: "retrieve then classify then send", note: "same input, same path" },
+           { id: "as", label: "model picks tool, order, when to stop", note: "path decided at runtime" }],
+          [{ id: "wp", label: "testable, debuggable, bounded cost", accent: "accent" },
+           { id: "ap", label: "handles steps you cannot enumerate", note: "unbounded cost and latency" }]
+        ],
+        edges: [
+          { from: "wf", to: "ws" },
+          { from: "ag", to: "as" },
+          { from: "ws", to: "wp" },
+          { from: "as", to: "ap" }
+        ],
+        caption: "The test to say out loud: **can you draw the flowchart?** If you can, build the flowchart. An agent earns its place only when the branching genuinely depends on what earlier steps discover, and there are too many branches to enumerate."
+      },
       say: "In a workflow I write the control flow and the model fills in steps; in an agent the model decides the control flow at runtime. I default to the workflow, because it is testable, debuggable and has predictable cost and latency. An agent earns its place only when the steps genuinely cannot be enumerated ahead of time. My test is whether I can draw the flowchart — if I can, I build it, and most production systems called agents are really workflows.",
       numbers: "A workflow has a known number of model calls. An agent's cost is bounded only by your step limit, so worst-case cost is the limit times the per-step cost.",
       wrong: "Reaching for an agent because the JD said agentic. It is slower, costlier, harder to test, and usually solves a problem that a three-step chain already solved.",
@@ -568,6 +612,26 @@ window.IR.q["07-agents"] = {
         "Decompose into sub-agents with clean contexts and summarised returns.",
         "Compact history, externalise large results, checkpoint each step."
       ],
+      /* Three simultaneous failures with three different fixes is hard to hold
+         from prose alone, and the interviewer is listening for whether you can
+         separate them. Top row what breaks, bottom row the fix each one needs. */
+      diagram: {
+        alt: "Forty steps breaks context, cost and reliability at once; each has a distinct fix.",
+        rows: [
+          [{ id: "ctx", label: "Context overflow", note: "history grows every step", accent: "bad" },
+           { id: "cost", label: "Cost", note: "~quadratic, history resent", accent: "bad" },
+           { id: "rel", label: "Reliability", note: "0.98^40 is about 45%", accent: "bad" }],
+          [{ id: "sub", label: "Sub-agents, clean context", note: "return a summary only", accent: "accent" },
+           { id: "comp", label: "Compact and externalise", note: "pass references, not blobs", accent: "accent" },
+           { id: "ckpt", label: "Checkpoint each step", note: "resume at 38, not restart", accent: "accent" }]
+        ],
+        edges: [
+          { from: "ctx", to: "sub" },
+          { from: "cost", to: "comp" },
+          { from: "rel", to: "ckpt" }
+        ],
+        caption: "Then challenge the premise, which is the senior move: forty **model-decided** steps usually means part of this should be deterministic code. If steps five through twelve are always the same sequence, that is a function, not agent reasoning."
+      },
       say: "Three things break together: context overflows, cost grows quadratically because the history is resent every step, and reliability compounds down — 98% per step is about 45% over forty. So I decompose into sub-agents with clean contexts returning summaries, compact older history while keeping raw results externally by reference, and checkpoint each step so a late failure resumes. I would also challenge whether forty model-decided steps is right at all.",
       numbers: "0.98^40 ≈ 0.45. Any fixed sequence within those forty steps should be deterministic code rather than model decisions.",
       wrong: "'Use a model with a bigger context window.' It defers the cost problem, does nothing for compounding reliability, and mid-context recall degrades anyway.",
@@ -726,6 +790,26 @@ window.IR.q["07-agents"] = {
         "Default to supervisor — centralised control is inspectable.",
         "Multi-agent is justified by different tools, permissions or isolation."
       ],
+      /* Three topologies side by side is the only way this lands quickly - the
+         difference between them is literally the shape of the arrows, which is
+         one sentence to say and a second to draw. */
+      diagram: {
+        alt: "Supervisor, swarm and hierarchical multi-agent topologies compared.",
+        rows: [
+          [{ id: "sup", label: "Supervisor", note: "one coordinator delegates", accent: "accent" },
+           { id: "swm", label: "Swarm", note: "peers hand off directly", accent: "warn" },
+           { id: "hier", label: "Hierarchical", note: "supervisors of supervisors" }],
+          [{ id: "sa", label: "specialists report back", note: "legible, but a bottleneck" },
+           { id: "sb", label: "emergent control flow", note: "flexible, hard to bound", accent: "bad" },
+           { id: "hb", label: "scales to task trees", note: "latency and context loss" }]
+        ],
+        edges: [
+          { from: "sup", to: "sa" },
+          { from: "swm", to: "sb" },
+          { from: "hier", to: "hb" }
+        ],
+        caption: "Default to **supervisor** - centralised control is inspectable, boundable, and it is where an approval gate can actually sit. The dominant failure across all three is **context loss at the handoff**: every boundary is a lossy summarisation, and multi-agent systems fail at the seams far more often than inside an agent."
+      },
       say: "Supervisor has one coordinator delegating to specialists that report back — centralised, legible, easy to gate, but a bottleneck. Swarm has peers handing off directly, which is flexible but emergent and prone to handoff loops. Hierarchical nests supervisors for large task trees at the cost of latency and context loss. I default to supervisor, and I would say multi-agent is usually unjustified unless sub-tasks need different tools, permissions or isolated contexts.",
       numbers: "Every handoff is a lossy summarisation. Multi-agent systems fail at the seams more often than inside any single agent.",
       wrong: "Proposing multi-agent because the task has several parts. Parts are functions. Separate agents are justified by separate tools, permissions or contexts.",
@@ -1041,6 +1125,34 @@ window.IR.q["07-agents"] = {
       numbers: "Set the auto-approval threshold with the business and start conservative. Monitor approval rates by demographic and geography from day one, not after launch.",
       wrong: "Designing the happy path and adding guardrails as a final slide. In a regulated domain the guardrails are the architecture, and the panel is checking whether you know that.",
       follow: "The agent approves a claim it should not have. Who is accountable, and how do you find out why?"
+    },
+
+    {
+      id: "ag-36",
+      q: "Your agent picks the right tool but passes the wrong arguments. How do you fix it?",
+      round: ["tech1", "tech2"],
+      level: "5-10",
+      tags: ["agents", "tools", "structured-output", "debugging"],
+      why: "Tool selection gets all the attention. In production, argument extraction fails more often, and it fails silently.",
+      simple:
+        "This is a different failure from picking the wrong tool, and it is worth separating them out loud, because the fixes are different. The tool was right. The call still did the wrong thing — a date in the wrong format, a customer name where an ID was wanted, a null the schema said was required, a currency amount in rupees when the API expects paise.\n\n" +
+        "The first fix is the schema itself, because most argument bugs are schema bugs. Use strict types rather than strings for everything. Use enums where the value set is closed, so the model chooses from a list instead of inventing. Put the format in the description with an example — 'ISO 8601 date, e.g. 2026-03-14' — because the description is the only instruction the model gets about the field. Mark required fields required, and let the tool-calling API enforce the schema instead of hoping.\n\n" +
+        "The second fix is validation before execution. Validate the arguments against the schema, and on failure hand the error back to the model as a tool result so it can retry with the correction. Never let a malformed call reach the real system. Cap those retries, or a stubborn model loops.\n\n" +
+        "The third is the one people skip: an argument that is well-formed can still be wrong. An ID that parses but belongs to another tenant, a date range that is valid and spans four years, a refund amount that exceeds the order. Those need business validation in the tool, not schema validation — and the tool should refuse and explain, because a clear refusal is something the model can recover from.\n\n" +
+        "Then check what the model was actually given. Very often the argument is wrong because the value was never in context — the agent guessed an ID it was never told. That is a retrieval bug wearing a tool-calling costume.",
+      points: [
+        "Separate it from tool selection — same symptom, different fix.",
+        "Most argument bugs are schema bugs: strict types, enums for closed sets, formats with examples.",
+        "Validate before execution; return the validation error to the model as a tool result and let it retry.",
+        "Cap retries, or a stubborn model loops on the same malformed call.",
+        "Well-formed is not correct: check tenant, range and limits inside the tool.",
+        "Refuse with an explanation the model can act on, not a stack trace.",
+        "If the value was never in context, it is a retrieval bug, not a tool bug."
+      ],
+      say: "I separate it from tool selection, because the fixes differ. Most argument bugs are schema bugs, so I use strict types, enums for closed sets and formats with an example in the description. Then I validate before execution and hand failures back as a tool result the model can retry against. Business validation lives in the tool, because a well-formed ID can still belong to another tenant. And if the value was never in context, it is a retrieval bug.",
+      numbers: "Log every rejected tool call with the argument that failed. The distribution is small — usually two or three fields cause most failures, and each is a one-line schema fix.",
+      wrong: "Adding 'be careful with the arguments' to the system prompt. It is unenforceable, it does not survive a model change, and the schema could have made the mistake impossible.",
+      follow: "The model retries the same malformed call three times in a row. What is your policy?"
     }
   ]
 };

@@ -269,6 +269,92 @@ window.IR.q["06-advanced-rag"] = {
       numbers: "For semantic caching, set the similarity threshold high — a loose threshold serves the answer to a different question, and users notice that faster than any cost saving pays for.",
       wrong: "\"We cache responses by question text.\" That is the leak. It is also the most common caching implementation, which is exactly why it gets asked.",
       follow: "A document was withdrawn. Which of your caches still answers from it?"
+    },
+
+    {
+      id: "ar-11",
+      q: "You are handed a 2 GB CSV. How do you let an LLM answer questions about it?",
+      round: ["tech1", "tech2"],
+      level: "5-10",
+      tags: ["advanced-rag", "tabular", "csv", "text-to-sql", "architecture"],
+      why: "Enterprise data is mostly tables, and both reflex answers — paste it, or embed every row — fail. This separates people who have shipped against real data from people who have only done document RAG.",
+      simple:
+        "First, kill the obvious answer. You cannot paste it. A 2 GB CSV is very roughly 500 million tokens. No context window is within two orders of magnitude of that, and even if one were, you would pay for the whole file on every single question.\n\n" +
+        "Second, kill the almost-obvious answer. Do not embed every row into a vector store. Retrieval finds rows that look similar to the question, and that is not what a table question needs. 'What was total revenue in Q3' needs every matching row, summed exactly. Retrieval gives you the twenty rows that read most like the query, and their sum is confidently wrong — which is worse than no answer at all.\n\n" +
+        "So the answer is that you do not feed the data to the model. You feed it the schema and let it write a query.\n\n" +
+        "Load the CSV into something that can aggregate. DuckDB is the usual choice because it reads CSV and Parquet directly and needs no server. Put the column names, the types and a few sample values in the prompt. The model writes SQL, you execute it, and only the small result set goes back for phrasing. The model sees kilobytes, never gigabytes.\n\n" +
+        "The pandas equivalent — a dataframe agent that generates Python — works and demos faster, but it executes generated code. That needs a sandbox with no filesystem and no network, not a bare exec inside your API process. Say that out loud, because it is the follow-up.\n\n" +
+        "The one case where embedding is right: when the rows are genuinely descriptive text — support tickets, product descriptions, free-text notes. Then serialise each row into a sentence, embed that, and you are back to ordinary RAG. The test is whether the question is a lookup or an aggregation.",
+      points: [
+        "A 2 GB CSV is roughly 500M tokens. Pasting it is not a size problem, it is a category error.",
+        "Do not embed rows for aggregation questions — retrieval cannot count, and an approximate sum is worse than none.",
+        "Load into DuckDB or SQLite; put schema and sample values in the prompt, never the data.",
+        "The model writes the query, you execute it, only the result set goes back.",
+        "Pandas dataframe agents generate code — sandbox it: no filesystem, no network.",
+        "Embed rows only when they are descriptive text: serialise each row to a sentence.",
+        "The deciding question: is this a lookup or an aggregation?"
+      ],
+      say: "I would not feed the data to the model at all. Two gigabytes is around 500 million tokens, and embedding rows is worse than useless for aggregations, because retrieval cannot count. I load it into DuckDB, put the schema and a few sample values in the prompt, let the model write SQL, execute it myself, and pass back only the result set. A pandas agent works too, but it executes generated code, so it needs a real sandbox.",
+      numbers: "Rough rule: 1 MB of CSV is about 250k tokens. A 100 MB file is already ~25M tokens — past every production context window, and that is before you pay for it on every request.",
+      wrong: "'I would chunk the CSV and put it in a vector store.' It demos well on ten rows and produces silently wrong totals on ten million. The panel is listening for whether you separate lookup from aggregation.",
+      follow: "The user asks something needing both a number from the table and an explanation from a policy PDF. What happens?"
+    },
+
+    {
+      id: "ar-12",
+      q: "Your database has 200 tables. The schema does not fit in the prompt. Now what?",
+      round: ["tech2"],
+      level: "5-10",
+      tags: ["advanced-rag", "text-to-sql", "scale", "architecture"],
+      why: "Every text-to-SQL demo uses five tables. Every real warehouse has hundreds. This is where the demo-to-production gap actually shows.",
+      simple:
+        "The demo version of text-to-SQL pastes the whole schema into the prompt. At 200 tables that is tens of thousands of tokens on every query, it costs real money per question, and accuracy drops rather than rises, because the model is now choosing between 200 tables when the answer involves three.\n\n" +
+        "So you retrieve the schema. Treat each table as a document — name, columns, types, a one-line description of what it holds, and a few representative values. Embed those. When a question arrives, retrieve the ten or twenty most relevant tables and put only those in the prompt. It is RAG, applied to schema instead of prose.\n\n" +
+        "Two things make this work far better than it sounds. First, descriptions matter more than names, because real warehouse tables are called things like DIM_CUST_MSTR_V2 and no embedding will match that to 'customer'. Writing those descriptions is the actual work, and it is usually a data-steward job rather than an engineering one. Second, join paths: retrieving three unrelated tables is useless if the model does not know how they join, so store the foreign-key graph and pull in the bridging tables automatically.\n\n" +
+        "Then narrow the surface. Most questions hit a small fraction of the warehouse, so curate a view layer — a few dozen well-named, documented views that the model is allowed to query — and point text-to-SQL at that instead of the raw schema. It improves accuracy and doubles as an access-control boundary.\n\n" +
+        "And keep everything from ar-08: read-only connection, validator, row limit, statement timeout.",
+      points: [
+        "Do not paste 200 tables. Cost rises and accuracy falls — the model is choosing between too many.",
+        "Retrieve the schema: embed each table as a document, pull the top ten or twenty per question.",
+        "Column descriptions beat column names. DIM_CUST_MSTR_V2 matches nothing without one.",
+        "Store the foreign-key graph and auto-include bridging tables, or the joins will be invented.",
+        "Best answer for a stable workload: a curated view layer, not the raw warehouse.",
+        "A view layer is also an access-control boundary — the model cannot query what it cannot see.",
+        "Keep the ar-08 safety rails: read-only, validated, row-limited, timed out."
+      ],
+      say: "I stop pasting the schema and start retrieving it. Each table becomes a document — name, columns, a written description and sample values — and I pull only the ten or twenty relevant ones per question. Descriptions matter more than names, because real tables are called DIM_CUST_MSTR_V2. I store the foreign-key graph so bridging tables come along, and for a stable workload I point the model at a curated view layer instead of the raw warehouse.",
+      numbers: "200 tables of DDL is easily 30k–50k tokens per query. Schema retrieval typically cuts that to a couple of thousand and raises accuracy at the same time.",
+      wrong: "\"I would use a model with a bigger context window.\" It costs more per query, and it does not fix the real problem, which is that the model picks the wrong table when offered 200 of them.",
+      follow: "Two tables both look like the right one and the model keeps picking the deprecated one. What do you change?"
+    },
+
+    {
+      id: "ar-13",
+      q: "When would you use a knowledge graph instead of a vector store?",
+      round: ["tech2"],
+      level: "5-10",
+      tags: ["advanced-rag", "knowledge-graph", "graphrag", "trade-off", "architecture"],
+      why: "Appears in JDs and gets asked as a choice question. The trap is enthusiasm — most candidates should argue against it.",
+      simple:
+        "They answer different question shapes, and naming the shape is the whole answer.\n\n" +
+        "Vector search answers questions of similarity: find me text that is about this. It has no idea how anything relates to anything else. A knowledge graph stores entities and typed relationships, so it answers questions of connection: which suppliers are two hops from this sanctioned entity, who ultimately owns this company through its subsidiaries, which components are affected if this part is recalled.\n\n" +
+        "That last shape is the giveaway. Multi-hop relationship traversal over structured entities is where vector search genuinely cannot compete, because the answer is not in any single chunk — it exists only in the connections between them. No chunking strategy recovers it.\n\n" +
+        "So the honest use cases are narrow and real: ownership and compliance chains in BFSI, supply-chain impact analysis, drug interaction networks, fraud rings. In each, the entities are well defined and the relationships are the data.\n\n" +
+        "Now the cost, which is what makes this a senior answer. Someone has to build and maintain the graph. Entity extraction from documents is unreliable, entity resolution — deciding that ACME Ltd and Acme Limited are the same node — is genuinely hard and never fully solved, and the schema must be designed up front. That is a data engineering programme, not a feature. And it goes stale exactly like any other index.\n\n" +
+        "My default: start with vector search plus good metadata filtering, which handles more than people expect. Reach for a graph when you can point at a real multi-hop question the business needs and vector search demonstrably fails on. And note the hybrid is common — graph for traversal, vectors for the text hanging off each node.",
+      points: [
+        "Vector search answers similarity. A graph answers connection.",
+        "The giveaway is multi-hop traversal — the answer lives between chunks, not inside one.",
+        "Real fits: ownership chains, supply-chain impact, fraud rings, interaction networks.",
+        "The cost is entity extraction and entity resolution, which are genuinely hard and ongoing.",
+        "It is a data engineering programme, not a feature you add in a sprint.",
+        "Default to vectors plus metadata filtering; escalate on a demonstrated failure.",
+        "Hybrid is common: graph for traversal, vectors for the text on each node."
+      ],
+      say: "Vector search answers similarity questions; a graph answers connection questions. The giveaway is multi-hop traversal — which suppliers are two hops from a sanctioned entity — because that answer lives between chunks and no chunking recovers it. But the cost is entity extraction and entity resolution, which is a data engineering programme rather than a feature. So I default to vectors with metadata filtering and escalate only on a demonstrated multi-hop failure.",
+      numbers: "Entity resolution is the hidden cost. Deciding that ACME Ltd, Acme Limited and ACME LTD. are one node is never fully solved and needs ongoing stewardship.",
+      wrong: "'Graphs give richer context so they are better.' It skips the build and maintenance cost entirely, and the follow-up about entity resolution usually ends it.",
+      follow: "You have the graph. How do you actually feed a traversal result to the model?"
     }
   ]
 };

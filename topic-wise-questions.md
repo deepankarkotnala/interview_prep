@@ -190,7 +190,7 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 
 ---
 
-### Topic 05 — RAG — ✅ **BUILT** (24 added, now 40 cards)
+### Topic 05 — RAG — ✅ **BUILT** (28 added, now 44 cards)
 
 | # | Question | L | R | Teaching angle |
 | ---: | --- | --- | --- | --- |
@@ -218,10 +218,14 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 | 22 | How do you handle images and charts inside documents in the answer? | 5-10 | tech2 | Multimodal ingestion, or caption-and-index. |
 | 23 | Your RAG worked in the pilot and failed at 100 users. What broke? | 5-10 | design | Index size, latency, corpus diversity, query diversity. Scale story. |
 | 24 | If you could only fix one thing in a badly performing RAG system, what would you check first? | 5-10 | tech2 | Forces prioritisation. Retrieval quality, almost always. |
+| 25 | The client wants a summary of 5,000 pages. Walk me through it. | 5-10 | tech2 | Summarisation is not retrieval. Map-reduce, tree reduce, cost per page. |
+| 26 | Two retrieved documents contradict each other. What should the system do? | 5-10 | tech2 | Triage superseded vs scoped vs genuine. Never let the model arbitrate. |
+| 27 | Your input is PDFs, Word files, Excel sheets, images and CSVs. Design the ingestion. | 5-10 | tech1/tech2 | Router + per-format parsers + one normalised document. The real enterprise brief. |
+| 28 | A single 800-page scanned PDF has to be ingested. Walk me through it. | 5-10 | tech2 | Batch job not a parse. OCR confidence, resume, reconstructed structure. |
 
 ---
 
-### Topic 06 — Advanced RAG (add 15)
+### Topic 06 — Advanced RAG (add 15 — 3 built: see #16-18)
 
 | # | Question | L | R | Teaching angle |
 | ---: | --- | --- | --- | --- |
@@ -240,6 +244,9 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 | 13 | How do you evaluate a reranker independently of the retriever? | 5-10 | tech2 | Isolate the stage. Measure ranking lift on a fixed candidate set. |
 | 14 | When does the added complexity of advanced RAG stop paying? | 5-10 | design | The senior card. Complexity budget as an engineering argument. |
 | 15 | Compare a long-context model with a RAG pipeline on cost, latency and accuracy for a 500-page corpus. | 5-10 | design | Run the numbers live. The most-asked architecture debate. |
+| 16 | You are handed a 2 GB CSV. How do you let an LLM answer questions about it? ✅ **BUILT** | 5-10 | tech1/tech2 | Schema not data. DuckDB + text-to-SQL; why embedding rows breaks aggregation. |
+| 17 | Your database has 200 tables. The schema does not fit in the prompt. Now what? ✅ **BUILT** | 5-10 | tech2 | Schema retrieval, FK graph, curated view layer. The demo-to-prod gap. |
+| 18 | When would you use a knowledge graph instead of a vector store? ✅ **BUILT** | 5-10 | tech2 | Similarity vs connection. Entity resolution is the hidden cost. |
 
 ---
 

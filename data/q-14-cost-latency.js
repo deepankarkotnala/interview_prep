@@ -85,6 +85,32 @@ window.IR.q["14-cost-latency"] = {
         "Start with prompt caching: safest, usually biggest.",
         "Anything varying placed before the stable prefix silently kills the cache hit."
       ],
+      /* Four caches on one request path, in the order a request meets them.
+         Drawn as a path rather than a list because the card's whole point is
+         that they are different layers doing different jobs - and a list is
+         exactly what lets a candidate conflate them. */
+      diagram: {
+        alt: "Where the four caches sit on a request path: answer and semantic cache, embedding cache, then provider prompt caching at the model call.",
+        rows: [
+          [{ id: "q", label: "Query" }],
+          [{ id: "ans", label: "Exact answer cache", note: "key: question + entitlements + corpus ver", accent: "warn" },
+           { id: "sem", label: "Semantic cache", note: "high threshold, or it answers another question", accent: "bad" }],
+          [{ id: "emb", label: "Embedding cache", note: "key: text + model version" },
+           { id: "ret", label: "Retrieve" }],
+          [{ id: "model", label: "Model call - provider prompt cache", note: "stable prefix FIRST", accent: "accent" }],
+          [{ id: "out", label: "Answer", accent: "accent" }]
+        ],
+        edges: [
+          { from: "q", to: "ans" },
+          { from: "ans", to: "sem", label: "miss" },
+          { from: "sem", to: "emb", label: "miss" },
+          { from: "emb", to: "ret" },
+          { from: "ret", to: "model" },
+          { from: "model", to: "out" },
+          { from: "ans", to: "out", label: "hit" }
+        ],
+        caption: "**Start at the bottom.** Provider prompt caching is the safest and usually the largest win, and it only works if your stable content - system prompt, tool definitions, few-shot examples - sits before anything that varies. The two coloured boxes are where answers leak or go stale: both keys must carry the user's entitlements."
+      },
       say: "Four layers. Provider prompt caching keeps the processed stable prefix, cutting input cost and prefill latency together — but the stable content has to come first or the cache never hits. Embedding cache keyed on text plus model version. Exact-match answer cache, keyed to include entitlements and corpus version, or it leaks or goes stale. And semantic caching, which needs a high threshold. I start with prompt caching.",
       numbers: "Prompt caching typically discounts cached input tokens substantially and cuts time to first token. Check your provider's current rate rather than quoting one from memory.",
       wrong: "\"We cache the responses.\" Which cache, keyed on what? Keyed on question text alone, it is both a staleness bug and a data leak.",
@@ -195,6 +221,33 @@ window.IR.q["14-cost-latency"] = {
       numbers: "Alert on a 30% day-over-day move in tokens per request. Monthly spend alerts arrive after the money is spent.",
       wrong: "\"I'd check the provider's billing dashboard.\" It tells you the total went up, which you already knew. The breakdown has to be in your own telemetry.",
       follow: "You find prompt caching stopped hitting. Why would that happen silently?"
+    },
+
+    {
+      id: "cl-08",
+      q: "You are self-hosting. Which GPU, and what do you do when the model does not fit on one?",
+      round: ["tech2"],
+      level: "5-10",
+      tags: ["serving", "self-hosting", "gpu", "cost", "architecture"],
+      why: "Anyone who claims self-hosting experience gets this. The arithmetic is simple and not knowing it is disqualifying.",
+      simple:
+        "Start with the arithmetic, because it is the part being tested. Weights are parameters times bytes per parameter: FP16 is two bytes, INT8 one, INT4 half. So a 7B model in FP16 is about 14 GB, a 70B is about 140 GB. Then add the KV cache, which scales with batch size and sequence length and is what actually kills you at long context — plan roughly 20-30% headroom, more if you serve long prompts.\n\n" +
+        "Now match that to hardware. A 7B or 13B model fits comfortably on a single A10G or L4. A 70B in FP16 does not fit on any single GPU — an 80 GB A100 or H100 is not enough — so you either quantise it to INT8 and squeeze onto one 80 GB card, or you shard it.\n\n" +
+        "Sharding has two forms and interviewers like the distinction. Tensor parallelism splits each layer across GPUs; every token requires communication between them, so it needs fast interconnect like NVLink and is what you use inside one machine. Pipeline parallelism puts different layers on different GPUs; it tolerates slower links and works across machines, but it introduces bubbles where GPUs idle, so throughput per GPU is worse. Default to tensor parallelism within a node, pipeline only when you must cross nodes.\n\n" +
+        "Then the answer that scores highest: for most Indian enterprise workloads the honest recommendation is not to self-host a 70B at all. Quantise a smaller model, or use an API, and self-host only when data residency, volume or fine-tuning genuinely require it — which is exactly the cl-05 argument.",
+      points: [
+        "Weights = parameters x bytes/param. FP16 is 2, INT8 is 1, INT4 is 0.5.",
+        "7B FP16 is ~14 GB; 70B FP16 is ~140 GB and fits on no single GPU.",
+        "Add 20-30% for KV cache; it grows with batch size and context length.",
+        "7B/13B: a single A10G or L4. 70B: quantise to fit 80 GB, or shard.",
+        "Tensor parallelism splits layers across GPUs — needs NVLink, use within a node.",
+        "Pipeline parallelism splits by layer across machines — tolerates slow links, adds idle bubbles.",
+        "The senior answer: most workloads should quantise a smaller model or use an API instead."
+      ],
+      say: "First the arithmetic: weights are parameters times bytes per parameter, so 7B in FP16 is about 14 GB and 70B is about 140 GB, plus twenty to thirty percent for KV cache. A 7B fits one A10G; a 70B fits no single GPU, so I quantise to INT8 for an 80 GB card or shard it. Tensor parallelism within a node where NVLink is available, pipeline across nodes. Usually though, the right answer is a smaller model or an API.",
+      numbers: "Rule of thumb: usable GPU memory should be roughly 1.3x the model weights. An 80 GB H100 comfortably serves a quantised 70B; in FP16 it does not.",
+      wrong: "Naming a GPU before doing the memory arithmetic. The panel wants to see you size the model, not recall a product page.",
+      follow: "You sharded across four GPUs and throughput barely improved. What went wrong?"
     }
   ]
 };

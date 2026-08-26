@@ -168,6 +168,64 @@ window.IR.q["09-mcp"] = {
       numbers: "No number applies. The reasoning and the named condition are what score.",
       wrong: "\"Yes, it's the industry standard now.\" Adoption is not a reason on its own, and it skips the cost side that the question is really asking about.",
       follow: "Pilot it on what, specifically?"
+    },
+
+    {
+      id: "mcp-07",
+      q: "Tools, resources and prompts — what is the actual difference, and who controls each?",
+      round: ["tech1", "tech2"],
+      level: "5-10",
+      tags: ["mcp", "protocol", "basics", "architecture"],
+      why: "The most common MCP question after 'what is it'. The control model is the part candidates get wrong.",
+      simple:
+        "Three primitives, and the distinction that matters is who decides they get used.\n\n" +
+        "Tools are model-controlled. The model sees the tool list and chooses to call one. These are actions — search the ticket system, create a record, run a query. Because the model decides, tools are where the risk lives, and where descriptions and schemas have to be precise.\n\n" +
+        "Resources are application-controlled. They are data the server exposes — a file, a database row, a document — identified by URI. The model does not decide to fetch a resource; the host application does, and puts it into context. Think of them as readable content rather than actions.\n\n" +
+        "Prompts are user-controlled. They are templates the server offers that the user explicitly invokes, usually surfacing in the client as a slash command or a menu item. The model does not pick these either.\n\n" +
+        "Saying 'model-controlled, application-controlled, user-controlled' is the sentence that gets the mark, because it shows you understand MCP as a permission model and not just a list of features.\n\n" +
+        "The practical consequence: if an operation has side effects or costs money, it is a tool and needs a schema, validation and an approval path. If it is just content the app already knows it wants, make it a resource — that keeps it out of the model's decision space entirely, which is both cheaper and safer. Overusing tools for things that should be resources is the common design error, and it shows up as tool-list bloat that degrades selection accuracy.",
+      points: [
+        "Tools: model-controlled actions. The model chooses to call them.",
+        "Resources: application-controlled data, addressed by URI. The host decides.",
+        "Prompts: user-controlled templates, invoked explicitly, often as slash commands.",
+        "The three-word framing — model, application, user controlled — is what is being marked.",
+        "Side effects or cost means it is a tool, with schema, validation and approval.",
+        "Content the app already knows it wants should be a resource, not a tool.",
+        "Tool-list bloat degrades selection accuracy — do not make everything a tool."
+      ],
+      say: "Three primitives separated by who controls them. Tools are model-controlled actions, so that is where the risk sits and where schemas must be precise. Resources are application-controlled data addressed by URI — the host decides to fetch them, not the model. Prompts are user-controlled templates the user invokes explicitly. The practical rule is that anything with side effects is a tool, and anything the app already knows it wants should be a resource.",
+      numbers: "Tool descriptions and schemas are sent on every request. A bloated tool list costs tokens continuously and measurably worsens tool selection.",
+      wrong: "Describing all three as 'ways to give the model data'. It misses the control model, which is the entire point of the distinction.",
+      follow: "Your server exposes forty tools and the model keeps choosing badly. What do you change?"
+    },
+
+    {
+      id: "mcp-08",
+      q: "You connect five MCP servers and the agent's accuracy drops. Why?",
+      round: ["tech2"],
+      level: "5-10",
+      tags: ["mcp", "tools", "cost", "context", "debugging"],
+      why: "The realistic failure of MCP adoption at scale, and it catches people who have only connected one server to a demo.",
+      simple:
+        "Because every tool definition from every connected server is in the context window on every single request. Five servers with twenty tools each is a hundred tool schemas — names, descriptions, full parameter definitions — sent before the user has said anything. That is tens of thousands of tokens of pure overhead per call.\n\n" +
+        "Two things break at once. Cost and latency rise on every request, including the trivial ones. And accuracy falls, because tool selection is a classification problem and you just gave the model a hundred classes, many with overlapping descriptions — three different servers each offering something called search is a genuine ambiguity, not a model failure.\n\n" +
+        "The fixes, in order. First, do not connect servers you do not need; curate per use case rather than enabling everything because it is available. Second, filter the tool list dynamically — decide which servers are relevant to this request or this user's role, and expose only those. Third, use a routing layer: a cheap classifier picks the relevant server, then only that server's tools are presented. This is the same routing pattern as advanced RAG, applied to tools.\n\n" +
+        "Then fix the descriptions, because ambiguity is usually self-inflicted. Namespace tool names by server, and write descriptions that state when not to use the tool as well as when to. That single sentence resolves most of the confusion between similar tools.\n\n" +
+        "And measure it: log which tool was selected against which should have been. Without that you are guessing at whether your fix worked.",
+      points: [
+        "Every tool definition from every server is in context on every request.",
+        "Cost and latency rise on all calls, including trivial ones.",
+        "Tool selection is classification — a hundred overlapping classes lowers accuracy.",
+        "Three servers each exposing 'search' is real ambiguity, not model stupidity.",
+        "Curate per use case; filter the tool list by request or by role.",
+        "Route with a cheap classifier, then expose only that server's tools.",
+        "Namespace names and say when not to use a tool in its description.",
+        "Log selected-versus-correct tool, or you cannot tell if the fix worked."
+      ],
+      say: "Because every tool definition from all five servers sits in context on every request, so a hundred schemas cost tokens continuously and turn tool selection into a hundred-class classification problem with overlapping labels. I curate which servers are connected per use case, filter the exposed list by request or role, and route with a cheap classifier so only the relevant server's tools are presented. Then I namespace names and write descriptions saying when not to use each.",
+      numbers: "A hundred tool definitions is commonly 15k-30k tokens on every request, before any user input. That is paid on trivial calls too.",
+      wrong: "\"MCP handles that.\" MCP standardises the connection, not the context budget. Nothing in the protocol stops you from flooding the model.",
+      follow: "Your router picks the wrong server on a genuinely ambiguous question. What is the fallback?"
     }
   ]
 };

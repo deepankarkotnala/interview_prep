@@ -222,6 +222,36 @@ window.IR.q["12-llmops"] = {
       numbers: "Canary 5–10%, hold for at least 24 hours. Shorter windows miss the shift in traffic mix between working hours and overnight.",
       wrong: "\"Prompts are config, so we can just push them.\" That is exactly why they cause most regressions — they bypass the review that code gets.",
       follow: "The canary looks fine overall but one tenant is complaining. What now?"
+    },
+
+    {
+      id: "ops-09",
+      q: "Ollama locally and vLLM in production — is that a real strategy?",
+      round: ["tech1", "tech2"],
+      level: "5-10",
+      tags: ["llmops", "serving", "vllm", "self-hosting", "trade-off"],
+      why: "A common practical setup, and the question checks whether you know why they are different rather than treating both as 'runs a model'.",
+      simple:
+        "Yes, and it is a normal setup, but say why rather than naming the tools.\n\n" +
+        "Ollama is a developer runtime. One binary, pulls quantised models, runs on a laptop in minutes. It is built for one user at a time — requests are effectively serialised — which is exactly right for iteration and useless under real load.\n\n" +
+        "vLLM is a serving engine. The two features that matter are PagedAttention, which manages the KV cache in pages so memory is not fragmented and wasted, and continuous batching, which admits new requests into a running batch instead of waiting for the current one to finish. Together they keep the GPU busy and are the difference between a GPU at 30% utilisation and one at 85-90%.\n\n" +
+        "The reason the pairing works is that both speak an OpenAI-compatible API, so moving from local to production is a base URL change and not a rewrite. That is the practical point worth making.\n\n" +
+        "Then the caveats that show you have actually done it. The model must be identical in both places — it is easy to develop against a 4-bit quantised local model and deploy an FP16 one, and then behaviour differs in ways that look like a code bug. Pin the version and the quantisation. Generation defaults differ between runtimes, so set them explicitly rather than inheriting. And you cannot load-test meaningfully against Ollama; throughput numbers must come from the vLLM setup.\n\n" +
+        "And the honest framing for most teams: this only matters if you are self-hosting at all, which is the cl-05 decision. If you use an API in production, Ollama locally is still useful for offline work and for cost-free iteration.",
+      points: [
+        "Ollama: developer runtime, effectively one request at a time. Right for iteration.",
+        "vLLM: serving engine. PagedAttention for KV-cache memory, continuous batching for throughput.",
+        "Continuous batching admits new requests mid-batch — that is where the utilisation gain comes from.",
+        "Both expose an OpenAI-compatible API, so promotion is a base URL change.",
+        "Pin the same model and quantisation in both, or local and prod behave differently.",
+        "Set generation parameters explicitly; runtime defaults differ.",
+        "Never load-test against Ollama — the throughput numbers are meaningless.",
+        "All of this presupposes you should self-host at all."
+      ],
+      say: "Yes, and the reason is that they solve different problems. Ollama is a developer runtime serving one request at a time, which is right for iteration. vLLM is a serving engine — PagedAttention stops KV-cache fragmentation and continuous batching admits new requests into a running batch, which is what keeps a GPU near ninety percent utilisation. Both are OpenAI-compatible, so promotion is a base URL change. I pin identical model and quantisation across both.",
+      numbers: "Continuous batching plus PagedAttention commonly delivers an order-of-magnitude throughput gain over naive serving once you have ten or more concurrent users.",
+      wrong: "Treating them as interchangeable, or proposing Ollama for production traffic. Serialised request handling under concurrency is a straightforward outage.",
+      follow: "Your vLLM box handles 50 concurrent users and falls over at 200. What do you look at first?"
     }
   ]
 };

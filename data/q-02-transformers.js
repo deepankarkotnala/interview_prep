@@ -249,6 +249,23 @@ window.IR.q["02-transformers"] = {
         "Softmax along the last axis so each row sums to 1.",
         "Output is (seq, d_head) — a weighted mixture of V, not a score."
       ],
+      /* `why` calls this "the whiteboard question" in as many words, and the
+         answer is a chain of shapes. Drawing it means the shapes stay in order
+         under pressure, which is the whole thing being tested. */
+      diagram: {
+        kind: "lanes",
+        alt: "Shapes through one attention head: input (10,512) projects to Q, K and V at (10,64), scores are (10,10), output is (10,64).",
+        lanes: [
+          { label: "x", note: "(10, 512)" },
+          { label: "Q, K, V", note: "(10, 64) each", accent: "accent" },
+          { label: "Q @ K.T", note: "(10, 10) quadratic", accent: "bad" },
+          { label: "/ sqrt(64) + mask", note: "-inf above diagonal", accent: "warn" },
+          { label: "softmax", note: "last axis, rows sum to 1", accent: "warn" },
+          { label: "weights @ V", note: "(10, 64) not (10,10)", accent: "accent" },
+          { label: "concat 8 heads", note: "(10, 512)" }
+        ],
+        caption: "The two shapes that carry the meaning. **(10, 10)** is the attention pattern, and it is where the quadratic cost lives. **(10, 64)** is the output - attention produces a weighted mixture of value vectors, not a similarity score, and that is the step people get wrong. Softmax along the last axis, or you get a bug that trains to something plausible and wrong."
+      },
       say: "With sequence 10 and model dimension 512 across 8 heads, each head projects to 64 dimensions, so Q, K and V are each 10 by 64. Q times K transpose gives a 10 by 10 score matrix — that is the attention pattern and where the quadratic cost lives. Scale by root d_k, add the causal mask before softmax, softmax along the last axis, then multiply by V to get 10 by 64. Heads concatenate back to 512.",
       numbers: "d_head is d_model divided by the head count. The (seq, seq) matrix is what makes attention quadratic in sequence length.",
       wrong: "Describing attention as 'tokens looking at each other' with no shapes. The follow-up asks for dimensions, and that is where it falls apart.",
