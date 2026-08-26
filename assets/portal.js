@@ -155,13 +155,17 @@
 
     h += '<div data-nav-groups>';
     h += '<div class="nav-group"><div class="nav-label">Start here</div>';
-    [["index.html", "Home", "home"],
-     ["rounds.html", "By interview round", "rounds"],
-     ["tracks.html", "By employer type", "tracks"],
-     ["rehearsal.html", "Rehearsal room", "rehearsal"]].forEach(function (r) {
+    /* Each route carries its own glyph in the slot a topic row gives its
+       number, so the four rows are told apart at a glance rather than by
+       reading the label — the reference mockup's treatment. */
+    [["index.html", "Home", "home", "⌂"],
+     ["rounds.html", "By interview round", "rounds", "↗"],
+     ["tracks.html", "By employer type", "tracks", "⌘"],
+     ["rehearsal.html", "Rehearsal room", "rehearsal", "◌"]].forEach(function (r) {
       h += '<a class="nav-link" href="' + base + r[0] + '"' +
            (page === r[2] ? ' aria-current="page"' : "") + '>' +
-           '<span class="nav-chev" aria-hidden="true">›</span>' + esc(r[1]) + '</a>';
+           '<span class="nav-chev" aria-hidden="true">' + r[3] + '</span>' +
+           '<span>' + esc(r[1]) + '</span></a>';
     });
     h += "</div>";
 

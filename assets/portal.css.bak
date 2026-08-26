@@ -1,0 +1,1935 @@
+/* Interview Room — standalone stylesheet.
+
+   Design system: this file is a deliberate mirror of the GenAI Mastery portal's
+   office-theme.css. Same tokens, same values, same names. The Interview Room
+   is a separate portal with its own markup and its own runtime, but a reader
+   moving between the two should not be able to tell that they crossed a
+   boundary — same Excel-green accent, same neutral greys, same 8px radii, same
+   14.5px base, same 238px rail, same 860px drawer breakpoint.
+
+   It stays standalone (no @import of the parent's CSS) because this portal must
+   work when the directory is copied out on its own. The cost of that is this
+   duplication, so the rule is: when a token below disagrees with
+   ../assets/office-theme.css, office-theme.css is right and this file is stale.
+
+   The font files are the one shared asset — ../assets/fonts/ — so the type is
+   byte-identical rather than a near-match from a system stack. If the parent
+   directory is absent the @font-face rules simply fail and the fallback stacks
+   in --font-sans / --font-mono take over. */
+
+/* ---------- fonts ----------
+   Copied into this folder rather than referenced from the parent portal, so the
+   folder stays self-contained. `font-display: swap` plus the full system stacks
+   in --font-sans / --font-mono mean the page is still correct if these ever
+   fail to load. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(fonts/inter-latin-wght-normal.woff2) format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(fonts/inter-latin-wght-italic.woff2) format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url(fonts/jetbrains-mono-latin-wght-normal.woff2) format("woff2");
+}
+
+/* ---------- tokens — mirrored from office-theme.css ---------- */
+:root {
+  --font-sans: "Inter", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  /* Legacy aliases used throughout this file's older rules. */
+  --font: var(--font-sans);
+  --mono: var(--font-mono);
+
+  --bg: #f3f4f6;
+  --bg-subtle: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-solid: #ffffff;
+  --bg-code: #202329;
+  --surface: #f8f9fb;
+  --surface-strong: #f3f5f7;
+  --border: #e0e3e8;
+  --border-strong: #cfd4dc;
+  /* This portal's own rules ask for a lighter hairline and a sunken fill.
+     Mapped onto the office palette rather than kept as separate greys. */
+  --border-soft: #e0e3e8;
+  --bg-sunken: #f8f9fb;
+  --text: #20232b;
+  --text-secondary: #505665;
+  --text-muted: #7b8290;
+  --text-inverse: #ffffff;
+  --heading: #20232b;
+
+  /* Office 365 (Excel) green is the single accent, exactly as in the parent. */
+  --accent: #107c41;
+  --accent-hover: #0c6135;
+  --accent-strong: #0c6135;
+  --accent-soft: #eaf6ef;
+  --accent-ring: rgba(16, 124, 65, .22);
+  --excel: #107c41;
+  --excel-soft: #eaf6ef;
+
+  --green: #107c41;  --green-soft: #eaf6ef;
+  --blue:  #2f6fed;  --blue-soft:  #edf3ff;
+  --amber: #9a6700;  --amber-soft: #fff6dc;
+  --red:   #b42318;  --red-soft:   #fff0ee;
+
+  /* Semantic aliases this portal uses for its answer slots. */
+  --ok:   var(--green);  --ok-soft:   var(--green-soft);
+  --warn: var(--amber);  --warn-soft: var(--amber-soft);
+  --bad:  var(--red);    --bad-soft:  var(--red-soft);
+
+  --shadow-sm: 0 1px 2px rgba(22, 27, 35, .05), 0 7px 22px rgba(22, 27, 35, .035);
+  --shadow-md: 0 1px 2px rgba(22, 27, 35, .06), 0 10px 28px rgba(22, 27, 35, .055);
+  --shadow-lg: 0 2px 4px rgba(22, 27, 35, .07), 0 16px 38px rgba(22, 27, 35, .07);
+  --shadow: var(--shadow-sm);
+  --card-hover-shadow:
+    0 1px 2px rgba(22, 27, 35, .05),
+    0 8px 18px -8px rgba(22, 27, 35, .09),
+    0 22px 46px -18px rgba(22, 27, 35, .15);
+
+  --ease: cubic-bezier(.4, 0, .2, 1);
+
+  /* Sidebar geometry — the parent's two-token split. --sidebar-w is the layout
+     width; --sidebar-track is what you see after the desktop density scaling. */
+  --sidebar-w: 238px;
+  --density: .9;
+  --sidebar-track: calc(var(--sidebar-w) * var(--density));
+  --content-max: 1040px;
+  /* Right rail width — the parent's value. */
+  --toc-w: 214px;
+  /* 46px, not the 42px the parent's first :root declares — office-theme.css
+     raises it later in the file (the chip and the active marker need the
+     vertical room) and that later value is the one that actually wins. Every
+     sticky offset here derives from this var, so the rest follows. */
+  --header-h: 46px;
+  --topbar-pad: clamp(10px, 1.6vw, 22px);
+  --radius: 8px;
+  --radius-sm: 6px;
+  --radius-lg: 10px;
+
+  --fs-base: 14.5px;
+  --fs-h1: clamp(26px, 2.05vw, 33px);
+  --fs-h2: 20.5px;
+  --fs-h3: 15px;
+  --fs-lead: clamp(15px, 1.2vw, 17px);
+  --fs-hero: var(--fs-h1);
+}
+
+html[data-theme="dark"] {
+  --bg: #17191e;
+  --bg-subtle: #202329;
+  --bg-elevated: #202329;
+  --bg-solid: #202329;
+  --bg-code: #15171b;
+  --surface: #24272e;
+  --surface-strong: #292d34;
+  --border: #30343c;
+  --border-strong: #3d424c;
+  --border-soft: #30343c;
+  --bg-sunken: #24272e;
+  --text: #e1e3e8;
+  --text-secondary: #b6bbc5;
+  --text-muted: #8f96a3;
+  --text-inverse: #17191e;
+  --heading: #d2d6de;
+
+  --accent: #62b982;
+  --accent-hover: #7cc99a;
+  --accent-strong: #7cc99a;
+  --accent-soft: #20382a;
+  --accent-ring: rgba(98, 185, 130, .22);
+  --excel: #62b982;
+  --excel-soft: #20382a;
+
+  --green: #62b982;  --green-soft: #20382a;
+  --blue:  #83a8ff;  --blue-soft:  #232f47;
+  --amber: #d8ae61;  --amber-soft: #3a3020;
+  --red:   #ee938b;  --red-soft:   #402725;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .22), 0 8px 22px rgba(0, 0, 0, .10);
+  --shadow-md: 0 1px 2px rgba(0, 0, 0, .24), 0 12px 30px rgba(0, 0, 0, .13);
+  --shadow-lg: 0 2px 4px rgba(0, 0, 0, .28), 0 18px 42px rgba(0, 0, 0, .16);
+  --card-hover-shadow:
+    0 1px 2px rgba(0, 0, 0, .24),
+    0 8px 18px -8px rgba(0, 0, 0, .30),
+    0 22px 46px -18px rgba(0, 0, 0, .38);
+}
+
+/* ---------- base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+/* Background on <html> as well as <body>, so a cross-document navigation never
+   shows an unpainted white frame. color-scheme keeps scrollbars and form
+   controls matched to the theme. */
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  background: var(--bg);
+}
+html[data-theme="dark"] { color-scheme: dark; }
+html[data-theme="light"] { color-scheme: light; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-base);
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-hover); text-decoration: none; }
+img, svg { max-width: 100%; }
+
+h1, h2, h3, h4 { color: var(--heading); }
+h1 {
+  max-width: 900px;
+  margin: 0 0 9px;
+  font-size: var(--fs-h1);
+  line-height: 1.08;
+  letter-spacing: -.035em;
+  font-weight: 680;
+}
+h2 {
+  margin: 31px 0 14px;
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-h2);
+  line-height: 1.3;
+  letter-spacing: -.012em;
+  font-weight: 650;
+  scroll-margin-top: calc(var(--header-h) + 14px);
+}
+h2:first-of-type { margin-top: 24px; }
+h3 {
+  margin: 22px 0 7px;
+  font-size: var(--fs-h3);
+  line-height: 1.4;
+  letter-spacing: -.006em;
+  font-weight: 650;
+}
+h4 { margin: 17px 0 6px; font-size: 14px; font-weight: 650; }
+p { margin: 0 0 1em; }
+strong { color: var(--heading); font-weight: 650; }
+code, pre { font-family: var(--font-mono); font-size: .88em; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm); }
+.skip { position: absolute; left: -9999px; }
+.skip:focus {
+  left: 12px; top: 12px; z-index: 100;
+  padding: 9px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--accent); color: #fff;
+}
+
+/* ---------- shell ---------- */
+.app {
+  display: grid;
+  grid-template-columns: var(--sidebar-track) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.sidebar {
+  position: sticky; top: 0; align-self: start;
+  height: 100vh; overflow-y: auto;
+  padding: 0;
+  background: var(--bg-subtle);
+  border-right: 1px solid var(--border);
+  scrollbar-width: thin;
+  /* Desktop density: the rail renders at 90%, matching the parent portal. The
+     height is corrected by the same factor so the sticky column still fills the
+     viewport rather than overflowing it. */
+  zoom: var(--density);
+  height: calc(100vh / var(--density));
+}
+.sidebar::-webkit-scrollbar { width: 8px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 8px; }
+
+.brand {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; align-items: center; gap: 10px;
+  min-height: 52px;
+  padding: 0 12px;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+}
+/* The shared logo, free-standing on a transparent ground — matched to the AI
+   Engineering portal's office-theme mark: 31px, contain (never cropped), and a
+   soft blue drop-shadow instead of a filled tile behind it. */
+.brand-mark {
+  width: 31px; height: 31px; flex: 0 0 31px;
+  display: grid; place-items: center;
+  overflow: visible;
+  padding: 0;
+  border: 0; border-radius: 10px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 10px; font-weight: 900; letter-spacing: -.04em; line-height: .78;
+  box-shadow: none;
+}
+.brand-mark img {
+  display: block;
+  width: 100%; height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 7px rgba(37, 99, 235, .16));
+}
+.brand-text strong { display: block; font-size: 14px; line-height: 1.2; letter-spacing: -.01em; }
+.brand-text span {
+  display: block; margin-top: 1px;
+  color: var(--text-muted);
+  font-size: 11.5px; line-height: 1.13; font-weight: 500;
+  letter-spacing: 0; text-transform: none;
+}
+
+
+/* ---------- sidebar search ----------
+   Sits between the brand and the nav. Deliberately quieter than the filter bar
+   on a topic page: that one is a primary control on its own page, this one is
+   a way out of wherever you are, and it should not compete with the topic list
+   for attention until it is being used. */
+.sb-search {
+  position: relative;
+  display: flex; align-items: center; gap: 6px;
+  height: 30px;
+  margin: 10px 10px 4px; padding: 0 7px;
+  border: 1px solid var(--border); border-radius: 5px;
+  background: var(--bg-elevated);
+  transition: border-color .16s var(--ease), box-shadow .16s var(--ease);
+}
+.sb-search:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+.sb-icon {
+  flex: none; display: grid; place-items: center;
+  color: var(--text-muted);
+}
+.sb-search input {
+  min-width: 0; flex: 1;
+  border: 0; background: transparent; color: var(--text);
+  font-family: inherit; font-size: 12px;
+}
+.sb-search input:focus { outline: none; }
+.sb-search input::placeholder { color: var(--text-muted); }
+/* The native clear affordance would sit alongside ours. */
+.sb-search input::-webkit-search-cancel-button { display: none; }
+.sb-clear {
+  flex: none;
+  display: grid; place-items: center;
+  width: 17px; height: 17px; padding: 0;
+  border: 0; border-radius: 4px;
+  background: transparent; color: var(--text-muted);
+  font-size: 15px; line-height: 1; cursor: pointer;
+}
+.sb-clear:hover { background: var(--surface); color: var(--text); }
+
+/* Results replace the nav rather than pushing it down — see buildSearch. The
+   rail is one column, and a result list stacked above eighteen topic rows puts
+   the answer below the fold on a laptop. */
+.sb-results {
+  padding: 4px 10px 30px;
+  animation: sb-in .16s var(--ease) both;
+}
+@keyframes sb-in { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+
+.sb-sec {
+  padding: 11px 7px 4px;
+  color: var(--text-muted);
+  font-size: 8.5px; font-weight: 700;
+  letter-spacing: .09em; text-transform: uppercase;
+}
+.sb-sec:first-child { padding-top: 3px; }
+
+.sb-hit {
+  position: relative;
+  display: flex; align-items: baseline; gap: 7px;
+  padding: 6px 7px 6px 11px;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 11.5px; line-height: 1.38;
+  text-decoration: none;
+  transition: background .18s var(--ease), color .18s var(--ease);
+}
+.sb-hit:hover { background: var(--surface); color: var(--text); text-decoration: none; }
+/* Keyboard cursor. Same treatment as hover plus the left bar the nav uses for
+   the current page, so arrowing through results reads like moving through nav. */
+.sb-hit.is-active { background: var(--excel-soft); color: var(--text); }
+.sb-hit.is-active::before {
+  content: "";
+  position: absolute; left: 0; top: 5px; bottom: 5px;
+  width: 2px; border-radius: 2px; background: var(--excel);
+}
+.sb-hit-topic { font-weight: 600; color: var(--text); }
+.sb-num {
+  flex: none;
+  color: var(--excel);
+  font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+}
+.sb-hit-t { min-width: 0; }
+.sb-hit.is-planned { opacity: .5; pointer-events: none; }
+
+.sb-empty {
+  margin: 0; padding: 12px 8px;
+  color: var(--text-muted);
+  font-size: 11.5px; line-height: 1.5;
+}
+.sb-empty strong { color: var(--text-secondary); font-weight: 600; }
+
+.nav-group { padding: 0 10px; }
+.nav-group:first-of-type { padding-top: 8px; }
+.nav-group:last-of-type { padding-bottom: 36px; }
+/* Sidebar typography follows the parent portal's office theme, not the larger
+   base scale in its styles.css — the office layer is what the parent actually
+   renders, so matching the base was matching the wrong thing. The section label
+   is deliberately tiny: it is a divider, and letting it compete with the links
+   is what made this rail read as a different product. */
+.nav-label {
+  padding: 9px 7px 3px;
+  color: var(--text-muted);
+  font-size: 8.5px; font-weight: 700;
+  letter-spacing: .09em; text-transform: uppercase;
+}
+.nav-link {
+  position: relative;
+  display: flex; align-items: center; gap: 7px;
+  min-height: 29px;
+  padding: 5px 7px;
+  border-radius: 5px;
+  color: var(--text-secondary);
+  font-size: 12.5px; font-weight: 400; line-height: 1.25;
+  transition: background .22s var(--ease), color .22s var(--ease);
+}
+.nav-link:hover { background: var(--surface); color: var(--text); text-decoration: none; }
+/* The parent keeps the active label in the normal text colour and lets the tint
+   plus the left bar carry the state. Colouring the text green as well made this
+   row shout where the parent's only speaks. */
+.nav-link[aria-current="page"] {
+  background: var(--accent-soft); color: var(--text); font-weight: 600;
+}
+/* The active marker is mounted but collapsed, so it grows in rather than
+   popping when the current page changes — same as the parent portal. */
+.nav-link::before {
+  content: ""; position: absolute; left: 0; top: 5px; bottom: 5px; width: 2px;
+  border-radius: 2px; background: var(--accent);
+  opacity: 0; transform: scaleY(.34); transform-origin: center;
+  transition: transform .24s var(--ease), opacity .2s ease;
+}
+.nav-link:hover::before { opacity: .45; transform: scaleY(.7); }
+.nav-link[aria-current="page"]::before { opacity: 1; transform: scaleY(1); }
+/* A boxed badge in the sans face, like the parent's. It was bare mono digits
+   here, which read as code rather than as a chapter number and was the loudest
+   of the mismatches. */
+.nav-num {
+  flex: none;
+  display: grid; place-items: center;
+  min-width: 23px; height: 19px;
+  padding: 0;
+  border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  font-family: inherit; font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+/* The current page drops the box: the row already carries the highlight, and
+   two markers on one row is one too many. */
+.nav-link[aria-current="page"] .nav-num {
+  color: var(--accent); border-color: transparent; background: transparent;
+}
+/* The "Start here" rows carry a chevron where a topic row carries its number.
+   It occupies the same slot so the two lists align, but it is a mark rather
+   than a badge — boxing it would read as an empty number. */
+.nav-chev {
+  flex: none;
+  display: grid; place-items: center;
+  min-width: 23px; height: 19px;
+  color: var(--text-muted);
+  font-size: 12px; line-height: 1;
+}
+.nav-link[aria-current="page"] .nav-chev { color: var(--accent); }
+
+/* The card count has no parent equivalent — the parent's rail carries no
+   per-chapter number. Sized to sit quietly with the smaller row rather than
+   invent a match. */
+.nav-count {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 10px; font-variant-numeric: tabular-nums;
+}
+.nav-link.is-planned { opacity: .5; pointer-events: none; }
+
+.main { min-width: 0; display: flex; flex-direction: column; }
+
+/* The translucent, blurred bar the parent settles on. This portal has no
+   ribbon under the header, so — like the parent's ribbon-less hub pages — the
+   bar closes itself with a bottom hairline. */
+.topbar {
+  position: sticky; top: 0; z-index: 40;
+  display: flex; align-items: center; gap: 6px;
+  width: 100%; margin: 0;
+  height: var(--header-h); min-height: var(--header-h);
+  padding: 0 var(--topbar-pad);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--bg-elevated) 88%, transparent);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  border-bottom: 1px solid var(--border);
+  box-shadow: none;
+}
+.crumbs {
+  flex: 1; min-width: 0;
+  margin-left: 3px; margin-right: auto;
+  display: flex; align-items: center; gap: 6px;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.crumbs a { color: var(--text-secondary); }
+.crumbs a:hover { color: var(--text); }
+.crumbs span { color: var(--text-muted); }
+.topbar-spacer { margin-left: auto; }
+.icon-btn {
+  display: inline-grid; place-items: center;
+  flex: none;
+  width: 30px; height: 30px; min-height: 30px;
+  padding: 0;
+  border: 1px solid var(--border); border-radius: 7px;
+  background: var(--bg-elevated); color: var(--text-secondary);
+  font-size: 13px; cursor: pointer;
+  transition: color .16s ease, background .16s ease, border-color .16s ease;
+}
+.icon-btn:hover { border-color: var(--text-muted); color: var(--text); background: var(--surface); }
+.icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.menu-btn { display: none; }
+
+/* ---------- topbar controls: Home · Focus · Display · theme ----------------
+   Ported from the parent portal's office-theme treatment so the two bars read
+   as one product: flat, transparent, 28px, label at 11.5px, and a hover that
+   only fills the surface rather than lifting the button. The parent arrives at
+   this by overriding a glassier base in styles.css; here it is stated once. */
+.home-btn,
+.focus-btn,
+.reader-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: none;
+  width: auto; min-width: 28px; height: 28px; min-height: 28px;
+  padding: 0 7px; gap: 5px;
+  border: 1px solid transparent; border-radius: 5px;
+  color: var(--text-secondary);
+  background: transparent;
+  font: 600 12px/1 var(--font-sans, inherit);
+  white-space: nowrap; cursor: pointer;
+  transition: color .16s ease, background .16s ease, border-color .16s ease;
+}
+.home-btn:hover,
+.focus-btn:hover,
+.reader-btn:hover {
+  border-color: var(--border); color: var(--text); background: var(--surface);
+  text-decoration: none;
+}
+.home-btn:focus-visible,
+.focus-btn:focus-visible,
+.reader-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* The bar's own buttons are flat like the parent's: the boxed .icon-btn look is
+   for controls out in the page, not for a row of view toggles in the header. */
+.topbar .icon-btn {
+  width: 28px; height: 28px; min-height: 28px;
+  border-color: transparent; border-radius: 5px;
+  background: transparent;
+}
+.topbar .icon-btn:hover { border-color: var(--border); background: var(--surface); }
+.topbar .icon-btn svg { width: 15px; height: 15px; stroke-width: 1.65; }
+.home-btn svg,
+.focus-btn svg { width: 15px; height: 15px; stroke-width: 1.65; }
+.home-lbl,
+.focus-lbl,
+.reader-lbl { font-size: 11.5px; }
+/* The active state of a toggle is a tinted pill, not a filled one — this is a
+   view control, not a primary action. */
+.focus-btn[aria-pressed="true"],
+.reader-btn[aria-expanded="true"] {
+  color: var(--accent); border-color: var(--border); background: var(--surface);
+}
+
+/* Desktop control size. The parent's base geometry above is 28px, but its
+   CHAPTER TOP BAR layer raises every control in the bar to 30px at a 7px
+   radius — that later block is the one that renders, so it is the one matched
+   here. */
+.topbar .icon-btn,
+.home-btn,
+.focus-btn,
+.reader-btn { height: 30px; min-height: 30px; border-radius: 7px; }
+.topbar .icon-btn { width: 30px; }
+
+/* Narrow laptops: the two labelled buttons give up their labels before the
+   crumbs give up any width. Display keeps its label here — it is the one
+   control whose icon alone does not say what it does. */
+@media (min-width: 861px) and (max-width: 1120px) {
+  .home-lbl,
+  .focus-lbl { display: none; }
+  .home-btn,
+  .focus-btn { width: 30px; min-width: 30px; padding: 0; }
+}
+
+/* Two letters at two sizes is the universal mark for type size, and it reads at
+   this size where a line-art glyph would turn to mush. */
+.reader-glyph {
+  display: inline-flex; align-items: baseline; gap: .5px;
+  font-weight: 680; font-size: 14px; line-height: 1; letter-spacing: -.01em;
+}
+.reader-glyph i { font-size: 10.5px; font-style: normal; font-weight: 640; }
+.reader-wrap { position: relative; display: inline-flex; flex: none; }
+/* A dot rather than a filled button: it says "you changed something here"
+   without turning a settings control into a permanent accent in the bar. */
+.reader-btn { position: relative; }
+.reader-btn.is-custom::after {
+  content: ""; position: absolute; top: 4px; right: 4px;
+  width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+}
+
+/* ---------- Display panel ----------
+   Fixed, not absolute, and a child of <body>: the topbar sets backdrop-filter,
+   which would make it the containing block for a fixed child and clip the
+   panel. Coordinates come from portal.js, measured off the trigger. */
+.reader-popover {
+  position: fixed; top: 60px; right: 16px; z-index: 120;
+  width: min(320px, calc(100vw - 20px));
+  padding: 14px 15px 15px;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--bg-elevated);
+  box-shadow: 0 18px 44px rgba(17, 20, 26, .18);
+  opacity: 0; visibility: hidden; transform: translateY(-6px);
+  transition: opacity .16s ease, transform .16s ease, visibility .16s;
+}
+.reader-popover.open { opacity: 1; visibility: visible; transform: none; }
+.reader-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.reader-popover h3 { margin: 0; color: var(--heading); font-size: 14.5px; font-weight: 650; }
+.reader-popover > p { margin: 3px 0 13px; color: var(--text-muted); font-size: 12px; line-height: 1.5; }
+.reader-close {
+  display: grid; place-items: center;
+  width: 26px; height: 26px;
+  border: 1px solid transparent; border-radius: 6px;
+  color: var(--text-muted); background: transparent; cursor: pointer;
+}
+.reader-close:hover { border-color: var(--border); color: var(--text); background: var(--surface); }
+.reader-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; padding: 9px 0;
+  border-top: 1px solid var(--border);
+}
+.reader-row:first-of-type { border-top: 0; padding-top: 0; }
+.reader-row > span { flex: none; color: var(--text-secondary); font-size: 12.5px; font-weight: 600; }
+/* Below this the column is the viewport, so the measure cannot change. Hiding
+   the row rather than disabling it keeps the panel honest: a control that can
+   do nothing is not shown. */
+.reader-row-width { display: none; }
+@media (min-width: 861px) { .reader-row-width { display: flex; } }
+.reader-segment {
+  display: inline-flex; gap: 2px; padding: 2px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface);
+}
+.reader-segment button {
+  min-width: 28px; height: 26px; padding: 0 6px;
+  border: 0; border-radius: 6px;
+  color: var(--text-secondary); background: transparent;
+  font: 600 11.5px/1 var(--font-sans, inherit);
+  cursor: pointer;
+  transition: color .14s ease, background .14s ease;
+}
+.reader-segment button:hover { color: var(--text); background: var(--bg-elevated); }
+.reader-segment button.active { color: #fff; background: var(--accent); }
+.reader-segment button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* The size choices are the same letter at five sizes — the control shows what
+   it does rather than naming it. */
+.reader-segment .sz-1 { font-size: 11px; }
+.reader-segment .sz-2 { font-size: 12.5px; }
+.reader-segment .sz-3 { font-size: 14px; }
+.reader-segment .sz-4 { font-size: 15.5px; }
+.reader-segment .sz-5 { font-size: 17px; }
+.reader-reset {
+  width: 100%; height: 30px; margin-top: 12px;
+  border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text-secondary); background: var(--surface);
+  font: 600 12px/1 var(--font-sans, inherit); cursor: pointer;
+  transition: color .14s ease, border-color .14s ease, background .14s ease;
+}
+.reader-reset:hover:not(:disabled) { border-color: var(--text-muted); color: var(--text); background: var(--bg-elevated); }
+.reader-reset:disabled { opacity: .45; cursor: default; }
+.reader-scrim {
+  position: fixed; inset: 0; z-index: 110;
+  background: rgba(17, 20, 26, .34);
+  opacity: 0; visibility: hidden;
+  transition: opacity .18s ease, visibility .18s;
+}
+/* The scrim is for the sheet form only — on a pointer device the panel closes
+   on outside-click without dimming the page behind it. */
+.reader-scrim.open { opacity: 0; visibility: hidden; }
+
+/* Panel as a bottom sheet on phones. */
+@media (max-width: 620px) {
+  .reader-popover {
+    top: auto !important; right: 0 !important; bottom: 0; left: 0;
+    width: 100%;
+    padding: 16px 16px calc(18px + env(safe-area-inset-bottom));
+    border-width: 1px 0 0; border-radius: 16px 16px 0 0;
+    transform: translateY(14px);
+  }
+  .reader-popover.open { transform: none; }
+  .reader-row { flex-direction: column; align-items: stretch; gap: 8px; padding: 12px 0; }
+  .reader-segment { width: 100%; }
+  .reader-segment button { flex: 1; }
+  .reader-scrim.open { opacity: 1; visibility: visible; }
+  body.reader-open { overflow: hidden; }
+}
+
+/* ---------- reading settings: text size, width, alignment ----------
+   One multiplier, applied to the type tokens themselves rather than to each
+   element. Everything in the portal already derives its size from --fs-*, so
+   scaling the tokens moves the whole page together and keeps the ladder
+   (hero > lead > body) intact — which is what setting sizes one element at a
+   time gets wrong. The base values here must match the :root block above. */
+html[data-reading-size="xs"] { --reading-scale: .88; }
+html[data-reading-size="s"]  { --reading-scale: 1; }
+html[data-reading-size="m"]  { --reading-scale: 1.14; }
+html[data-reading-size="l"]  { --reading-scale: 1.28; }
+html[data-reading-size="xl"] { --reading-scale: 1.42; }
+
+html[data-reading-size] {
+  --fs-base: calc(14.5px * var(--reading-scale));
+  --fs-h1:   calc(clamp(26px, 2.05vw, 33px) * var(--reading-scale));
+  --fs-h2:   calc(20.5px * var(--reading-scale));
+  --fs-h3:   calc(15px * var(--reading-scale));
+  --fs-lead: calc(clamp(15px, 1.2vw, 17px) * var(--reading-scale));
+}
+/* Components that state their own px size do not ride --fs-base, so the
+   multiplier has to reach them explicitly. Two families were missed and stayed
+   frozen at every step of the slider: the left rail (brand, section labels,
+   links, badges, counts) and the cards (tiles on the hubs, question cards and
+   every slot inside them, plus the filter bar that sits above them). Each rule
+   below restates that component's own base px times the scale, so the internal
+   ladder — title over body over label — survives the scaling intact. */
+
+/* --- left sidebar --- */
+/* The rail is a fixed track. Left at 238px, larger text would only wrap the
+   topic labels onto three lines instead of reading bigger, so the track grows
+   with the type — dampened (half the excess) and capped, because the rail is
+   navigation and must not start eating the reading column. */
+html[data-reading-size] {
+  --sidebar-w: min(320px, calc(238px * (1 + (var(--reading-scale) - 1) * .5)));
+}
+html[data-reading-size] .brand-text strong { font-size: calc(14px * var(--reading-scale)); }
+html[data-reading-size] .brand-text span   { font-size: calc(11.5px * var(--reading-scale)); }
+html[data-reading-size] .nav-label { font-size: calc(8.5px * var(--reading-scale)); }
+html[data-reading-size] .nav-link  { font-size: calc(12.5px * var(--reading-scale)); }
+html[data-reading-size] .nav-num   { font-size: calc(9px * var(--reading-scale)); }
+html[data-reading-size] .nav-chev  { font-size: calc(12px * var(--reading-scale)); }
+html[data-reading-size] .nav-count { font-size: calc(10px * var(--reading-scale)); }
+html[data-reading-size] .sb-search input { font-size: calc(12px * var(--reading-scale)); }
+html[data-reading-size] .sb-sec   { font-size: calc(8.5px * var(--reading-scale)); }
+html[data-reading-size] .sb-hit   { font-size: calc(11.5px * var(--reading-scale)); }
+html[data-reading-size] .sb-num   { font-size: calc(9px * var(--reading-scale)); }
+html[data-reading-size] .sb-empty { font-size: calc(11.5px * var(--reading-scale)); }
+/* The rows are min-height boxes; without growing the box too, larger text
+   crowds its own row rather than opening it up. */
+html[data-reading-size] .nav-link { min-height: calc(29px * var(--reading-scale)); }
+html[data-reading-size] .nav-num,
+html[data-reading-size] .nav-chev {
+  min-width: calc(23px * var(--reading-scale));
+  height: calc(19px * var(--reading-scale));
+}
+
+/* --- hub tiles --- */
+html[data-reading-size] .tile-num  { font-size: calc(10px * var(--reading-scale)); }
+html[data-reading-size] .tile h3   { font-size: calc(14.5px * var(--reading-scale)); }
+html[data-reading-size] .tile p    { font-size: calc(13px * var(--reading-scale)); }
+html[data-reading-size] .tile-foot { font-size: calc(11.5px * var(--reading-scale)); }
+
+/* --- question cards --- */
+html[data-reading-size] .q-title { font-size: calc(14.5px * var(--reading-scale)); }
+html[data-reading-size] .q-no    { font-size: calc(11px * var(--reading-scale)); }
+html[data-reading-size] .q-chev  { font-size: calc(12px * var(--reading-scale)); }
+html[data-reading-size] .q-meta span   { font-size: calc(10.5px * var(--reading-scale)); }
+html[data-reading-size] .slot-label    { font-size: calc(9px * var(--reading-scale)); }
+html[data-reading-size] .q-why         { font-size: calc(13px * var(--reading-scale)); }
+html[data-reading-size] .q-numbers,
+html[data-reading-size] .q-wrong,
+html[data-reading-size] .q-follow      { font-size: calc(13px * var(--reading-scale)); }
+html[data-reading-size] .q-empty       { font-size: calc(13.5px * var(--reading-scale)); }
+html[data-reading-size] .note          { font-size: calc(13.5px * var(--reading-scale)); }
+html[data-reading-size] .chip          { font-size: calc(11.5px * var(--reading-scale)); }
+html[data-reading-size] .eyebrow       { font-size: calc(10px * var(--reading-scale)); }
+html[data-reading-size] .btn,
+html[data-reading-size] .mini-btn      { font-size: calc(11.5px * var(--reading-scale)); }
+
+/* --- filter bar above the cards --- */
+html[data-reading-size] .search-wrap input { font-size: calc(12.5px * var(--reading-scale)); }
+html[data-reading-size] .pill              { font-size: calc(11px * var(--reading-scale)); }
+html[data-reading-size] .result-count      { font-size: calc(11px * var(--reading-scale)); }
+
+/* --- right rail ("on this page") --- */
+html[data-reading-size] .toc-kicker         { font-size: calc(9px * var(--reading-scale)); }
+html[data-reading-size] .toc-book-head strong { font-size: calc(11.5px * var(--reading-scale)); }
+html[data-reading-size] .toc-filter input   { font-size: calc(11.5px * var(--reading-scale)); }
+html[data-reading-size] .toc a              { font-size: calc(11.5px * var(--reading-scale)); }
+html[data-reading-size] .toc-num            { font-size: calc(9px * var(--reading-scale)); }
+html[data-reading-size] .toc-empty          { font-size: calc(11.5px * var(--reading-scale)); }
+
+/* --- tables inside cards and prose --- */
+html[data-reading-size] table { font-size: calc(12.5px * var(--reading-scale)); }
+html[data-reading-size] th    { font-size: calc(9px * var(--reading-scale)); }
+
+/* Width applies to the reading column. "full" removes the cap entirely. */
+html[data-reading-width="default"] .content { max-width: 1040px; }
+html[data-reading-width="wide"] .content    { max-width: 1320px; }
+html[data-reading-width="full"] .content    { max-width: none; }
+
+/* Ragged-right is the default; justification is opt-in. Only prose is
+   justified — never a card label, a table cell, or code. */
+html[data-reading-align="justify"] .content > p,
+html[data-reading-align="justify"] .content > ul li,
+html[data-reading-align="justify"] .content .lede,
+html[data-reading-align="justify"] .q-simple p,
+html[data-reading-align="justify"] .q-say p { text-align: justify; }
+
+/* Visible to screen readers only — used for the Display panel's live region. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip: rect(0 0 0 0); clip-path: inset(50%);
+  overflow: hidden; white-space: nowrap;
+}
+
+/* ---------- focus mode ----------
+   The questions become the only thing on screen: the sidebar collapses out of
+   the grid and the bar keeps just the exit control and the theme toggle. The
+   parent docks these into a separate pinned ribbon because its pages carry one;
+   here there is a single bar, so it sheds furniture instead. */
+body.focus-mode .app { grid-template-columns: minmax(0, 1fr); }
+body.focus-mode .sidebar { display: none; }
+body.focus-mode .crumbs,
+body.focus-mode .menu-btn,
+body.focus-mode .home-btn { display: none !important; }
+/* Without the breadcrumb filling the row, something has to push the remaining
+   controls to the far end. */
+body.focus-mode .topbar-spacer { flex: 1 1 auto; }
+/* The exit control is the one affordance out of this mode, so it carries the
+   accent rather than sitting quiet like a normal view control. */
+body.focus-mode .focus-btn[aria-pressed="true"] {
+  color: var(--accent); font-weight: 620;
+}
+/* Focus mode is where a wider measure does real work, so the standard setting
+   opens up here. An explicit Wide or Full choice already wins on its own. */
+html[data-reading-width="default"] body.focus-mode .content { max-width: 1320px; }
+@media (max-width: 860px) {
+  body.focus-mode .content { max-width: none; }
+}
+
+.content {
+  flex: 1;
+  width: 100%; max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 28px clamp(22px, 4vw, 58px) 80px;
+  line-height: 1.62;
+}
+.content > p,
+.content > ul,
+.content > ol,
+.content .lede { max-width: 86ch; }
+
+/* ---------- page head ---------- */
+.page-head { margin-bottom: 24px; }
+.eyebrow {
+  margin-bottom: 8px;
+  color: var(--excel);
+  font-size: 10px; font-weight: 750;
+  letter-spacing: .1em; text-transform: uppercase;
+}
+.lede {
+  max-width: 86ch;
+  color: var(--text-secondary);
+  font-size: var(--fs-lead); line-height: 1.6;
+}
+
+.chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 0; }
+.chip {
+  min-height: 27px;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 8px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 11.5px; font-weight: 550;
+  box-shadow: none;
+}
+.chip.is-accent { border-color: var(--border); background: var(--excel-soft); color: var(--excel); }
+
+/* ---------- notes ---------- */
+/* Flat card, no coloured left bar — the parent retired those. The variant is
+   carried by the label colour inside, not by the container edge. */
+.note {
+  padding: 14px 16px; margin: 0 0 20px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-secondary);
+  font-size: 13.5px;
+}
+.note strong { color: var(--heading); }
+.note.is-warn { border-color: var(--border); background: var(--amber-soft); color: var(--text); }
+
+/* ---------- cards grid ---------- */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  gap: 12px;
+  margin: 18px 0 30px;
+}
+.tile {
+  display: block;
+  padding: 15px 16px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm);
+  color: inherit;
+  overflow: hidden;
+  transition: border-color .18s var(--ease), box-shadow .18s var(--ease),
+              transform .18s var(--ease);
+  /* Promoted up front rather than on hover: switching layers at the moment the
+     lift starts is what makes the text visibly re-rasterise mid-animation. */
+  will-change: transform;
+}
+/* A tile is an <a> — it navigates. The lift says so: 2px is enough to read as
+   "this one is live" at a glance and small enough that crossing a dense grid
+   does not feel like walking over piano keys. The shadow bloom was already
+   here and still does most of the work; the movement only sharpens it. */
+.tile:hover {
+  text-decoration: none;
+  border-color: var(--border-strong);
+  box-shadow: var(--card-hover-shadow);
+  transform: translateY(-2px);
+}
+/* Pressing puts it back down. Without this the card stays lifted through the
+   click and the tile feels stuck rather than pressed. */
+.tile:active { transform: translateY(0); transition-duration: .06s; }
+/* Keyboard tabbing gets the same affordance as the mouse — the lift is what
+   marks a tile as live, and it should not be mouse-only. */
+.tile:focus-visible {
+  border-color: var(--border-strong);
+  box-shadow: var(--card-hover-shadow);
+  transform: translateY(-2px);
+}
+/* A planned tile is inert (pointer-events: none below), so it must never lift. */
+.tile.is-planned:hover { transform: none; }
+.tile-num {
+  color: var(--excel);
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: .08em;
+}
+.tile h3 { margin: 6px 0 6px; font-size: 14.5px; }
+.tile p { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.55; }
+.tile-foot {
+  margin-top: 11px;
+  display: flex; align-items: center; gap: 8px;
+  color: var(--text-muted);
+  font-size: 11.5px; font-weight: 600;
+}
+.tile.is-planned { opacity: .55; pointer-events: none; }
+
+/* ---------- filter bar ----------
+   One compact row: search, tag chips, count and reset. It stays sticky so the
+   controls are reachable, but retreats on the way down the page — the questions
+   are what you are reading, not the filters — and comes straight back on the
+   first upward scroll. */
+.filters {
+  position: sticky; top: var(--header-h); z-index: 30;
+  display: flex; align-items: center; flex-wrap: nowrap; gap: 8px;
+  padding: 7px 10px; margin: 0 0 14px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm);
+  transition: opacity .22s var(--ease), transform .22s var(--ease),
+              visibility .22s var(--ease);
+}
+/* Retracted upward rather than merely faded, so it never sits as a ghost layer
+   over the first card while it is on its way out. */
+.filters.is-hidden {
+  opacity: 0; visibility: hidden;
+  transform: translateY(-8px);
+  pointer-events: none;
+}
+
+.search-wrap { position: relative; flex: 0 0 clamp(180px, 26%, 280px); }
+.search-wrap input {
+  width: 100%;
+  padding: 5px 10px 5px 27px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg-elevated); color: var(--text);
+  font-family: inherit; font-size: 12.5px;
+}
+.search-wrap input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+.search-wrap input::placeholder { color: var(--text-muted); }
+.search-icon {
+  position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
+  color: var(--text-muted); font-size: 12px; pointer-events: none;
+}
+
+/* Chips scroll sideways inside their own lane instead of wrapping the bar onto
+   a second and third line — keeping the bar exactly one row tall is the point. */
+.filter-tags {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; align-items: center; gap: 4px;
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  /* The trailing chip is otherwise sliced mid-word against the count, which
+     reads as a rendering fault rather than as "there is more this way". */
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 22px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 calc(100% - 22px), transparent 100%);
+  padding-right: 4px;
+}
+.filter-tags::-webkit-scrollbar { display: none; }
+.pill {
+  min-height: 23px;
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center;
+  padding: 2px 8px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg-elevated); color: var(--text-secondary);
+  font-family: inherit; font-size: 11px; font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color .15s var(--ease), color .15s var(--ease), background .15s var(--ease);
+}
+.pill:hover { border-color: var(--text-muted); color: var(--text); }
+.pill[aria-pressed="true"] { background: var(--excel); border-color: var(--excel); color: #fff; }
+.filter-actions { flex: 0 0 auto; display: flex; gap: 6px; align-items: center; }
+.result-count { color: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+/* ---------- question card ---------- */
+.q-list { display: grid; gap: 10px; margin: 0 0 32px; }
+.q-card {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: border-color .18s var(--ease), box-shadow .18s var(--ease),
+              transform .18s var(--ease);
+  will-change: transform;
+}
+.q-card[hidden] { display: none; }
+/* A question card expands in place rather than navigating, and only its
+   summary row is clickable — so it gets a shallower 1px lift than a tile's 2px.
+   The distinction is deliberate: the depth of the movement tracks how far the
+   click takes you. An open card is already the thing you are reading and stops
+   responding to hover entirely — lifting it would be reporting an affordance
+   the card no longer has. */
+.q-card:hover:not([open]) {
+  border-color: var(--border-strong);
+  box-shadow: var(--card-hover-shadow);
+  transform: translateY(-1px);
+}
+.q-card:not([open]):has(> summary:active) { transform: translateY(0); transition-duration: .06s; }
+/* Keyboard parity: the summary is the focusable element, so the lift keys off
+   its focus rather than the card's. */
+.q-card:not([open]):has(> summary:focus-visible) {
+  border-color: var(--border-strong);
+  box-shadow: var(--card-hover-shadow);
+  transform: translateY(-1px);
+}
+.q-card[open] { border-color: var(--border-strong); box-shadow: var(--shadow-md); }
+/* During a close the element is still [open] — the content has to exist to be
+   animated out — so these three restore the closed look for the duration of
+   the animation. Without them the chevron, badge and border all snap on the
+   final frame instead of easing back with everything else. */
+.q-card.is-closing { border-color: var(--border); box-shadow: var(--shadow-sm); }
+.q-card > summary {
+  display: grid; grid-template-columns: 30px minmax(0, 1fr) 26px;
+  gap: 12px; align-items: start;
+  padding: 13px 15px;
+  cursor: pointer; list-style: none; user-select: none;
+}
+.q-card > summary::-webkit-details-marker { display: none; }
+.q-no {
+  display: grid; place-items: center;
+  width: 26px; height: 26px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.q-card[open] .q-no { border-color: var(--excel); background: var(--excel); color: #fff; }
+.q-card.is-closing .q-no {
+  border-color: var(--border); background: var(--surface); color: var(--text-secondary);
+}
+/* The badge and chevron carry no transition of their own, so they would jump
+   between the two states. Matched to the close duration so they travel with
+   the height rather than arriving ahead of it. */
+.q-no { transition: background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease); }
+.q-title { color: var(--heading); font-size: 14.5px; font-weight: 650; line-height: 1.45; }
+.q-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.q-meta span {
+  padding: 2px 7px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg-elevated); color: var(--text-muted);
+  font-size: 10.5px; font-weight: 550; letter-spacing: .02em;
+}
+.q-meta span.is-round { background: var(--excel-soft); color: var(--excel); }
+.q-meta span.is-level { background: var(--surface); color: var(--text-secondary); }
+.q-chev {
+  display: grid; place-items: center;
+  width: 24px; height: 24px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg-elevated); color: var(--text-secondary);
+  font-size: 12px; font-weight: 700;
+  /* border-color was missing from this list, so the accent edge snapped while
+     the fill and the glyph eased. All four travel together now. */
+  transition: transform .22s var(--ease), background .22s var(--ease),
+              color .22s var(--ease), border-color .22s var(--ease);
+}
+.q-card[open] .q-chev { transform: rotate(45deg); border-color: var(--excel); background: var(--excel); color: #fff; }
+.q-card.is-closing .q-chev {
+  transform: none;
+  border-color: var(--border); background: var(--bg-elevated); color: var(--text-secondary);
+}
+
+/* The old rule ran a fade-and-slide keyframe here on every open. It has been
+   removed rather than tuned: the jump being complained about was the layout,
+   not the fade — <details> reflows to full height in one frame — so the body's
+   height is now animated in JS (see the card open/close block in portal.js) and
+   a second animation on the same element would only fight it. */
+.q-body { padding: 0 18px 18px 57px; }
+/* Held only while the JS animation runs. The overflow clip is what makes a
+   partial height show a partial card instead of the content spilling past the
+   card's edge on the way open. */
+.q-card.is-animating .q-body { overflow: hidden; }
+/* A card mid-animation must not also be resizing for another reason — the
+   hover lift would compound with the height change and read as a wobble. */
+.q-card.is-animating { transform: none !important; }
+
+.slot-label {
+  display: block; margin: 0 0 5px;
+  font-size: 9px; font-weight: 700;
+  letter-spacing: .07em; text-transform: uppercase;
+}
+.q-why {
+  padding: 9px 12px; margin-bottom: 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-secondary); font-size: 13px;
+}
+.q-why .slot-label { color: var(--text-muted); }
+.q-simple { margin-bottom: 14px; }
+.q-simple .slot-label { color: var(--excel); }
+.q-simple p:last-child { margin-bottom: 0; }
+.q-points { margin: 0 0 14px; padding-left: 20px; }
+.q-points li { margin-bottom: 5px; color: var(--text-secondary); }
+.q-points li strong { color: var(--heading); }
+.q-code {
+  margin: 0 0 14px; padding: 12px 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--text);
+  overflow-x: auto; line-height: 1.55;
+}
+/* The "say this in the room" slot keeps a left accent bar. It is the one place
+   in this portal where a coloured edge earns itself: it marks the words the
+   reader speaks out loud, and it has to be findable at a glance while
+   scrolling a long card. Everything else is a flat sheet. */
+.q-say {
+  margin: 0 0 12px; padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--excel);
+  border-radius: var(--radius-sm);
+  background: var(--excel-soft);
+}
+.q-say .slot-label { color: var(--excel); }
+.q-say p { margin: 0; color: var(--text); }
+.q-numbers, .q-wrong, .q-follow {
+  padding: 10px 12px; margin-bottom: 10px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+.q-numbers { background: var(--green-soft); color: var(--text); }
+.q-numbers .slot-label { color: var(--green); }
+.q-wrong { background: var(--red-soft); color: var(--text); }
+.q-wrong .slot-label { color: var(--red); }
+.q-follow { border-style: dashed; background: var(--bg-elevated); color: var(--text-secondary); }
+.q-follow .slot-label { color: var(--text-muted); }
+.q-actions { display: flex; gap: 6px; margin-top: 12px; }
+
+.btn, .mini-btn {
+  min-height: 29px;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0 11px;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--bg-elevated); color: var(--text-secondary);
+  font-family: inherit; font-size: 11.5px; font-weight: 550;
+  cursor: pointer;
+  box-shadow: none;
+  transition: border-color .15s var(--ease), color .15s var(--ease), background .15s var(--ease);
+}
+.btn:hover, .mini-btn:hover { border-color: var(--text-muted); color: var(--text); }
+.btn.primary, .mini-btn.primary,
+.btn:not(.is-ghost) { border-color: var(--excel); background: var(--excel); color: #fff; }
+.btn:not(.is-ghost):hover { border-color: var(--accent-hover); background: var(--accent-hover); color: #fff; }
+.btn.is-ghost { background: var(--bg-elevated); color: var(--text-secondary); border-color: var(--border-strong); }
+.btn.is-ghost:hover { border-color: var(--text-muted); color: var(--text); background: var(--surface); }
+.mini-btn[data-done="true"] { border-color: var(--excel); background: var(--excel-soft); color: var(--excel); }
+
+.q-empty {
+  padding: 36px 20px; text-align: center;
+  border: 1px dashed var(--border); border-radius: var(--radius);
+  color: var(--text-muted); font-size: 13.5px;
+}
+
+/* ---------- tables ---------- */
+.table-wrap {
+  overflow: auto; margin: 0 0 22px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: none;
+}
+table {
+  width: 100%;
+  border-collapse: separate; border-spacing: 0;
+  background: var(--bg-elevated);
+  font-size: 12.5px;
+}
+th, td { padding: 9px 11px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+th {
+  background: var(--surface); color: var(--text-muted);
+  font-size: 9px; font-weight: 700;
+  letter-spacing: .07em; text-transform: uppercase;
+}
+tr:last-child td { border-bottom: 0; }
+
+/* ---------- rehearsal ---------- */
+.timer-face {
+  font-family: var(--font-mono);
+  font-size: clamp(2.4rem, 1.8rem + 3vw, 3.6rem);
+  font-weight: 700; letter-spacing: .02em; text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--heading);
+}
+.timer-face.is-over { color: var(--red); }
+.timer-box {
+  padding: 22px; margin-bottom: 22px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm);
+}
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+.stat-row {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px; margin-bottom: 22px;
+}
+.stat {
+  padding: 15px 16px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm);
+}
+.stat b {
+  display: block;
+  color: var(--heading);
+  font-size: 26px; font-weight: 680; line-height: 1.1;
+  letter-spacing: -.025em;
+  font-variant-numeric: tabular-nums;
+}
+.stat span { color: var(--text-muted); font-size: 11.5px; font-weight: 550; }
+
+/* ---------- backdrop (mobile drawer scrim) ---------- */
+.backdrop {
+  display: none;
+  position: fixed; inset: 0; z-index: 70;
+  background: rgba(17, 20, 26, .38);
+}
+
+/* =========================================================================
+   RESPONSIVE
+
+   The breakpoints are the parent portal's, not this file's own: 860px is where
+   the shell becomes a drawer, 620px and 430px are the two phone steps. The
+   previous 960px value put this portal into its mobile layout on tablets while
+   the main portal was still showing a desktop rail, which is exactly the
+   inconsistency this pass removes.
+   ========================================================================= */
+
+/* No narrow-desktop step for the rail. office-theme.css documents that the
+   861–1080px rule which tried to drop it to 184px was dead code and deleted it:
+   the rail is 238px at every desktop width. Adding one back here would be the
+   only place the two portals disagree on tablet, which is the whole point of
+   this pass. */
+
+@media (max-width: 860px) {
+  :root {
+    /* Touch targets drive the height here, not density. */
+    --header-h: 50px;
+    --fs-base: 14.5px;
+    --fs-h1: clamp(24px, 6.1vw, 30px);
+    --fs-h2: 19.5px;
+    --fs-h3: 15px;
+    /* Density scaling is a desktop measure — it buys back screen on a wide
+       canvas. A drawer is already sized as a fraction of the viewport, so
+       shrinking it again only makes the tap targets smaller. Setting the
+       factor to 1 neutralises the zoom and the height correction together. */
+    --density: 1;
+  }
+  .app { display: block; }
+  .main { width: 100%; }
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 80;
+    width: min(88vw, 324px);
+    height: 100dvh;
+    padding: 0;
+    border: 0;
+    border-right: 1px solid var(--border);
+    border-radius: 0 8px 8px 0;
+    background: var(--bg-subtle);
+    box-shadow: var(--shadow-lg);
+    transform: translateX(-103%);
+    transition: transform .22s ease;
+    zoom: 1;
+  }
+  body.nav-open .sidebar,
+  .app.nav-open .sidebar { transform: translateX(0); }
+  body.nav-open .backdrop,
+  .app.nav-open .backdrop { display: block; }
+  /* Fallback scrim for the markup variant that has no .backdrop element. */
+  body.nav-open:not(:has(.backdrop))::after {
+    content: ""; position: fixed; inset: 0; z-index: 70;
+    background: rgba(17, 20, 26, .38);
+  }
+  .brand { min-height: 52px; padding: 0 10px 0 12px; border-radius: 0; }
+  .brand-mark { width: 31px; height: 31px; flex: 0 0 31px; border-radius: 10px; }
+  .brand-text strong { font-size: 14px; }
+  .brand-text span { font-size: 11.5px; }
+  .menu-btn { display: inline-grid; }
+  .topbar {
+    gap: 4px;
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
+  }
+  .crumbs { gap: 5px; font-size: 12px; }
+  /* Compact controls, exactly as the parent portal does it (office-theme.css,
+     the max-width:860px block that closes the CHAPTER TOP BAR section). The
+     compaction on mobile is the *labels* going, not the buttons shrinking:
+     every control becomes one 36px icon-only square with a 9px radius, which
+     is a real touch target. This portal previously kept all three labels, so
+     its bar was a row of wide pills where the parent shows four squares. */
+  .home-lbl,
+  .focus-lbl,
+  .reader-lbl { display: none; }
+  .topbar .icon-btn,
+  .home-btn,
+  .focus-btn,
+  .reader-btn {
+    width: 36px; min-width: 36px;
+    height: 36px; min-height: 36px;
+    padding: 0;
+    border-radius: 9px;
+  }
+  .content { padding: 22px 18px 64px; }
+  .content h1 { max-width: 100%; }
+  .card-grid { grid-template-columns: 1fr; }
+  .filters { top: var(--header-h); }
+  .q-card > summary { grid-template-columns: 26px minmax(0, 1fr) 24px; gap: 10px; padding: 12px 13px; }
+  .q-body { padding: 0 15px 16px; }
+}
+
+@media (max-width: 620px) {
+  .content { padding-left: 14px; padding-right: 14px; }
+  .content h2 { margin-top: 27px; }
+  .tile { padding: 14px; }
+  .table-wrap { margin-left: 0; margin-right: 0; }
+  /* Narrow screens keep the single row; the count is the first thing to go
+     since the chips themselves show what is filtering. */
+  .search-wrap { flex: 0 0 40%; }
+  .result-count { display: none; }
+  /* Only the last crumb survives; the trail above it is the one thing on this
+     row with nowhere to go on a phone. */
+  .crumbs { margin-left: 0; font-size: 13px; }
+  .crumbs a:not(:last-of-type), .crumbs > span:not(:last-child) { display: none; }
+}
+
+@media (max-width: 430px) {
+  :root { --header-h: 48px; }
+  .sidebar { width: min(92vw, 318px); }
+  .content { padding-left: 12px; padding-right: 12px; }
+  .topbar { gap: 2px; }
+  .crumbs { max-width: none; font-size: 12.5px; }
+  .topbar .icon-btn,
+  .home-btn,
+  .focus-btn,
+  .reader-btn { width: 34px; min-width: 34px; height: 34px; min-height: 34px; }
+}
+
+/* Landscape phones have the width for the bar but almost no height to spare. */
+@media (max-width: 900px) and (max-height: 460px) {
+  :root { --header-h: 42px; }
+  .topbar .icon-btn,
+  .home-btn,
+  .focus-btn,
+  .reader-btn { width: 30px; min-width: 30px; height: 30px; min-height: 30px; }
+}
+
+/* Touch devices get no hover border change — it sticks after a tap. The lift
+   has exactly the same problem, and worse: a card left floating with no cursor
+   on screen to explain it just looks misrendered. */
+@media (hover: none) {
+  .tile:hover, .q-card:hover { border-color: var(--border); box-shadow: var(--shadow-sm); }
+  .tile:hover, .q-card:hover:not([open]) { transform: none; }
+}
+
+@media print {
+  .sidebar, .topbar, .filters, .q-actions, .backdrop { display: none !important; }
+  .q-card { break-inside: avoid; border-color: #ccc; box-shadow: none; }
+  .q-card > summary { padding-left: 0; }
+  body { background: #fff; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* Zeroing the duration alone would still move the card — instantly, which is
+     the one thing this setting is asking us not to do. The border and shadow
+     stay, so the hover is still fully legible without any motion at all. */
+  .tile:hover, .tile:focus-visible,
+  .q-card:hover:not([open]),
+  .q-card:not([open]):has(> summary:focus-visible) { transform: none; }
+}
+
+/* ---------- employer tracks ----------
+   Rendered by bootTracks() from data/tracks.js. Uses the existing tokens only,
+   so it follows the theme without adding any of its own colours. */
+.track {
+  padding: 22px 24px;
+  margin: 0 0 22px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm);
+  /* scroll-margin so the sticky topbar does not cover the heading on a jump
+     link. Derived rather than hardcoded, because --header-h changes at three
+     breakpoints and the old fixed 76px was only ever right at one of them. */
+  scroll-margin-top: calc(var(--header-h) + 30px);
+}
+.track > h2 { margin-top: 0; }
+.track > h3 {
+  margin-top: 1.5rem;
+  font-size: 1rem;
+  letter-spacing: .01em;
+}
+
+.track-ten { margin: 0 0 6px; padding-left: 22px; }
+.track-ten li { margin-bottom: 8px; line-height: 1.5; }
+.track-ten a { font-weight: 600; }
+.track-ten li.is-missing { color: var(--bad); font-style: italic; }
+.track-topic {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--bg-sunken);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.track-moves { margin: 0; padding-left: 22px; }
+.track-moves li { margin-bottom: 10px; line-height: 1.6; color: var(--text-secondary); }
+.track-moves li strong { color: var(--text); }
+
+@media (max-width: 700px) {
+  .track { padding: 17px 15px; }
+  .track-topic { margin-left: 0; margin-top: 3px; }
+}
+
+/* =========================================================================
+   RIGHT RAIL — "on this page"
+
+   Ported from the parent portal (assets/office-theme.css: .toc-rail / .toc and
+   the max-width:980px block that turns it into a "Jump to section" dropdown).
+   Values, breakpoints, transitions and easing are the parent's, not new ones —
+   the point of this block is that the two portals scroll and animate the same.
+
+   The parent offsets the rail by --header-h + --ribbon-h. This portal has no
+   ribbon under the bar, so --ribbon-h is declared as 0px here and every derived
+   offset below stays literally the parent's expression.
+   ========================================================================= */
+:root { --ribbon-h: 0px; }
+
+/* The reading row: content, then rail. Only pages that ship a .toc-rail get
+   the second track — index/rounds/tracks keep a single full-width column. */
+.content-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  width: 100%; max-width: none;
+  margin: 0; padding: 0;
+  /* .main is a column flexbox and .content used to be the growing child. Once
+     the rail wraps it, the wrapper inherits that job — without this the shell
+     stops at content height and a short page leaves the rail's border hanging
+     in mid-air. */
+  flex: 1;
+  min-height: 0;
+}
+/* The rail is a grid track, so the centring that .content does inside the flex
+   column would now centre it in the *remaining* space and drift it away from
+   the rail. The parent has the same arrangement and the same fix. */
+.content-wrap > .content { flex: initial; }
+.content-wrap:has(.toc-rail) { grid-template-columns: minmax(0, 1fr) var(--toc-w); }
+
+.toc-rail {
+  position: sticky;
+  top: calc(var(--header-h) + var(--ribbon-h));
+  align-self: start;
+  height: calc(100vh - var(--header-h) - var(--ribbon-h));
+  padding: 22px 14px;
+  overflow: auto;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.toc {
+  position: static; top: auto;
+  max-height: none;
+  padding: 0; border: 0; border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.toc-book-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 0 7px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.toc-kicker {
+  display: block;
+  color: var(--text-muted);
+  font-size: 9px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase;
+}
+.toc-book-head strong {
+  display: block; margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 11.5px; font-weight: 600;
+}
+.toc-top {
+  flex: none;
+  display: inline-grid; place-items: center;
+  width: 25px; height: 25px;
+  border: 1px solid var(--border); border-radius: 5px;
+  color: var(--text-muted); background: var(--bg-elevated);
+  font-size: 12px; cursor: pointer;
+  transition: color .16s ease, border-color .16s ease;
+}
+.toc-top:hover { border-color: var(--border-strong); color: var(--text); }
+.toc-filter {
+  display: flex; align-items: center; gap: 6px;
+  height: 29px; margin: 10px 0 7px; padding: 0 7px;
+  border: 1px solid var(--border); border-radius: 5px;
+  background: var(--bg-elevated);
+}
+.toc-filter:focus-within { border-color: var(--border-strong); box-shadow: 0 0 0 2px var(--accent-ring, transparent); }
+.toc-filter svg {
+  flex: none; width: 13px; height: 13px;
+  fill: none; stroke: currentColor; stroke-width: 1.8;
+  stroke-linecap: round;
+  color: var(--text-muted);
+}
+.toc-filter input {
+  min-width: 0; flex: 1;
+  border: 0; background: transparent; color: var(--text);
+  font: inherit; font-size: 11.5px;
+}
+.toc-filter input:focus { outline: none; }
+.toc-list { max-height: none; overflow: visible; padding-right: 0; }
+.toc a {
+  position: relative;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 5px;
+  margin: 0;
+  padding: 6px 7px 6px 11px;
+  border: 0; border-radius: 4px;
+  color: var(--text-muted);
+  background: transparent;
+  font-size: 11.5px; line-height: 1.35;
+  text-decoration: none;
+  transition: background .22s ease, color .22s ease;
+}
+/* Rounded left bar — identical to this portal's sidebar nav highlight. Kept
+   mounted but collapsed so it grows in as scroll moves the active section. */
+.toc a::before {
+  content: "";
+  position: absolute; left: 0; top: 5px; bottom: 5px;
+  width: 2px; border-radius: 2px;
+  background: var(--excel);
+  opacity: 0;
+  transform: scaleY(.34); transform-origin: center;
+  transition: transform .24s cubic-bezier(.4, 0, .2, 1), opacity .2s ease;
+}
+.toc a:hover { color: var(--text); background: var(--bg-elevated); text-decoration: none; }
+.toc a:hover::before { opacity: .45; transform: scaleY(.7); }
+.toc a.active { color: var(--text); background: var(--excel-soft); }
+.toc a.active::before { opacity: 1; transform: scaleY(1); }
+.toc a[hidden] { display: none; }
+.toc-num { color: var(--excel); font-family: var(--font-mono); font-size: 9px; }
+.toc-label { white-space: normal; }
+.toc-empty { padding: 8px 9px; color: var(--text-muted); font-size: 11.5px; }
+/* The compact "Jump to section" toggle is mobile-only (see the 980px block). */
+.toc-toggle { display: none; }
+
+/* Focus mode sheds the rail, same as the parent. */
+body.focus-mode .toc-rail,
+body.focus-mode .toc { display: none !important; }
+body.focus-mode .content-wrap:has(.toc-rail) { grid-template-columns: minmax(0, 1fr); }
+
+/* ---- Tablet and phone: the rail becomes a "Jump to section" dropdown ----
+   The parent's breakpoint is 980px, above its 860px drawer step — so on a
+   tablet the left nav is still a drawer and this bar is already a dropdown. */
+@media (max-width: 980px) {
+  .content-wrap,
+  .content-wrap:has(.toc-rail) { grid-template-columns: minmax(0, 1fr); }
+  .toc-rail {
+    position: sticky;
+    top: calc(var(--header-h) + var(--ribbon-h));
+    z-index: 24;
+    grid-row: 1;
+    height: auto;
+    padding: 7px 12px;
+    border: 0; border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    overflow: visible;
+    transition: transform .28s ease, opacity .24s ease;
+  }
+  /* Scroll-down hides it, scroll-up brings it back (toggled by portal.js). */
+  .toc-rail.toc-rail-hidden {
+    transform: translateY(-120%);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .toc { position: relative; display: block; }
+  .toc-book-head,
+  .toc-filter { display: none; }
+
+  /* Collapsed bar */
+  .toc-toggle {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; min-height: 36px;
+    padding: 7px 10px;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg-elevated); color: var(--text-secondary);
+    font: 600 12px/1.25 var(--font-sans);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .toc-toggle-ico { flex: none; width: 15px; height: 15px; color: var(--excel); }
+  .toc-toggle-label {
+    flex: 1; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    text-align: left;
+  }
+  .toc-toggle-caret {
+    flex: none; width: 15px; height: 15px;
+    color: var(--text-muted);
+    transition: transform .28s cubic-bezier(.16, 1, .3, 1);
+  }
+  .toc.toc-open .toc-toggle { border-color: var(--border-strong); }
+  .toc.toc-open .toc-toggle-caret { transform: rotate(180deg); }
+
+  /* Expanded list — an overlay dropdown so it never pushes content down.
+     The parent animates this rather than flipping `display` (genai-motion.css
+     §5): it stays laid out and rides opacity + a small rise, with `visibility`
+     delayed by the duration so it is not focusable while closed. */
+  .toc-list {
+    position: absolute; left: 0; right: 0; top: calc(100% + 6px);
+    max-height: min(62vh, 440px);
+    padding: 6px;
+    overflow-y: auto; overscroll-behavior: contain;
+    border: 1px solid var(--border); border-radius: 10px;
+    background: var(--surface);
+    box-shadow: var(--shadow-lg);
+    scrollbar-width: thin;
+    visibility: hidden; opacity: 0;
+    transform: translateY(-6px) scale(.99); transform-origin: 50% 0;
+    pointer-events: none;
+    transition: opacity .28s ease,
+                transform .28s cubic-bezier(.16, 1, .3, 1),
+                visibility 0s linear .28s;
+  }
+  /* .toc-open sits on .toc (the <nav>), not on .toc-rail — portal.js follows
+     the parent's convention here so the two behave identically. */
+  .toc.toc-open .toc-list {
+    visibility: visible; opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    transition: opacity .28s ease,
+                transform .28s cubic-bezier(.16, 1, .3, 1),
+                visibility 0s;
+  }
+  .toc-toggle {
+    transition: background .18s ease, border-color .18s ease,
+                transform .18s cubic-bezier(.22, .61, .36, 1);
+  }
+  .toc-toggle:active { transform: scale(.99); }
+  .toc a {
+    display: flex; align-items: center; gap: 8px;
+    min-height: 36px;
+    margin: 1px 0;
+    padding: 7px 9px 7px 12px;
+    border: 0; border-radius: 7px;
+    background: transparent;
+    white-space: normal;
+  }
+  .toc a.active { color: var(--accent); background: var(--excel-soft); }
+  .toc-empty { display: none; }
+  .content { grid-row: 2; padding-top: 20px; }
+}
+
+/* On tablet and phone the rail is a second sticky row under the bar, so a jump
+   target has to clear both or it lands underneath the "Jump to" strip. */
+@media (max-width: 980px) {
+  .content h2[id],
+  .content .q-card[id],
+  .content .track { scroll-margin-top: calc(var(--header-h) + 58px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toc-rail, .toc a, .toc a::before,
+  .toc .toc-list, .toc-toggle, .toc-toggle-caret { transition-duration: .01ms !important; }
+}
+
+/* ---------- whiteboard diagram ----------
+   Austere on purpose. This is a picture the reader has to reproduce on a
+   whiteboard while talking, so it is drawn the way a marker draws: thin
+   strokes, plain boxes, flat tints. Anything more decorative would be
+   something you cannot reproduce in the room, which makes the card misleading
+   rather than helpful.
+
+   Every colour is a token, so light and dark work from one definition and a
+   theme switch needs no re-render — the SVG is in the document, not an <img>,
+   so it inherits like any other element. */
+.q-diagram { margin: 0 0 14px; }
+.q-diagram .slot-label { color: var(--text-muted); }
+.dg-frame {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  padding: 4px 6px;
+}
+/* The drawing scales to the column; it never scrolls sideways and never sets a
+   min-width. An earlier version pinned 480px and pushed a horizontal scrollbar
+   onto every phone — the fix is a second, single-column rendering of the same
+   spec, swapped below, not a scroll container. */
+.dg { display: block; width: 100%; height: auto; font-family: var(--font-sans); }
+.dg-narrow { display: none; }
+@media (max-width: 640px) {
+  .dg-wide { display: none; }
+  .dg-narrow { display: block; }
+  /* The narrow SVG is a 700-unit canvas painted into roughly 320 CSS pixels,
+     so every glyph lands at well under half its authored size — 11.5px of
+     label renders around 5px, which is what made the phone view unreadable.
+     Scaling the type up in USER UNITS is the fix: the viewBox does the
+     shrinking, so authoring at ~2.2x lands back near the intended size on
+     glass. Only the narrow layout is touched; the wide one is already
+     rendering close to 1:1. */
+  .dg-narrow .dg-label { font-size: 25px; }
+  .dg-narrow .dg-note { font-size: 20px; }
+  .dg-narrow .dg-elabel { font-size: 21px; }
+}
+
+.dg-node rect {
+  fill: var(--bg-elevated);
+  stroke: var(--border-strong);
+  stroke-width: 1.25;
+}
+.dg-label {
+  fill: var(--heading);
+  font-size: 11.5px; font-weight: 650;
+  text-anchor: middle;
+}
+.dg-note {
+  fill: var(--text-muted);
+  font-size: 9px; font-weight: 600;
+  text-anchor: middle;
+}
+/* Four accents, each carrying one meaning across every diagram in the bank:
+   accent = the happy path, warn = a decision or a gate, bad = a failure or a
+   give-up branch, muted = optional or skipped. Consistency is what lets a
+   reader skim a diagram they have not seen before. */
+.dg-node.is-accent rect { stroke: var(--accent); fill: var(--accent-soft); }
+.dg-node.is-accent .dg-label { fill: var(--accent-strong); }
+.dg-node.is-warn rect { stroke: var(--amber); fill: var(--amber-soft); }
+.dg-node.is-bad rect { stroke: var(--red); fill: var(--red-soft); }
+.dg-node.is-muted rect { stroke: var(--border); fill: var(--surface); stroke-dasharray: 4 3; }
+.dg-node.is-muted .dg-label { fill: var(--text-muted); }
+
+.dg-edge { fill: none; stroke: var(--border-strong); stroke-width: 1.25; }
+/* A back edge is a loop — the retry, the rewrite, the hand-back. Colouring and
+   dashing it is what stops a graph reading as a chain at a glance, which is
+   precisely the distinction these questions ask about. */
+.dg-edge.is-back { stroke: var(--amber); stroke-dasharray: 5 4; }
+.dg marker path { fill: var(--border-strong); }
+
+/* ---- flow pulse ----
+   A second copy of each connector, dashed and animated along its own length,
+   so data visibly travels in the direction of the arrow. It is decoration on
+   top of a drawing that is already complete and correct: it sits under the
+   labels, is not announced to assistive tech, and switching it off (below)
+   loses nothing but the movement. */
+.dg-flow {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-dasharray: 5 95;      /* one short mark travelling a long gap */
+  stroke-dashoffset: 100;
+  opacity: .75;
+  animation: dg-travel 2.6s linear infinite;
+  pointer-events: none;
+}
+.dg-flow.is-back { stroke: var(--amber); animation-duration: 3.2s; }
+@keyframes dg-travel { to { stroke-dashoffset: 0; } }
+/* Stagger so the whole drawing does not pulse in lockstep, which reads as a
+   blink rather than as flow. */
+.dg-flow:nth-of-type(3n+2) { animation-delay: -.85s; }
+.dg-flow:nth-of-type(3n)   { animation-delay: -1.7s; }
+
+/* A plate behind an edge label, so a connector never reads through the text
+   where the two cross. */
+.dg-eplate { fill: var(--surface); stroke: none; }
+.dg-elabel {
+  fill: var(--text-secondary);
+  font-size: 9.5px; font-weight: 600;
+}
+
+.q-diagram figcaption {
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 12px; line-height: 1.55;
+}
+.q-diagram figcaption strong { color: var(--text-secondary); }
+
+/* Motion is the first thing to go: the diagram must be fully readable static,
+   and for anyone who asks not to see movement it simply is. */
+@media (prefers-reduced-motion: reduce) {
+  .dg-flow { animation: none; opacity: 0; }
+}
+/* Printed, the drawing is the point — keep it, drop the pulse, let it break
+   cleanly, and always print the wide layout regardless of viewport. */
+@media print {
+  .dg-flow { display: none; }
+  .q-diagram { break-inside: avoid; }
+  .dg-wide { display: block !important; }
+  .dg-narrow { display: none !important; }
+}
+
+/* ---------- previous / next pager ----------
+   A wrapping flex row at the foot of every page. The step line takes a full
+   basis of its own and sits as a caption above; the cards below then share
+   what is left, equal width and equal height.
+
+   Flex, not grid: `repeat(auto-fit, minmax(…, 1fr))` only collapses a track
+   nothing occupies, and a full-width caption occupies every one of them — so a
+   wide column would keep three tracks alive for two cards and stop the row
+   short. `flex: 1 1 220px` has no track to leave empty.
+
+   Both titles read left, including "next". Mirroring one card's text to the
+   right is what makes the row look ragged. */
+.page-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 12px;
+  margin: 40px 0 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.page-nav .pn-progress {
+  flex: 0 0 100%;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+.page-nav .pn-link {
+  flex: 1 1 220px;
+  min-width: 0;               /* a long title shrinks the card, not the row */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 13px 15px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm);
+  color: inherit;
+  transition: border-color .18s var(--ease), box-shadow .18s var(--ease),
+              transform .18s var(--ease);
+  will-change: transform;
+}
+/* Same affordance as a .tile — these navigate, and the lift is what says so. */
+.page-nav .pn-link:hover,
+.page-nav .pn-link:focus-visible {
+  text-decoration: none;
+  border-color: var(--border-strong);
+  box-shadow: var(--card-hover-shadow);
+  transform: translateY(-2px);
+}
+.page-nav .pn-link:active { transform: translateY(0); transition-duration: .06s; }
+.page-nav .pn-dir {
+  color: var(--excel);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.page-nav .pn-ttl {
+  margin-top: auto;
+  color: var(--heading);
+  font-size: 14.5px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+.page-nav .pn-num {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+/* When only "next" exists (the first page) it would otherwise stretch the full
+   width and read as a banner rather than a step. Keeping it to half leaves the
+   prev slot visibly empty, which is the honest signal: there is nothing before
+   this. Below the wrap point both cards are full width anyway. */
+.page-nav .pn-next:only-of-type { flex: 0 1 calc(50% - 6px); }
+@media (max-width: 620px) {
+  .page-nav .pn-link,
+  .page-nav .pn-next:only-of-type { flex: 1 1 100%; }
+}
+
+@media print {
+  .toc-rail, .page-nav { display: none !important; }
+}
