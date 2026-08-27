@@ -8,6 +8,144 @@ window.IR.q = window.IR.q || {};
 window.IR.q["05-rag"] = {
   lede: "RAG is the single most-asked subject in Indian GenAI interviews, because it is what most teams are actually building. The panel is rarely checking whether you know the definition. They are checking whether you have watched retrieval fail quietly and fixed it.",
   grounding: "public JDs + what production retrieval forces you to know",
+  svg: `<svg viewBox="0 0 1100 500" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;  background: #ffffff; border-radius: 12px; border: 1px solid #e5e7eb;">
+ <!-- Background Boxes -->
+ <rect x="20" y="60" width="300" height="420" rx="10" fill="#E8F4F8" />
+ <rect x="780" y="60" width="300" height="420" rx="10" fill="#EAF3E6" />
+ 
+ <!-- Titles -->
+ <text x="550" y="35" font-size="22" font-weight="800" text-anchor="middle" fill="#111827">END-TO-END RAG PIPELINE FLOW</text>
+ <text x="170" y="90" font-size="16" font-weight="700" text-anchor="middle" fill="#1F2937">DATA INGESTION PHASE</text>
+ <text x="930" y="90" font-size="16" font-weight="700" text-anchor="middle" fill="#1F2937">GENERATION &amp; RESPONSE PHASE</text>
+ 
+ <!-- DATA INGESTION NODES -->
+ <!-- Document / Data Source -->
+ <g transform="translate(170, 130)">
+  <rect x="-60" y="0" width="120" height="50" rx="6" fill="#ffffff" stroke="#374151" stroke-width="2"/>
+  <text x="0" y="22" font-size="12" font-weight="600" text-anchor="middle" fill="#374151">Data Sources</text>
+  <text x="0" y="38" font-size="10" text-anchor="middle" fill="#6B7280">PDFs, APIs, DBs</text>
+ </g>
+ <path d="M 170 180 L 170 205" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
+
+ <!-- Load & Clean -->
+ <g transform="translate(170, 210)">
+  <rect x="-60" y="0" width="120" height="50" rx="6" fill="#ffffff" stroke="#374151" stroke-width="2"/>
+  <text x="0" y="22" font-size="12" font-weight="600" text-anchor="middle" fill="#374151">Load &amp; Clean</text>
+  <text x="0" y="38" font-size="10" text-anchor="middle" fill="#6B7280">Preprocess text</text>
+ </g>
+ <path d="M 170 260 L 170 285" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
+
+ <!-- Chunking -->
+ <g transform="translate(170, 290)">
+  <rect x="-60" y="0" width="120" height="50" rx="6" fill="#ffffff" stroke="#374151" stroke-width="2"/>
+  <text x="0" y="22" font-size="12" font-weight="600" text-anchor="middle" fill="#374151">Text Chunking</text>
+  <text x="0" y="38" font-size="10" text-anchor="middle" fill="#6B7280">Split into fragments</text>
+ </g>
+ <path d="M 170 340 L 170 365" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
+
+ <!-- Generate Embeddings -->
+ <g transform="translate(170, 370)">
+  <rect x="-70" y="0" width="140" height="50" rx="6" fill="#ffffff" stroke="#374151" stroke-width="2"/>
+  <text x="0" y="22" font-size="12" font-weight="600" text-anchor="middle" fill="#374151">Generate Embeddings</text>
+  <text x="0" y="38" font-size="10" text-anchor="middle" fill="#6B7280">Vector representation</text>
+ </g>
+ 
+ <!-- Arrow from Ingestion to Vector DB -->
+ <path d="M 240 395 L 435 395" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
+ <text x="340" y="385" font-size="11" font-weight="600" text-anchor="middle" fill="#374151">Store Vectors</text>
+
+ <!-- MIDDLE: RETRIEVAL PHASE -->
+ <!-- Vector Database -->
+ <g transform="translate(495, 360)">
+  <path d="M -40 10 C -40 0, 40 0, 40 10 L 40 60 C 40 70, -40 70, -40 60 Z" fill="#2563EB" stroke="#1E3A8A" stroke-width="2"/>
+  <path d="M -40 10 C -40 20, 40 20, 40 10" fill="none" stroke="#1E3A8A" stroke-width="2"/>
+  <path d="M -40 30 C -40 40, 40 40, 40 30" fill="none" stroke="#1E3A8A" stroke-width="2"/>
+  <path d="M -40 45 C -40 55, 40 55, 40 45" fill="none" stroke="#1E3A8A" stroke-width="2"/>
+  <text x="0" y="90" font-size="13" font-weight="700" text-anchor="middle" fill="#1F2937">VECTOR DATABASE</text>
+ </g>
+
+ <!-- User Query -->
+ <g transform="translate(495, 80)">
+  <circle cx="0" cy="-10" r="15" fill="#FCD34D" stroke="#B45309" stroke-width="2"/>
+  <path d="M -20 20 C -20 5, 20 5, 20 20" fill="#3B82F6" stroke="#1E3A8A" stroke-width="2"/>
+  <text x="0" y="45" font-size="14" font-weight="700" text-anchor="middle" fill="#1F2937">USER QUERY</text>
+ </g>
+ <path d="M 495 135 L 495 165" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
+ 
+ <!-- Query Embedding -->
+ <g transform="translate(495, 175)">
+  <rect x="-65" y="0" width="130" height="50" rx="6" fill="#ffffff" stroke="#374151" stroke-width="2"/>
+  <text x="0" y="22" font-size="12" font-weight="600" text-anchor="middle" fill="#374151">Query Embedding</text>
+  <text x="0" y="38" font-size="10" text-anchor="middle" fill="#6B7280">Convert text to vector</text>
+ </g>
+ <path d="M 495 225 L 495 255" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
+
+ <!-- Semantic Search -->
+ <g transform="translate(495, 265)">
+  <rect x="-70" y="0" width="140" height="50" rx="6" fill="#ffffff" stroke="#374151" stroke-width="2"/>
+  <text x="0" y="22" font-size="12" font-weight="600" text-anchor="middle" fill="#374151">Semantic Search</text>
+  <text x="0" y="38" font-size="10" text-anchor="middle" fill="#6B7280">Cosine similarity</text>
+ </g>
+ <path d="M 495 315 L 495 345" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
+ 
+ <!-- Extracted Context -->
+ <g transform="translate(680, 365)">
+  <rect x="-45" y="0" width="90" height="60" rx="4" fill="#ffffff" stroke="#374151" stroke-width="2"/>
+  <line x1="-30" y1="15" x2="30" y2="15" stroke="#D1D5DB" stroke-width="3"/>
+  <line x1="-30" y1="25" x2="30" y2="25" stroke="#D1D5DB" stroke-width="3"/>
+  <line x1="-30" y1="35" x2="10" y2="35" stroke="#D1D5DB" stroke-width="3"/>
+  <text x="0" y="80" font-size="12" font-weight="600" text-anchor="middle" fill="#374151">Retrieved Context</text>
+ </g>
+ <path d="M 550 395 L 625 395" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
+ 
+ <!-- Right arrows to Generator Phase -->
+ <!-- Context goes up to Augmented Prompt -->
+ <path d="M 735 395 L 755 395 L 755 195 L 825 195" stroke="#374151" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+ <!-- Original Query goes to Augmented Prompt -->
+ <path d="M 570 100 L 755 100 L 755 185 L 825 185" stroke="#374151" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+
+ <!-- GENERATION & RESPONSE PHASE (RIGHT) -->
+ <g transform="translate(755, 190)">
+  <circle cx="0" cy="0" r="12" fill="#ffffff" stroke="#374151" stroke-width="2"/>
+  <line x1="-6" y1="0" x2="6" y2="0" stroke="#374151" stroke-width="2"/>
+  <line x1="0" y1="-6" x2="0" y2="6" stroke="#374151" stroke-width="2"/>
+ </g>
+
+ <!-- Augmented Prompt -->
+ <g transform="translate(930, 165)">
+  <rect x="-70" y="0" width="140" height="50" rx="6" fill="#ffffff" stroke="#374151" stroke-width="2"/>
+  <text x="0" y="22" font-size="12" font-weight="600" text-anchor="middle" fill="#374151">Augmented Prompt</text>
+  <text x="0" y="38" font-size="10" text-anchor="middle" fill="#6B7280">Query + Context</text>
+ </g>
+ <path d="M 930 215 L 930 255" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
+
+ <!-- LLM -->
+ <g transform="translate(930, 265)">
+  <rect x="-60" y="0" width="120" height="60" rx="8" fill="#10B981" stroke="#047857" stroke-width="2"/>
+  <text x="0" y="27" font-size="14" font-weight="700" text-anchor="middle" fill="#ffffff">LLM</text>
+  <text x="0" y="45" font-size="10" text-anchor="middle" fill="#ECFDF5">(Language Model)</text>
+ </g>
+ <path d="M 930 325 L 930 365" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
+
+ <!-- Final Answer -->
+ <g transform="translate(930, 375)">
+  <rect x="-60" y="0" width="120" height="40" rx="6" fill="#ffffff" stroke="#374151" stroke-width="2"/>
+  <text x="0" y="24" font-size="12" font-weight="600" text-anchor="middle" fill="#374151">Final Answer</text>
+ </g>
+ <path d="M 990 395 L 1045 395" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
+ 
+ <!-- User Output -->
+ <g transform="translate(1065, 395)">
+  <text x="0" y="4" font-size="14" font-weight="700" text-anchor="middle" fill="#1F2937">USER</text>
+ </g>
+
+ <!-- Defs for arrows -->
+ <defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+   <path d="M 0 0 L 10 5 L 0 10 z" fill="#374151" />
+  </marker>
+ </defs>
+</svg>`,
   evening: ["rag-05", "rag-17", "rag-22", "rag-27", "rag-40"],
 
   cards: [

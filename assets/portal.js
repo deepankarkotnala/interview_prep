@@ -129,13 +129,13 @@
     /* The mark is vendored into this portal's own assets/brand/, never read from
        a sibling directory — the folder has to render on its own from a USB stick.
        `onerror` still drops back to the "IR" lettering if the file is missing. */
-    h += '<div class="brand">' +
+    h += '<a href="' + base + 'index.html" class="brand" style="text-decoration: none; color: inherit;" aria-label="Go to homepage">' +
          '<span class="brand-mark" aria-hidden="true">' +
-         '<img src="' + base + 'assets/brand/switch-job-logo.png" alt="" ' +
+         '<img src="' + base + 'assets/brand/interview-room-logo.png" alt="" ' +
          'onerror="this.remove();this.parentNode.textContent=\'IR\'">' +
          '</span>' +
          '<span class="brand-text"><strong>Interview Room</strong>' +
-         '<span>GenAI · India · Senior</span></span></div>';
+         '<span>GenAI · India · Senior</span></span></a>';
 
     /* The box renders even when the index has not loaded (a topic page that
        has not been rebuilt yet); buildSearch simply finds no index and the box
@@ -1352,6 +1352,7 @@
         '<div class="eyebrow">Topic ' + esc(topic.num) + "</div>" +
         "<h1>" + esc(topic.title) + "</h1>" +
         '<p class="lede">' + fmt(set.lede || topic.blurb) + "</p>" +
+        (set.svg ? '<div class="topic-diagram" style="margin: 32px 0; overflow-x: auto;">' + set.svg + '</div>' : "") +
         '<div class="chip-row">' +
         '<span class="chip is-accent">' + set.cards.length + " questions</span>" +
         (set.grounding ? '<span class="chip">Grounded in: ' + esc(set.grounding) + "</span>" : "") +
@@ -2159,3 +2160,65 @@
     boot();
   }
 })();
+
+  
+  /* ---------- sidebar resizers ---------- */
+  function initResizers() {
+    // Left resizer
+    var leftResizer = document.createElement("div");
+    leftResizer.className = "sidebar-resizer left-resizer";
+    document.body.appendChild(leftResizer);
+
+    var isResizingLeft = false;
+    leftResizer.addEventListener("mousedown", function(e) {
+      isResizingLeft = true;
+      document.body.classList.add("resizing-left");
+    });
+
+    // Right resizer
+    var rightResizer = document.createElement("div");
+    rightResizer.className = "sidebar-resizer right-resizer";
+    document.body.appendChild(rightResizer);
+
+    var isResizingRight = false;
+    rightResizer.addEventListener("mousedown", function(e) {
+      isResizingRight = true;
+      document.body.classList.add("resizing-right");
+    });
+
+    window.addEventListener("mousemove", function(e) {
+      if (isResizingLeft) {
+        var w = Math.max(150, Math.min(e.clientX, 600));
+        document.documentElement.style.setProperty("--sidebar-w", w + "px");
+      } else if (isResizingRight) {
+        var w = Math.max(150, Math.min(window.innerWidth - e.clientX, 600));
+        document.documentElement.style.setProperty("--toc-w", w + "px");
+      }
+      
+      // dynamically hide right resizer if toc doesn't exist
+      if (document.querySelector(".toc-rail")) {
+         rightResizer.style.display = "block";
+      } else {
+         rightResizer.style.display = "none";
+      }
+    });
+
+    window.addEventListener("mouseup", function() {
+      isResizingLeft = false;
+      isResizingRight = false;
+      document.body.classList.remove("resizing-left", "resizing-right");
+    });
+    
+    // Initial check
+    setTimeout(function() {
+      if (!document.querySelector(".toc-rail")) {
+        rightResizer.style.display = "none";
+      }
+    }, 100);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initResizers);
+  } else {
+    setTimeout(initResizers, 100);
+  }
