@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Shading for 3D depth -->
+    <linearGradient id="leftShade" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.15"/>
+      <stop offset="85%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.2"/>
+    </linearGradient>
+    <linearGradient id="rightShade" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.2"/>
+      <stop offset="15%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.1"/>
+    </linearGradient>
+    <!-- Cover texture -->
+    <linearGradient id="coverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#172554"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background / Cover -->
+  <g>
+    <!-- Left Cover -->
+    <path d="M 256,470 C 180,420 80,420 20,460 L 20,90 C 80,50 180,50 256,100 Z" fill="url(#coverGrad)" />
+    <!-- Right Cover -->
+    <path d="M 256,470 C 332,420 432,420 492,460 L 492,90 C 432,50 332,50 256,100 Z" fill="url(#coverGrad)" />
+  </g>
+
+  <!-- Page Block (Thickness) -->
+  <g>
+    <path d="M 256,450 C 185,405 90,405 35,445 L 35,105 C 90,65 185,65 256,110 Z" fill="#cbd5e1" />
+    <path d="M 256,450 C 327,405 422,405 477,445 L 477,105 C 422,65 327,65 256,110 Z" fill="#e2e8f0" />
+  </g>
+
+  <!-- Top Pages -->
+  <g>
+    <path d="M 256,430 C 190,390 100,390 45,430 L 45,115 C 100,75 190,75 256,115 Z" fill="#ffffff" />
+    <path d="M 256,430 C 322,390 412,390 467,430 L 467,115 C 412,75 322,75 256,115 Z" fill="#f8fafc" />
+  </g>
+
+  <!-- Spine Center Crease -->
+  <path d="M 256,115 V 430" fill="none" stroke="#94a3b8" stroke-width="3" />
+
+  <!-- Text Lines Left -->
+  <g fill="none" stroke="#e2e8f0" stroke-width="12" stroke-linecap="round">
+    <path d="M 230,160 C 180,135 120,135 70,155" />
+    <path d="M 230,210 C 180,185 120,185 70,205" />
+    <path d="M 230,260 C 180,235 120,235 70,255" />
+    <path d="M 230,310 C 180,285 120,285 70,305" />
+    <path d="M 230,360 C 180,335 120,335 70,355" />
+  </g>
+
+  <!-- Text Lines Right -->
+  <g fill="none" stroke="#f1f5f9" stroke-width="12" stroke-linecap="round">
+    <path d="M 282,160 C 332,135 392,135 442,155" />
+    <path d="M 282,210 C 332,185 392,185 442,205" />
+    <path d="M 282,260 C 332,235 392,235 442,255" />
+    <path d="M 282,310 C 332,285 392,285 442,305" />
+    <path d="M 282,360 C 332,335 392,335 442,355" />
+  </g>
+  
+  <!-- Bookmark Ribbon -->
+  <path d="M 242,70 L 270,70 L 270,320 L 256,290 L 242,320 Z" fill="#e11d48" />
+  <path d="M 242,70 L 270,70 L 270,200 L 242,200 Z" fill="#be123c" opacity="0.3" />
+
+  <!-- 3D Shading Overlays -->
+  <g style="mix-blend-mode: multiply;">
+    <path d="M 256,430 C 190,390 100,390 45,430 L 45,115 C 100,75 190,75 256,115 Z" fill="url(#leftShade)" />
+    <path d="M 256,430 C 322,390 412,390 467,430 L 467,115 C 412,75 322,75 256,115 Z" fill="url(#rightShade)" />
+  </g>
+</svg>
