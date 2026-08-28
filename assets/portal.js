@@ -128,7 +128,7 @@
     var h = "";
     h += '<a href="' + base + 'index.html" class="brand" style="text-decoration: none; color: inherit;" aria-label="Go to homepage">' +
          '<span class="brand-mark" aria-hidden="true">' +
-         '<img src="' + base + 'assets/brand/interview-room-logo.png" alt="" ' +
+         '<img src="' + base + 'assets/brand/interview-room-logo.png?v=3" alt="" ' +
          'onerror="this.remove();this.parentNode.textContent=\'IR\'">' +
          '</span>' +
          '<span class="brand-text"><strong>Interview Room</strong>' +
