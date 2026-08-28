@@ -1,214 +1,134 @@
-# Interview Room — plan (v2, standalone)
+# Implementation Plan — Theory-First CampusX Transformation of GenAI CX Portal
 
-An **independent** portal for the questions actually asked in GenAI / AI / ML
-interviews for **senior engineer roles in India**, with answers written in simple
-language — the way CampusX explains LangChain and LangGraph on YouTube.
+Transform the entire **GenAI CX Learning Hub** (`genai_cx-main`) into a **100% Theory-Based, Code-Free Knowledge Hub** modeled on the signature **CampusX (Nitish Singh)** pedagogical style:
+1. **Establishing the Base**: Intuitive real-world hook, everyday analogies, and why classical approaches broke down without this technology.
+2. **Simple Explanation**: Plain-language first principles, mental models, and intuitive step-by-step lifecycles without jargon.
+3. **Intermediate Technical Depth**: Architectural blueprints, visual state-transition diagrams, data schemas, mathematical intuitions, latency/cost trade-offs, and production failure modes.
 
-This file supersedes `../interview_focused_portal_plan.md`. What changed and why
-is in §0.
+## User Review Required
 
----
+> [!IMPORTANT]
+> This transformation removes all Python/code blocks across the `genai_cx-main` portal modules and lessons, replacing them with conceptual step-by-step walkthroughs, structural diagrams, and trade-off tables.
 
-## 0 · What changed from v1, and why
+## Proposed Changes & Pedagogical Architecture
 
-| v1 said | v2 says | Why |
-| --- | --- | --- |
-| Live inside the main portal, reuse `../assets/*` | **Own `assets/`, own `data/`, zero parent imports** | The ask is an independent portal. It must run if you copy the folder to a USB stick and double-click `index.html`. |
-| Register every page in `assets/curriculum.js`, add a validator check | **No registration, no validator coupling** | Those are the main portal's guardrails. Importing them re-couples the two. |
-| Hand-write ~505 `<details>` cards across 18 HTML files | **Cards are JS data; one renderer draws them** | 500 cards as hand-written markup is unmaintainable and drifts. As data, adding a question is 12 lines in a list, and every card is structurally identical by construction. |
-| "No metaphors, no analogies" | **One concrete analogy allowed, in the `simple` slot only** | The stated target is CampusX's teaching voice, which is built on analogies. The ban stays where precision matters — the `say` slot. |
-| Answer voice: formal, written | **Two voices per card** — teaching voice (`simple`) and interview voice (`say`) | You learn in one register and speak in another. Collapsing them makes the answer either unclear or unsayable. |
-| 18 topics, all breadth | **18 topics, GenAI-first ordering, senior cut** | The market is hiring senior GenAI engineers. Python/ML basics stay, but late. |
-| Employer tracks by named company | **Tracks by employer *type*, unchanged from v1 §1** | v1's sourcing honesty was right. Keeping it verbatim. |
+### The CampusX 3-Tier Template for Every Module
 
-Everything else from v1 — the round axis, employer tracks, the rehearsal loop,
-the honesty rule about sourcing — is kept.
+Each module will be refactored into this standard learning sequence:
 
----
-
-## 1 · Sourcing honesty (kept from v1, unchanged)
-
-No page claims "this was asked at company X." What the questions are actually
-built from:
-
-1. **Public job descriptions** for GenAI / AI Engineer / ML Engineer roles at
-   India centres — the panel is briefed from these.
-2. **The domain the employer works in.** A healthcare payer asks about PHI and
-   Azure OpenAI in a locked tenant because that is the system they run.
-3. **Published interview process** — round structure and durations companies
-   document themselves.
-4. **What the technology forces you to know.** If you run RAG in production you
-   will be asked why retrieval fails silently, because it does.
-
-Every question set carries a grounding label. There is a slot to add real
-questions from your own interviews, dated and attributed.
-
----
-
-## 2 · The answer card
-
-Each card is one object in a data file:
-
-```js
-{
-  id:     "rag-04",
-  q:      "Your RAG app gives wrong answers. How do you debug it?",
-  round:  ["tech1", "tech2"],
-  level:  "5-10",
-  tags:   ["rag", "debugging", "evaluation"],
-
-  why:    "Whether you have actually run RAG in production, or only built a demo",
-  simple: "Teaching voice. Plain words. One analogy allowed. 3-6 sentences.",
-  points: ["Optional bullets for a checklist or a sequence"],
-  code:   "Optional short snippet",
-  say:    "The 55-75 words you actually say out loud in the room",
-  numbers:"One real figure to attach",
-  wrong:  "The answer a real candidate gives that loses the offer",
-  follow: "The next question the interviewer asks"
-}
+```mermaid
+flowchart TD
+    A["Tier 1: Establishing the Base\n• Real-world analogy\n• What we did before this tech\n• Where classical methods failed"] --> B["Tier 2: Simple First Principles\n• Zero-jargon plain-language explanation\n• Core mental model\n• Step-by-step conceptual lifecycle"]
+    B --> C["Tier 3: Intermediate Technical Depth\n• Architectural blueprints & diagrams\n• Internal state transitions & algorithms\n• Edge cases, failure modes & trade-offs"]
 ```
 
-| Slot | Rule |
-| --- | --- |
-| `why` | One line. Names the *skill* being tested, not the topic |
-| `simple` | CampusX voice — everyday words, short sentences, at most one analogy, no undefined jargon. If a technical noun is correct, keep it and define it once |
-| `say` | 55–75 words, ≤20 words per sentence, nothing you would stumble over. **No analogies here** — an analogy in the room reads as evasion |
-| `numbers` | A real figure. Every senior answer needs one, or says plainly that none applies |
-| `wrong` | Quoted, then corrected in one line. Must be an answer a real candidate gives, not a strawman |
-| `follow` | The next question |
+---
 
-`say` is the product. Everything else exists to get you there.
+### Component 1: GenAI Mastery Core Modules (`modules/` & Root Guides)
+
+#### [MODIFY] [`modules/01_foundations.html`](file:///Users/deepankar/Desktop/interview_prep-main/genai_cx-main/modules/01_foundations.html)
+- **Base**: Statistical n-gram models vs neural language models; the semantic gap of exact phrase matching.
+- **Simple**: The probability lottery machine; tokens as LEGO blocks of meaning; the next-token prediction loop.
+- **Intermediate**: Tokenizer vocabulary mapping (BPE), embedding spaces, temperature probability sharpening/flattening, context window attention bounds.
+
+#### [MODIFY] [`modules/02_transformers.html`](file:///Users/deepankar/Desktop/interview_prep-main/genai_cx-main/modules/02_transformers.html)
+- **Base**: The "Cocktail Party Problem" — focusing on relevant signals amid background noise.
+- **Simple**: Query (what I seek), Key (what you provide), Value (what you actually say) matching intuition.
+- **Intermediate**: Scaled Dot-Product Attention derivation, positional encodings (RoPE), Multi-Head attention specialization, Feed-Forward projections.
+
+#### [MODIFY] [`modules/03_local_llms.html`](file:///Users/deepankar/Desktop/interview_prep-main/genai_cx-main/modules/03_local_llms.html)
+- **Base**: Cloud API dependencies vs local sovereignty (privacy, cost, offline reliability).
+- **Simple**: Encyclopedia compression mental model.
+- **Intermediate**: Quantization mechanics (FP16 $\rightarrow$ INT4 / GGUF), KV-cache memory sizing, GPU VRAM vs memory bandwidth throughput constraints.
+
+#### [MODIFY] [`modules/04_embeddings.html`](file:///Users/deepankar/Desktop/interview_prep-main/genai_cx-main/modules/04_embeddings.html)
+- **Base**: The geometric coordinate map of human concepts.
+- **Simple**: Why directional relationships ("King - Man + Woman = Queen") exist in semantic space.
+- **Intermediate**: Dense vs Sparse embeddings, Bi-encoders vs Cross-encoders, Cosine similarity vs Euclidean distance in high-dimensional manifolds.
+
+#### [MODIFY] [`modules/05_vector_databases.html`](file:///Users/deepankar/Desktop/interview_prep-main/genai_cx-main/modules/05_vector_databases.html)
+- **Base**: The library with 10 million unlabeled books.
+- **Simple**: Why linear search ($O(N)$) fails and how highway-road hierarchical navigation accelerates search.
+- **Intermediate**: HNSW graph skip-list algorithms, IVF Voronoi cell clustering, Vector Quantization (PQ), and metadata filtering strategies.
+
+#### [MODIFY] [`rag-deep-dive.html`](file:///Users/deepankar/Desktop/interview_prep-main/genai_cx-main/rag-deep-dive.html)
+- **Base**: Open-book vs closed-book exams for AI.
+- **Simple**: The 5-stage pipeline: Chunk $\rightarrow$ Embed $\rightarrow$ Retrieve $\rightarrow$ Augment $\rightarrow$ Generate.
+- **Intermediate**: Chunking trade-offs (Fixed, Recursive, Semantic), Hybrid Search (Reciprocal Rank Fusion), Reranking models, Parent-Document & Graph RAG architectures, and Ragas evaluation metrics.
+
+#### [MODIFY] [`modules/08_agents.html`](file:///Users/deepankar/Desktop/interview_prep-main/genai_cx-main/modules/08_agents.html)
+- **Base**: Moving from a pure calculator (LLM) to an assistant with hands and eyes (Tools & Environment).
+- **Simple**: The ReAct cycle (Observation $\rightarrow$ Thought $\rightarrow$ Action).
+- **Intermediate**: Planning patterns (Plan-and-Solve, Reflection), tool boundary validation, state maintenance, and infinite loop failure modes.
+
+#### [MODIFY] [`modules/09_mcp.html`](file:///Users/deepankar/Desktop/interview_prep-main/genai_cx-main/modules/09_mcp.html)
+- **Base**: The USB-C standard for AI tooling (eliminating $M \times N$ custom integration spaghetti).
+- **Simple**: Client, Host, and Server roles explained through an operating system peripheral model.
+- **Intermediate**: Protocol primitives (Tools, Resources, Prompts), JSON-RPC transport layers, security sandboxing, and capability negotiation.
+
+#### [MODIFY] [`modules/10_langchain.html`](file:///Users/deepankar/Desktop/interview_prep-main/genai_cx-main/modules/10_langchain.html)
+- **Base**: Unix pipeline orchestration (`cat | grep | cut`) reimagined for language models.
+- **Simple**: Why modular building blocks simplify chain construction.
+- **Intermediate**: Runnable interface lifecycle, streaming protocols, batch execution semantics, and framework abstraction costs.
+
+#### [MODIFY] [`modules/11_llamaindex.html`](file:///Users/deepankar/Desktop/interview_prep-main/genai_cx-main/modules/11_llamaindex.html)
+- **Base**: Transforming unstructured knowledge silos into indexed query graphs.
+- **Simple**: Document $\rightarrow$ Node $\rightarrow$ Index structural hierarchy.
+- **Intermediate**: Tree indexing, sub-question query decomposition, router engines, and metadata-aware retrieval algorithms.
+
+#### [MODIFY] [`modules/12_langgraph.html`](file:///Users/deepankar/Desktop/interview_prep-main/genai_cx-main/modules/12_langgraph.html)
+- **Base**: Why real software requires loops, retries, and branches (the limits of linear DAGs).
+- **Simple**: A state machine board game: nodes as players, edges as transition rules, state as the board.
+- **Intermediate**: State schemas, Reducers, Checkpointing, Time-travel replay, and Human-in-the-loop pause/resume semantics.
+
+#### [MODIFY] [`langgraph-asyncio.html`](file:///Users/deepankar/Desktop/interview_prep-main/genai_cx-main/langgraph-asyncio.html)
+- **Base**: The restaurant kitchen analogy (waiting for the oven vs preparing side dishes).
+- **Simple**: Concurrency vs Parallelism in network-bound AI workflows.
+- **Intermediate**: Event loop mechanics, cooperative multitasking, coroutines, backpressure semaphores, and structured task cancellation.
+
+#### [MODIFY] [`langgraph-pydantic.html`](file:///Users/deepankar/Desktop/interview_prep-main/genai_cx-main/langgraph-pydantic.html)
+- **Base**: The airport customs gate (converting unstructured luggage into verified passenger records).
+- **Simple**: Why LLM text is inherently untyped and how schemas create reliable software contracts.
+- **Intermediate**: Schema validation theory, Discriminated Unions for routing, and self-healing LLM retry loops.
+
+#### [MODIFY] [`modules/13_multi_agents.html`](file:///Users/deepankar/Desktop/interview_prep-main/genai_cx-main/modules/13_multi_agents.html)
+- **Base**: Company organization charts (delegating specialized tasks vs overloading one generalist).
+- **Simple**: Supervisor-Worker, Peer-to-Peer, and Hierarchical agent topologies.
+- **Intermediate**: Agent-to-Agent (A2A) protocols, shared state vs message passing, consensus mechanisms, and conflict resolution.
+
+#### [MODIFY] [`modules/14_production_genai.html`](file:///Users/deepankar/Desktop/interview_prep-main/genai_cx-main/modules/14_production_genai.html)
+- **Base**: Bridging the gap from a 70% prototype to a 99.9% Production SLA.
+- **Simple**: The 5 Production Pillars: Latency, Cost, Quality, Security, Observability.
+- **Intermediate**: Semantic vs Exact caching, prompt caching, model cascading, rate limiting (Token Bucket), circuit breakers, and PII guardrails.
+
+#### [MODIFY] [`modules/15_capstone_projects.html`](file:///Users/deepankar/Desktop/interview_prep-main/genai_cx-main/modules/15_capstone_projects.html)
+- **Base**: 10 Real-World Enterprise System Blueprints.
+- **Simple**: High-level problem statements, user journeys, and component interactions.
+- **Intermediate**: Detailed architecture diagrams, data flow pipelines, latency/cost budgets, threat models, and failure recovery matrices.
 
 ---
 
-## 3 · Three ways in, one question set
+### Component 2: Understanding AI Agents Course (`teach-agents/lessons/`)
 
-- **By topic** — 18 pages, one per subject.
-- **By round** — screening / technical 1 / technical 2 / hiring manager / HR.
-  Same question, different answer depending on the round.
-- **By employer type** — five tracks (§5).
-
-Plus a **rehearsal loop**: pick a card, start a timer, say it out loud, mark it
-delivered. State in `localStorage`.
+#### [MODIFY] [`teach-agents/lessons/0001-llm-mechanics.html` to `0015-capstone.html`](file:///Users/deepankar/Desktop/interview_prep-main/genai_cx-main/teach-agents/lessons/0001-llm-mechanics.html)
+- Transform all 15 lessons to eliminate script blocks, replacing them with interactive mental models, state machines, and system reasoning drills covering agent loops, tools, reasoning, retrieval, memory, safety, evaluations, tracing, and multi-agent coordination.
 
 ---
 
-## 4 · Topic map
+### Component 3: Deep Dives (`agent-protocols.html`, `llm-evals.html`, `llmops.html`, `langfuse.html`, `guardrails.html`, `memory.html`, `langgraph.html`, `claude-agent.html`, `hermes.html`)
 
-GenAI-first, because that is what the senior roles are for.
-
-| # | Topic | Target cards | Wave |
-| --- | --- | --- | --- |
-| 01 | LLM foundations — tokens, context, sampling, inference | 30 | 1 |
-| 02 | Transformers and attention | 25 | 3 |
-| 03 | Prompting and structured output | 25 | 2 |
-| 04 | Embeddings and vector databases | 30 | 2 |
-| 05 | RAG — build, evaluate, debug | 40 | 1 |
-| 06 | Advanced RAG — rerank, hybrid, GraphRAG, agentic RAG | 25 | 2 |
-| 07 | Agents — loop, tools, memory, termination | 35 | 1 |
-| 08 | LangChain and LangGraph | 30 | 1 |
-| 09 | MCP, A2A and the tool boundary | 20 | 2 |
-| 10 | Fine-tuning, LoRA, distillation — and when not to | 25 | 3 |
-| 11 | Evaluation — offline, online, LLM judges | 30 | 1 |
-| 12 | LLMOps, tracing, observability | 25 | 2 |
-| 13 | Guardrails, security, responsible AI | 30 | 2 |
-| 14 | Cost, latency, throughput, serving | 25 | 3 |
-| 15 | Cloud and deployment — Azure, AWS, Databricks | 25 | 3 |
-| 16 | ML fundamentals for AI engineers | 30 | 4 |
-| 17 | Python and coding round | 30 | 4 |
-| 18 | System design, project story, behavioural | 25 | 3 |
-| | **Total** | **≈505** | |
+#### [MODIFY] Deep Dive Pages
+- Refactor all 9 deep dive guides to focus exclusively on foundational theory, architecture comparisons, lifecycle graphs, and senior engineering interview mental models.
 
 ---
 
-## 5 · Employer tracks
+## Verification Plan
 
-| Track | Covers | Questions skew to |
-| --- | --- | --- |
-| Healthcare payer / provider | Optum, UHG, Philips, Siemens Healthineers | PHI, de-identification, HIPAA, Azure OpenAI in a regulated tenant, audit trails, human in the loop |
-| Banking and financial services | JPMorgan, Goldman, Amex, Wells Fargo, Deutsche | Auditability, citations, model risk governance, data residency, deterministic fallbacks |
-| Retail and supply chain | Walmart Global Tech, Target, Lowe's, Tesco | Cost per request at volume, catalogue RAG, latency budgets, caching, multilingual |
-| Product and platform | Microsoft IDC, Google, Salesforce, ServiceNow, Adobe | Depth on one system, evaluation rigour, trade-off defence, a coding round alongside |
-| Services and consulting | TCS, Infosys, Wipro, Cognizant, Accenture | Breadth over depth, client framing, delivery estimates, accelerators, multi-cloud |
+### Content Verification
+- Ensure every lesson and module follows the 3-tier CampusX pedagogy.
+- Verify zero `<pre><code>` code blocks remain across the `genai_cx-main` modules and deep dives.
+- Validate that all code snippets are cleanly replaced with diagrams, tables, and conceptual walkthroughs.
 
----
-
-## 6 · Rounds
-
-| Round | Typical | Tests | Answer shape |
-| --- | --- | --- | --- |
-| Screening | 20–30 min, recruiter | Are the CV claims real | 30 seconds, no jargon, one number |
-| Technical 1 | 45–60 min | Fundamentals, did you build it yourself | 2 minutes, mechanism then trade-off |
-| Technical 2 / design | 60 min | Can you architect and defend it | Requirements before technology names |
-| Hiring manager | 45 min | Ownership, incidents, judgement | A story with a decision and a consequence |
-| HR / fitment | 30 min | Stability, expectations, notice | Short, consistent, no negotiation detail |
-
----
-
-## 7 · Files
-
-```
-0_interview_focused_portal/
-  index.html            three ways in
-  rounds.html           by round
-  tracks.html           by employer type
-  rehearsal.html        timer + delivered-out-loud tracker
-  topics/NN-slug.html   one shell per topic
-  assets/portal.css     all styling, no parent imports
-  assets/portal.js      theme, nav, search, filters, card renderer
-  assets/rehearsal.js   timer and localStorage progress
-  assets/fonts/         vendored woff2 — Inter, JetBrains Mono
-  assets/brand/         vendored logo, used by the sidebar mark
-  data/topics.js        topic registry
-  data/q-NN-slug.js     the cards
-  tools/check.js        content + standalone validator
-  PLAN.md  README.md
-```
-
-A topic page is a shell. It sets `data-topic`, loads its data file and the
-renderer, and contains no card markup.
-
-**Nothing is loaded from outside this folder** — no `../..` paths, no CDN, no
-sibling directory. Fonts and the brand logo are vendored into `assets/`. Files
-at the root reference `assets/…`; pages in `topics/` reference `../assets/…`,
-which is still inside the portal. `node tools/check.js` fails the build on any
-path that climbs above the portal root and on any external URL, so this cannot
-regress unnoticed.
-
----
-
-## 8 · Waves
-
-- **Wave 1 — done.** Framework, plus topics 01, 05, 07, 08, 11 (60 cards).
-  These five carry most of what a senior GenAI interview actually spends time on.
-- **Wave 2 — done.** Topics 03, 04, 06, 09, 12, 13 (52 cards). Portal total 112.
-- **Wave 3 — done.** Topics 02, 10, 14, 15, 18 (38 cards). Portal total 150.
-- **Wave 4 — done.** Topics 16, 17 (14 cards), then the five employer tracks.
-  Portal total 167 cards across all 18 topics, plus 5 tracks.
-
-All planned waves are complete. What remains is not a wave but ongoing work:
-adding real questions from actual interviews, dated and attributed (§1), and
-pruning any card that stops being asked.
-
-Card counts per topic are below the wave-2 targets in §4 by design — each topic
-carries the questions that earn their place today, and grows when a real
-interview supplies one. `node tools/check.js` gates every addition.
-
----
-
-## 9 · A card is done when
-
-1. All slots filled.
-2. `simple` reads like it was spoken to a beginner, and contains at most one analogy.
-3. `say` is 55–75 words and contains none.
-4. It carries a real number, or says no number applies.
-5. `wrong` quotes something a real candidate would actually say.
-6. Round, level and tags are set.
-7. No undefined jargon.
-
----
-
-## 10 · Out of scope
-
-DSA, salary negotiation, visa and relocation, non-AI backend rounds beyond
-topic 17.
+### System & Layout Verification
+- Verify responsive layout, right-rail TOC anchors, and dark/light mode rendering.
+- Run link verification across all 116+ pages to confirm zero 404s.
