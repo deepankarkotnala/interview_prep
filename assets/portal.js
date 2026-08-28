@@ -1027,6 +1027,125 @@
     apply();
   }
 
+  /* ---------- page navigation (prev / next) ---------- */
+  var ROUTE_PAGES = [
+    { page: "home",      href: "index.html",     label: "Home" },
+    { page: "rounds",    href: "rounds.html",    label: "By interview round" },
+    { page: "tracks",    href: "tracks.html",    label: "By employer type" },
+    { page: "rehearsal", href: "rehearsal.html", label: "Rehearsal room" }
+  ];
+
+  function getSequence() {
+    var seq = ROUTE_PAGES.map(function (r) {
+      return { href: r.href, title: r.label, page: r.page, topic: null, num: null };
+    });
+    (IR.topics || []).forEach(function (t) {
+      if (t.status !== "live") return;
+      var key = t.num + "-" + t.slug;
+      seq.push({
+        href: "topics/" + key + ".html",
+        title: t.title,
+        page: "topic",
+        topic: key,
+        num: t.num
+      });
+    });
+    return seq;
+  }
+
+  function getHereIndex(seq) {
+    var page = document.body.getAttribute("data-page");
+    var topic = document.body.getAttribute("data-topic");
+    for (var i = 0; i < seq.length; i++) {
+      if (seq[i].page !== page) continue;
+      if (page === "topic") {
+        if (seq[i].topic === topic) return i;
+      } else {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  function getPageHref(entry) {
+    var isCurrentTopic = document.body.getAttribute("data-page") === "topic";
+    if (entry.page === "topic") {
+      return isCurrentTopic ? (entry.topic + ".html") : ("topics/" + entry.topic + ".html");
+    } else {
+      return (isCurrentTopic ? "../" : "") + entry.href;
+    }
+  }
+
+  function pagerCard(entry, dir, cls) {
+    var href = getPageHref(entry);
+    var ttl = (entry.num ? '<span class="pn-num">' + esc(entry.num) + '</span> · ' : '') + esc(entry.title);
+    return '<a class="' + cls + '" href="' + href + '">' +
+           '<div class="dir pn-dir">' + dir + '</div>' +
+           '<div class="ttl pn-ttl">' + ttl + '</div></a>';
+  }
+
+  function buildPager() {
+    var content = document.querySelector(".content");
+    if (!content || content.querySelector("[data-page-nav]")) return;
+
+    var seq = getSequence();
+    var i = getHereIndex(seq);
+    if (i < 0) return;
+
+    var current = seq[i];
+    var prev = i > 0 ? seq[i - 1] : null;
+    var next = i < seq.length - 1 ? seq[i + 1] : null;
+
+    // For the last topic in the portal, provide a Finish / Back to home card
+    if (!next && i === seq.length - 1) {
+      next = { href: "index.html", title: "Interview Room Home", page: "home", topic: null, num: null };
+    }
+
+    if (!prev && !next) return;
+
+    var nav = document.createElement("nav");
+    nav.className = "page-nav";
+    nav.setAttribute("data-page-nav", "");
+    nav.setAttribute("aria-label", "Previous and next page");
+
+    var liveTopics = (IR.topics || []).filter(function (t) { return t.status === "live"; });
+    var progText = "";
+    if (current.page === "topic" && current.num) {
+      progText = "Topic " + current.num + " of " + String(liveTopics.length).padStart(2, "0") + " · " + current.title;
+    } else if (current.page === "home") {
+      progText = "Page 1 of " + seq.length + " · Start here";
+    } else {
+      progText = "Page " + (i + 1) + " of " + seq.length + " · " + current.title;
+    }
+
+    var h = '<p class="pn-progress">' + esc(progText) + '</p>';
+    if (prev) {
+      var prevDir = "← Previous";
+      if (current.page === "rounds") {
+        prevDir = "← Home";
+      } else if (current.page === "topic" && prev.page !== "topic") {
+        prevDir = "← " + prev.title;
+      }
+      h += pagerCard(prev, prevDir, "pn-link pn-prev prev");
+    }
+    if (next) {
+      var nextDir = "Next →";
+      if (current.page === "home") {
+        nextDir = "Start here →";
+      } else if (current.page === "rehearsal") {
+        nextDir = "Start topics →";
+      } else if (i === seq.length - 1) {
+        nextDir = "Finish →";
+      }
+      h += pagerCard(next, nextDir, "pn-link pn-next next");
+    }
+
+    nav.innerHTML = h;
+    content.appendChild(nav);
+  }
+
+  IR.buildPager = buildPager;
+
   /* ---------- main boot sequence ---------- */
   function boot() {
     IR.initTheme();
@@ -1040,6 +1159,7 @@
     else if (page === "tracks") bootTracks();
 
     buildRail();
+    buildPager();
     initResizers();
     initScrollState();
 
