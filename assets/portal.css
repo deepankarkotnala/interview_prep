@@ -916,9 +916,10 @@ body.focus-mode .topbar-spacer { flex: 1 1 auto; }
 body.focus-mode .focus-btn[aria-pressed="true"] {
   color: var(--accent); font-weight: 620;
 }
-/* Focus mode allows wider reading measures: standard (82.5rem), wide (100rem), and full (unconstrained). */
-html[data-reading-width="default"] body.focus-mode .content { max-width: 82.5rem; }
-html[data-reading-width="wide"] body.focus-mode .content    { max-width: 100rem; }
+/* Focus mode allows wider reading measures: standard (90rem), wide (115rem), and full (unconstrained). */
+html[data-reading-width="default"] body.focus-mode .content,
+html[data-reading-width="standard"] body.focus-mode .content { max-width: 90rem; }
+html[data-reading-width="wide"] body.focus-mode .content    { max-width: 115rem; }
 html[data-reading-width="full"] body.focus-mode .content    { max-width: none; }
 @media (max-width: 860px) {
   body.focus-mode .content { max-width: none; }
