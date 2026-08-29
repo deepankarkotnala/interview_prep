@@ -199,19 +199,27 @@ window.IR.q["05-rag"] = {
       tags: ["rag", "chunking", "ingestion"],
       why: "Whether you have ingested real messy documents or only clean text files.",
       simple:
-        "Chunking is cutting documents into pieces small enough to retrieve. The mistake is to think of it as a character-count problem. It is a meaning problem.\n\n" +
-        "The right question is: what is the smallest piece of text that can answer a question on its own? For a policy document, that is usually a clause or a section under one heading. For an FAQ, one question-answer pair. For a table, often the whole table, because half a table means nothing.\n\n" +
-        "So the rule is to cut along the structure the document already has — headings, sections, list items — and only fall back to fixed sizes when there is no structure. Add a small overlap, maybe 10 to 15 percent, so a sentence that spans a boundary is not lost. And attach metadata to every chunk: source, section title, date, and who is allowed to see it.",
+        "Chunking is cutting documents into pieces small enough to retrieve accurately. The common trap is treating it as an arbitrary character-count problem — it is an information architecture and meaning problem.\n\n" +
+        "The core principle: a chunk must be the smallest autonomous semantic unit that can answer a question without missing crucial qualifiers or diluting embedding relevance.\n\n" +
+        "My thought process across document types:\n" +
+        "1. **Document-Aware / Structural Chunking**: First choice whenever structure exists. Split on Markdown headings (`#`, `##`), contract clauses (`Section 4.1`), or code ASTs (functions/classes). Human authors already grouped related meaning there.\n" +
+        "2. **Parent-Child / Small-to-Big Retrieval**: Best for dense technical policies. Embed small child chunks (128–256 tokens) for pinpoint vector search, but retrieve and feed the larger parent section (1024 tokens) to the LLM. This eliminates the trade-off between retrieval precision and generation context.\n" +
+        "3. **Recursive Character Splitting**: The robust default for generic or unstructured prose, falling back through paragraph breaks, line breaks, and sentence boundaries.\n" +
+        "4. **Multimodal / Vision Pipelines**: Essential for scanned PDFs, balance sheets, and diagrams. Vision LLMs or layout models (Docling, ColPali) extract tables into structured Markdown and generate searchable captions for charts.\n\n" +
+        "**Why 10–15% Overlap?**\n" +
+        "0% overlap causes 'boundary loss' — a conditional clause (*'provided that...'*) or relational fact cut mid-sentence loses its meaning. 10–15% preserves 1–2 complete boundary sentences so self-attention in embedding models stays intact. Beyond 20%, you suffer diminishing returns: inflated vector DB storage, duplicate passages crowding the LLM context window, and degraded reranker scoring.\n\n" +
+        "**Where Ingestion Costs Actually Live:**\n" +
+        "Text chunking is virtually free (CPU regex). Semantic chunking doubles embedding API costs by embedding every sentence twice. Vision-based parsing (extracting tables/diagrams with multimodal models) is genuinely expensive ($0.002–$0.02+/page). Production systems use a **smart router**: digital text routes through fast structural parsers, while only scanned pages and complex visual layouts hit vision models.",
       points: [
-        "Cut on document structure first: headings, clauses, rows.",
-        "Fixed-size splitting is the fallback, not the default.",
-        "Overlap 10–15% so boundary sentences survive.",
-        "Carry metadata: source, section, date, access group, version.",
-        "Tables, code and scanned PDFs need their own handling — do not split them like prose."
+        "Chunk unit = smallest autonomous semantic unit capable of answering a query.",
+        "Document-aware splitting (headings, clauses, code AST) beats fixed-size.",
+        "Parent-child retrieval decouples search granularity from LLM context size.",
+        "10–15% overlap prevents boundary fragmentation without context pollution.",
+        "Vision models are costly ($$$) — use a classifier to route only scans/charts to multimodal parsing."
       ],
-      say: "I chunk on meaning, not character count. The unit is the smallest piece of text that can answer a question by itself, which usually means cutting on headings, clauses or table rows. Fixed-size splitting is my fallback when a document has no structure. I keep ten to fifteen percent overlap and attach source, section and access metadata to every chunk, then tune size against retrieval recall.",
-      numbers: "Common starting point: 500–800 tokens per chunk, 10–15% overlap. Then tune with a labelled retrieval set — do not keep the default.",
-      wrong: "\"I used RecursiveCharacterTextSplitter with 1000 and 200.\" That is a starting default, not a strategy. If you cannot say why 1000, you did not choose it.",
+      say: "I choose chunking based on semantic units rather than static token limits. For structured content like contracts or code, I use document-aware splitting on headings or AST boundaries. For dense manuals, I use parent-child retrieval — embedding 256-token child chunks for precise search but returning 1024-token parent blocks to the LLM. I keep 10–15% overlap specifically to prevent boundary fragmentation on conditional clauses without inflating vector storage or duplicating text in the prompt. For scanned PDFs or diagrams, I route only visual pages to vision models for table extraction and captioning to keep ingestion costs strictly controlled.",
+      numbers: "Baseline: 500–800 tokens, 10–15% overlap. Parent-child: 128–256t child / 1024t parent. Vision parsing costs 10x–50x pure text; route scans selectively.",
+      wrong: "\"I used RecursiveCharacterTextSplitter with 1000 and 200.\" That is a framework default, not a strategy. If you cannot explain the trade-offs of overlap and structure, you did not engineer the pipeline.",
       follow: "How would you chunk a 90-page scanned PDF with tables?",
       followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
