@@ -32,7 +32,8 @@ window.IR.q["07-agents"] = {
       say: "The difference is who controls the flow. In a chain I decide the sequence of steps and it runs the same way every time. In an agent the model decides what to do next based on what it has seen so far, using the tools I gave it, until it decides the goal is met. That flexibility is why agents need step limits, tracing and a hard stop.",
       numbers: "In practice most production agent loops finish in 3–6 tool calls. If yours averages fifteen, the task is probably decomposable into a chain.",
       wrong: "\"An agent is an LLM with tools.\" Close, but a chain can call tools too. The distinguishing property is that the model chooses the control flow.",
-      follow: "Where in your last project did you deliberately not use an agent?"
+      follow: "Where in your last project did you deliberately not use an agent?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -81,7 +82,8 @@ window.IR.q["07-agents"] = {
       say: "ReAct alternates reasoning and acting. The model writes a thought, then emits a tool call. My runtime executes that tool and feeds the result back as an observation, and the model reasons again. Two things matter: the model never executes anything itself, so my runtime is where validation lives, and every iteration re-sends the whole history, so cost grows with each step.",
       numbers: "Each loop step re-sends the full history. A 6-step loop on a 2k-token context costs roughly 6× the input tokens of a single call, not 1×.",
       wrong: "\"The agent runs the tool.\" It does not. It returns a structured request and your code decides whether to run it. Getting this wrong signals you have only used a high-level wrapper.",
-      follow: "So what stops the model from requesting a tool call it should not be allowed to make?"
+      follow: "So what stops the model from requesting a tool call it should not be allowed to make?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -114,7 +116,8 @@ window.IR.q["07-agents"] = {
       say: "The model only sees the name, description and schema, so that text is the whole interface. I give each tool one job, a description that says when to use it and when not to, and typed constrained parameters instead of free-form strings. Errors are written as instructions the model can act on. And tools return summaries, not full payloads, because context is the scarce resource in a loop.",
       numbers: "Keep tool results under roughly 500–1000 tokens. Beyond about 15–20 tools in one agent, selection accuracy starts falling and you should route or group them.",
       wrong: "\"I wrap the existing API endpoints directly.\" REST endpoints are designed for developers who read documentation. Agents need fewer, narrower, better-described tools.",
-      follow: "You have 60 tools. How do you stop the model picking the wrong one?"
+      follow: "You have 60 tools. How do you stop the model picking the wrong one?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -137,7 +140,8 @@ window.IR.q["07-agents"] = {
       say: "Sixty definitions sit in the prompt on every call, so cost rises and discrimination falls. I retrieve tools instead of listing them — embed the descriptions and inject only the most relevant ten per step. Above that I route by domain to sub-agents that own eight tools each. And I measure tool-selection accuracy on a labelled set as its own metric, because end-to-end success hides which layer failed.",
       numbers: "Selection accuracy typically starts degrading past 15–20 tools in one prompt. Measure yours rather than trusting the threshold.",
       wrong: "\"I'd use a bigger model.\" It buys a little headroom and pays for it on every request forever. Fix the architecture first.",
-      follow: "How do you evaluate tool selection without evaluating the whole task?"
+      follow: "How do you evaluate tool selection without evaluating the whole task?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -163,7 +167,8 @@ window.IR.q["07-agents"] = {
       say: "Layers, because any single limit gets defeated. A hard step cap around ten, a token budget and a wall-clock timeout enforced by the runtime rather than the prompt, plus repeat detection on the tool-and-arguments hash. When a limit trips the agent returns partial work and says it could not finish. And I alert on the limit-hit rate, because a rising rate means a tool is broken, not that the users got harder.",
       numbers: "8–12 steps covers the large majority of real tasks. If more than about 5% of runs hit the cap, investigate the tool layer.",
       wrong: "\"I set max_iterations.\" It is the right first step and an incomplete answer. The panel wants the detection, the graceful exit and the alerting too.",
-      follow: "The agent hit its step limit on a user's request. What does the user see?"
+      follow: "The agent hit its step limit on a user's request. What does the user see?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -189,7 +194,8 @@ window.IR.q["07-agents"] = {
       say: "I separate three things. Short-term memory is just the context I re-send each call, trimmed or summarised as it grows. Long-term memory is durable facts across sessions, written deliberately and retrieved at session start — I keep those as structured records, not embeddings, because I need to correct them. And working state is the current task's scratchpad. Each needs its own update and delete path.",
       numbers: "Trigger summarisation at roughly 60–70% of context, not 95%. You need headroom for the tool results still to come.",
       wrong: "\"I store the chat history in a vector database.\" Sometimes right for retrieval over past conversations, but it is not memory management, and it gives you no way to fix a wrong remembered fact.",
-      follow: "The agent remembered something incorrect about the user. How do you fix it?"
+      follow: "The agent remembered something incorrect about the user. How do you fix it?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -214,7 +220,8 @@ window.IR.q["07-agents"] = {
       say: "I default to one agent, because every extra agent adds a handoff that loses context and multiplies latency. I split when there is a concrete reason: different permission levels, genuinely non-overlapping tool sets, work that can truly run in parallel, or a cheap model for a high-volume step. When I do split, I use a supervisor pattern so there is one place to enforce limits and one readable trace.",
       numbers: "Each handoff typically adds a full model call plus its latency. A five-agent chain is five times the latency floor of one agent, before any tool time.",
       wrong: "\"We used a crew of five agents — researcher, writer, critic, editor, publisher.\" If you cannot say what each one could not do in a single loop, it reads as a demo.",
-      follow: "Two of your agents disagree. Who wins, and how is that decided?"
+      follow: "Two of your agents disagree. Who wins, and how is that decided?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -240,7 +247,8 @@ window.IR.q["07-agents"] = {
       say: "Once a tool can write, the model's output is an action, and retrieved documents can carry injected instructions. So the control lives in the runtime, not the prompt. Read and write tools are separated, write calls are authorised against the user's permissions in code, arguments are validated against business rules, and high-impact actions stop for human confirmation showing exactly what will happen. Every attempt is logged, including refusals.",
       numbers: "No number applies — this is a binary control. What you do track is the refusal and confirmation-rejection rate, which tells you how often the model tried something it should not.",
       wrong: "\"The system prompt tells it not to do anything destructive.\" A prompt is a suggestion. One injected document defeats it, and the panel knows that.",
-      follow: "A retrieved document contains instructions aimed at your agent. What happens?"
+      follow: "A retrieved document contains instructions aimed at your agent. What happens?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -266,7 +274,8 @@ window.IR.q["07-agents"] = {
       say: "I score the destination and the route. Destination is task success, checked programmatically wherever the outcome is checkable, rather than with a judge model. Route is tool-selection accuracy, argument correctness and steps taken against the minimum needed. I also inject tool failures to test recovery, and I run every case three to five times, because with one run per case a non-deterministic system gives you noise.",
       numbers: "Report pass rate over 3–5 runs per case. A case that passes 3 out of 5 is a flaky case, and averaging it into a single score hides that.",
       wrong: "\"We check whether the final answer is correct.\" It misses an agent that got the right answer by an expensive twelve-step route that will break next week.",
-      follow: "How do you build the golden set of agent tasks in the first place?"
+      follow: "How do you build the golden set of agent tasks in the first place?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -291,7 +300,8 @@ window.IR.q["07-agents"] = {
       say: "I cannot reproduce it by re-running, so the trace has to have captured it. Every step logs the exact assembled prompt, the model and version, sampling parameters, each tool call with arguments and raw result, timings and tokens, under one trace id. Then I find the first step where the trajectory diverged and read exactly what the model saw at that moment. Usually a tool returned something unexpected.",
       numbers: "Traces get large — budget for it. A 10-step agent run can log 30–60 KB. Sample verbose payloads in high volume, but keep 100% of failed runs.",
       wrong: "\"I check the logs.\" Which logs, holding what? A senior answer names the specific fields, because assembling them is a design decision made before the incident.",
-      follow: "Your traces contain PHI. How do you keep them and stay compliant?"
+      follow: "Your traces contain PHI. How do you keep them and stay compliant?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -319,7 +329,8 @@ window.IR.q["07-agents"] = {
       say: "Rarely the model. Reliability compounds — ninety-five percent per step is about sixty percent over ten steps, and users do not accept that. Cost per task at real volume was usually never calculated. There was no evaluation set, so nobody could tell if a change helped. And the scope was open-ended. What ships is a narrow task with a three or four step loop and a deterministic pipeline around it.",
       numbers: "0.95^10 ≈ 0.60. Quote this. It reframes the conversation from model quality to architecture, which is where senior candidates are expected to operate.",
       wrong: "\"The models were not capable enough yet.\" It moves the problem to a vendor and away from anything you control, which is the opposite of what this round rewards.",
-      follow: "Given that, where would you actually use an agent in our business?"
+      follow: "Given that, where would you actually use an agent in our business?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -344,7 +355,8 @@ window.IR.q["07-agents"] = {
       say: "The placement is the whole design. I pause before actions that are irreversible, expensive or externally visible, never before reads, because reviewing everything trains people to approve without reading. The pause shows the concrete effect in plain language with the evidence behind it, and offers approve, edit or reject. I log the choice, and I watch the approval rate — near a hundred percent means the review has become a rubber stamp.",
       numbers: "Watch the edit rate. A healthy review has a real edit rate; an approval rate at 99% usually means nobody is reading.",
       wrong: "\"A human reviews every response.\" That does not scale and it degrades into rubber-stamping. The senior answer places the human precisely.",
-      follow: "How would you use the reject and edit decisions to improve the agent?"
+      follow: "How would you use the reject and edit decisions to improve the agent?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
 ,
 
@@ -394,7 +406,8 @@ window.IR.q["07-agents"] = {
       say: "In a workflow I write the control flow and the model fills in steps; in an agent the model decides the control flow at runtime. I default to the workflow, because it is testable, debuggable and has predictable cost and latency. An agent earns its place only when the steps genuinely cannot be enumerated ahead of time. My test is whether I can draw the flowchart — if I can, I build it, and most production systems called agents are really workflows.",
       numbers: "A workflow has a known number of model calls. An agent's cost is bounded only by your step limit, so worst-case cost is the limit times the per-step cost.",
       wrong: "Reaching for an agent because the JD said agentic. It is slower, costlier, harder to test, and usually solves a problem that a three-step chain already solved.",
-      follow: "Where in your last project would an agent have been the wrong choice?"
+      follow: "Where in your last project would an agent have been the wrong choice?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -428,7 +441,8 @@ window.IR.q["07-agents"] = {
       say: "Function calling is a single round trip — the model returns a structured request, I execute it and pass the result back. An agent loop wraps that in iteration with termination logic and accumulating state. The distinction matters because the hard parts are all in the loop: failing tools, repeated calls, context growth, knowing when to stop. And the model never executes anything itself, which is where my authorisation boundary sits.",
       numbers: "A single function call is one or two model calls. An agent loop is unbounded until you bound it, which is why a step limit is mandatory.",
       wrong: "Saying the model calls the API. It does not — it emits a request and your code executes it. Getting this wrong signals no hands-on experience.",
-      follow: "Where would you put the authorisation check in that loop?"
+      follow: "Where would you put the authorisation check in that loop?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -457,7 +471,8 @@ window.IR.q["07-agents"] = {
       say: "The model only sees the tool name, description and parameter schema as text in its context — never the implementation. So selection is essentially text matching against those descriptions. That means the description is the real interface, overlapping descriptions cause inconsistent selection, and parameter descriptions are what prevent hallucinated arguments. When selection goes wrong I read the definitions as a flat list, which usually makes the ambiguity obvious.",
       numbers: "Tool definitions are re-sent on every call in the loop, so a large tool set is a recurring token cost as well as an accuracy problem.",
       wrong: "'The model understands what the function does.' It understands your description of what it does, and the gap between those two is where most tool bugs live.",
-      follow: "Two of your tools get confused with each other. How do you fix it?"
+      follow: "Two of your tools get confused with each other. How do you fix it?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -489,7 +504,8 @@ window.IR.q["07-agents"] = {
       say: "The biggest improvement is describing when to use the tool rather than only what it does, and explicitly saying what it is not for, since that prevents confusion with adjacent tools. Every parameter gets a format and constraints, which eliminates hallucinated arguments, and I document the return shape including the empty case. Then I test selection empirically against representative queries and fix the descriptions where it chose wrong.",
       numbers: "Tool descriptions are prompts — version them and re-run your selection tests when they change. Selection accuracy is measurable; treat it as a metric.",
       wrong: "Auto-generating descriptions from function signatures. It produces 'search_orders(customer_id: str)' with no guidance on when to use it, which is exactly the information the model needs.",
-      follow: "How would you measure whether your descriptions are working?"
+      follow: "How would you measure whether your descriptions are working?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -521,7 +537,8 @@ window.IR.q["07-agents"] = {
       say: "I return the error to the model as a tool result, phrased so it can act — what went wrong, what a valid input looks like, and which tool finds it. Models usually self-correct from that, whereas a stack trace produces an identical retry. But I classify first: transient failures I retry in code with backoff, fatal ones like auth stop the loop, and I never leak internals into context. Three identical failures means stop.",
       numbers: "Cap identical consecutive failures at two or three. Beyond that the model is not going to recover and you are burning the step budget.",
       wrong: "Passing the raw exception string through. It is unactionable, it leaks internals, and it commonly causes the model to repeat the same failing call.",
-      follow: "The tool succeeds but returns an empty result. Is that an error?"
+      follow: "The tool succeeds but returns an empty result. Is that an error?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -555,7 +572,8 @@ window.IR.q["07-agents"] = {
       say: "I execute them concurrently with gather rather than serially, which turns three 500ms lookups into one. I use return_exceptions so a single failure does not cancel the batch, and I match results back by call id rather than position, because completion order differs from request order. Read-only tools are safe to parallelise; for writes I serialise unless I can prove independence, and I bound concurrency with a semaphore.",
       numbers: "Three serial 500ms calls take 1.5s; in parallel, roughly 500ms. That is usually the biggest single latency win in an agent step.",
       wrong: "Zipping results to calls by index after out-of-order completion. It silently pairs the wrong result with the wrong call and is very hard to debug.",
-      follow: "One of the parallel calls writes data and another reads it. Now what?"
+      follow: "One of the parallel calls writes data and another reads it. Now what?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -584,7 +602,8 @@ window.IR.q["07-agents"] = {
       say: "Reactive picks one step at a time and adapts naturally, but on long tasks it drifts from the goal and cannot tell you what it intends to do. Plan-and-execute is predictable and approvable but breaks when reality diverges from the plan. So I build the hybrid: plan first, then check after each step whether the remaining plan is still valid and re-plan if not, with a cap on re-plans. The explicit plan is also what makes human approval possible.",
       numbers: "Cap re-plans at two or three. Unlimited re-planning is a loop with extra steps and burns budget without converging.",
       wrong: "Presenting ReAct as the modern approach and planning as outdated. They solve different problems, and the hybrid is what production systems actually use.",
-      follow: "Your plan's step three returns something unexpected. Walk me through what happens."
+      follow: "Your plan's step three returns something unexpected. Walk me through what happens.",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -635,7 +654,8 @@ window.IR.q["07-agents"] = {
       say: "Three things break together: context overflows, cost grows quadratically because the history is resent every step, and reliability compounds down — 98% per step is about 45% over forty. So I decompose into sub-agents with clean contexts returning summaries, compact older history while keeping raw results externally by reference, and checkpoint each step so a late failure resumes. I would also challenge whether forty model-decided steps is right at all.",
       numbers: "0.98^40 ≈ 0.45. Any fixed sequence within those forty steps should be deterministic code rather than model decisions.",
       wrong: "'Use a model with a bigger context window.' It defers the cost problem, does nothing for compounding reliability, and mid-context recall degrades anyway.",
-      follow: "Which of those forty steps would you convert to plain code?"
+      follow: "Which of those forty steps would you convert to plain code?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -671,7 +691,8 @@ window.IR.q["07-agents"] = {
       say: "Compaction summarises older history so a long agent stays in its window, keeping the goal, decisions, constraints and outstanding work while dropping verbose tool output. The dangerous losses are constraints stated once early — a tax rule from step three that a summary treats as background — and failed attempts, because dropping those makes the agent retry them. I pin the goal and constraints verbatim and always summarise from the original history, not from the previous summary.",
       numbers: "Compact at around 60–70% of the window, so there is room for the next step. Keep identifiers in structured fields rather than in prose.",
       wrong: "Summarising the previous summary each time. Quality degrades compounding, and by the tenth compaction the state block is vague enough to be useless.",
-      follow: "Your agent keeps retrying something it already failed. What is wrong with your compaction?"
+      follow: "Your agent keeps retrying something it already failed. What is wrong with your compaction?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -701,7 +722,8 @@ window.IR.q["07-agents"] = {
       say: "Short-term is the context window for this task; long-term persists across sessions. Within long-term, episodic holds specific timestamped events, while semantic holds distilled facts like preferences and account details. The practical difference is that semantic memory is small and cheap to inject into every prompt, whereas episodic grows forever and should be retrieved only when a query needs history. I distil episodes into semantic facts periodically.",
       numbers: "Inject semantic facts by default and retrieve episodes on demand. Loading all stored memory into context is a common cause of degraded task performance.",
       wrong: "Treating memory as one bucket of stored chat history. It conflates four things with different lifetimes, storage and retrieval strategies.",
-      follow: "The user's stored preference is now out of date. How does your system notice?"
+      follow: "The user's stored preference is now out of date. How does your system notice?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -736,7 +758,8 @@ window.IR.q["07-agents"] = {
       say: "I design the write policy first, because that is where the noise comes from. I store durable things — stable preferences, account facts, outcomes and explicit corrections — and skip transient state or anything I can look up live, since remembered state goes stale. New facts that contradict old ones replace them rather than coexisting, and I record provenance and let facts decay. And memory is personal data, so it needs consent, per-user scoping and user-visible deletion.",
       numbers: "Under DPDP, stored memory is personal data — it must be inspectable and deletable on request. Design the deletion path before you start writing.",
       wrong: "Storing the whole conversation as memory. It fills the store with noise, retrieval quality collapses, and you have created a privacy liability nobody scoped.",
-      follow: "A user asks you to delete everything you know about them. What happens?"
+      follow: "A user asks you to delete everything you know about them. What happens?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -765,7 +788,8 @@ window.IR.q["07-agents"] = {
       say: "I default to parameterised fixed-query tools rather than free-form SQL, so the model supplies arguments and I write the query — that removes injection and unbounded queries. Where free-form is needed, it is a read-only role with SELECT on views, statement timeouts, row limits and a read replica. Access is scoped by row-level security tied to the requesting user, never a filter the model supplies, because injection would strip it. Writes need approval and audit.",
       numbers: "Set a statement timeout and a hard row limit on every query path. Enforce tenant scoping server-side — a model-supplied WHERE clause is not a security control.",
       wrong: "Text-to-SQL with a read-only user and calling it secure. Read-only stops writes and does nothing about cross-tenant reads, data exfiltration or a query that takes the database down.",
-      follow: "A prompt injection tells the agent to query another tenant's data. What stops it?"
+      follow: "A prompt injection tells the agent to query another tenant's data. What stops it?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -813,7 +837,8 @@ window.IR.q["07-agents"] = {
       say: "Supervisor has one coordinator delegating to specialists that report back — centralised, legible, easy to gate, but a bottleneck. Swarm has peers handing off directly, which is flexible but emergent and prone to handoff loops. Hierarchical nests supervisors for large task trees at the cost of latency and context loss. I default to supervisor, and I would say multi-agent is usually unjustified unless sub-tasks need different tools, permissions or isolated contexts.",
       numbers: "Every handoff is a lossy summarisation. Multi-agent systems fail at the seams more often than inside any single agent.",
       wrong: "Proposing multi-agent because the task has several parts. Parts are functions. Separate agents are justified by separate tools, permissions or contexts.",
-      follow: "Your two agents keep handing the same task back and forth. How do you stop it?"
+      follow: "Your two agents keep handing the same task back and forth. How do you stop it?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -848,7 +873,8 @@ window.IR.q["07-agents"] = {
       say: "Every handoff is lossy compression, and that is where multi-agent systems fail. I make the handoff a structured contract rather than a prose summary — the original goal verbatim, the specific task, constraints discovered, exact identifiers, what was already tried and ruled out, references to full artefacts, and an explicit success criterion. Structure is what stops loss, because a summariser does not know what the receiver will need. And I log every payload.",
       numbers: "Pass large results by reference to shared storage, not inline. Log handoff payloads — they are the only place cross-agent context loss is visible.",
       wrong: "Passing a natural-language summary between agents. It silently drops constraints and prior attempts, and the receiving agent repeats work already ruled out.",
-      follow: "Agent B redoes something A already tried. Which field was missing?"
+      follow: "Agent B redoes something A already tried. Which field was missing?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -881,7 +907,8 @@ window.IR.q["07-agents"] = {
       say: "The key point is that history accumulates, so input cost grows quadratically rather than linearly — a ten-step agent adding 800 tokens per step is around 56,000 input tokens, not 20,000. I estimate from base prompt size, tokens added per step, expected steps and the model's prices, then give both the expected case and the worst case at the step limit. I present it per thousand runs, and the first lever is trimming tool definitions since they are resent every step.",
       numbers: "Ten steps, 2k base, 800 tokens per step: roughly 56k input tokens total. Always state the worst case at your step limit — that is what an unbounded run costs.",
       wrong: "Multiplying one call's cost by the step count. It understates by roughly half at ten steps and much more at longer horizons.",
-      follow: "Your step limit is 40. What is the worst-case cost of one run?"
+      follow: "Your step limit is 40. What is the worst-case cost of one run?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -912,7 +939,8 @@ window.IR.q["07-agents"] = {
       say: "Success signalled by a structured finish tool rather than prose, a hard step cap as the backstop, a cumulative cost cap because one step can be far more expensive than another, a wall-clock limit, no-progress detection on repeated identical tool calls, a stop after repeated identical failures, an explicit give-up path, and cancellation on user interrupt. I log which condition fired, and if limit stops become common that means the task is mis-scoped.",
       numbers: "Typical caps: 10–25 steps for a scoped task, a per-run token budget, and a wall-clock limit matched to the caller's timeout.",
       wrong: "'I set max iterations.' It is necessary and nowhere near sufficient — it does not bound cost, time, or the loop that repeats the same call until the cap.",
-      follow: "Your agent hits the step limit on 20% of runs. What does that tell you?"
+      follow: "Your agent hits the step limit on 20% of runs. What does that tell you?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -939,7 +967,8 @@ window.IR.q["07-agents"] = {
       say: "You cannot reproduce it exactly, so I record and replay instead. I log the fully rendered prompt at each step, the raw response, every tool call and result, timings, and the pinned prompt, model and schema versions. Then replay substitutes recorded tool results for live calls, which fixes the environment so I can tell whether a behaviour change came from the model or the world. I log the rendered prompt, not the template, since templates change.",
       numbers: "Pin to dated model versions. A floating alias means a provider update changes behaviour with no corresponding change on your side.",
       wrong: "'Set temperature to zero.' It reduces variance and does not give determinism, and it does nothing about tools whose underlying data has changed.",
-      follow: "The same input worked last week and fails today. How do you find out what changed?"
+      follow: "The same input worked last week and fails today. How do you find out what changed?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -969,7 +998,8 @@ window.IR.q["07-agents"] = {
       say: "I never assert exact output. Unit tests mock the tools, which makes the loop deterministic, and test mechanics like step limits, retries and empty results — most agent bugs are loop bugs. Then trajectory assertions check that the required tool was called, the forbidden one was not, and it finished within budget. Where the task has a checkable end state I assert that. Judge-based evals run nightly on aggregate, not per commit.",
       numbers: "Unit and trajectory tests should run in seconds per commit. Gate nightly evals on aggregate score against a baseline, since individual cases are noisy.",
       wrong: "Putting a slow, noisy LLM-judge suite in the commit path. It goes red randomly, the team learns to ignore it, and you have lost the signal entirely.",
-      follow: "Your nightly eval score dropped 4 points. Is that a regression?"
+      follow: "Your nightly eval score dropped 4 points. Is that a regression?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -997,7 +1027,8 @@ window.IR.q["07-agents"] = {
       say: "Final-answer evaluation scores the output; trajectory evaluation scores the path. You need both, because a right answer reached in fourteen steps with three wrong tool calls passes final-answer scoring while costing five times what it should and being fragile. Conversely a good path with a wrong answer points at the data rather than the agent. I use answer correctness as primary and trajectory metrics as diagnostics, since step count drifts before quality visibly degrades.",
       numbers: "Track step count against an optimal baseline for known tasks. A rising redundant-call rate is an early warning that a prompt or tool change hurt selection.",
       wrong: "Scoring only the final answer. It passes agents that are expensive, slow and fragile, and it gives you no signal until quality has already degraded visibly.",
-      follow: "Answer accuracy is flat but average steps rose from 4 to 9. What happened?"
+      follow: "Answer accuracy is flat but average steps rose from 4 to 9. What happened?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -1027,7 +1058,8 @@ window.IR.q["07-agents"] = {
       say: "First contain and restore, then fix the architecture, because the root cause is that a destructive capability was reachable without a gate. I would soft-delete rather than delete so it is reversible, strip delete permission from the agent's identity so the tool cannot succeed at all, require human approval showing the specific effect, and dry-run by default. Crucially none of these live in the prompt, because injection can make the model want the action.",
       numbers: "Cap rows affected per destructive call and refuse unfiltered deletes. Soft-delete converts most of this class of incident into a recoverable event.",
       wrong: "Adding 'never delete anything' to the system prompt. A prompt is not a security control — an injection or an unusual phrasing overrides it.",
-      follow: "The approval gate exists but users click through it. What now?"
+      follow: "The approval gate exists but users click through it. What now?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -1057,7 +1089,8 @@ window.IR.q["07-agents"] = {
       say: "The agent cannot be an in-memory process, because a deploy or restart during the wait loses the run. So at the approval point I persist the full state with a run id and exit, then a fresh worker loads and resumes when approval arrives. I make the resume path idempotent since webhooks can duplicate, set an approval timeout with a defined default, and re-validate preconditions before executing because the world moved during the wait.",
       numbers: "Set an explicit approval expiry — 24 or 48 hours with escalation. Without one, runs sit pending indefinitely and nobody notices.",
       wrong: "Blocking on the approval in memory, or polling in a sleeping loop. Both die on the next deploy and neither survives a pod restart.",
-      follow: "The approval arrives after 20 hours and the underlying data changed. What happens?"
+      follow: "The approval arrives after 20 hours and the underlying data changed. What happens?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -1088,7 +1121,8 @@ window.IR.q["07-agents"] = {
       say: "The model receives a screenshot and returns UI actions like clicks and typing, which is valuable because it works against systems with no API. But per-step accuracy compounds badly over a long sequence, every step costs a screenshot's worth of image tokens, and any UI change or unexpected modal derails it. Rendered content is also an injection surface. I would use it for supervised internal read tasks, and always prefer an API where one exists.",
       numbers: "Every step sends a full screenshot — image tokens dominate the cost. Multi-step UI tasks compound per-step error into a low end-to-end success rate.",
       wrong: "Presenting it as a general replacement for integrations. It is a fallback for systems with no API, and proposing it where an API exists signals poor judgement.",
-      follow: "You must use it for a 15-step form. How do you make that reliable?"
+      follow: "You must use it for a 15-step form. How do you make that reliable?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -1124,7 +1158,8 @@ window.IR.q["07-agents"] = {
       say: "I would scope it as assisting adjudication, not deciding — auto-approve only clean claims below a value threshold, and never auto-reject, since a denial carries appeal rights. Every determination cites the specific clause and is blocked if uncited, using the policy version in force on the incident date. All amounts are computed in code, not by the model. Then PHI minimisation, in-region storage, fairness monitoring across demographics, and a full audit trail.",
       numbers: "Set the auto-approval threshold with the business and start conservative. Monitor approval rates by demographic and geography from day one, not after launch.",
       wrong: "Designing the happy path and adding guardrails as a final slide. In a regulated domain the guardrails are the architecture, and the panel is checking whether you know that.",
-      follow: "The agent approves a claim it should not have. Who is accountable, and how do you find out why?"
+      follow: "The agent approves a claim it should not have. Who is accountable, and how do you find out why?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -1152,7 +1187,8 @@ window.IR.q["07-agents"] = {
       say: "I separate it from tool selection, because the fixes differ. Most argument bugs are schema bugs, so I use strict types, enums for closed sets and formats with an example in the description. Then I validate before execution and hand failures back as a tool result the model can retry against. Business validation lives in the tool, because a well-formed ID can still belong to another tenant. And if the value was never in context, it is a retrieval bug.",
       numbers: "Log every rejected tool call with the argument that failed. The distribution is small — usually two or three fields cause most failures, and each is a one-line schema fix.",
       wrong: "Adding 'be careful with the arguments' to the system prompt. It is unenforceable, it does not survive a model change, and the schema could have made the mistake impossible.",
-      follow: "The model retries the same malformed call three times in a row. What is your policy?"
+      follow: "The model retries the same malformed call three times in a row. What is your policy?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
   ]
 };

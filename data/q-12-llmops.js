@@ -35,7 +35,8 @@ window.IR.q["12-llmops"] = {
       say: "Four things. It is non-deterministic, so I cannot reproduce an incident by re-running — the trace is all I get. Failures are plausible rather than loud, so wrong looks like right. The model can change underneath me with no deploy on my side. And cost varies per request by orders of magnitude. So the stack needs full tracing, quality metrics alongside health metrics, pinned versions, and cost per request.",
       numbers: "No number applies. What follows from it is that cost per request belongs on a dashboard, not in a capacity spreadsheet.",
       wrong: "\"It's the same, just with an API call in the middle.\" It is the answer of someone who has not been on call for one.",
-      follow: "Nothing was deployed and quality dropped. Where do you start?"
+      follow: "Nothing was deployed and quality dropped. Where do you start?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -62,7 +63,8 @@ window.IR.q["12-llmops"] = {
       say: "Whatever I would need to explain one bad response six weeks later, because I cannot reproduce it. The final assembled prompt rather than the template, model name and version, sampling parameters, raw output before parsing, token and latency splits, and cost. For retrieval, the query, filters, chunk ids and scores. For agents, every step with arguments and results. PII redacted at write time, all failures retained.",
       numbers: "Traces are large — a 10-step agent run can be 30–60 KB. Sample verbose payloads in high volume, but never sample away the failures.",
       wrong: "\"We log the input and the output.\" It tells you it went wrong and nothing about where, which in a multi-step pipeline is the entire question.",
-      follow: "Your traces contain PHI. How do you keep them for a year?"
+      follow: "Your traces contain PHI. How do you keep them for a year?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -88,7 +90,8 @@ window.IR.q["12-llmops"] = {
       say: "Three things get versions — the prompt in source control, the model pinned to an explicit version rather than a floating alias, and the retrieval corpus, because the same prompt over a changed index is a different system. All three are stamped on every request, which is what makes drift attributable. Prompt changes canary like code changes, and rollback is fast and independent of a deploy.",
       numbers: "Canary on 5–10% of traffic and watch the quality proxies for at least a full daily cycle before widening. Traffic mix changes by hour.",
       wrong: "\"We use the latest model version so we get improvements automatically.\" You also get regressions automatically, with no rollback and no idea when it happened.",
-      follow: "You are pinned and the vendor deprecates your version. What is your plan?"
+      follow: "You are pinned and the vendor deprecates your version. What is your plan?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -113,7 +116,8 @@ window.IR.q["12-llmops"] = {
       say: "Visibility first — cost per request, per feature and per tenant on a daily dashboard, because teams with a cost problem usually have no breakdown, and the breakdown shows one feature is most of the bill. Then hard token budgets per session enforced in the runtime, and alerts on token-per-request spikes, because a spike is usually a bug. Then right-sizing, caching and context trimming. And I report cost per completed task.",
       numbers: "Alert on a 30% day-over-day move in tokens per request. That threshold catches retry loops and untrimmed contexts before the invoice does.",
       wrong: "\"We monitor our monthly spend.\" Monthly is too late — a runaway agent loop can spend a month's budget in a weekend.",
-      follow: "Tokens per request doubled overnight. What are the three likeliest causes?"
+      follow: "Tokens per request doubled overnight. What are the three likeliest causes?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -142,7 +146,8 @@ window.IR.q["12-llmops"] = {
       say: "Five candidates. The model version changed — one query if I pinned and logged it. The corpus changed through an ingestion run. The traffic changed, which is the most common and least suspected, so I compare query distributions before and after. A tool dependency changed shape. Or the measurement changed. Then I run the golden set and compare against the last stored run — that tells me whether the system moved or the users did.",
       numbers: "Store every golden-set run with its date, model version and corpus version. Without a stored history there is nothing to compare against and this investigation stalls at step one.",
       wrong: "\"I'd check the logs and try some prompts.\" Unstructured, and it usually lands on changing the prompt, which is the one thing you know did not cause it.",
-      follow: "The query distribution shifted. Is that a bug?"
+      follow: "The query distribution shifted. Is that a bug?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -170,7 +175,8 @@ window.IR.q["12-llmops"] = {
       say: "I treat the provider as an unreliable dependency. Capped retries with backoff and jitter, but only on retryable errors — retrying a policy refusal just burns money. A circuit breaker so we fail fast instead of queueing into our own outage. A fallback model on another provider or region, evaluated in advance. And honest degradation: showing the top matching documents beats a spinner, because retrieval usually still works when generation does not.",
       numbers: "Cap retries at 2–3 with jitter. Uncapped retries during a provider incident turn one outage into a self-inflicted second one.",
       wrong: "\"We retry on failure.\" Without the error-type distinction and the circuit breaker, retrying is how a provider blip becomes your incident.",
-      follow: "Your fallback model has never been evaluated. What do you do today?"
+      follow: "Your fallback model has never been evaluated. What do you do today?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -195,7 +201,8 @@ window.IR.q["12-llmops"] = {
       say: "Thumbs attached to the trace that produced the answer, because feedback without evidence is unusable. But implicit signals matter more, since almost nobody clicks — rephrase rate, citation clicks, escalation, abandonment. Then the loop: weekly triage with a domain expert, confirmed failures become golden-set cases, and after a fix I re-run those cases and report the change, so users see the feedback went somewhere.",
       numbers: "Explicit feedback rates are typically low single-digit percentages. Design for implicit signals as the primary source and treat thumbs as a bonus.",
       wrong: "\"We have thumbs up and down on every response.\" Collection without a triage process is a dataset nobody reads.",
-      follow: "Nobody clicks the thumbs. What do you use instead?"
+      follow: "Nobody clicks the thumbs. What do you use instead?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -221,7 +228,8 @@ window.IR.q["12-llmops"] = {
       say: "Like a code change, plus one accommodation. In the pull request, deterministic checks plus the golden set run against both versions and posted as a comparison, so the reviewer sees the effect rather than the diff. Then canary on a small share for a full daily cycle, watching refusal rate, parse failures, groundedness and cost. And I compare per segment, because a change that lifts the average can break one language or document type.",
       numbers: "Canary 5–10%, hold for at least 24 hours. Shorter windows miss the shift in traffic mix between working hours and overnight.",
       wrong: "\"Prompts are config, so we can just push them.\" That is exactly why they cause most regressions — they bypass the review that code gets.",
-      follow: "The canary looks fine overall but one tenant is complaining. What now?"
+      follow: "The canary looks fine overall but one tenant is complaining. What now?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -251,7 +259,8 @@ window.IR.q["12-llmops"] = {
       say: "Yes, and the reason is that they solve different problems. Ollama is a developer runtime serving one request at a time, which is right for iteration. vLLM is a serving engine — PagedAttention stops KV-cache fragmentation and continuous batching admits new requests into a running batch, which is what keeps a GPU near ninety percent utilisation. Both are OpenAI-compatible, so promotion is a base URL change. I pin identical model and quantisation across both.",
       numbers: "Continuous batching plus PagedAttention commonly delivers an order-of-magnitude throughput gain over naive serving once you have ten or more concurrent users.",
       wrong: "Treating them as interchangeable, or proposing Ollama for production traffic. Serialised request handling under concurrency is a straightforward outage.",
-      follow: "Your vLLM box handles 50 concurrent users and falls over at 200. What do you look at first?"
+      follow: "Your vLLM box handles 50 concurrent users and falls over at 200. What do you look at first?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
   ]
 };

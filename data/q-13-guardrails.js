@@ -33,7 +33,8 @@ window.IR.q["13-guardrails"] = {
       say: "I use the OWASP LLM Top 10 as the vocabulary. In practice: prompt injection, direct and indirect; sensitive disclosure through retrieval with no permission check; improper output handling, where model output goes into SQL or a shell unvalidated; excessive agency, where a tool does more than the task needs; and supply chain, which now includes models and MCP servers. The framing underneath is that the model is not a trust boundary.",
       numbers: "No number applies. What you track operationally is attempted-injection detections and blocked tool calls.",
       wrong: "\"The main risk is hallucination.\" That is a quality risk. Answering a security question with it says you have not thought about an adversary.",
-      follow: "Which of those would you fix first in a system you just inherited?"
+      follow: "Which of those would you fix first in a system you just inherited?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -59,7 +60,8 @@ window.IR.q["13-guardrails"] = {
       say: "The attacker plants text in a document they know we will index, so it arrives through the same channel as legitimate content and cannot be blocked at the door. I delimit retrieved content and label it as data, scan at ingestion and quarantine, and keep the model's permissions minimal so a successful injection reaches nothing valuable. State changes require confirmation. I design assuming injection sometimes succeeds and make sure success is not worth much.",
       numbers: "No number applies. Track quarantined documents and blocked tool calls as the operational signals.",
       wrong: "\"We sanitise the input.\" Sanitising natural language is not a solved problem — there is no character set to strip. Containment beats filtering here.",
-      follow: "A CV in your recruitment corpus contains an injection. What does it reach?"
+      follow: "A CV in your recruitment corpus contains an injection. What does it reach?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -86,7 +88,8 @@ window.IR.q["13-guardrails"] = {
       say: "First I map where personal data appears — input, corpus, output, traces, eval sets and provider retention, which is more places than teams usually list. Then: redact or tokenise at input, access control pre-filtered at retrieval, output scanning before display, and trace redaction at write time. Provider terms with zero retention, in-region. And under DPDP, erasure has to reach the vector index and the traces, not just the source database.",
       numbers: "No number applies. What matters is coverage: every one of those points, not a sampled subset.",
       wrong: "\"We use a model that does not train on our data.\" One control out of seven, and it addresses only the provider point while leaving your own traces and index untouched.",
-      follow: "A user exercises their right to erasure. What exactly do you delete?"
+      follow: "A user exercises their right to erasure. What exactly do you delete?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -139,7 +142,8 @@ window.IR.q["13-guardrails"] = {
       say: "In code around the model call, never in the prompt. Inbound: length, rate, injection patterns and topic scope. Outbound, cheapest first — schema parse, required sections, citation resolution against what was actually retrieved, banned terms and PII patterns — then model-based groundedness and policy checks. Each check has a defined action: block, regenerate, strip or escalate. And I measure false positives, because over-blocking gets guardrails switched off.",
       numbers: "Deterministic checks cost microseconds and should run on 100% of responses. Model-based checks cost a call — sample them if volume demands, but never sample citation validation.",
       wrong: "\"We instruct the model not to produce unsafe content.\" That is the model's own alignment doing the work, with nothing of yours behind it.",
-      follow: "Your groundedness checker is itself an LLM. What if it is wrong?"
+      follow: "Your groundedness checker is itself an LLM. What if it is wrong?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -165,7 +169,8 @@ window.IR.q["13-guardrails"] = {
       say: "You cannot reliably stop it — every published defence has been worked around — so I change what is at stake instead. Nothing secret goes in the system prompt: no credentials, no internal URLs, no customer data, no rules whose disclosure causes harm. Then extraction is embarrassing rather than damaging. If the security of a system depends on the model keeping a secret, the design is wrong.",
       numbers: "No number applies.",
       wrong: "\"I add an instruction never to reveal the prompt.\" It is the first thing every extraction technique is tested against.",
-      follow: "So where do credentials for a tool call live?"
+      follow: "So where do credentials for a tool call live?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -191,7 +196,8 @@ window.IR.q["13-guardrails"] = {
       say: "First I establish which regime applies — DPDP plus whichever sectoral regulator, since RBI and healthcare rules are stricter than the general position. Then deploy in an India region, checking which models are actually available there, because that is a real design constraint. The vector store, traces and logs stay in-region too, since traces contain prompts and prompts contain personal data. Zero retention, region pinned explicitly, and a documented data flow.",
       numbers: "No number applies. Model availability by region is the constraint to check early — it is often the reason a design changes.",
       wrong: "\"We use the cloud provider's Indian region.\" Half the answer. It leaves the trace store, the vector database and the provider's retention terms unaddressed.",
-      follow: "The model you need is not available in the India region. Now what?"
+      follow: "The model you need is not available in the India region. Now what?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -217,7 +223,8 @@ window.IR.q["13-guardrails"] = {
       say: "As testable components. A red-team set of injection attempts, jailbreaks, out-of-scope requests and PII inputs, each with an expected outcome, running in CI. Plus a mirror set of legitimate requests that look like attacks, because blocking those is the failure I would otherwise hear about from users. I report catch rate and false positive rate together, since either alone can be made perfect by breaking the other.",
       numbers: "Report both numbers, always. A guardrail at 100% catch and 15% false positives will be disabled by whoever is on call within a month.",
       wrong: "\"We tried some jailbreak prompts and they were blocked.\" Manual, unrepeatable, and no false-positive control.",
-      follow: "Who writes the red-team set, and why not you?"
+      follow: "Who writes the red-team set, and why not you?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -246,7 +253,8 @@ window.IR.q["13-guardrails"] = {
       say: "In mechanisms rather than principles. Fairness means measuring quality by segment — language, region, customer tier — because a single average hides inequity. Transparency means disclosure, citations and an honest not-known. Accountability means a named owner and an audit trail of what was shown to whom. Human oversight on consequential decisions, with edits logged. And contestability: an affected person can question the outcome and reach a human.",
       numbers: "Slice every quality metric by segment. A 0.9 average routinely hides a 0.6 segment, and that gap is the fairness finding.",
       wrong: "Reciting fairness, accountability and transparency as values. Every candidate does. The mechanisms are what distinguish an answer.",
-      follow: "You found one language performs ten points worse. What do you do about it?"
+      follow: "You found one language performs ten points worse. What do you do about it?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
   ]
 };

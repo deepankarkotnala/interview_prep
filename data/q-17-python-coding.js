@@ -43,7 +43,8 @@ window.IR.q["17-python-coding"] = {
       say: "Almost everything here is waiting on a model, a vector store or a tool API, which is exactly what async is for. Twenty one-second calls take twenty seconds sequentially and about one concurrently. CPU-bound work goes to a thread or process pool instead. The trap is that a single blocking call inside an async function stalls the whole event loop, so one `requests.get` silently serialises the pipeline.",
       numbers: "Bound concurrency with a semaphore — around 10 is a common starting point. Unbounded gather over hundreds of calls trips provider rate limits immediately.",
       wrong: "\"Async makes it faster.\" Only for I/O. Saying it generally invites the follow-up about CPU-bound work, which this answer cannot survive.",
-      follow: "Your gather of 500 calls returns rate-limit errors. What do you change?"
+      follow: "Your gather of 500 calls returns rate-limit errors. What do you change?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -82,7 +83,8 @@ window.IR.q["17-python-coding"] = {
       say: "A generator yields items one at a time instead of building the whole list, so an ingestion pipeline holds one document rather than ten thousand and memory stays flat as the corpus grows. It is also the natural shape for token streaming. The trade-offs are that it can only be consumed once, so I materialise if I need the data twice, and I cannot take its length without consuming it.",
       numbers: "No number applies — memory stays roughly constant instead of scaling with corpus size, which is the whole point.",
       wrong: "\"Generators are more memory efficient.\" True and unexplained. The interviewer wants the ingestion pipeline consequence.",
-      follow: "You need to retry a failed batch. What does that do to your generator design?"
+      follow: "You need to retry a failed batch. What does that do to your generator design?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -120,7 +122,8 @@ window.IR.q["17-python-coding"] = {
       say: "Two jobs. It defines the schema handed to the model, so one class is both the tool definition and the parser and nothing drifts. And it validates what comes back, which matters even with constrained decoding, because valid JSON is not correct JSON — a well-shaped claim id can still be invented. Business rules go in validators. I keep models flat and use Literal over free text, since that constrains generation too.",
       numbers: "Keep schemas to two levels of nesting or fewer. Failure rates climb noticeably with depth across providers.",
       wrong: "\"I use it to parse the JSON response.\" Half its value. It misses that the same class defines what you asked the model for.",
-      follow: "The schema validated and the claim id does not exist. Where does that get caught?"
+      follow: "The schema validated and the claim id does not exist. Where does that get caught?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -164,7 +167,8 @@ window.IR.q["17-python-coding"] = {
       say: "Four things. Exponential backoff with jitter, so clients do not synchronise into a retry storm. A cap on both attempts and total elapsed time, because three retries against a thirty-second timeout is a request nobody is waiting for. Retrying only retryable errors — a policy refusal or auth failure fails identically and burns money. And logging every retry, because a rising retry rate is a leading incident indicator.",
       numbers: "2–3 attempts with a total deadline around 20 seconds is a sane default for an interactive path. Uncapped retries turn a provider blip into your own outage.",
       wrong: "Retrying every exception. It converts a permanent failure into a slow permanent failure, at three times the cost, with the real error buried.",
-      follow: "The provider is down for ten minutes. Does your wrapper help or hurt?"
+      follow: "The provider is down for ten minutes. Does your wrapper help or hurt?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -191,7 +195,8 @@ window.IR.q["17-python-coding"] = {
       say: "I put the model call behind a small interface so tests can substitute a fake with a fixed response. Then prompt assembly, parsing, validation, routing and termination are all deterministic and test in milliseconds without an API key — that is the bulk of the suite. I explicitly test failure paths like malformed JSON and rate limits. Integration tests assert structure, never wording. And evaluation is a tracked score, not a test.",
       numbers: "Keep the mocked suite fast enough to run on every commit — seconds, not minutes. If it needs an API key it will get skipped.",
       wrong: "\"You cannot really test LLM code because it is non-deterministic.\" Only the model call is. Everything around it is ordinary software, and this answer says you did not try.",
-      follow: "Your fake returns valid JSON. What bug does that hide?"
+      follow: "Your fake returns valid JSON. What bug does that hide?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -234,7 +239,8 @@ window.IR.q["17-python-coding"] = {
       say: "I would state the requirements first: flat memory, one bad document must not kill the run, bounded concurrency for rate limits, and resumability. Then generators to stream documents and chunks, batching before embedding, embedding calls under a semaphore, per-batch error handling into a dead-letter list rather than aborting, and deterministic chunk ids with upsert so a rerun is idempotent rather than duplicating.",
       numbers: "Batch size around 100 for embeddings, concurrency around 8. Tune both against your provider's rate limits rather than guessing upward.",
       wrong: "An unbounded `asyncio.gather` over every document. It looks impressively concurrent and rate-limits on the first real corpus.",
-      follow: "The run died at 60%. What happens when you restart it?"
+      follow: "The run died at 60%. What happens when you restart it?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
 ,
 
@@ -270,7 +276,8 @@ window.IR.q["17-python-coding"] = {
       say: "Cosine is the dot product over the product of the norms, so it measures direction and ignores magnitude. I would write the two-line version first, then vectorise it: normalise the query, normalise the matrix rows with keepdims, and take a single matrix-vector product. In production I normalise at write time, so retrieval is one dot product rather than recomputing norms per query.",
       numbers: "A million 768-dimension vectors is about 3 GB in float32. The vectorised form runs in milliseconds; a Python loop over the same data takes minutes.",
       wrong: "Writing the loop and stopping there. The interviewer is waiting to see if you notice it will not survive a real index, and most candidates do not.",
-      follow: "Now the matrix does not fit in memory. What changes?"
+      follow: "Now the matrix does not fit in memory. What changes?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -299,7 +306,8 @@ window.IR.q["17-python-coding"] = {
       say: "I would use argpartition rather than a sort. Partitioning is linear and puts the k best at the front without ordering the rest, then I sort just those k, which is negligible. I negate because NumPy partitions ascending, and I clamp k to the array length so a corpus smaller than k does not raise. Beyond a few million rows I stop doing this in NumPy and use an ANN index.",
       numbers: "On a million scores, argpartition is roughly ten times faster than a full sort. Past about ten million vectors, move to HNSW rather than tuning this.",
       wrong: "np.argsort(scores)[-k:] with a comment saying it is fine. It works and it is the answer of someone who has not thought about the cost per query at a thousand queries a second.",
-      follow: "Where does this break down, and what would you replace it with?"
+      follow: "Where does this break down, and what would you replace it with?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -337,7 +345,8 @@ window.IR.q["17-python-coding"] = {
       say: "The core is that the step is size minus overlap rather than size. I validate that overlap is smaller than size at the top, because otherwise the step is zero and the loop never terminates. I break once the window has covered the end so I do not emit trailing fragments. And I would say out loud that character chunking is a baseline — for real documents I split on structure and measure in tokens.",
       numbers: "1000 characters with 200 overlap is a reasonable default, roughly 250 tokens. Overlap above about a quarter of the chunk size mostly buys duplicate storage.",
       wrong: "range(0, len(text), size) with a slice of size plus overlap. It silently drops the overlap semantics and nobody notices until retrieval quality is bad.",
-      follow: "This splits a sentence in half. Fix it."
+      follow: "This splits a sentence in half. Fix it.",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -375,7 +384,8 @@ window.IR.q["17-python-coding"] = {
       say: "Exponential backoff doubles the wait each attempt with a ceiling, and jitter randomises it so that a hundred clients rate-limited at once do not all retry in the same millisecond and rebuild the stampede. I only retry 429 and 5xx — a 400 is malformed and will stay malformed. I honour Retry-After when the provider sends it, and I bound total elapsed time so a request cannot hang for minutes.",
       numbers: "Base 1 second, cap 60, five attempts. Bound the total to roughly 30 seconds for an interactive request — a user will not wait longer than that.",
       wrong: "Backoff without jitter. It looks correct in a single-client test and causes synchronised retry storms the moment you run more than one worker.",
-      follow: "Your retries now exceed the user's timeout. What gives?"
+      follow: "Your retries now exceed the user's timeout. What gives?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -419,7 +429,8 @@ window.IR.q["17-python-coding"] = {
       say: "I layer it cheapest first: try json.loads directly, then strip a markdown fence with a DOTALL regex, then fall back to the outermost braces using find and rfind so nested objects survive. I put the raw text in the exception because otherwise you cannot debug it. And I would say this is a safety net — the real fix is structured output or constrained decoding so the model cannot wrap it in prose at all.",
       numbers: "Fence-wrapping shows up in a few percent of responses even with an explicit instruction not to. At a million calls a month that is tens of thousands of failures.",
       wrong: "json.loads(response) with no try/except. It passes the demo and it is the single most common LLM production incident.",
-      follow: "It parses now but a required field is missing. Where does that get caught?"
+      follow: "It parses now but a required field is missing. Where does that get caught?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -465,7 +476,8 @@ window.IR.q["17-python-coding"] = {
       say: "I wrap with functools.wraps so the traced name survives, time with perf_counter because it is monotonic, and log inside a finally block so failed calls are measured too — errors are exactly the calls you want latency on. I re-raise rather than swallowing. I would pull token counts off the response object and log them alongside, so cost attribution is per-feature rather than one bill at month end.",
       numbers: "Structured logs, not f-strings — you cannot aggregate on a string. Tag with feature and tenant at call time; you cannot reconstruct attribution later.",
       wrong: "Timing with time.time and logging only on success. You lose the failure latencies, which is where your p99 actually lives.",
-      follow: "The function is async. What changes?"
+      follow: "The function is async. What changes?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -511,7 +523,8 @@ window.IR.q["17-python-coding"] = {
       say: "I would use a token bucket: tokens refill lazily from elapsed monotonic time, each request takes one, and an empty bucket waits. It allows a controlled burst while holding the average. The critical detail is computing the wait inside the lock but sleeping outside it — sleeping while holding the lock serialises every caller. Across processes this has to live in Redis, since a local bucket only limits one worker.",
       numbers: "Set capacity to roughly the burst you want to tolerate and rate to the sustained limit. Run at about 80% of the provider's stated limit to leave headroom for retries.",
       wrong: "A local in-memory limiter on a service running four replicas. Each replica limits itself to the full quota, so you exceed it by four times and cannot work out why.",
-      follow: "You now run eight pods. What breaks?"
+      follow: "You now run eight pods. What breaks?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -548,7 +561,8 @@ window.IR.q["17-python-coding"] = {
       say: "I bound concurrency with an asyncio.Semaphore — every task acquires it before the call, so only N are in flight regardless of how many exist. I pass return_exceptions=True so a single failure does not cancel the whole gather, then split the results into successes and a dead-letter list by index, since gather preserves order. For very large inputs I would chunk rather than create millions of task objects at once.",
       numbers: "Concurrency of 8 to 16 is a sane starting point for a hosted embedding API. Tune against the provider's requests-per-minute rather than raising it until it breaks.",
       wrong: "asyncio.gather over the entire list with no semaphore. It is the answer that looks most confident and fails on the first real corpus.",
-      follow: "Half the batch failed with 429s. What now?"
+      follow: "Half the batch failed with 429s. What now?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -592,7 +606,8 @@ window.IR.q["17-python-coding"] = {
       say: "The key point is that socket chunks do not align to line boundaries, so I accumulate into a buffer and only parse complete lines, leaving the remainder for the next read. I treat [DONE] as termination rather than JSON, skip lines that are not data, and use .get for content because the first delta only carries a role. I also capture the usage block on the final chunk for cost tracking.",
       numbers: "TTFT is what the user perceives — typically a few hundred milliseconds against several seconds for the full response. That gap is the entire reason to stream.",
       wrong: "json.loads on each chunk as it arrives. It works locally where responses come in one piece and fails under real network conditions.",
-      follow: "The connection drops at 80%. What does the user see?"
+      follow: "The connection drops at 80%. What does the user see?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -634,7 +649,8 @@ window.IR.q["17-python-coding"] = {
       say: "I separate the system message and pin it, then walk the remaining turns newest-first, accumulating until I would exceed the budget. I reverse back into order and drop a leading assistant turn so the history does not start mid-pair. The budget is the window minus reserved output space, not the whole window, and I count with the provider's tokeniser rather than estimating from characters.",
       numbers: "Reserve 1–2k tokens for the answer. Summarise rather than drop once you are discarding turns that carry decisions the user still refers to.",
       wrong: "Keeping the last N messages by count. A single pasted document blows the budget and the request fails regardless of N.",
-      follow: "The user refers to something from turn three, which you dropped. Now what?"
+      follow: "The user refers to something from turn three, which you dropped. Now what?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -667,7 +683,8 @@ window.IR.q["17-python-coding"] = {
       say: "RRF merges ranked lists using positions rather than scores, which avoids normalising cosine against BM25 — different scales that do not compare cleanly. Each document gets one over k plus rank from every list it appears in, summed, so agreement across retrievers wins over a single confident hit. k around sixty flattens the top so one retriever cannot dominate. It is five lines and needs no tuning, which is why it is the production default.",
       numbers: "k=60 is the standard from the original paper and works well unchanged. Hybrid with RRF typically beats either retriever alone by a meaningful margin on mixed keyword-and-semantic queries.",
       wrong: "Min-max normalising both score sets and averaging. It is sensitive to outliers and to the candidate-set size, and it quietly degrades when one retriever returns few results.",
-      follow: "You trust the vector results more than BM25. How do you express that?"
+      follow: "You trust the vector results more than BM25. How do you express that?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -712,7 +729,8 @@ window.IR.q["17-python-coding"] = {
       say: "I mock the client and use side_effect with a list to script the exact sequence — two rate limits then a success — and assert both the result and the call count, which is what proves the retry ran. I patch sleep so the suite does not wait out the backoff. I always add the negative test that a 400 is not retried, since a retry loop on a malformed request just burns quota. Real model behaviour belongs in evals, not unit tests.",
       numbers: "Unit tests should run in seconds. Anything model-dependent goes in the eval suite, which runs on a schedule rather than on every commit.",
       wrong: "Calling the real API in CI and asserting on the text. It is slow, it costs money, and it fails randomly, so the team learns to ignore red builds.",
-      follow: "How do you test that the prompt itself is any good?"
+      follow: "How do you test that the prompt itself is any good?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -740,7 +758,8 @@ window.IR.q["17-python-coding"] = {
       say: "The GIL means one thread executes Python bytecode at a time, so threads do not speed up CPU-bound Python. But it is released during I/O, and AI engineering is almost entirely I/O-bound — waiting on model APIs and databases — so asyncio is the right tool and concurrency is not a problem. I reach for multiprocessing only for real Python compute. NumPy and PyTorch already release the GIL in their C layer.",
       numbers: "One process can hold thousands of concurrent async API calls. The practical limit is the provider's rate limit, not Python.",
       wrong: "Reaching for multiprocessing to parallelise API calls. You pay process overhead and serialisation cost to solve a problem that was never CPU-bound.",
-      follow: "Your ingestion job is CPU-bound on PDF parsing and I/O-bound on embedding. How do you structure it?"
+      follow: "Your ingestion job is CPU-bound on PDF parsing and I/O-bound on embedding. How do you structure it?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -787,7 +806,8 @@ window.IR.q["17-python-coding"] = {
       say: "I return a StreamingResponse wrapping an async generator that yields server-sent events. I check is_disconnected each iteration so a closed tab stops generation rather than billing for tokens nobody reads. Errors go in-band, because the 200 status was already sent before the first token. I set X-Accel-Buffering to no, or the proxy buffers the stream and defeats it. And I would flag that output guardrails get harder once tokens have left.",
       numbers: "TTFT of a few hundred milliseconds against several seconds for a full answer. That perceived difference is why every chat product streams.",
       wrong: "Awaiting the full completion and returning it as JSON, with a comment about adding streaming later. The task was the streaming.",
-      follow: "How do you run an output guardrail on a response you are already streaming?"
+      follow: "How do you run an output guardrail on a response you are already streaming?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -834,7 +854,8 @@ window.IR.q["17-python-coding"] = {
       say: "The deadlock is that asyncio.Lock is not reentrant — get_or_fetch holds it and fetch tries to take it again, so it waits on itself. It only shows on a cache miss, which is why tests pass. The deeper problem is holding a lock across a slow await, which serialises every caller. I would lock only the dictionary reads and writes, fetch outside the lock, and use setdefault to settle the duplicate-fetch race.",
       numbers: "This class of bug typically appears at the first real concurrency, not in staging. Timeouts on lock acquisition turn a permanent hang into a visible error.",
       wrong: "Swapping in an RLock and declaring it fixed. That removes the hang and leaves the serialisation, so throughput stays broken and now nothing signals why.",
-      follow: "Two requests miss the cache for the same key at once. What happens in your version?"
+      follow: "Two requests miss the cache for the same key at once. What happens in your version?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -874,7 +895,8 @@ window.IR.q["17-python-coding"] = {
       say: "I would take it in stages. Vectorise the loop into one matrix product and normalise at write time — that alone is roughly a hundred times faster. Replace the sort with argpartition. But both are constant-factor wins and it is still linear per query, so the real fix is an ANN index like HNSW for roughly logarithmic search. That costs exact recall, so I would tune ef against a measured recall target rather than guessing.",
       numbers: "Two million 768-dimension vectors is about 6 GB in float32. HNSW typically holds 95%+ recall at a fraction of the latency; ef is the knob that trades one for the other.",
       wrong: "Jumping straight to 'use a vector database' without the arithmetic. It is often right, but stated without cost or recall it sounds like a memorised answer rather than a decision.",
-      follow: "Recall dropped to 85% and the product team noticed. What do you change?"
+      follow: "Recall dropped to 85% and the product team noticed. What do you change?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -919,7 +941,8 @@ window.IR.q["17-python-coding"] = {
       say: "I use field constraints for the structural checks — ranges, lengths, Literal for enums — then a field_validator for semantics. The one that earns its place checks that every citation is in the set of documents actually retrieved, which catches fabricated sources directly. A model_validator enforces cross-field rules like high confidence requiring a citation. On failure I feed the error back as a retry, bounded at two attempts.",
       numbers: "One retry with the validation error attached fixes the large majority of schema failures. If two do not fix it, the prompt or schema is the problem.",
       wrong: "Defining the model and calling it validated. Type-correct output that cites a document you never retrieved is exactly the failure you needed to catch.",
-      follow: "The model fails validation twice in a row. What does the user get?"
+      follow: "The model fails validation twice in a row. What does the user get?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -960,7 +983,8 @@ window.IR.q["17-python-coding"] = {
       say: "I use an OrderedDict, which keeps insertion order and lets me move a key to the end in constant time. get moves the key to the end and returns it; put moves it if present, assigns, then evicts from the front with popitem when over capacity. Underneath, that is a hash map for O(1) lookup plus a doubly-linked list for O(1) reordering, which is what I would write if OrderedDict were disallowed.",
       numbers: "For LLM work, cache on a hash of the normalised prompt plus model plus temperature. Excluding any of those returns answers from the wrong configuration.",
       wrong: "A dict plus a list of keys for recency. Removing from the middle of a list is O(n), which breaks the one constraint the question is testing.",
-      follow: "Two threads call put at the same time. What happens?"
+      follow: "Two threads call put at the same time. What happens?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -1017,7 +1041,8 @@ window.IR.q["17-python-coding"] = {
       say: "The interesting part is delete. Physically removing a row shifts every index after it and invalidates the id map, so I tombstone: mark the row dead, mask it to negative infinity at search time, and compact in a background job. I normalise on write so search is one matrix product, and I make add an upsert so re-ingesting a document does not duplicate it. For real scale, vstack per add is too slow — pre-allocate in blocks.",
       numbers: "Compact when tombstones exceed roughly 20% of rows. Beyond a few hundred thousand vectors, use a real index rather than a full scan.",
       wrong: "np.delete on the row and moving on. Every index after it shifts, the id map now points at the wrong vectors, and search silently returns wrong documents.",
-      follow: "A million deletes and no compaction. What does search look like?"
+      follow: "A million deletes and no compaction. What does search look like?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -1068,7 +1093,8 @@ window.IR.q["17-python-coding"] = {
       say: "BM25 stacks three corrections. IDF weights rare terms higher. k1 saturates term frequency so the twentieth occurrence barely adds anything. And b normalises for document length so long documents do not win by default. Defaults of 1.5 and 0.75 are solid. The reason it matters is that it matches exact tokens — part numbers, error codes, names — which is exactly where dense embeddings fail, so the two are complementary.",
       numbers: "k1=1.5, b=0.75 as defaults. In production use an inverted index rather than scanning every document per query.",
       wrong: "Describing it as 'like TF-IDF but better' with no mechanism. The follow-up is always what k1 and b do, and that is where it ends.",
-      follow: "Combine this with your vector scores. How?"
+      follow: "Combine this with your vector scores. How?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -1116,7 +1142,8 @@ window.IR.q["17-python-coding"] = {
       say: "I put a bounded asyncio.Queue between the stages so consumers start while the producer is still working. Bounded is the important word — it gives backpressure, so if embedding is slower than chunking the producer blocks instead of loading the whole corpus into memory. I send one sentinel per consumer so they all terminate, and each consumer catches its own exceptions so a single bad chunk does not kill a worker.",
       numbers: "Queue size around 100 and eight consumers is a reasonable start. Watch queue depth — persistently full means the consumer is the bottleneck.",
       wrong: "An unbounded queue. It runs fine on a hundred documents and exhausts memory on the real corpus, because the producer always outruns the network-bound consumer.",
-      follow: "The queue is always full. What does that tell you, and what do you do?"
+      follow: "The queue is always full. What does that tell you, and what do you do?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -1164,7 +1191,8 @@ window.IR.q["17-python-coding"] = {
       say: "I split into sentences and pack greedily until adding the next would exceed the token budget, then carry the last sentence or two forward as overlap so context is not lost at the boundary. The case that matters is a single sentence longer than the budget — a table row or code block — which needs a hard fallback split or the loop cannot terminate. I count with the real tokeniser, and I would use a proper sentence splitter in production rather than a regex.",
       numbers: "500 tokens with one sentence of overlap is a reasonable default. Structure-aware splitting on headings usually beats any tuning of these numbers.",
       wrong: "Splitting on the full stop with no guard for the oversized sentence. It works on prose and breaks on the first document containing a table.",
-      follow: "The document is a contract with numbered clauses. Does your chunker still make sense?"
+      follow: "The document is a contract with numbered clauses. Does your chunker still make sense?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -1210,7 +1238,8 @@ window.IR.q["17-python-coding"] = {
       say: "I embed the query, compare against cached query vectors, and return the stored answer only above a high similarity threshold. The threshold is the whole design: too low and you serve a confidently wrong answer the user cannot detect, so I set it at 0.95 or above and tune it on labelled pairs. I add a TTL for staleness and namespace per tenant, because a shared cache leaks one customer's answer to another.",
       numbers: "Expect roughly 20–30% hit rates on real support traffic. Each hit saves the full generation cost and returns in milliseconds instead of seconds.",
       wrong: "A 0.85 threshold because it improves the hit rate. It does, and it starts answering questions the user did not ask, which is far more expensive than a cache miss.",
-      follow: "How would you detect that your cache is serving wrong answers?"
+      follow: "How would you detect that your cache is serving wrong answers?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -1255,7 +1284,8 @@ window.IR.q["17-python-coding"] = {
       say: "I would not skip DSA preparation for an AI role at a product company — the screening round is often still standard. The pattern set is small: hash maps to collapse nested loops, two pointers, sliding window, binary search, and basic graph traversal. I state complexity before being asked and check the empty case. It is a separate preparation track from GenAI depth, and both get tested.",
       numbers: "Roughly 30–45 minutes for one or two problems. Practise speaking while coding — silent solving reads as guessing even when the answer is right.",
       wrong: "Assuming GenAI experience exempts you from the coding round. It is the most common way strong AI candidates fail a product-company loop.",
-      follow: "Walk me through your approach before you write anything."
+      follow: "Walk me through your approach before you write anything.",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
   ]
 };

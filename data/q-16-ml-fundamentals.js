@@ -34,7 +34,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "Bias is error from a model too simple to capture the pattern — it is wrong on the training data too. Variance is error from a model so sensitive to its training data that it learned the noise. I diagnose by comparing training and validation error: both high means underfitting, so more capacity or better features; training low and validation much higher means overfitting, so more data or regularisation.",
       numbers: "No number applies. The training-versus-validation gap is the measurement, not a threshold.",
       wrong: "Reciting only the definitions. Every candidate can. The interviewer wants the diagnostic that follows from them.",
-      follow: "Training accuracy 99%, validation 71%. What do you do first?"
+      follow: "Training accuracy 99%, validation 71%. What do you do first?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -61,7 +62,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "Because of imbalance — if one in a hundred cases is fraud, predicting \"not fraud\" always is 99% accurate and useless. So I look at the confusion matrix and choose by which error costs more. Precision when a false positive is expensive, recall when a false negative is. F1 when I need one number, and AUC-PR rather than ROC on heavy imbalance. Which mistake costs more is a question I ask.",
       numbers: "On a 1% positive rate, a constant negative prediction scores 99% accuracy and 0% recall. That is the example to quote.",
       wrong: "Listing precision, recall and F1 without connecting them to the cost of each error. The connection is the answer.",
-      follow: "The business wants both high precision and high recall. What do you tell them?"
+      follow: "The business wants both high precision and high recall. What do you tell them?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -88,7 +90,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "Leakage is information reaching the model in training that will not exist at prediction time, so validation looks brilliant and production fails. Target leakage is a feature that exists only because the outcome happened. Contamination is scaling before splitting. Temporal leakage is random-splitting time-ordered data. I catch it by being suspicious of results that are too good, checking whether one feature dominates, and asking when each feature becomes available.",
       numbers: "No number applies. The tell is a suspiciously high score and one feature carrying most of the importance.",
       wrong: "\"I use train-test split to avoid it.\" A random split is itself the cause of temporal leakage, so this answer names the mechanism that created the problem.",
-      follow: "Your model scores 0.99 AUC. Are you pleased?"
+      follow: "Your model scores 0.99 AUC. Are you pleased?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -114,7 +117,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "First I check whether minority-class recall is actually bad, because imbalance alone is not a problem. Then, cheapest first: adjust the decision threshold, which is often the whole fix since the ranking may already be fine. Then class weights, which need no data manipulation. Then resampling, inside the training fold only — never on validation or test, because a resampled test score corresponds to nothing real.",
       numbers: "The default 0.5 threshold is rarely right on imbalanced data. Choose it from the precision-recall curve against the business cost of each error.",
       wrong: "\"I use SMOTE.\" Jumping to synthesis before trying the threshold and class weights, and it invites the question of whether you applied it before or after the split.",
-      follow: "Where exactly in your pipeline does the resampling happen?"
+      follow: "Where exactly in your pipeline does the resampling happen?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -140,7 +144,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "Labels usually arrive late, so I cannot watch accuracy live. I monitor input drift, prediction drift — which is cheap and a strong early signal — data quality, and segment volumes. Then I backfill accuracy onto the right period as labels arrive. The distinction that matters is that drift detection finds changed inputs, but only labels reveal concept drift, where the relationship itself changed.",
       numbers: "Prediction drift is computable on every request at no label cost. It is the first monitor to build, before any accuracy pipeline.",
       wrong: "\"We monitor accuracy in production.\" Only if labels arrive quickly. If they do not, this answer says you have not operated a model with delayed feedback.",
-      follow: "Inputs look stable and accuracy fell. What is that?"
+      follow: "Inputs look stable and accuracy fell. What is that?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -165,7 +170,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "It splits data into k folds, trains on k minus one and validates on the rest, rotating so every row is validated once. The spread across folds is itself useful — wide variance means an unstable model. I would not use it on time series, where a random split trains on the future, or on grouped data where the same customer appears in many rows. The split has to mirror production use.",
       numbers: "k = 5 or 10 is standard. On time series use forward-chaining folds instead, and report performance per fold, not just the mean.",
       wrong: "\"I always use 5-fold cross-validation.\" On time-series or grouped data that produces an optimistic number that will not survive production.",
-      follow: "Your data has one row per transaction and many rows per customer. How do you split?"
+      follow: "Your data has one row per transaction and many rows per customer. How do you split?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -191,7 +197,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "Yes, for cost and precision. On a well-defined task with labels — fraud, churn, forecasting — a gradient-boosted model is faster, far cheaper, deterministic and usually more accurate than a prompt, and it gives a calibrated probability an LLM cannot. LLMs win on unstructured language, no labels, or prose output. The best pattern combines them: the LLM extracts structured fields, a classical model scores them.",
       numbers: "A gradient-boosted model serves predictions in single-digit milliseconds at effectively zero marginal cost. Compare that against a per-token bill before choosing an LLM for a scoring task.",
       wrong: "\"LLMs can do everything now.\" It suggests you would spend a large budget on a problem logistic regression solves better, which is a costly instinct to hire.",
-      follow: "Give me a task in our business where you would refuse to use an LLM."
+      follow: "Give me a task in our business where you would refuse to use an LLM.",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -218,7 +225,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "I separate global from local. Globally, feature importance shows what drives the model, which is what a stakeholder needs to trust it. Locally, SHAP gives each feature's contribution to one decision, which is what a customer or regulator asks about. Then I translate into plain language including what would change the outcome. And I am clear that these explain the model, not the world — correlated features look important.",
       numbers: "No number applies. If the setting is regulated, consider whether an interpretable model at slightly lower accuracy is the better trade.",
       wrong: "\"I show them the SHAP plot.\" Handing over a technical artefact is not explaining. The translation is the deliverable.",
-      follow: "The model declined a loan and the customer asks why. What exactly do you send them?"
+      follow: "The model declined a loan and the customer asks why. What exactly do you send them?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
 ,
 
@@ -249,7 +257,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "Precision is how much of what I flagged was correct, recall is how much of the real thing I caught, and they trade against each other through the threshold. Which one I optimise depends on cost: for fraud a miss is a direct loss so I favour recall, for a spam filter a false positive buries a real invoice so I favour precision. F1 is the harmonic mean when both matter, and it punishes imbalance rather than averaging it away.",
       numbers: "The harmonic mean is deliberately harsh: precision 0.9 with recall 0.1 gives an F1 near 0.18, not 0.5. That is the point of using it.",
       wrong: "Reciting the two formulas and stopping. The question is always really about the business trade-off, and the follow-up will force it.",
-      follow: "Your fraud model has 95% precision and 40% recall. Is that good?"
+      follow: "Your fraud model has 95% precision and 40% recall. Is that good?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -276,7 +285,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "ROC plots true positive rate against false positive rate as you sweep the threshold, and AUC is the chance a random positive outranks a random negative. The catch is that false positive rate divides by all negatives, so on imbalanced data thousands of false alarms barely move it and the curve looks great. PR-AUC uses precision instead, which reflects the alert-queue cost, so for rare positives that is what I report.",
       numbers: "At 0.1% prevalence, random PR-AUC is 0.001. So a PR-AUC of 0.4 is a strong model, even though the same number would look poor as an ROC-AUC.",
       wrong: "Reporting a 0.97 ROC-AUC on a 1%-positive problem as proof it works. It is the most common way a useless model gets signed off.",
-      follow: "Your PR-AUC is 0.4 and the business asks if that is good. Answer them."
+      follow: "Your PR-AUC is 0.4 and the business asks if that is good. Answer them.",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -304,7 +314,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "I treat the threshold as a business decision, not a default. I write a cost matrix — what a miss costs against what a false alarm costs — then sweep the threshold on validation data and pick the point minimising expected cost. If costs are not available I use a constraint, like the number of alerts the review team can handle. And I re-check it periodically, because the optimum moves as prevalence drifts.",
       numbers: "If a miss costs 40 times a false alarm, the optimal threshold is far below 0.5 — often around 0.1 to 0.2. Tune it on validation, never on test.",
       wrong: "Reporting metrics at 0.5 and treating that as the model's performance. You are reporting one arbitrary operating point out of a hundred available.",
-      follow: "Your threshold was set six months ago. What would make you revisit it?"
+      follow: "Your threshold was set six months ago. What would make you revisit it?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -332,7 +343,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "Overfitting is learning noise rather than signal, and the symptom is training performance far above validation. The cause is capacity exceeding the evidence, which gives you three levers: add data or augment it, reduce capacity through a simpler model or regularisation like L2 and dropout, or stop early when validation loss turns up. Cross-validation detects it rather than preventing it, and tuning on the test set overfits that too.",
       numbers: "A validation gap of a few percent is normal. Training accuracy at 99% with validation at 70% means memorisation, not learning.",
       wrong: "Listing techniques with no organising idea — 'dropout, regularisation, more data, early stopping'. Correct, and it sounds like a flashcard rather than understanding.",
-      follow: "Training and validation loss are both high and flat. Is that overfitting?"
+      follow: "Training and validation loss are both high and flat. Is that overfitting?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -360,7 +372,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "L1 penalises absolute values and L2 penalises squares, and the geometry explains the difference. L1's constraint region is a diamond whose corners sit on the axes, so the expanding loss contours tend to touch at a corner, which means a coefficient is exactly zero. L2's region is a circle with no corners, so it shrinks without zeroing. I use L1 for feature selection and L2 for correlated features.",
       numbers: "Tune the strength on validation across a log scale. With correlated features, L1's selection can change between retrains — check stability before reporting it.",
       wrong: "'L1 gives sparsity, L2 does not.' True and shallow. The follow-up is always why, and the geometry is the answer.",
-      follow: "Two features are almost perfectly correlated. What does L1 do?"
+      follow: "Two features are almost perfectly correlated. What does L1 do?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -391,7 +404,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "Gradient descent steps the weights against the gradient of the loss. The variants differ in how much data estimates that gradient — mini-batch is the practical choice because it balances a stable direction with GPU efficiency. Momentum averages recent gradients to damp oscillation, adaptive methods give each parameter its own step size, and AdamW combines both and is the transformer default. Learning rate is the hyperparameter that decides whether it works.",
       numbers: "Typical fine-tuning learning rates are 1e-5 to 5e-5; pre-training uses higher with warmup. A diverging loss almost always means the learning rate is too high.",
       wrong: "Describing gradient descent and stopping. The question is nearly always really about why Adam is the default, so go there yourself.",
-      follow: "Your loss is oscillating rather than decreasing. What do you change?"
+      follow: "Your loss is oscillating rather than decreasing. What do you change?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -419,7 +433,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "Backpropagation multiplies gradients layer by layer, so values below one collapse and early layers stop learning. Sigmoid made it worse because its derivative caps at 0.25. Three fixes solved it: ReLU passes gradient through unchanged, residual connections give the gradient a path around each block, and normalisation holds activations in range. All three are visible in a transformer block, which is why depth stopped being the limit.",
       numbers: "Sigmoid's maximum derivative is 0.25, so ten layers shrink the gradient by at least a million times. Gradient clipping around 1.0 is standard for the exploding case.",
       wrong: "Naming ReLU alone. Residual connections are the more important fix at real depth, and skipping them misses the link to transformers.",
-      follow: "Where do you see all three of those fixes in a transformer block?"
+      follow: "Where do you see all three of those fixes in a transformer block?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -448,7 +463,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "A tree picks the split that most reduces impurity, measured by Gini or entropy, then recurses. A single deep tree memorises and is unstable. A random forest trains each tree on a bootstrap sample and restricts each split to a random feature subset — that second part is what decorrelates them, otherwise one dominant feature sits at every root. Averaging decorrelated high-variance trees cuts variance without adding bias.",
       numbers: "Feature subsampling defaults to the square root of the feature count for classification. More trees never overfits a forest — it just stops improving, typically past a few hundred.",
       wrong: "'It builds many trees and averages them.' It misses feature subsampling, which is the mechanism that makes averaging worth anything.",
-      follow: "Why does adding more trees to a forest not cause overfitting?"
+      follow: "Why does adding more trees to a forest not cause overfitting?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -475,7 +491,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "Boosting builds trees sequentially, each fitting the residual errors of the current ensemble at a small learning rate — formally the negative gradient of the loss. The trees are deliberately shallow, because strong learners overcorrect. Against a forest it reduces bias rather than variance, so it is more accurate but genuinely overfits and needs early stopping. It still wins on tabular data because mixed feature types have no structure a network can exploit.",
       numbers: "Learning rate 0.05 to 0.1, depth 3 to 6, with early stopping on validation. Lower learning rate needs more rounds and usually generalises slightly better.",
       wrong: "Saying deep learning has superseded it. On medium-sized tabular problems boosted trees still win, and claiming otherwise signals you have not worked with real tabular data.",
-      follow: "Your boosted model scores 0.99 on training and 0.72 on validation. What happened?"
+      follow: "Your boosted model scores 0.99 on training and 0.72 on validation. What happened?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -501,7 +518,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "Bagging trains models in parallel on bootstrap resamples and averages them, which reduces variance while leaving bias roughly unchanged — so it suits deep trees that are accurate but unstable. Boosting trains sequentially with each model fixing the previous errors, which attacks bias, so it starts from deliberately weak stumps. Practically, more trees never hurt a forest but too many boosting rounds overfit, so boosting needs early stopping.",
       numbers: "A forest with 500 trees needs almost no tuning. A boosted model with 500 rounds and no early stopping is very likely overfit.",
       wrong: "Getting them backwards, which happens often under pressure. Anchor on the mechanism — averaging reduces variance, sequential correction reduces bias.",
-      follow: "You have one afternoon and a tabular dataset. Which do you reach for?"
+      follow: "You have one afternoon and a tabular dataset. Which do you reach for?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -529,7 +547,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "k-means alternates assigning points to the nearest centre and moving centres to the mean until it converges. For k I prefer silhouette score over the elbow, because the elbow is usually ambiguous, and often the business constrains k anyway. The important part is the assumptions: spherical, similar-sized clusters under Euclidean distance, sensitive to scale and initialisation. For embeddings I would use cosine distance or HDBSCAN instead.",
       numbers: "Always standardise before k-means. Use k-means++ with around ten restarts — a single random initialisation regularly lands in a poor local optimum.",
       wrong: "Describing the algorithm with no mention of assumptions. The follow-up is always about where it fails, and shape and scale are the answers.",
-      follow: "You cluster 100k document embeddings and get one huge cluster. What went wrong?"
+      follow: "You cluster 100k document embeddings and get one huge cluster. What went wrong?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -556,7 +575,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "PCA rotates the axes onto the directions of greatest variance and keeps the first few, so you hold most of the information in fewer dimensions. I choose the count by cumulative explained variance rather than a round number, and I standardise first because it is scale-sensitive. The costs are losing interpretability and only capturing linear structure. For embeddings I would check Matryoshka truncation first, since it needs no fitted transform.",
       numbers: "95% explained variance is a common cutoff. Embeddings often keep most retrieval quality at half their dimensions — but measure recall, do not assume it.",
       wrong: "Calling it feature selection. It is feature extraction — every component mixes all the original features, which is exactly why interpretability disappears.",
-      follow: "Does PCA help your model's accuracy?"
+      follow: "Does PCA help your model's accuracy?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -584,7 +604,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "I start with why it is missing, because that decides the method. Completely at random means dropping is safe; at random means I can impute from other features; not at random means any imputation is biased and the missingness itself carries signal. In that case I add a was-missing indicator, which is frequently more predictive than the value. For tabular models I often let XGBoost handle it natively rather than imputing at all.",
       numbers: "Under about 5% missing, dropping rows is usually fine. Past roughly 50% in a column, drop the column and keep the indicator.",
       wrong: "'Fill with the mean.' It is the reflex answer, it shrinks variance, distorts relationships, and throws away the information that the value was absent.",
-      follow: "Income is missing for 30% of rows, mostly high earners. What do you do?"
+      follow: "Income is missing for 30% of rows, mostly high earners. What do you do?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -611,7 +632,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "It depends on the data type. For text and images, learned representations beat hand-crafted features, so it is largely over. For tabular data it is still where most of the accuracy comes from — a boosted model cannot invent a ratio, so giving it revenue per employee directly beats making it approximate that through splits. Ratios, entity aggregations and time-since features are the reliable wins, with target encoding computed inside the fold.",
       numbers: "On tabular problems, good feature engineering routinely beats model choice. Moving from logistic regression to XGBoost often gains less than adding the right ten features.",
       wrong: "'Deep learning made it obsolete.' True for unstructured data and wrong for tabular, which is most of what enterprises actually run.",
-      follow: "Give me three features you would build for a churn model."
+      follow: "Give me three features you would build for a churn model.",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -638,7 +660,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "Correlation means two things move together; causation means changing one changes the other. A churn model showing support contacts predict churn does not mean reducing support helps — the underlying problem drives both, so support is a symptom. A feature can be a strong predictor and a useless lever. Before anyone acts on feature importance I ask whether we are predicting or intervening, because only an experiment answers the second.",
       numbers: "Feature importance measures predictive contribution, not causal effect. Presenting it as a to-do list of interventions is a common and costly mistake.",
       wrong: "Reaching for ice cream and drowning. It shows you know the concept and not that you can apply it — use an example from work.",
-      follow: "The business wants to act on your top feature. How do you respond?"
+      follow: "The business wants to act on your top feature. How do you respond?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -667,7 +690,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "A p-value is the probability of data at least this extreme assuming the null is true. It is not the probability the null is true, and it says nothing about effect size — at large sample sizes a commercially meaningless lift is highly significant. The practical traps are peeking, which inflates false positives, and multiple comparisons. I lead with the effect size and confidence interval, because that tells a stakeholder direction and precision.",
       numbers: "Fix the sample size before starting. Testing twenty metrics at 0.05 yields roughly one false positive by chance — correct for it or expect to chase noise.",
       wrong: "'It is the probability the result happened by chance.' It is the near-universal phrasing and it is the definition inverted.",
-      follow: "Your test hits p = 0.04 on day three. Do you ship?"
+      follow: "Your test hits p = 0.04 on day three. Do you ship?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -695,7 +719,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "I fix the decision and one primary metric first, then compute sample size from the baseline rate, the minimum lift worth detecting and 80% power — remembering that halving the detectable effect quadruples the sample. I run at least a full weekly cycle and do not peek. I always set guardrails on latency, cost and error rate, because a GenAI feature that lifts engagement while doubling cost is not a win. Then I verify with an A/A test and a sample ratio check.",
       numbers: "80% power at 5% significance is standard. Two weeks minimum duration. A 50/50 split arriving at 52/48 signals broken assignment — investigate before reading the result.",
       wrong: "Running until the result looks good. It is peeking with extra steps, and it produces a stream of exciting findings that never replicate.",
-      follow: "The primary metric is flat but a secondary one is up 8%. What do you conclude?"
+      follow: "The primary metric is flat but a secondary one is up 8%. What do you conclude?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -722,7 +747,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "Data drift is the input distribution moving while the relationship holds — you expand to new cities and see customers unlike your training data. Retraining fixes that. Concept drift is the relationship itself changing, like fraud patterns adapting, and that needs newly-labelled data, so it is harder. I detect data drift without labels using PSI or a KS test per feature, and watch prediction distribution and override rates as proxies while waiting for ground truth.",
       numbers: "PSI below 0.1 is stable, 0.1 to 0.2 warrants attention, above 0.2 is significant drift. Alert on the features the model actually weights, not on all of them.",
       wrong: "Treating them as one thing. They have different detection methods and different remedies, and conflating them means monitoring for the easy one and missing the dangerous one.",
-      follow: "Feature distributions are unchanged but accuracy fell 8 points. Which is it?"
+      follow: "Feature distributions are unchanged but accuracy fell 8 points. Which is it?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -749,7 +775,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "A feature store defines features once and serves them to both training and inference, which solves train-serve skew — the same feature computed by two different pipelines that quietly diverge. It also handles point-in-time correctness so training rows use the value as of the event, which prevents leakage. It is worth it for multi-team reuse or real-time serving. For one team doing batch predictions, a shared computation library is usually enough.",
       numbers: "Online serving typically needs feature retrieval in single-digit milliseconds, which is why the online store is a key-value store rather than a warehouse.",
       wrong: "Recommending one for every project. It is heavy infrastructure, and proposing it for a single batch model signals resume-driven design.",
-      follow: "How would you get point-in-time correctness without a feature store?"
+      follow: "How would you get point-in-time correctness without a feature store?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -775,7 +802,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "It is when production features differ from training features, so offline metrics look fine while real performance drops. I have seen country arrive as a two-letter code in the warehouse and a full name from the serving API, so the encoder mapped everything to unknown and a key feature went constant — with green dashboards throughout, because nothing errored. I prevent it by sharing transformation code, versioning the fitted preprocessor with the model, and logging inference features.",
       numbers: "It typically costs several accuracy points and goes unnoticed for weeks. Comparing logged inference feature distributions against training is the fastest detection there is.",
       wrong: "Defining it without an example. Every candidate can define it; having actually debugged one is what the question is really asking.",
-      follow: "How would you detect this within a day rather than a month?"
+      follow: "How would you detect this within a day rather than a month?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -801,7 +829,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "SHAP attributes a prediction across features using a game-theory fair-division argument, and the key property is additivity — the base value plus the SHAP values equals the prediction exactly. So I can tell a credit officer that the average is 8%, this applicant is 31%, and debt-to-income contributed 15 points of that. Beeswarm for global patterns, waterfall for one case. The caveat is that it explains the model, not reality.",
       numbers: "TreeSHAP is exact and fast for tree models. KernelSHAP is model-agnostic and slow — sample rather than running it over a full dataset.",
       wrong: "Presenting SHAP values as causal effects. They describe the model's behaviour; a spurious correlation produces a confident and misleading explanation.",
-      follow: "SHAP shows postcode as the top feature in a lending model. What now?"
+      follow: "SHAP shows postcode as the top feature in a lending model. What now?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -830,7 +859,8 @@ window.IR.q["16-ml-fundamentals"] = {
       say: "I would prototype with the LLM first, because few-shot gives a real accuracy number in an afternoon with no infrastructure. Then decide on volume and latency: at millions of calls a month, or in a real-time path, a fine-tuned encoder runs on CPU for a fraction of the cost and responds in milliseconds. The best of both is distillation — use the LLM to label ten thousand examples and train the encoder on that, keeping my 500 gold labels as the test set.",
       numbers: "500 clean examples is a workable fine-tuning set for a small encoder. Per-call, an encoder on CPU is orders of magnitude cheaper than a hosted LLM API.",
       wrong: "'Use an LLM, it is state of the art.' It ignores cost and latency, which are exactly what the question is testing, and it does not survive the volume follow-up.",
-      follow: "This runs on ten million documents a month. Does your answer change?"
+      follow: "This runs on ten million documents a month. Does your answer change?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
   ]
 };

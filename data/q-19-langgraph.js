@@ -31,7 +31,8 @@ window.IR.q["19-langgraph"] = {
       say: "LCEL chains are a straight line, which covers most RAG and extraction pipelines. LangGraph is for flows that loop, branch on a runtime decision, or pause and resume — which is every real agent. It gives me nodes as functions, conditional edges that compute the route at runtime, a shared state object, and a checkpointer that persists state after every node. If the flow never branches, I stay with LCEL.",
       numbers: "No number applies. This is a control-flow decision.",
       wrong: "\"LangGraph is the new version of LangChain.\" It is not a replacement — it is a different control-flow model, and they are used together.",
-      follow: "Show me what the state object looks like for a RAG agent."
+      follow: "Show me what the state object looks like for a RAG agent.",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -48,7 +49,8 @@ window.IR.q["19-langgraph"] = {
       say: "There is one state object per run. Each node gets the state and returns only the keys it changed, and the graph merges that in. The default merge replaces the value, which is wrong for message history — so you attach a reducer, a function that says how to combine old and new. `add_messages` appends instead of overwriting. If history keeps resetting to one message, a missing reducer is almost always why.",
       numbers: "No number applies. This is a mechanism question — the code is the answer.",
       wrong: "\"State is just a dictionary passed between nodes.\" True but incomplete. Without reducers you cannot explain how two parallel nodes both write to `messages` without one destroying the other.",
-      follow: "Two nodes run in parallel and both write to the same key. What happens?"
+      follow: "Two nodes run in parallel and both write to the same key. What happens?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -71,7 +73,8 @@ window.IR.q["19-langgraph"] = {
       say: "It persists the graph state after every node, keyed by thread id. That is what makes four things possible: conversation memory across requests without managing history myself, human-in-the-loop where the graph interrupts and resumes hours later when approval arrives, crash recovery that resumes from the last node instead of re-running an expensive chain, and time travel to rewind to a checkpoint and replay with different input.",
       numbers: "A Postgres checkpointer adds roughly a few milliseconds per node write. Against a model call of several hundred milliseconds it is noise.",
       wrong: "\"It saves the conversation.\" That is one use of four, and it misses the interrupt-and-resume story, which is the one regulated employers care about.",
-      follow: "Walk me through an approval flow where the human replies the next morning."
+      follow: "Walk me through an approval flow where the human replies the next morning.",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -88,7 +91,8 @@ window.IR.q["19-langgraph"] = {
       say: "I mark the sensitive node with `interrupt_before`, so the graph stops before executing it and the checkpointer saves the state. My application shows the pending action to a reviewer in plain language with its evidence, and they approve, edit or reject. Resuming means invoking with the same thread id — editing is a state update before that. Because state is in Postgres, the approval can arrive the next morning with no request held open.",
       numbers: "No number applies, but do track reviewer turnaround time and the edit rate. A near-zero edit rate means the review is a rubber stamp.",
       wrong: "\"I'd add a confirmation step in the prompt.\" A prompt cannot pause execution or survive a process restart. This is a runtime feature.",
-      follow: "How do you make sure two reviewers do not approve the same action twice?"
+      follow: "How do you make sure two reviewers do not approve the same action twice?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -110,7 +114,8 @@ window.IR.q["19-langgraph"] = {
       say: "Two different streams. Token streaming gives the words of the final answer as they generate. Update streaming emits an event per node, so the UI can say \"searching\" or \"reading three sources\" — which matters more for agents, because a long tool call produces no tokens at all and silence reads as broken. A good UI does both. The trap is that whole-output parsers buffer, so structured output and token streaming conflict.",
       numbers: "Time to first token is the metric users feel. Under about 1 second reads as responsive; past 3 seconds people assume it has failed, whatever the total time is.",
       wrong: "\"I set streaming=True.\" It does not explain what happens during a twenty-second tool call, which is the actual UX problem in agents.",
-      follow: "Your last node validates JSON. How do you still give the user something to watch?"
+      follow: "Your last node validates JSON. How do you still give the user something to watch?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -160,7 +165,8 @@ window.IR.q["19-langgraph"] = {
       say: "State holds messages, retrieved documents and a retry counter. Nodes: route, which skips retrieval when the question does not need it; retrieve; grade, which checks whether the documents are actually relevant; rewrite, which reformulates the query; generate; and check, which verifies groundedness. The edges carry the design — grade loops back to rewrite, but only while retries are under two, then it falls through to an honest not-found answer.",
       numbers: "Cap rewrites at two. Each one costs a full retrieval plus a model call, and a third rarely recovers a question the corpus cannot answer.",
       wrong: "Drawing retrieve → generate → END. It is a chain, not an agent, and it does not answer the question that was asked.",
-      follow: "What happens when the grade node itself is wrong?"
+      follow: "What happens when the grade node itself is wrong?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -177,7 +183,8 @@ window.IR.q["19-langgraph"] = {
       say: "For a standard tool-calling loop I use the prebuilt factory — and the current one is create_agent from langchain, not create_react_agent from langgraph.prebuilt, which is deprecated. I hand-build a StateGraph when the flow needs state beyond the message list, nodes that are not the model, a human approval pause, or routing on something the model did not decide. Rebuilding the prebuilt loop by hand is work you did not need to do.",
       numbers: "No number applies. This is an API-choice question.",
       wrong: "\"I always build the graph myself for control.\" It reads as not knowing the prebuilt exists. The senior answer names the cheap default and the specific trigger for leaving it.",
-      follow: "What is the first requirement that makes you leave the prebuilt?"
+      follow: "What is the first requirement that makes you leave the prebuilt?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -194,7 +201,8 @@ window.IR.q["19-langgraph"] = {
       say: "ToolNode executes the tool calls on the last message and appends a ToolMessage per call, running them in parallel when there is more than one. tools_condition is the router: if the last message has tool calls, go to the tool node, otherwise END. The edge from tools back to the model is unconditional, which is what makes it a cycle. And the model must be bound with bind_tools or it never emits a call at all.",
       numbers: "No number applies. This is a wiring question — the graph is the answer.",
       wrong: "Describing the loop but never mentioning `bind_tools`. It is the single most common reason a hand-built agent silently never calls a tool, and leaving it out suggests you have only read the diagram.",
-      follow: "Two tool calls come back in one message. What order do they run in?"
+      follow: "Two tool calls come back in one message. What order do they run in?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -211,7 +219,8 @@ window.IR.q["19-langgraph"] = {
       say: "A subgraph is a compiled graph used as a node in another graph. If it shares state keys with the parent you attach it directly to add_node. If the schemas differ you wrap it in a node function that maps parent state in and the result back out. That second pattern is what keeps each agent's private message history out of the parent's state in a multi-agent app, so the top-level context does not grow without limit.",
       numbers: "No number applies. This is a composition question.",
       wrong: "\"I'd just put all the nodes in one graph.\" It works until two agents share a message list, and then every agent's internal reasoning is in the context of every other one.",
-      follow: "Two subgraph agents both write to the same parent key. What do you need?"
+      follow: "Two subgraph agents both write to the same parent key. What do you need?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -235,7 +244,8 @@ window.IR.q["19-langgraph"] = {
       say: "Because everything in state is serialised on every super-step, so a node that stashes a 50 MB document writes it repeatedly for the rest of the run. The rule is that state holds references, not payloads — the tool writes the raw result to object storage and returns an id and a short summary, and whoever needs the content fetches it. I also trim message history, and I diagnose by plotting checkpoint size per step, since the jump names the node.",
       numbers: "Plot checkpoint size across steps in one thread. Flat is healthy; a staircase means accumulation, and the step where it jumps is your culprit.",
       wrong: "Blaming the checkpointer and switching from Postgres to something else. The backend is not the problem — you are asking it to persist megabytes per step.",
-      follow: "You need the full document available to a node three steps later. How do you pass it?"
+      follow: "You need the full document available to a node three steps later. How do you pass it?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
   ]
 };

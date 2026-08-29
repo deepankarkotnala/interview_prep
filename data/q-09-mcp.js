@@ -32,7 +32,8 @@ window.IR.q["09-mcp"] = {
       say: "MCP is an open standard for how applications expose tools, data and prompts to a model. Before it, every team wrote its own glue, so the same internal system got integrated four times in four shapes. A server exposes capabilities, a client inside the application connects and offers them to the model, over JSON-RPC. Write the integration once, and any MCP-capable client can use it.",
       numbers: "No number applies. This is an integration-architecture answer.",
       wrong: "\"It's how Claude connects to tools.\" It started there and it is an open standard with broad adoption. Framing it as one vendor's feature dates the answer.",
-      follow: "So what stops a malicious MCP server from doing damage?"
+      follow: "So what stops a malicious MCP server from doing damage?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -58,7 +59,8 @@ window.IR.q["09-mcp"] = {
       say: "A direct integration hard-codes what exists — endpoints, parameters, returns — so adding a capability means changing the application. With MCP the client asks the server what it offers at runtime, and gets definitions in a standard shape written to be read by a model rather than a developer. Add a tool server-side and it is available without a client change. For one integration I own, it is overhead.",
       numbers: "No number applies. The payoff scales with the number of tools and consuming applications.",
       wrong: "\"It's just a wrapper around APIs.\" It misses runtime discovery, which is the property that changes how systems are built.",
-      follow: "When would you not bother with MCP?"
+      follow: "When would you not bother with MCP?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -86,7 +88,8 @@ window.IR.q["09-mcp"] = {
       say: "Three main ones. Tool descriptions go into the prompt, so a hostile server is a direct injection channel. Supply chain — installing a community server runs someone else's code with my credentials. And the confused deputy problem, where the server acts with its own permissions rather than the user's, so a user reaches data they could not reach directly. So: pinned reviewed servers, least privilege, per-user authorisation, argument validation in code, and full logging.",
       numbers: "No number applies. Track attempted-call refusals as the operational signal — a rising count means something is probing.",
       wrong: "\"MCP is secure because it is a standard.\" A standard defines the shape of messages, not the trustworthiness of who sends them. This answer usually ends the security round.",
-      follow: "How do you pass the end user's identity through to the server?"
+      follow: "How do you pass the end user's identity through to the server?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -112,7 +115,8 @@ window.IR.q["09-mcp"] = {
       say: "Different layers. MCP connects an agent down to its tools and data. A2A is agents built by different teams or vendors talking to each other as peers, delegating tasks without knowing each other's internals. So MCP is how my agent uses a database, A2A is how it asks another team's agent to run a workflow it does not own. MCP is settled enough to build on; A2A is earlier.",
       numbers: "No number applies.",
       wrong: "\"A2A is the successor to MCP.\" They solve different problems and compose. This is the mistake the question is designed to catch.",
-      follow: "Two agents from different teams disagree on a result. Who resolves it?"
+      follow: "Two agents from different teams disagree on a result. Who resolves it?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -141,7 +145,8 @@ window.IR.q["09-mcp"] = {
       say: "Tool discipline first: one job each, descriptions written for a model saying when to use and when not to, typed parameters, and small summarised returns because I am spending someone else's context. Errors phrased as what to try next. Security: read and write separated, arguments validated in code, user identity carried through for per-user authorisation. And because it is shared — versioning, per-caller logging and rate limits.",
       numbers: "Keep tool results under roughly 500–1000 tokens. Rate-limit per caller, because an agent loop can generate far more calls per minute than a human client ever would.",
       wrong: "\"I'd expose our existing REST endpoints as MCP tools.\" A one-to-one mapping gives the model forty developer-shaped tools it cannot choose between.",
-      follow: "A consumer needs a breaking change to a tool. How do you ship it?"
+      follow: "A consumer needs a breaking change to a tool. How do you ship it?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -167,7 +172,8 @@ window.IR.q["09-mcp"] = {
       say: "It depends on the shape. It pays when several applications need the same tools, when different teams all need shared internal systems, or when we want to consume third-party servers. It is overhead for one application with three tools we own. So I would keep tool logic in plain functions and expose it through MCP as a thin reversible layer, and I would count the security work — review, isolation, per-user auth — as part of the cost.",
       numbers: "No number applies. The reasoning and the named condition are what score.",
       wrong: "\"Yes, it's the industry standard now.\" Adoption is not a reason on its own, and it skips the cost side that the question is really asking about.",
-      follow: "Pilot it on what, specifically?"
+      follow: "Pilot it on what, specifically?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -196,7 +202,8 @@ window.IR.q["09-mcp"] = {
       say: "Three primitives separated by who controls them. Tools are model-controlled actions, so that is where the risk sits and where schemas must be precise. Resources are application-controlled data addressed by URI — the host decides to fetch them, not the model. Prompts are user-controlled templates the user invokes explicitly. The practical rule is that anything with side effects is a tool, and anything the app already knows it wants should be a resource.",
       numbers: "Tool descriptions and schemas are sent on every request. A bloated tool list costs tokens continuously and measurably worsens tool selection.",
       wrong: "Describing all three as 'ways to give the model data'. It misses the control model, which is the entire point of the distinction.",
-      follow: "Your server exposes forty tools and the model keeps choosing badly. What do you change?"
+      follow: "Your server exposes forty tools and the model keeps choosing badly. What do you change?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -225,7 +232,8 @@ window.IR.q["09-mcp"] = {
       say: "Because every tool definition from all five servers sits in context on every request, so a hundred schemas cost tokens continuously and turn tool selection into a hundred-class classification problem with overlapping labels. I curate which servers are connected per use case, filter the exposed list by request or role, and route with a cheap classifier so only the relevant server's tools are presented. Then I namespace names and write descriptions saying when not to use each.",
       numbers: "A hundred tool definitions is commonly 15k-30k tokens on every request, before any user input. That is paid on trivial calls too.",
       wrong: "\"MCP handles that.\" MCP standardises the connection, not the context budget. Nothing in the protocol stops you from flooding the model.",
-      follow: "Your router picks the wrong server on a genuinely ambiguous question. What is the fallback?"
+      follow: "Your router picks the wrong server on a genuinely ambiguous question. What is the fallback?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
   ]
 };

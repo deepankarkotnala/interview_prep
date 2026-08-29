@@ -34,7 +34,8 @@ window.IR.q["15-cloud"] = {
       say: "Same models, different operating environment — and that is why enterprises pick it. The resource sits in my subscription and tenant, with private endpoints so traffic never crosses the public internet, Entra ID instead of a shared key, and RBAC. Practically, I call a named deployment in a chosen region and quota is per deployment. The surprises are that model availability differs by region and new models arrive later.",
       numbers: "No number applies. Regional model availability and per-deployment quota are the two constraints to check before designing.",
       wrong: "\"It's the same thing with a different URL.\" It says you have used a personal key and never gone through an enterprise deployment, which is the actual experience being probed.",
-      follow: "The model you need is not in the India region. What do you do?"
+      follow: "The model you need is not in the India region. What do you do?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -60,7 +61,8 @@ window.IR.q["15-cloud"] = {
       say: "Usually it is not a free choice — you go where the data, the enterprise agreement and the completed security review already are, because moving a regulated data estate to get a slightly better model is not a fundable project. Where they differ: Bedrock gives multiple vendors behind one API, Azure has the deepest identity and network integration, Vertex fits a BigQuery estate. Then I check regional availability, quota, retention terms and private networking.",
       numbers: "No number applies. Regional model availability is the constraint that most often changes a design.",
       wrong: "Comparing them on benchmark scores. The models are largely shared or comparable; the differences that decide it are organisational and operational.",
-      follow: "Your company is on AWS but the best model for this is only on Azure. Argue it."
+      follow: "Your company is on AWS but the best model for this is only on Azure. Argue it.",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -90,7 +92,8 @@ window.IR.q["15-cloud"] = {
       say: "Most of it is not about the model. Private endpoint with public access disabled and controlled egress. Managed identity rather than keys. The vector store, traces and logs inside the same boundary and region, because they hold prompts and prompts hold customer data — that is the layer teams forget. Per-user authorisation flowing into retrieval filters. And an audit log of who asked, what was retrieved and which versions produced it.",
       numbers: "No number applies. Agree the audit log retention period with legal explicitly — it is usually the question a reviewer asks that nobody prepared for.",
       wrong: "\"We use the enterprise tier, so it is secure.\" That covers the provider's side and none of yours — your traces, your index and your authorisation are all still open.",
-      follow: "Where exactly does the end user's identity enter the retrieval query?"
+      follow: "Where exactly does the end user's identity enter the retrieval query?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -116,7 +119,8 @@ window.IR.q["15-cloud"] = {
       say: "Its value is that the data is already there, and for RAG the data pipeline is most of the work — ingestion, chunking and embedding run next to the data instead of exporting regulated data somewhere else. Unity Catalog gives one governance and lineage model across tables, files, models and vector indexes, which answers a reviewer's questions in one place. Plus Vector Search, Model Serving and MLflow for evaluation and tracing.",
       numbers: "No number applies. The governance and no-export argument is what carries weight in a regulated review.",
       wrong: "\"It's a Spark platform.\" Accurate a few years ago and it misses Unity Catalog, Vector Search and the GenAI evaluation tooling, which is what the JD is naming.",
-      follow: "Who owns the GenAI pipeline in that setup — the data team or the application team?"
+      follow: "Who owns the GenAI pipeline in that setup — the data team or the application team?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -143,7 +147,8 @@ window.IR.q["15-cloud"] = {
       say: "Ordinary CI/CD plus three artefacts most pipelines lack. Prompts in version control, tested and compared against main on every pull request. The index as a deployable artefact — built alongside, validated against the labelled retrieval set, cut over, old one kept for rollback, never mutated in place. And an evaluation gate that blocks release on a quality drop. Then canary for a full daily cycle, with independent rollback for each artefact.",
       numbers: "Canary on 5–10% of traffic for at least 24 hours. A shorter window misses the change in traffic mix between working hours and overnight.",
       wrong: "\"We deploy the app; the prompts are configuration.\" That is how prompt regressions reach production untested, and prompts cause most regressions.",
-      follow: "The index rebuild succeeded but recall dropped. What does your pipeline do?"
+      follow: "The index rebuild succeeded but recall dropped. What does your pipeline do?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -170,7 +175,8 @@ window.IR.q["15-cloud"] = {
       say: "First I establish which regime applies — DPDP plus the sectoral regulator, since RBI and healthcare rules are stricter — and who signs off on that reading. Then the model deployed in an Indian region, checking availability early because it often changes the design, with the vector store, traces and logs in-region too. Zero retention, region pinned, private networking. And a deletion path that reaches the index and traces, not just the source database.",
       numbers: "No number applies. The two things to establish first are which regulator binds and which models exist in-region.",
       wrong: "\"We host in the Mumbai region.\" One line of a design. It leaves the trace store, the vector index, retention terms and the deletion path unaddressed, and a reviewer will ask about every one.",
-      follow: "The customer asks you to prove a deleted record is gone. What do you show them?"
+      follow: "The customer asks you to prove a deleted record is gone. What do you show them?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -198,7 +204,8 @@ window.IR.q["15-cloud"] = {
       say: "That is cold start, and for GenAI it is dominated by loading model weights onto the GPU rather than by container boot, so it is tens of seconds rather than milliseconds. My first question is whether this should scale to zero at all — for steady traffic a warm replica is cheaper than the user-facing cost. If it must, I bake weights into the image, shrink it, use provisioned concurrency, and warm up with a dummy inference in the health check.",
       numbers: "Loading a 13B model from object storage to GPU is commonly 30-90 seconds. Baking weights into the image and warming on health check typically brings the first real request under a couple of seconds.",
       wrong: "Treating it like a normal autoscaling problem and just raising the replica count. That spends money without addressing why any single replica takes 40 seconds to become useful.",
-      follow: "Traffic is spiky and unpredictable. How do you size the warm pool?"
+      follow: "Traffic is spiky and unpredictable. How do you size the warm pool?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
   ]
 };

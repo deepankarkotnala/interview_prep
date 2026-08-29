@@ -35,7 +35,8 @@ window.IR.q["18-system-design"] = {
       say: "I would start with questions, because the answers change the design. Who uses it — agents on a call or customers directly, since that changes latency, tone and risk. Peak volume, latency budget, what data it answers from and how often it changes, who may see what, and what success looks like in a metric you already track. Then I state my assumptions, design data flow first, and walk one request end to end.",
       numbers: "Spend roughly the first 5 minutes of a 45-minute round on requirements. Candidates who skip it almost always design the wrong system confidently.",
       wrong: "Opening with \"I'd use LangChain with a vector database.\" You have chosen technology before knowing the volume, the latency budget or the permission model. It is the most common way this round is lost.",
-      follow: "Now the same system for 10,000 concurrent users. What changes?"
+      follow: "Now the same system for 10,000 concurrent users. What changes?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -61,7 +62,8 @@ window.IR.q["18-system-design"] = {
       say: "Build what differentiates us, buy what is necessary but undifferentiated. The differentiating parts are the data, the domain logic and the evaluation set, because they come from our business and cannot be copied. Models, vector stores and tracing platforms are not. The trap I watch for is lock-in through data rather than code — losing our traces and evaluation history costs more than swapping a database. So I own the eval set regardless.",
       numbers: "A useful rule: if building it takes more than a quarter and a mature option exists, buy it and spend the quarter on the data and evaluation instead.",
       wrong: "\"We built our own framework for full control.\" It invites the question of what that control bought, and how much of the year went into maintaining it.",
-      follow: "You bought the platform and now need a feature they will not build. What now?"
+      follow: "You bought the platform and now need a feature they will not build. What now?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -87,7 +89,8 @@ window.IR.q["18-system-design"] = {
       say: "I built a policy assistant for about four hundred internal support agents over roughly twelve thousand pages. I owned retrieval and evaluation; a colleague owned the interface. The hard decision was rejecting long-context in favour of retrieval, because we needed per-user document permissions. Average handling time went from about nine minutes to six over a quarter. I would have built the delete path in ingestion from day one.",
       numbers: "Use your real numbers — users, documents, the metric before and after, and the timeframe. Vague scale reads as a project you observed.",
       wrong: "A component tour: \"we used LangChain, Pinecone, GPT-4 and Streamlit.\" It answers what you installed, not what you did.",
-      follow: "What was the hardest part, and what did you get wrong?"
+      follow: "What was the hardest part, and what did you get wrong?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -113,7 +116,8 @@ window.IR.q["18-system-design"] = {
       say: "Our ingestion handled document updates but never handled deletes, so a withdrawn policy kept being quoted for three weeks. Support found it, not our monitoring. I added tombstone handling and a nightly reconciliation between source and index, and stale-answer reports went to zero. The honest lesson is that I knew the delete path was missing and judged it could wait, which was the actual mistake.",
       numbers: "Include the duration and the impact. \"Three weeks, caught by support, zero reports after the fix\" is credible in a way that an unquantified story is not.",
       wrong: "\"We didn't face major issues.\" It answers a different question and throws away the round's best opportunity to show ownership.",
-      follow: "How would you have caught that earlier?"
+      follow: "How would you have caught that earlier?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -140,7 +144,8 @@ window.IR.q["18-system-design"] = {
       say: "Not with the technology, because they have usually seen a demo that delivered nothing. I start from a problem they already complain about, in their metric, and quantify what it costs today. Then I propose the smallest time-boxed pilot on one narrow workflow, with the success metric and a kill criterion agreed in advance. And I state the limitations and running cost up front. The kill criterion is what converts scepticism.",
       numbers: "Time-box the pilot — six to eight weeks on one workflow with one agreed metric. Open-ended pilots are how these projects quietly die.",
       wrong: "Leading with what the technology can do. It is the same pitch that produced the demo they already distrust.",
-      follow: "The pilot hit its metric but nobody is using it. What happened?"
+      follow: "The pilot hit its metric but nobody is using it. What happened?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -166,7 +171,8 @@ window.IR.q["18-system-design"] = {
       say: "Concretely, and early. Not \"it may occasionally be inaccurate\", which means nothing, but \"about one answer in twenty needs correction, which is why every response shows its source and why a person approves anything that changes a record\". I use their frame rather than model vocabulary, and I give them the number I will report on, so the limitation is monitored rather than just disclosed once.",
       numbers: "Whatever accuracy figure you quote, commit to reporting it on a schedule. A one-time disclosure is not expectation management.",
       wrong: "\"I explain that LLMs are probabilistic.\" True, and it transfers the problem to them instead of telling them what to do about it.",
-      follow: "They ask you to guarantee it will never be wrong. What do you say?"
+      follow: "They ask you to guarantee it will never be wrong. What do you say?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -195,7 +201,8 @@ window.IR.q["18-system-design"] = {
       say: "Isolation is enforced by infrastructure, never by the model, because the model does not know who is asking. Separate namespaces per tenant where I can, and a pre-filter applied in a shared layer no feature team can bypass if I cannot. Tenant identity comes from the authenticated session and is injected centrally. Every cache key includes the tenant, since that is the classic leak. Traces are tenant-scoped too.",
       numbers: "No number applies — this is a binary control. What you measure is that the cross-tenant test suite runs on every build and has never passed a leak.",
       wrong: "\"We add tenant_id to the metadata filter.\" Necessary and insufficient. It leaves caching, traces and the post-filter question unaddressed, and caching is where the leak usually is.",
-      follow: "Someone adds a response cache to cut costs. What review catches the problem?"
+      follow: "Someone adds a response cache to cut costs. What review catches the problem?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -221,7 +228,8 @@ window.IR.q["18-system-design"] = {
       say: "Most GenAI disagreements are testable, so I separate what evidence can settle from what is genuine judgement. Where it is testable, we agree the metric, dataset and threshold in advance and run it, which turns a debate into an experiment. Where it is judgement, I state both positions with the risk each is optimising against and escalate to whoever owns it. I once argued against a reranker on latency and the test showed I was wrong.",
       numbers: "No number applies, but the answer is stronger if the example carries one — what the test measured and what it showed.",
       wrong: "\"I explain my reasoning and usually they agree.\" It says you have not had a real disagreement, or you do not notice losing them.",
-      follow: "What if the test is inconclusive and a decision is needed this week?"
+      follow: "What if the test is inconclusive and a decision is needed this week?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -247,7 +255,8 @@ window.IR.q["18-system-design"] = {
       say: "I have taken our retrieval platform about as far as the current scope allows, and I want to work on systems at a larger scale with more ownership of the evaluation and production side. I have had a good run here and I would happily work with the team again. What I am looking for is a role where the GenAI work is the product rather than an internal tool, which is why this one interested me.",
       numbers: "No number applies. Thirty seconds is the target.",
       wrong: "Anything critical about the current employer, and anything vague like \"looking for growth\". The first costs you the round; the second wastes it.",
-      follow: "What would make you turn down an offer?"
+      follow: "What would make you turn down an offer?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -274,7 +283,8 @@ window.IR.q["18-system-design"] = {
       say: "Three things. How do you currently measure whether a GenAI feature is working — I am interested in whether evaluation is in place or still being built. What is in production today versus in pilot, because that tells me what the work really is. And who owns the call when the model is not good enough for a use case. Then, what would make this hire clearly successful after a year.",
       numbers: "Three questions is right. More reads as interrogation, fewer as disinterest.",
       wrong: "\"No, I think you have covered everything.\" It reads as disengagement, and it discards the only part of the process you fully control.",
-      follow: "What would make you turn down this role?"
+      follow: "What would make you turn down this role?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -301,7 +311,8 @@ window.IR.q["18-system-design"] = {
       say: "I would rather understand the scope and the level first — do you have a band for this role? If it helps, based on the market for my experience and stack I am looking in the range of X to Y total fixed, and I am flexible depending on the overall package and the scope. I would rather get the fit right than optimise a number early.",
       numbers: "Research your own range before the call — your years, your stack, your city. The bottom of the range you state is the number you will be offered, so do not state one you would decline.",
       wrong: "Naming a single number in the first screening call. You have anchored yourself before knowing the band, and you cannot revise upward later without looking inconsistent.",
-      follow: "That is above our band for this level. How do you respond?"
+      follow: "That is above our band for this level. How do you respond?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -328,7 +339,8 @@ window.IR.q["18-system-design"] = {
       say: "My contractual notice is ninety days. In practice I would expect to negotiate that down somewhat depending on handover, and a buyout may be possible but I would not want to promise it before checking. So realistically I would say sixty to ninety days, and I will confirm precisely once I have spoken to my manager. If timing is a constraint on your side, tell me and I will work with it.",
       numbers: "Ninety days is standard in Indian services firms; thirty to sixty is more common in product companies. Quote your actual contract, not the norm.",
       wrong: "Promising an early joining date on the assumption a buyout will be approved. If it is refused you are renegotiating a signed start date, which is the worst possible first impression.",
-      follow: "We need someone in four weeks. Does that rule you out?"
+      follow: "We need someone in four weeks. Does that rule you out?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -355,7 +367,8 @@ window.IR.q["18-system-design"] = {
       say: "I do have another offer, with a decision date around the fifteenth. I wanted to be upfront rather than spring it on you later. Honestly, this role interests me more because of the scope and the ownership, so if you are able to move the process along or revisit the level, that would help me say yes. Either way I will give you a straight answer by then.",
       numbers: "Give the actual decision date. A vague \"soon\" gives them nothing to act on and reads as a tactic.",
       wrong: "\"I have another offer at a higher number, can you beat it?\" It converts a collaborative conversation into a bidding one, and this panel is imagining how you will negotiate with their clients.",
-      follow: "We cannot match it. Would you still join?"
+      follow: "We cannot match it. Would you still join?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
 ,
 
@@ -386,7 +399,8 @@ window.IR.q["18-system-design"] = {
       say: "I would scope volume and the accuracy bar first, then design around extraction, because scanned Indian hospital bills are the hard part, not the model. OCR with layout awareness, a vision model for what OCR mangles, and per-field confidence. Validation checks totals in code and routes anything low-confidence to human review with the field highlighted on the source image. The metric that matters is straight-through rate at the required precision.",
       numbers: "Report confidence per field rather than per document. Set the straight-through threshold with the business — start conservative and raise it as measured precision justifies.",
       wrong: "Designing around the LLM and treating ingestion as a preprocessing detail. On scanned documents, extraction is where the project succeeds or fails.",
-      follow: "Ten percent of bills are handwritten. What does that do to your design?"
+      follow: "Ten percent of bills are handwritten. What does that do to your design?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -414,7 +428,8 @@ window.IR.q["18-system-design"] = {
       say: "The channel drives it — WhatsApp means asynchronous turns and durable session state, since users disappear and return. I detect language per message because code-switching is normal, and normalise Latin-script transliteration since users rarely type Devanagari. Retrieval needs genuine cross-lingual alignment because content is in English and questions are in Hindi. And I budget from Hindi token counts, which run two to three times English.",
       numbers: "Hindi costs roughly 2–3× the tokens of equivalent English. Any cost model built on English benchmarks understates a Hindi-majority product badly.",
       wrong: "Treating multilingual as a translation layer bolted on at the edges. Language affects retrieval, cost, tokenisation and evaluation simultaneously.",
-      follow: "A user writes one sentence mixing Hindi and English. What does your pipeline do?"
+      follow: "A user writes one sentence mixing Hindi and English. What does your pipeline do?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -443,7 +458,8 @@ window.IR.q["18-system-design"] = {
       say: "Code retrieval differs from documents. I chunk on AST boundaries so each chunk is a complete function with its signature and imports, and hybrid search is mandatory because developers search exact identifiers that dense vectors handle poorly. I expand along the call graph rather than just semantic neighbours. The index reindexes incrementally on merge, latency has to stay under a second for IDE use, and source code being IP forces self-hosting or zero retention.",
       numbers: "Target sub-second response in the IDE. Reindex incrementally on merge — a nightly rebuild is already stale for an active monorepo.",
       wrong: "Applying a document RAG design unchanged. Character chunking splits functions, and pure dense retrieval fails on the identifier searches developers actually make.",
-      follow: "A developer asks why a function exists. Does your retrieval find the answer?"
+      follow: "A developer asks why a function exists. Does your retrieval find the answer?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -472,7 +488,8 @@ window.IR.q["18-system-design"] = {
       say: "I would build this mostly as a workflow, because the steps are known — extract, categorise, policy check, submit. Categorisation is constrained to a fixed enum and the policy limits are deterministic code, since rules belong where they are testable. Submission is idempotent on the receipt hash so a retry cannot double-file. The genuinely agentic part is the unhappy path: clarifications, missing fields, out-of-policy justifications.",
       numbers: "Use an idempotency key derived from the receipt hash. Require explicit confirmation above a value threshold set with finance.",
       wrong: "Building it as an open-ended agent because the brief said agent. Most of this is a known sequence, and an agent makes it slower, costlier and harder to audit.",
-      follow: "The agent misreads an amount as 5,000 instead of 500. Where does that get caught?"
+      follow: "The agent misreads an amount as 5,000 instead of 500. Where does that get caught?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -500,7 +517,8 @@ window.IR.q["18-system-design"] = {
       say: "I start from the pain rather than the technology — walk me through the current process with a real example, then quantify volume, handling time and error cost. Then define success as a number that must move by a date. The questions that decide feasibility are data access, the accuracy bar, who is accountable when it is wrong, and whether the human assists or is replaced. And I stay willing to say the answer is not AI.",
       numbers: "Without volume, handling time and error cost, there is no business case. Get those three numbers before proposing an architecture.",
       wrong: "Taking the brief literally and proposing a chatbot. It wins the meeting and produces a pilot that never reaches production because nobody defined what success was.",
-      follow: "You conclude their problem does not need AI. How do you say that to the client?"
+      follow: "You conclude their problem does not need AI. How do you say that to the client?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -528,7 +546,8 @@ window.IR.q["18-system-design"] = {
       say: "I estimate in phases with decision gates, because quality is discovered rather than specified. Discovery is one to two weeks to prove feasibility on real examples and agree a metric. Pilot is four to six weeks to a measured number. Hardening — security, permissions, observability, cost controls — is six to ten and is what teams underestimate. Then phased rollout. I give a range with assumptions and gate the commitment after discovery.",
       numbers: "Pilot to production is typically 2–3× the pilot effort. Hardening is commonly as long as the pilot itself.",
       wrong: "Quoting a single number for the whole project. It signals you have not shipped one, and it sets up the conversation where hardening looks like scope creep.",
-      follow: "The client wants a fixed price for the whole thing. What do you propose?"
+      follow: "The client wants a fixed price for the whole thing. What do you propose?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -558,7 +577,8 @@ window.IR.q["18-system-design"] = {
       say: "I would give a specific example where I measured on their data rather than arguing from principle — for instance an extraction task where the required accuracy was unreachable with the available labelled examples, or where cost per transaction exceeded the transaction's value. The key is bringing evidence and pairing the no with a concrete alternative that does work, so it reads as protecting the programme rather than declining the work.",
       numbers: "A measurement on twenty real examples from their data carries more weight than any argument from principle.",
       wrong: "A generic answer about managing expectations. The question wants a specific decision with a cost attached, and vagueness reads as never having made the call.",
-      follow: "They disagreed and went ahead anyway. What did you do?"
+      follow: "They disagreed and went ahead anyway. What did you do?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -588,7 +608,8 @@ window.IR.q["18-system-design"] = {
       say: "I would structure it as detection, triage, diagnosis, outcome and the structural fix. The important parts are that I restored service before diagnosing — rollback or fallback first — and that I name the actual mechanism rather than a vague category. Then quantify duration and users affected, and close with what changed so it cannot recur: an alert, a rollback path, and for GenAI, adding the failing case to the eval set.",
       numbers: "Quantify duration and users affected. An incident story without numbers sounds like a story rather than something you owned.",
       wrong: "An incident where nothing was your fault and nothing changed afterwards. It reads as either not having been involved or not having learned anything.",
-      follow: "What would have caught it an hour earlier?"
+      follow: "What would have caught it an hour earlier?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
   ]
 };

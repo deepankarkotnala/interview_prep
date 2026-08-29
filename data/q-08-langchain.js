@@ -24,7 +24,8 @@ window.IR.q["08-langchain"] = {
       say: "It standardises the plumbing around LLM calls — prompt formatting, output parsing, retries, streaming, memory, retriever wiring — behind one interface, so swapping a provider is configuration rather than a rewrite. It gets you to a working pipeline quickly and gives you integrations for free. The cost is a layer of indirection when you need to debug precisely, which is why teams often keep it for orchestration and drop it in the hot path.",
       numbers: "No number applies. The honest trade-off statement is what scores here.",
       wrong: "Listing components — \"chains, agents, memory, retrievers, callbacks\". It answers what it contains, not what it solves, and every candidate says it.",
-      follow: "Where would you not use it?"
+      follow: "Where would you not use it?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -41,7 +42,8 @@ window.IR.q["08-langchain"] = {
       say: "LCEL is a shared interface. Every component — prompt, model, parser, retriever, plain function — implements Runnable, so they compose with the pipe operator and the result is itself a Runnable. The benefit is not syntax. Because every piece implements the same interface, streaming, batching, async, automatic parallel branches, retries and fallbacks all come for free on any chain I compose, rather than being written per pipeline.",
       numbers: "A dictionary of branches in LCEL runs those branches concurrently. Two independent retrievers cost roughly max(t1, t2), not t1 + t2.",
       wrong: "\"It's just a nicer way to write chains.\" True and shallow. The interviewer wants streaming, batching, async and parallelism named as the reason.",
-      follow: "How does streaming work through a chain that has an output parser at the end?"
+      follow: "How does streaming work through a chain that has an output parser at the end?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -63,7 +65,8 @@ window.IR.q["08-langchain"] = {
       say: "Most of it is ordinary software. I fake the model so every node becomes a deterministic function of state, and unit test routing, reducers, parsing, error handling and termination on every commit in milliseconds. Then a small integration suite against a real model asserting structure, not wording. Then a golden-set evaluation that scores quality and gates the release. And I explicitly test that the step limit fires.",
       numbers: "Aim for the ordinary pyramid: the large majority of tests mocked and fast, a small integration layer, and one evaluation gate. If every test needs an API key, the suite will not run in CI.",
       wrong: "\"You cannot really unit test LLM apps, they are non-deterministic.\" Only the model call is non-deterministic. Everything around it is testable, and this answer says you did not try.",
-      follow: "How do you stop a prompt change from silently regressing quality?"
+      follow: "How do you stop a prompt change from silently regressing quality?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -86,7 +89,8 @@ window.IR.q["08-langchain"] = {
       say: "A chain is a tree, not a line, so flat logs cannot show you which node was slow or expensive. Tracing gives the hierarchy with inputs, outputs, timings and tokens at every step, including the fully assembled prompt. The bigger value is the workflow: I promote a bad production run into an evaluation dataset, so my eval set is built from real failures, then compare prompt versions on it before shipping.",
       numbers: "Traces show per-node token counts. It is common to find one retrieval-formatting step contributing a large share of prompt tokens that nobody had measured.",
       wrong: "\"We use LangSmith for monitoring.\" Names the product without saying what it does. Describe the tree, the datasets and the comparison.",
-      follow: "Your traces contain customer PII. How do you keep using them?"
+      follow: "Your traces contain customer PII. How do you keep using them?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -109,7 +113,8 @@ window.IR.q["08-langchain"] = {
       say: "I measure per step first, because context usually dominates the token bill rather than the user's question. Then: right-size the model per step, since routing and extraction do not need the expensive model. Cut context by reranking to fewer chunks and trimming boilerplate. Cache exact repeats and use provider prompt caching for the stable system prompt. Run independent branches in parallel, and stream to fix perceived latency.",
       numbers: "Moving routing and extraction steps to a small model commonly cuts total spend substantially, because those steps are high-volume and low-difficulty. Measure the split before you optimise.",
       wrong: "\"We switched to a cheaper model.\" Across the whole pipeline this usually trades a cost problem for a quality problem. The senior answer is per-step, measured.",
-      follow: "Your p95 latency is 6 seconds and the budget is 3. Where do you cut?"
+      follow: "Your p95 latency is 6 seconds and the budget is 3. Where do you cut?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -131,7 +136,8 @@ window.IR.q["08-langchain"] = {
       say: "When the abstraction costs more than it saves. A single prompt and one call does not need a dependency tree. Latency-critical paths do not want indirection. And if I need a provider feature the wrapper has not exposed, or debugging keeps taking me three layers into library internals, that is the signal. The split I usually end up with is the framework for orchestration and tracing, direct calls in the hot path.",
       numbers: "No number applies. This answer is judged on whether the reasoning is concrete.",
       wrong: "\"LangChain is bloated, I always call the API directly.\" Equally unhelpful in the other direction. You then have to explain why you rebuilt checkpointing and tracing yourself.",
-      follow: "You dropped it in the hot path. What did you have to rebuild?"
+      follow: "You dropped it in the hot path. What did you have to rebuild?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -164,7 +170,8 @@ window.IR.q["08-langchain"] = {
       say: "A runnable is a standard LangChain component that accepts an input and produces an output. Prompts, models, retrievers and parsers are all runnables, and that shared shape is what lets us connect them into a chain using the pipe operator. So a chain is just runnables joined with pipe — prompt, model, parser. The part that matters is that a chain is itself a runnable, so it nests inside a bigger chain, and streaming, batching and async come for free.",
       numbers: "No number applies. This is a vocabulary question, and the code is the proof you have written it.",
       wrong: "Defining a chain as `LLMChain`. That class moved to `langchain-classic` at LangChain 1.0, so naming it dates your answer to about 2023. It also gets the concept backwards \u2014 a chain is a composition of runnables, not a class you instantiate.",
-      follow: "So what does LCEL add on top of that?"
+      follow: "So what does LCEL add on top of that?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -181,7 +188,8 @@ window.IR.q["08-langchain"] = {
       say: "Not automatically — a working app nobody is changing is not worth a sprint. I migrate when there is a requirement AgentExecutor cannot meet: pausing for human approval, persisting state per conversation, routing on something the model did not decide, or streaming inside the loop. The tools carry over unchanged, so I move the loop first for parity, then add the feature I migrated for. Usually the prebuilt factory matches the old behaviour exactly.",
       numbers: "No number applies. This is a migration-judgement question.",
       wrong: "\"Yes, it's deprecated, so we rewrite it.\" Deprecation alone does not pay for a migration. The panel is listening for a requirement, and for the fact that tools carry over so the cost is smaller than it sounds.",
-      follow: "What is the first feature you would add once it is a graph?"
+      follow: "What is the first feature you would add once it is a graph?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -196,7 +204,8 @@ window.IR.q["08-langchain"] = {
       say: "It is decided by control flow. A fixed path is an LCEL chain — most RAG and extraction pipelines never branch, and a chain is cheaper to write and test. One model-and-tools loop is the prebuilt agent. A StateGraph is for state beyond messages, a human approval pause, routing the model did not decide, or a cycle with its own exit. I draw the flow: a line, a loop, or something with a branch in it.",
       numbers: "No number applies. This is an architecture-choice question.",
       wrong: "Reaching for LangGraph on everything because agents sound more senior. Over a fixed pipeline it is more code and more state for flexibility the flow never uses, and a panel that has maintained one will hear that.",
-      follow: "Where would you put a RAG pipeline that retries retrieval when the answer looks thin?"
+      follow: "Where would you put a RAG pipeline that retries retrieval when the answer looks thin?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
   ]
 };

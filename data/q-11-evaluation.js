@@ -32,7 +32,8 @@ window.IR.q["11-evaluation"] = {
       say: "Two layers. Offline is a golden set of cases with known good answers that runs on every change — it is the only fair way to compare two versions, because both see the same inputs. Online is real user behaviour: thumbs, rephrase rate, citation clicks, escalation to a human, and the business metric underneath. Offline tells me whether I broke something. Online tells me whether it mattered.",
       numbers: "Start with 100 golden cases minimum. Below about 50 the noise between runs is larger than the effect you are trying to measure.",
       wrong: "\"We test it manually before release.\" Honest and disqualifying for a senior role. It means every release is a judgement call nobody can defend.",
-      follow: "Where does that golden set come from?"
+      follow: "Where does that golden set come from?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -58,7 +59,8 @@ window.IR.q["11-evaluation"] = {
       say: "Mostly from production — real queries sampled across the distribution we serve, plus every failure anyone reported, because those are the highest-value cases. Labels come from a domain expert, not from me. I cover common, edge, adversarial and unanswerable cases deliberately, and multilingual if we serve India. Then I freeze and version it, because comparing two releases needs identical inputs, and I hold back a slice I never tune against.",
       numbers: "100 cases to start, 300–500 for a mature system. Roughly 10–15% should be unanswerable, or you will never detect a model that stopped refusing.",
       wrong: "\"We generated the test set with an LLM.\" Useful for scale, dangerous alone — the model generates the questions it is already good at, and your scores go up while quality does not.",
-      follow: "How do you keep it from going stale as the product changes?"
+      follow: "How do you keep it from going stale as the product changes?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -85,7 +87,8 @@ window.IR.q["11-evaluation"] = {
       say: "A model scores another model's output. It scales where human review cannot, but it has known biases — it prefers longer answers, prefers its own style, is sensitive to option order, and clusters scores mid-scale. So I calibrate against a couple of hundred human labels and measure agreement before trusting it. I use binary or three-point scales with an explicit rubric, ask for the reason before the score, and randomise pairwise order.",
       numbers: "Calibrate on 100–200 human-labelled examples. Recheck agreement quarterly, and after any judge-model version change.",
       wrong: "\"We use GPT to score the outputs, it gives about 0.9.\" A number with no calibration behind it. The follow-up — how do you know the judge is right — usually ends this line of answer.",
-      follow: "Your judge scores 0.9 and users are complaining. What is happening?"
+      follow: "Your judge scores 0.9 and users are complaining. What is happening?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -111,7 +114,8 @@ window.IR.q["11-evaluation"] = {
       say: "Separately, because they fail differently. Retrieval gets a labelled set with recall at k and MRR — objective and cheap enough to run on every commit. Generation gets the RAGAS four: faithfulness, answer relevance, context precision and context recall. Faithfulness is the one I lead with, because it is the closest proxy for hallucination. Then end-to-end task success, plus cost and p95 alongside.",
       numbers: "Useful bar: recall@10 above 0.90 before touching the prompt, and faithfulness above 0.90 before launch. Set your own thresholds from your own data.",
       wrong: "Naming BLEU or ROUGE. They compare word overlap with a reference answer, which is close to meaningless for open-ended generation, and it dates the candidate.",
-      follow: "Faithfulness is 0.95 but users say the answers are useless. Explain."
+      follow: "Faithfulness is 0.95 but users say the answers are useless. Explain.",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -136,7 +140,8 @@ window.IR.q["11-evaluation"] = {
       say: "I stop scoring correctness and score properties instead. For a summary: does it contain a claim absent from the source, does it cover the key points, is it within length, is the tone right. Some of those code can check, the rest a judge with a rubric can. For comparing versions I use pairwise — which of these two is better, with order randomised — because win rate is far more reliable than averaged absolute scores.",
       numbers: "Pairwise win rate against the current production version is the cleanest release signal. Below roughly 55% the change is not worth shipping.",
       wrong: "\"Subjective tasks cannot really be evaluated.\" They can be decomposed, and saying otherwise means half of GenAI work is unmeasurable to you.",
-      follow: "How do you stop the judge just preferring the longer summary?"
+      follow: "How do you stop the judge just preferring the longer summary?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -162,7 +167,8 @@ window.IR.q["11-evaluation"] = {
       say: "Tiered, or people skip it. Every commit runs the free layer: mocked unit tests, schema validation and retrieval metrics, which need no model calls. Every pull request that touches a prompt runs a fifty-case subset against a real model, posted as a diff against main so the reviewer sees the effect. Pre-release runs the full golden set with a blocking threshold. Nightly runs it again to catch drift no code change caused.",
       numbers: "Fifty cases per PR is usually a few minutes and a few dollars — cheap enough that nobody argues, large enough to catch a real regression.",
       wrong: "\"We run evals before major releases.\" Then a prompt change ships untested, and prompt changes are where regressions come from.",
-      follow: "The eval blocks a release the business wants today. What do you do?"
+      follow: "The eval blocks a release the business wants today. What do you do?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -189,7 +195,8 @@ window.IR.q["11-evaluation"] = {
       say: "Four groups. System health — errors, p95, timeouts, rate limits. Cost — tokens and cost per request and per resolved task, split by feature. Quality proxies, since there are no labels in production — sampled groundedness, citation validity, refusal rate, retrieval score distribution and parse failures. And user behaviour — thumbs, rephrase rate, escalation. I alert on the deltas, because I cannot know the right absolute value in advance.",
       numbers: "Sample 1–5% of traffic for automated quality checks. Alert on a 10–20% shift in any quality proxy day over day.",
       wrong: "\"Latency, errors and uptime.\" That monitors the service, not the model. A GenAI system can be perfectly healthy and completely wrong.",
-      follow: "Refusal rate dropped 30% overnight. Walk me through your investigation."
+      follow: "Refusal rate dropped 30% overnight. Walk me through your investigation.",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -215,7 +222,8 @@ window.IR.q["11-evaluation"] = {
       say: "Split by user, not request, so the experience stays consistent. Pick the primary metric before launch and make it a business metric — resolution rate, handling time — with cost and p95 as guardrails that must not degrade. Model variance raises the noise floor, so I plan for more traffic than a normal test. And I shadow-run first: real traffic to B, compared offline, visible to nobody, which catches disasters at zero user risk.",
       numbers: "Shadow-run on 5–10% of traffic before any user-visible split. Set a daily spend cap on the experiment arm before it starts.",
       wrong: "\"We show both answers and let users pick.\" That is a preference test, not an A/B test, and it changes the product while measuring it.",
-      follow: "B wins on quality and costs three times more. What do you recommend?"
+      follow: "B wins on quality and costs three times more. What do you recommend?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -241,7 +249,8 @@ window.IR.q["11-evaluation"] = {
       say: "I connect it to a metric that existed before the project — average handling time, first-contact resolution, documents processed per hour — with a baseline measured before we shipped and a controlled comparison after, not just before-and-after on everyone. I state attribution honestly if something else changed in the same window. And I include the running cost, because net value is what gets phase two approved.",
       numbers: "Use your real figures — baseline, after, sample size, run cost per month. A specific modest number is far more credible than a round large one.",
       wrong: "\"It saved a lot of manual effort.\" No baseline, no number, no attribution. It reads as a project you did not measure.",
-      follow: "What did not work, and what did that cost you?"
+      follow: "What did not work, and what did that cost you?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -270,7 +279,8 @@ window.IR.q["11-evaluation"] = {
       say: "Usually the eval set does not match real traffic, because it was written by engineers rather than sampled from users. Or I am measuring the wrong property — faithfulness stays high when the answer just repeats the context without answering. Or we overfitted by tuning against the same set. Or the complaint is latency, not correctness. I take fifty real complaints, run them through the pipeline, and find where the score and reality disagree.",
       numbers: "Always slice quality metrics by language, document type and user segment. A 0.9 average routinely hides a 0.6 segment, and that segment is the one complaining.",
       wrong: "\"The users do not understand what the system can do.\" It may even be partly true, and it is the wrong instinct in this round. It ends the diagnostic conversation.",
-      follow: "How would you stop your eval set drifting away from production again?"
+      follow: "How would you stop your eval set drifting away from production again?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -298,7 +308,8 @@ window.IR.q["11-evaluation"] = {
       say: "BLEU is n-gram precision for translation, ROUGE is the recall counterpart for summarisation, and BERTScore swaps exact matching for embedding similarity so paraphrases survive. But all three need a reference answer, and most of what we build has no single correct output. On RAG they actively mislead, because an answer can overlap the reference and still be ungrounded. I use faithfulness and context metrics instead, and a validated rubric judge for subjective work.",
       numbers: "If you do use ROUGE in CI, treat it as a regression tripwire rather than a quality score — watch for sudden drops, do not chase the absolute number.",
       wrong: "Listing all three confidently as your RAG evaluation plan. It signals textbook knowledge with no production experience, and the follow-up about reference answers ends the conversation.",
-      follow: "You have no reference answers and no budget for human labelling. What is your first metric?"
+      follow: "You have no reference answers and no budget for human labelling. What is your first metric?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -326,7 +337,8 @@ window.IR.q["11-evaluation"] = {
       say: "Testing checks the system does what it should; red teaming checks what it does when someone tries to break it, so a red team that finds nothing has failed. I structure it by attack class — direct and indirect injection, jailbreaks, data extraction, domain-specific harm, and destructive tool calls for agents. I mix automated generation with human creativity and outsiders, and every successful attack becomes a permanent regression test.",
       numbers: "Indirect injection through an ingested document is the one to demonstrate. If your corpus accepts user-uploaded files, that is a live path from an attacker to your system prompt.",
       wrong: "Describing it as running the guardrail test suite again. That is testing your known controls, which is the opposite of looking for the unknown ones.",
-      follow: "Red teaming found a jailbreak you cannot fully fix. Do you launch?"
+      follow: "Red teaming found a jailbreak you cannot fully fix. Do you launch?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
   ]
 };

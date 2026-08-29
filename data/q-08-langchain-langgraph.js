@@ -25,7 +25,8 @@ window.IR.q["08-langchain-langgraph"] = {
       say: "It standardises the plumbing around LLM calls — prompt formatting, output parsing, retries, streaming, memory, retriever wiring — behind one interface, so swapping a provider is configuration rather than a rewrite. It gets you to a working pipeline quickly and gives you integrations for free. The cost is a layer of indirection when you need to debug precisely, which is why teams often keep it for orchestration and drop it in the hot path.",
       numbers: "No number applies. The honest trade-off statement is what scores here.",
       wrong: "Listing components — \"chains, agents, memory, retrievers, callbacks\". It answers what it contains, not what it solves, and every candidate says it.",
-      follow: "Where would you not use it?"
+      follow: "Where would you not use it?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -54,7 +55,8 @@ window.IR.q["08-langchain-langgraph"] = {
       say: "LCEL is a shared interface. Every component — prompt, model, parser, retriever, plain function — implements Runnable, so they compose with the pipe operator and the result is itself a Runnable. The benefit is not syntax. Because every piece implements the same interface, streaming, batching, async, automatic parallel branches, retries and fallbacks all come for free on any chain I compose, rather than being written per pipeline.",
       numbers: "A dictionary of branches in LCEL runs those branches concurrently. Two independent retrievers cost roughly max(t1, t2), not t1 + t2.",
       wrong: "\"It's just a nicer way to write chains.\" True and shallow. The interviewer wants streaming, batching, async and parallelism named as the reason.",
-      follow: "How does streaming work through a chain that has an output parser at the end?"
+      follow: "How does streaming work through a chain that has an output parser at the end?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -78,7 +80,8 @@ window.IR.q["08-langchain-langgraph"] = {
       say: "LCEL chains are a straight line, which covers most RAG and extraction pipelines. LangGraph is for flows that loop, branch on a runtime decision, or pause and resume — which is every real agent. It gives me nodes as functions, conditional edges that compute the route at runtime, a shared state object, and a checkpointer that persists state after every node. If the flow never branches, I stay with LCEL.",
       numbers: "No number applies. This is a control-flow decision.",
       wrong: "\"LangGraph is the new version of LangChain.\" It is not a replacement — it is a different control-flow model, and they are used together.",
-      follow: "Show me what the state object looks like for a RAG agent."
+      follow: "Show me what the state object looks like for a RAG agent.",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -106,7 +109,8 @@ window.IR.q["08-langchain-langgraph"] = {
       say: "There is one state object per run. Each node gets the state and returns only the keys it changed, and the graph merges that in. The default merge replaces the value, which is wrong for message history — so you attach a reducer, a function that says how to combine old and new. `add_messages` appends instead of overwriting. If history keeps resetting to one message, a missing reducer is almost always why.",
       numbers: "No number applies. This is a mechanism question — the code is the answer.",
       wrong: "\"State is just a dictionary passed between nodes.\" True but incomplete. Without reducers you cannot explain how two parallel nodes both write to `messages` without one destroying the other.",
-      follow: "Two nodes run in parallel and both write to the same key. What happens?"
+      follow: "Two nodes run in parallel and both write to the same key. What happens?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -134,7 +138,8 @@ window.IR.q["08-langchain-langgraph"] = {
       say: "It persists the graph state after every node, keyed by thread id. That is what makes four things possible: conversation memory across requests without managing history myself, human-in-the-loop where the graph interrupts and resumes hours later when approval arrives, crash recovery that resumes from the last node instead of re-running an expensive chain, and time travel to rewind to a checkpoint and replay with different input.",
       numbers: "A Postgres checkpointer adds roughly a few milliseconds per node write. Against a model call of several hundred milliseconds it is noise.",
       wrong: "\"It saves the conversation.\" That is one use of four, and it misses the interrupt-and-resume story, which is the one regulated employers care about.",
-      follow: "Walk me through an approval flow where the human replies the next morning."
+      follow: "Walk me through an approval flow where the human replies the next morning.",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -162,7 +167,8 @@ window.IR.q["08-langchain-langgraph"] = {
       say: "I mark the sensitive node with `interrupt_before`, so the graph stops before executing it and the checkpointer saves the state. My application shows the pending action to a reviewer in plain language with its evidence, and they approve, edit or reject. Resuming means invoking with the same thread id — editing is a state update before that. Because state is in Postgres, the approval can arrive the next morning with no request held open.",
       numbers: "No number applies, but do track reviewer turnaround time and the edit rate. A near-zero edit rate means the review is a rubber stamp.",
       wrong: "\"I'd add a confirmation step in the prompt.\" A prompt cannot pause execution or survive a process restart. This is a runtime feature.",
-      follow: "How do you make sure two reviewers do not approve the same action twice?"
+      follow: "How do you make sure two reviewers do not approve the same action twice?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -188,7 +194,8 @@ window.IR.q["08-langchain-langgraph"] = {
       say: "Two different streams. Token streaming gives the words of the final answer as they generate. Update streaming emits an event per node, so the UI can say \"searching\" or \"reading three sources\" — which matters more for agents, because a long tool call produces no tokens at all and silence reads as broken. A good UI does both. The trap is that whole-output parsers buffer, so structured output and token streaming conflict.",
       numbers: "Time to first token is the metric users feel. Under about 1 second reads as responsive; past 3 seconds people assume it has failed, whatever the total time is.",
       wrong: "\"I set streaming=True.\" It does not explain what happens during a twenty-second tool call, which is the actual UX problem in agents.",
-      follow: "Your last node validates JSON. How do you still give the user something to watch?"
+      follow: "Your last node validates JSON. How do you still give the user something to watch?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -214,7 +221,8 @@ window.IR.q["08-langchain-langgraph"] = {
       say: "Most of it is ordinary software. I fake the model so every node becomes a deterministic function of state, and unit test routing, reducers, parsing, error handling and termination on every commit in milliseconds. Then a small integration suite against a real model asserting structure, not wording. Then a golden-set evaluation that scores quality and gates the release. And I explicitly test that the step limit fires.",
       numbers: "Aim for the ordinary pyramid: the large majority of tests mocked and fast, a small integration layer, and one evaluation gate. If every test needs an API key, the suite will not run in CI.",
       wrong: "\"You cannot really unit test LLM apps, they are non-deterministic.\" Only the model call is non-deterministic. Everything around it is testable, and this answer says you did not try.",
-      follow: "How do you stop a prompt change from silently regressing quality?"
+      follow: "How do you stop a prompt change from silently regressing quality?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -240,7 +248,8 @@ window.IR.q["08-langchain-langgraph"] = {
       say: "A chain is a tree, not a line, so flat logs cannot show you which node was slow or expensive. Tracing gives the hierarchy with inputs, outputs, timings and tokens at every step, including the fully assembled prompt. The bigger value is the workflow: I promote a bad production run into an evaluation dataset, so my eval set is built from real failures, then compare prompt versions on it before shipping.",
       numbers: "Traces show per-node token counts. It is common to find one retrieval-formatting step contributing a large share of prompt tokens that nobody had measured.",
       wrong: "\"We use LangSmith for monitoring.\" Names the product without saying what it does. Describe the tree, the datasets and the comparison.",
-      follow: "Your traces contain customer PII. How do you keep using them?"
+      follow: "Your traces contain customer PII. How do you keep using them?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -268,7 +277,8 @@ window.IR.q["08-langchain-langgraph"] = {
       say: "I measure per step first, because context usually dominates the token bill rather than the user's question. Then: right-size the model per step, since routing and extraction do not need the expensive model. Cut context by reranking to fewer chunks and trimming boilerplate. Cache exact repeats and use provider prompt caching for the stable system prompt. Run independent branches in parallel, and stream to fix perceived latency.",
       numbers: "Moving routing and extraction steps to a small model commonly cuts total spend substantially, because those steps are high-volume and low-difficulty. Measure the split before you optimise.",
       wrong: "\"We switched to a cheaper model.\" Across the whole pipeline this usually trades a cost problem for a quality problem. The senior answer is per-step, measured.",
-      follow: "Your p95 latency is 6 seconds and the budget is 3. Where do you cut?"
+      follow: "Your p95 latency is 6 seconds and the budget is 3. Where do you cut?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -293,7 +303,8 @@ window.IR.q["08-langchain-langgraph"] = {
       say: "When the abstraction costs more than it saves. A single prompt and one call does not need a dependency tree. Latency-critical paths do not want indirection. And if I need a provider feature the wrapper has not exposed, or debugging keeps taking me three layers into library internals, that is the signal. The split I usually end up with is the framework for orchestration and tracing, direct calls in the hot path.",
       numbers: "No number applies. This answer is judged on whether the reasoning is concrete.",
       wrong: "\"LangChain is bloated, I always call the API directly.\" Equally unhelpful in the other direction. You then have to explain why you rebuilt checkpointing and tracing yourself.",
-      follow: "You dropped it in the hot path. What did you have to rebuild?"
+      follow: "You dropped it in the hot path. What did you have to rebuild?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -329,7 +340,8 @@ window.IR.q["08-langchain-langgraph"] = {
       say: "State holds messages, retrieved documents and a retry counter. Nodes: route, which skips retrieval when the question does not need it; retrieve; grade, which checks whether the documents are actually relevant; rewrite, which reformulates the query; generate; and check, which verifies groundedness. The edges carry the design — grade loops back to rewrite, but only while retries are under two, then it falls through to an honest not-found answer.",
       numbers: "Cap rewrites at two. Each one costs a full retrieval plus a model call, and a third rarely recovers a question the corpus cannot answer.",
       wrong: "Drawing retrieve → generate → END. It is a chain, not an agent, and it does not answer the question that was asked.",
-      follow: "What happens when the grade node itself is wrong?"
+      follow: "What happens when the grade node itself is wrong?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
   ]
 };

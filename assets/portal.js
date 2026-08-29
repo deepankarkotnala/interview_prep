@@ -599,7 +599,24 @@
       bh += '<div class="q-wrong"><span class="slot-label">The wrong answer that loses the offer</span><p>' + fmt(c.wrong) + '</p></div>';
     }
     if (c.follow) {
-      bh += '<div class="q-follow"><span class="slot-label">The follow-up question</span><p>' + fmt(c.follow) + '</p></div>';
+      var followAns = c.followAnswer || c.follow_answer || c.followSay || "";
+      if (followAns) {
+        bh += '<details class="q-follow is-expandable">' +
+          '<summary class="q-follow-summary">' +
+            '<div class="q-follow-head">' +
+              '<span class="slot-label">The follow-up question</span>' +
+              '<span class="q-follow-toggle">Sample answer <span class="q-follow-chev">›</span></span>' +
+            '</div>' +
+            '<p class="q-follow-q">' + fmt(c.follow) + '</p>' +
+          '</summary>' +
+          '<div class="q-follow-answer">' +
+            '<span class="slot-label slot-label-ans">Sample answer in the room</span>' +
+            '<p>' + fmt(followAns) + '</p>' +
+          '</div>' +
+        '</details>';
+      } else {
+        bh += '<div class="q-follow"><span class="slot-label">The follow-up question</span><p>' + fmt(c.follow) + '</p></div>';
+      }
     }
     bh += '<div class="q-actions"><button type="button" class="mini-btn is-ghost" data-delivered-btn>' +
       (isDone ? "✓ Delivered out loud" : "Mark delivered out loud") + '</button></div>';

@@ -34,7 +34,8 @@ window.IR.q["10-fine-tuning"] = {
       say: "Fine-tuning teaches behaviour; retrieval supplies knowledge. If the model does not know a fact, retraining is the wrong tool, because facts change. If it knows what to say but not how — house tone, a rigid format, a business-specific classification boundary — that is fine-tuning. The other real case is cost: a small fine-tuned model matching a large one on a narrow task at high volume. I try prompting, few-shot and retrieval first.",
       numbers: "A small fine-tuned model can be an order of magnitude cheaper per request than a large general one on a narrow task. That is the case worth building a business argument on.",
       wrong: "\"We fine-tuned it on our documents so it knows our data.\" This is the single most common wrong answer in the topic. Training on documents teaches style, not reliable recall, and it is unfixable when a document changes.",
-      follow: "So what would you do if the model needs both our tone and our latest policy?"
+      follow: "So what would you do if the model needs both our tone and our latest policy?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -61,7 +62,8 @@ window.IR.q["10-fine-tuning"] = {
       say: "Full fine-tuning updates every weight and needs memory for gradients and optimiser state several times the model size, producing a whole new copy. LoRA freezes the base and trains small low-rank matrices alongside it, so the trainable parameter count is tiny. That means smaller hardware, a megabyte-scale adapter instead of a gigabyte-scale model, and one base model serving many adapters. QLoRA quantises the frozen base to 4-bit as well.",
       numbers: "Rank 8–16 is a common starting point for style and format adaptation. Higher ranks buy capacity and a larger adapter — tune it, do not guess it.",
       wrong: "\"LoRA is faster fine-tuning.\" It is cheaper and lighter, and the adapter-swapping property is the bigger deal. Speed alone misses why it changed how teams deploy.",
-      follow: "You have forty customers each wanting their own tone. How do you serve that?"
+      follow: "You have forty customers each wanting their own tone. How do you serve that?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -87,7 +89,8 @@ window.IR.q["10-fine-tuning"] = {
       say: "They differ in the data they need. Supervised fine-tuning uses input and correct-output pairs and teaches imitation — most applied fine-tunes are this. RLHF uses preference comparisons to train a reward model, then optimises with reinforcement learning, which is powerful and unstable. DPO uses the same preference pairs but skips the reward model and optimises directly, which is far simpler. I choose by what data I can actually collect.",
       numbers: "Preference data is usually cheaper to collect than gold answers — judging two outputs is faster than authoring one. That often decides the method.",
       wrong: "\"DPO is a better version of RLHF.\" Simpler and more stable, not universally better. RLHF still has advantages at frontier scale, and overstating it invites a correction.",
-      follow: "You have thumbs-up and thumbs-down from production. Which method does that fit?"
+      follow: "You have thumbs-up and thumbs-down from production. Which method does that fit?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -114,7 +117,8 @@ window.IR.q["10-fine-tuning"] = {
       say: "Less than people expect for style — a few hundred good examples often move a tone or a format. Thousands for anything needing judgement, and the edge cases dominate the cost. Quality beats quantity, because the model faithfully learns any inconsistency between annotators. My best source is production outputs corrected by a human, since it matches the real distribution. And I hold out a test set before training.",
       numbers: "Rule of thumb: hundreds for format and tone, thousands for judgement. Hold out at least 10–20% as a test set that never influences training.",
       wrong: "\"We generated the training data with a larger model.\" Distillation is legitimate and must be said as such, with human review. Presented as a shortcut, it means training your model on another model's mistakes.",
-      follow: "Your annotators disagree on 20% of cases. What does that mean for the fine-tune?"
+      follow: "Your annotators disagree on 20% of cases. What does that mean for the fine-tune?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -140,7 +144,8 @@ window.IR.q["10-fine-tuning"] = {
       say: "Training hard on one narrow task makes the model worse at everything else, including safety behaviour, even when the training data contains nothing unsafe. LoRA forgets less because the base is frozen, and lower learning rates with early stopping help. But the real answer is detection: I evaluate the tuned model on general capability and safety, not just my task metric, because a model that aces the benchmark and lost its refusals is a worse outcome.",
       numbers: "Keep a general-capability and a safety evaluation set alongside your task set, and run all three on every checkpoint. One number is not enough to accept a fine-tune.",
       wrong: "\"We validated it on our test set and it improved.\" That measures the thing you trained for. It cannot see what you broke.",
-      follow: "Your fine-tune improved the task 12 points and refusal rate dropped. Ship it?"
+      follow: "Your fine-tune improved the task 12 points and refusal rate dropped. Ship it?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -166,7 +171,8 @@ window.IR.q["10-fine-tuning"] = {
       say: "Distillation uses a large model to teach a small one — run the teacher over real production inputs, keep the outputs, and fine-tune the student on those pairs. The case is economics: most of the quality on one narrow task at a fraction of cost and latency. I use real inputs rather than synthetic, human-review a sample because the teacher's mistakes become permanent, and check the provider's terms on training from outputs.",
       numbers: "The saving is the point — quantify it before starting. A distilled small model is commonly an order of magnitude cheaper per request than the teacher.",
       wrong: "Not mentioning the licensing question. At an enterprise, training on another provider's outputs without checking terms is a legal problem, not a technical one.",
-      follow: "The student matches the teacher on your test set. What are you still worried about?"
+      follow: "The student matches the teacher on your test set. What are you still worried about?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -194,7 +200,8 @@ window.IR.q["10-fine-tuning"] = {
       say: "I now own an artefact, so it gets versioned with its base model and training data version, because someone will ask a year later. Serving is either hosted fine-tuning or my own GPU stack with autoscaling and on-call. Evaluation continues on a schedule, since the base can be deprecated and my data drifts. Rollout is shadow then canary with instant rollback. And I re-compare against the current general model periodically.",
       numbers: "Re-compare against the current general model at least quarterly. Base models improve fast enough that a fine-tune can stop being worth its operational cost within a year.",
       wrong: "\"We deployed it and it works.\" It skips versioning, drift, deprecation and the exit plan, which together are most of the real cost.",
-      follow: "The new general model beats your fine-tune. What do you do?"
+      follow: "The new general model beats your fine-tune. What do you do?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -223,7 +230,8 @@ window.IR.q["10-fine-tuning"] = {
       say: "Not on training loss — that measures imitation of the training set. I use a held-out set split by document or customer so near-duplicates do not leak, and I always compare against the base model with the same prompt and decoding settings. I test three things: the target task, general capability to catch forgetting, and safety behaviour, which SFT erodes. Then I report cost and latency beside quality and canary on real traffic.",
       numbers: "If the fine-tuned model does not clearly beat a well-engineered prompt on the base model, do not ship it. You would be taking on a training pipeline and a permanent model artefact for nothing.",
       wrong: "'Loss went down and the samples look good.' Eyeballing samples finds what you hoped for, and loss measures the wrong thing entirely.",
-      follow: "Your fine-tune wins on the task set and loses on general instruction following. Ship or not?"
+      follow: "Your fine-tune wins on the task set and loses on general instruction following. Ship or not?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
   ]
 };

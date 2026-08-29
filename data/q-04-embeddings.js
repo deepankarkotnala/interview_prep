@@ -32,7 +32,8 @@ window.IR.q["04-embeddings"] = {
       say: "An embedding is a list of numbers that represents meaning, produced by a model trained so that similar texts land near each other. That is what lets me search by meaning rather than keywords — I embed documents in advance, embed the question at query time, and find the nearest ones. The catch is that a general-purpose model has a weak map of internal jargon, which is where retrieval quietly fails.",
       numbers: "Common dimensions: 384 for small models, 768–1536 for general-purpose, 3072 at the large end. Dimension drives both storage and search cost.",
       wrong: "\"It converts text to numbers so the computer can process it.\" True of any encoding, including ASCII. The point is that distance means similarity.",
-      follow: "Two different embedding models — how do you decide which is better for us?"
+      follow: "Two different embedding models — how do you decide which is better for us?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -57,7 +58,8 @@ window.IR.q["04-embeddings"] = {
       say: "Whichever the model was trained with — it is a compatibility requirement, not a preference, and mismatching it degrades ranking silently. Cosine compares direction, dot product includes magnitude, Euclidean is straight-line distance. If the vectors are normalised, which most modern models output, cosine and dot product rank identically and dot product is cheaper. Then I verify on a labelled set rather than trusting the config.",
       numbers: "No number applies. It is a compatibility choice, verified empirically.",
       wrong: "\"Cosine is standard so I use cosine.\" Right most of the time by accident, which is not the same as knowing why.",
-      follow: "What changes if the vectors are not normalised?"
+      follow: "What changes if the vectors are not normalised?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -82,7 +84,8 @@ window.IR.q["04-embeddings"] = {
       say: "Not from a leaderboard, because those are general-purpose and my corpus is not. I build about a hundred labelled question-to-chunk pairs from our own data, shortlist on hard constraints like tenancy and language support, then compare recall at ten. After that, dimension, query latency and ingestion cost decide it. And I treat it as sticky, because changing later means re-embedding the whole corpus.",
       numbers: "100 labelled pairs is usually enough to separate candidates. Re-embedding a large corpus is a real cost — price it before you treat the choice as reversible.",
       wrong: "\"We use the top model on MTEB.\" It says you did not test on your own data, which is the actual skill being probed.",
-      follow: "Would you ever fine-tune the embedding model instead?"
+      follow: "Would you ever fine-tune the embedding model instead?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -108,7 +111,8 @@ window.IR.q["04-embeddings"] = {
       say: "HNSW is a layered proximity graph. Search starts in sparse top layers to jump near the right region, then descends into denser layers to refine. M sets connections per node, trading memory for recall. efConstruction sets build quality. efSearch is the query-time knob — more exploration means better recall and slower queries, and it is tunable without a rebuild, which is the lever I reach for first.",
       numbers: "Common starting points: M around 16, efConstruction around 200, efSearch tuned from 50 upward against your recall target.",
       wrong: "\"It's approximate nearest neighbour search.\" Correct and content-free. The interviewer wants the mechanism and the parameter trade-off.",
-      follow: "The index no longer fits in memory. What are your options?"
+      follow: "The index no longer fits in memory. What are your options?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -136,7 +140,8 @@ window.IR.q["04-embeddings"] = {
       say: "Quantisation first, because it is the cheapest change — int8 cuts memory around fourfold for a small recall loss, and binary goes further if I add a rescoring pass over full-precision vectors. Then dimension truncation if the model supports it, or IVF-PQ instead of HNSW, which uses far less memory for more tuning and less recall. Sharding last. And I re-measure recall after each, because all of these are quality trades.",
       numbers: "float32 → int8 is about 4× smaller. 200M vectors at 1024 dimensions is roughly 800 GB in float32, about 200 GB in int8.",
       wrong: "\"Add more RAM.\" Valid once, and it is not an engineering answer. The panel is asking what you do when that stops being affordable.",
-      follow: "You quantised and recall dropped 4 points. What next?"
+      follow: "You quantised and recall dropped 4 points. What next?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -163,7 +168,8 @@ window.IR.q["04-embeddings"] = {
       say: "It depends on whether the engine post-filters or pre-filters. Post-filtering searches then discards, so a selective filter can leave three results out of a hundred and recall collapses. Pre-filtering is correct but can degrade toward a scan. Good engines filter during graph traversal. For access control I never post-filter, and for very selective filters I partition into separate collections instead of filtering one big one.",
       numbers: "Always measure recall with filters applied. A system at 0.95 unfiltered can sit far lower once a selective tenant filter is added.",
       wrong: "\"I just add a filter to the query.\" It works until the filter is selective, and then it fails in a way that looks like a retrieval-quality problem.",
-      follow: "You have 400 tenants. One collection with a filter, or 400 collections?"
+      follow: "You have 400 tenants. One collection with a filter, or 400 collections?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -188,7 +194,8 @@ window.IR.q["04-embeddings"] = {
       say: "I start from what we already operate, because a new datastore costs more than people expect. pgvector wins when the corpus fits Postgres, we need joins between vectors and relational data, and we want one backup and access story with transactional consistency. A dedicated engine wins at horizontal scale, or when we need filtered and hybrid search built in. I decide on corpus size, QPS, p95 and filter selectivity, and I name the migration trigger up front.",
       numbers: "pgvector is comfortable into the low millions of vectors on adequate hardware. Past that, measure p95 with your real filters before committing either way.",
       wrong: "\"Dedicated vector databases are faster, so we use one.\" Faster at what, under which filters, at what operational cost. This answer invites all three follow-ups.",
-      follow: "What measurement would trigger the migration?"
+      follow: "What measurement would trigger the migration?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -213,7 +220,8 @@ window.IR.q["04-embeddings"] = {
       say: "A labelled set of questions paired with the chunk that answers them, built with a domain expert and grown from real production failures. Then recall at k, because the generator only sees the top k, plus MRR to reward ranking. This layer needs no model calls, so it runs on every commit and catches breakage in CI. And I slice by document type and language, because an average hides the segment that is actually failing.",
       numbers: "Useful bar: recall@10 above 0.90 before tuning the prompt. 100+ labelled pairs, or run-to-run noise exceeds the effect you are measuring.",
       wrong: "\"We check whether the answers look right.\" That measures the whole pipeline at once, so a retrieval regression and a prompt regression are indistinguishable.",
-      follow: "Recall@10 is 0.95 but recall@3 is 0.6. What does that tell you?"
+      follow: "Recall@10 is 0.95 but recall@3 is 0.6. What does that tell you?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -239,7 +247,8 @@ window.IR.q["04-embeddings"] = {
       say: "Rarely, and only after hybrid search, reranking, better chunking and query rewriting have failed, because those are cheaper and reversible. It pays when domain language is genuinely far from general text — medical coding, internal taxonomies — where a general model's map is wrong in our neighbourhood. It needs query-document pairs mined from production logs, and every retrain means re-embedding the whole corpus. Often a reranker is the better spend.",
       numbers: "Thousands of query-document pairs is a realistic starting point. Below that, the effort is usually better spent on a reranker.",
       wrong: "\"We fine-tuned embeddings to improve accuracy.\" Without the alternatives tried and the re-embedding cost named, it reads as reaching for the most expensive option first.",
-      follow: "How would you get those query-document pairs without a labelling team?"
+      follow: "How would you get those query-document pairs without a labelling team?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -266,7 +275,8 @@ window.IR.q["04-embeddings"] = {
       say: "It is a rebuild, not an update, because vectors from two models are in different spaces and comparing across them gives nonsense. I build the new index in parallel with dual-write ingestion, compare recall at k per segment on the labelled set, then shadow real production queries against both with nothing shown to users. Then cut over behind a flag and keep the old index warm for rollback.",
       numbers: "Budget the full re-embedding cost and time up front — for a large corpus this is a real spend and a multi-day job, not an afternoon.",
       wrong: "\"We would re-embed everything and switch.\" The right shape, missing the parallel index, the comparison and the rollback — which is where the risk actually is.",
-      follow: "Halfway through the rebuild, ingestion breaks. What state are you in?"
+      follow: "Halfway through the rebuild, ingestion breaks. What state are you in?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
   ]
 };

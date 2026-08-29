@@ -54,7 +54,7 @@ function tokens(s) {
    costs only its distinct terms. */
 function bag(c) {
   var text = [c.q, (c.tags || []).join(" "), c.why, c.simple, c.say,
-              c.numbers, c.wrong, c.follow,
+              c.numbers, c.wrong, c.follow, c.followAnswer || "",
               (c.points || []).join(" ")].join(" ");
   var seen = {}, out = [];
   tokens(text).forEach(function (w) {

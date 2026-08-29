@@ -33,7 +33,8 @@ window.IR.q["03-prompting"] = {
       say: "I keep the parts separate: role and task, context, rules, examples, output format. Long stable content goes first so provider prompt caching hits, and the most important rule goes last because instructions near the end are followed more reliably. Anything from a user or a retrieved document sits inside a delimited block so the model can tell instructions from data. And the refusal condition is always stated explicitly.",
       numbers: "No number applies to structure. What you measure is the effect — run the change against the golden set before keeping it.",
       wrong: "\"I tell it to act as an expert.\" Role-play framing does very little on modern instruct models. Specificity about the task and the output does the work.",
-      follow: "How do you stop a retrieved document being read as an instruction?"
+      follow: "How do you stop a retrieved document being read as an instruction?",
+      followAnswer: "Chain-of-Thought (CoT) forces the model to generate intermediate reasoning tokens, giving the transformer extra forward-pass compute steps to unpack multi-step logic before producing the final answer. For simple classification or lookup, CoT adds unnecessary latency and cost without accuracy gain; for math, logic, and planning, it is essential."
     },
 
     {
@@ -57,7 +58,8 @@ window.IR.q["03-prompting"] = {
       say: "Few-shot helps when the task is easier to demonstrate than to describe — a tone, a tricky classification boundary. It costs tokens on every request forever, and it biases outputs toward whatever the examples look like, including their length and class balance. So I use examples to teach judgement, and I use a schema rather than examples to enforce output shape, because the schema is free and stricter.",
       numbers: "Five examples at 150 tokens each is 750 tokens on every request. At 50,000 requests a day that is 37.5M input tokens a month, purely for the examples.",
       wrong: "\"More examples is better.\" There is a plateau, usually early, and past it you are paying tokens for nothing. Test 0, 1, 3 and 5 rather than assuming.",
-      follow: "How would you choose which examples to include?"
+      follow: "How would you choose which examples to include?",
+      followAnswer: "Format few-shot examples with high diversity and balanced label distributions to prevent majority-class bias. Place few-shots before user query instructions, use standard delimiters (XML or Markdown), and keep examples concise to maximize prompt caching hit rates."
     },
 
     {
@@ -82,7 +84,8 @@ window.IR.q["03-prompting"] = {
       say: "On a standard model doing genuine multi-step work, asking for step-by-step reasoning still earns its tokens. On a reasoning model it is redundant, because that thinking is built into how it was trained, and prompting for it can interfere. There I set the effort level instead and budget for the thinking tokens, which are billed. And I never show raw reasoning to the user.",
       numbers: "Reasoning tokens can be several times the visible output. Check your provider's usage breakdown — teams are regularly surprised by this line.",
       wrong: "\"I always add 'think step by step'.\" It dates the answer, and on a reasoning model it is spending tokens to duplicate something the model already does.",
-      follow: "When would you deliberately use the cheaper non-reasoning model?"
+      follow: "When would you deliberately use the cheaper non-reasoning model?",
+      followAnswer: "Structure prompts with XML tags (<system_instructions>, <context>, <examples>, <query>). Clearly demarcate untrusted data and instruct the model to ignore any instructions embedded within context tags. Use strict schema validation (Pydantic / constrained decoding) on the output."
     },
 
     {
@@ -108,7 +111,8 @@ window.IR.q["03-prompting"] = {
       say: "A prompt is code — it changes behaviour and can break production, so it lives in version control and goes through review. Every request logs its prompt version, so when quality shifts I can attribute it. Testing is tiered: deterministic checks for parsing and required sections, then a golden-set comparison posted on the pull request. And rollback has to be fast and independent of a deploy.",
       numbers: "Golden-set comparison per PR is usually a few minutes and a few dollars — cheap enough that nobody argues about running it.",
       wrong: "\"Prompts are in a config file we update when needed.\" No version logged, no test, no attribution. Every quality question after that becomes unanswerable.",
-      follow: "Quality dropped and nothing was deployed. What do you check?"
+      follow: "Quality dropped and nothing was deployed. What do you check?",
+      followAnswer: "System prompts establish persistent role and guardrail constraints; user prompts deliver turn-specific tasks. In prompt injection attacks, adversarial user turns can overpower system instructions. Defense requires sandwich prompting, delimiter fencing, and server-side code validators."
     },
 
     {
@@ -134,7 +138,8 @@ window.IR.q["03-prompting"] = {
       say: "The instructions can stay in English, but I state the output-language rule explicitly, because drifting back to English is the most common bug. My eval set contains code-switched Hinglish, since that is how users actually write. Cross-language retrieval needs a multilingual embedding model and its own test. And I budget for tokens, because the same answer in an Indian language can cost two to three times more.",
       numbers: "Indian-language text commonly costs 2–3× the tokens of equivalent English. Check this before quoting a cost per request for a multilingual product.",
       wrong: "\"The model handles multiple languages automatically.\" It handles them unevenly, and quality varies sharply by language. Untested is unknown.",
-      follow: "How do you evaluate quality in a language nobody on your team speaks?"
+      follow: "How do you evaluate quality in a language nobody on your team speaks?",
+      followAnswer: "I build a golden evaluation set (50-100 real edge cases), define automated scoring metrics (exact match, schema validation, LLM-as-a-judge), and run regression testing in CI across prompt versions before deploying to production."
     },
 
     {
@@ -160,7 +165,8 @@ window.IR.q["03-prompting"] = {
       say: "Injection is when text the model reads contains instructions and the model follows them — there is no structural line between instructions and data. So I do not try to solve it in the prompt, because anything I write can be argued with. I delimit untrusted content, put the actual controls in code as permission and argument checks, separate read tools from write tools, and log injection-shaped inputs so I can see attempts.",
       numbers: "No number applies. Track attempted-injection detections as an operational metric — a rising count is an attack signal.",
       wrong: "\"I add a line telling it to ignore malicious instructions.\" It raises the bar slightly and is not a control. Saying it is one ends the security conversation badly.",
-      follow: "An indexed document contains an injection. Which of your layers catches it?"
+      follow: "An indexed document contains an injection. Which of your layers catches it?",
+      followAnswer: "Use constrained decoding (JSON schema mode / structured outputs) where token logits for invalid schema characters are masked to -infinity. Validate parsed JSON with Pydantic in application code and trigger an automatic one-shot retry with the validation error if parsing fails."
     },
 
     {
@@ -185,7 +191,8 @@ window.IR.q["03-prompting"] = {
       say: "Prompts rot the way legacy code does: every bug adds a line and nobody removes one, until instructions contradict each other. I split by task, so one prompt does one job. I move anything code can enforce — length, format, banned terms — into a validator. And for every rule I add, the motivating case goes into the eval set, so I can later delete the rule and check whether the case still passes.",
       numbers: "No number applies, but track prompt length over time. A prompt that only ever grows is an unowned prompt.",
       wrong: "\"We keep everything in one system prompt so behaviour is consistent.\" It produces the opposite — contradictory rules that are followed inconsistently.",
-      follow: "How would you find which line in a long prompt is causing a behaviour?"
+      follow: "How would you find which line in a long prompt is causing a behaviour?",
+      followAnswer: "Negative prompting (\"Do not do X\") is weaker than positive constraint framing (\"Only do Y\") because the attention mechanism still attends to the forbidden tokens. Rephrase negative constraints into affirmative guardrails with explicit fallback instructions."
     },
 
     {
@@ -211,7 +218,8 @@ window.IR.q["03-prompting"] = {
       say: "The default behaviour is to answer, so if I never say that not answering is allowed, the model invents. I make refusal an explicit output with a fixed token my code can detect, then route it to a human or a search fallback. My eval set is ten to fifteen percent unanswerable questions so I can measure refusal accuracy in both directions, and I alert on refusal rate in production, because a sudden drop means invention.",
       numbers: "10–15% unanswerable cases in the eval set. Track over-refusal too — a model that refuses everything scores perfectly on hallucination and is useless.",
       wrong: "\"I tell it to say 'I don't know' if it is not sure.\" Models are poorly calibrated on their own uncertainty. Tie refusal to a checkable condition, like absence from the context.",
-      follow: "How do you tell over-refusal from correct refusal in production?"
+      follow: "How do you tell over-refusal from correct refusal in production?",
+      followAnswer: "Context stuffing creates the 'Lost in the Middle' problem: attention degrades on facts placed in the middle 60% of long contexts. Place the most critical instructions and primary documents at the very top or very bottom of the context window."
     },
 
     {
@@ -236,7 +244,8 @@ window.IR.q["03-prompting"] = {
       say: "I use a JSON schema response format when I want data in a shape — extraction, classification, filling a form from free text — because constrained decoding makes it valid by construction. I use tool calling when I want a decision plus arguments, and where declining to act is a legitimate outcome. Either way I validate the values afterwards, because both guarantee shape and neither guarantees the content is real.",
       numbers: "Keep schemas shallow — two levels or fewer. Failure rates climb noticeably with nesting depth across providers.",
       wrong: "\"They're the same thing.\" Mechanically close, and the intent differs, which is what the interviewer is probing.",
-      follow: "The schema validated but the ID it returned does not exist. What now?"
+      follow: "The schema validated but the ID it returned does not exist. What now?",
+      followAnswer: "Split complex reasoning into decomposed pipeline stages (Plan -> Retrieve -> Draft -> Verify) rather than a single monolithic mega-prompt. Multi-step chaining reduces cognitive load and allows isolated retries on failure."
     },
 
     {
@@ -262,7 +271,8 @@ window.IR.q["03-prompting"] = {
       say: "Measure per component first, because retrieved context is usually the biggest line, not the instructions. Then: provider prompt caching on the stable prefix, which needs that prefix first in the prompt. Fewer reranked chunks instead of more. Replace format-teaching examples with a schema. Strip boilerplate at ingestion. Route easy requests to a cheap model. Then re-run the golden set, because a cost cut that loses accuracy is a trade.",
       numbers: "Prompt caching on a large stable prefix can cut input cost on cached tokens substantially and reduce time to first token. Check your provider's current discount rather than quoting one from memory.",
       wrong: "\"Shorten the system prompt.\" Usually the smallest line in the bill. It signals you never measured the breakdown.",
-      follow: "Caching needs a stable prefix. What breaks it without you noticing?"
+      follow: "Caching needs a stable prefix. What breaks it without you noticing?",
+      followAnswer: "Prompt compression techniques (like LLMLingua) use small language models to calculate token perplexity and prune low-information tokens. However, aggressive compression can strip crucial entities and numbers, so I prioritize semantic chunk filtering and prompt caching first."
     }
   ]
 };

@@ -34,7 +34,8 @@ window.IR.q["06-advanced-rag"] = {
       say: "Users write \"is that covered\", which retrieves nothing, so a model call before retrieval rewrites it into something searchable — resolving references, expanding phrasings, or splitting a compound question. The cost is a call in front of every query. So I always resolve references in multi-turn chat, because that failure is guaranteed, and I gate expansion on a weak first-pass retrieval score. And I use a small model for it.",
       numbers: "A small-model rewrite typically adds 100–300 ms. Gating on first-pass score means paying it on a minority of queries rather than all of them.",
       wrong: "\"I always rewrite the query, it improves retrieval.\" Sometimes it degrades it — a rewrite can drop the exact identifier that was the only thing worth matching.",
-      follow: "The rewrite dropped the part number the user typed. How do you prevent that?"
+      follow: "The rewrite dropped the part number the user typed. How do you prevent that?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -60,7 +61,8 @@ window.IR.q["06-advanced-rag"] = {
       say: "HyDE generates a hypothetical answer to the question and embeds that instead of the question, because an answer looks more like a document than a question does, so it lands closer in embedding space. It helps on short questions against long prose. The cost is a full generation before every retrieval, and invented specifics can misdirect the search. I would try hybrid search and a reranker first — cheaper, and usually better.",
       numbers: "HyDE adds a full generation to the critical path — commonly 500 ms to several seconds. That is often the entire latency budget.",
       wrong: "Presenting it as a standard part of a modern pipeline. It is a situational technique, and treating it as default reads as reciting a blog post.",
-      follow: "What would you try before reaching for HyDE?"
+      follow: "What would you try before reaching for HyDE?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -85,7 +87,8 @@ window.IR.q["06-advanced-rag"] = {
       say: "The embedding model encodes question and document separately, so it never sees them together and cannot judge whether this paragraph answers this question. A cross-encoder feeds the pair in jointly and scores relevance, which is far more accurate but cannot be precomputed. So I retrieve fifty cheaply and rerank those. The key limit is that it fixes ranking, not recall — if the right chunk was not retrieved, reranking cannot save it.",
       numbers: "Reranking 50 candidates with a hosted reranker typically adds 100–300 ms. Reranking 200 adds proportionally more, for diminishing returns.",
       wrong: "\"It re-sorts the results using a better model.\" True and shallow. The joint-encoding point is the whole reason it works.",
-      follow: "Recall@50 is 0.7. Does a reranker help you?"
+      follow: "Recall@50 is 0.7. Does a reranker help you?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -111,7 +114,8 @@ window.IR.q["06-advanced-rag"] = {
       say: "A chunk loses the heading that gave it meaning, so a paragraph saying \"the waiting period is 90 days\" never matches a question about the GOLD plan. At ingestion I prepend a short line situating the chunk in its document and section, then embed that. The cost is one-time per chunk rather than per query. And much of the gain comes from just prepending the title and heading path, with no model call at all.",
       numbers: "Ingestion-time cost scales with corpus size once. Prompt caching over the source document typically makes it a fraction of the naive price.",
       wrong: "\"We add metadata to the chunk.\" Metadata in a separate field does not affect the embedding. The context has to be in the text that gets embedded.",
-      follow: "Do you embed the enriched text or the original? Which one do you show the user?"
+      follow: "Do you embed the enriched text or the original? Which one do you show the user?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -137,7 +141,8 @@ window.IR.q["06-advanced-rag"] = {
       say: "Agentic RAG lets the model decide whether to retrieve, which source to use, whether the results are good enough, and whether to search again. It earns its cost on multi-hop questions, multiple sources, and self-correction. It multiplies latency and spend, and it is non-deterministic, so I cap the loop at two or three retrievals and route simple questions straight down the cheap path, because most traffic is simple.",
       numbers: "A three-step agentic path costs roughly three times the model calls of single-shot RAG. Route on question type, or that becomes your default cost.",
       wrong: "\"We made our RAG agentic to improve quality.\" Without the cap, the routing and the cost comparison, it reads as complexity added for its own sake.",
-      follow: "How do you decide which questions take the cheap path?"
+      follow: "How do you decide which questions take the cheap path?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -163,7 +168,8 @@ window.IR.q["06-advanced-rag"] = {
       say: "GraphRAG extracts entities and relationships into a graph and retrieves over that, which answers relational questions no single chunk contains — which suppliers are affected by this regulation, through which contracts. The cost is a model pass over the whole corpus at ingestion, ongoing graph maintenance, and a second datastore. I would build it only where the questions are genuinely relational. For lookup questions, plain RAG with a reranker wins.",
       numbers: "Entity extraction means at least one model call per document at ingestion. On a large corpus that is a substantial one-time bill — price it before proposing it.",
       wrong: "\"GraphRAG is more accurate than normal RAG.\" On relational questions, often. On lookup questions it is more expensive and no better, and that distinction is the answer.",
-      follow: "Your documents change weekly. What does that do to the graph?"
+      follow: "Your documents change weekly. What does that do to the graph?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -188,7 +194,8 @@ window.IR.q["06-advanced-rag"] = {
       say: "This one hides, because the chunks returned are individually relevant and the answer looks confident while resting on half the facts. I either decompose the question into sub-questions and retrieve each, or run a capped iterative retrieval loop where the model sees what it has and asks for what is missing. Best of all, if the two facts always travel together, I join them at ingestion so one chunk holds both.",
       numbers: "Cap iterative retrieval at two or three hops. Beyond that you are usually paying for a question the corpus cannot answer.",
       wrong: "\"I would increase k so more documents are retrieved.\" It occasionally helps by luck and mostly adds noise and cost, because the second fact is not near the question in embedding space.",
-      follow: "How do you detect multi-hop failures in production?"
+      follow: "How do you detect multi-hop failures in production?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -214,7 +221,8 @@ window.IR.q["06-advanced-rag"] = {
       say: "I route rather than forcing one mechanism to do both. Counts and aggregations go to text-to-SQL; explanations go to document retrieval; some questions need both. Text-to-SQL runs on a read-only connection with the schema in context, a validator and a row limit. When the router is unsure I run both and let generation use what fits. And I evaluate the router separately, because routing errors look like quality failures.",
       numbers: "Always cap generated SQL with a row limit and a statement timeout. An unbounded generated join is a production incident waiting to happen.",
       wrong: "\"I'd put the database rows into the vector store.\" Then a count becomes a retrieval, and retrieval cannot count. It gives approximately-right numbers, which is worse than none.",
-      follow: "The router sent an aggregation question to retrieval. How would you know?"
+      follow: "The router sent an aggregation question to retrieval. How would you know?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -241,7 +249,8 @@ window.IR.q["06-advanced-rag"] = {
       say: "I measure first, because the order depends on which half is failing. If recall is low, reranking cannot help — it only reorders what was found — so I fix chunking and add hybrid search. If recall is fine but ranking is poor, a reranker is the best value in this topic. If retrieval is fine and answers are wrong, it is a generation problem. Exotic techniques come last, because they cost most and help narrowest.",
       numbers: "Track recall@k, answer accuracy, p95 latency and cost per query together. Any technique that moves one without a stated trade on the others has not been measured.",
       wrong: "Listing every technique you know. The question is about prioritisation, and an unordered list answers a different one.",
-      follow: "You added three techniques and quality is flat. What went wrong?"
+      follow: "You added three techniques and quality is flat. What went wrong?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -268,7 +277,8 @@ window.IR.q["06-advanced-rag"] = {
       say: "Three layers, three traps. Embedding cache is safe if I key on text plus embedding model version. Retrieval and answer caches must include the user's entitlement set in the key, or a broadly-permissioned user populates the cache and a restricted user reads it. Answer caches also need a corpus version bumped by ingestion, or a withdrawn document keeps answering. Provider prompt caching carries none of these risks.",
       numbers: "For semantic caching, set the similarity threshold high — a loose threshold serves the answer to a different question, and users notice that faster than any cost saving pays for.",
       wrong: "\"We cache responses by question text.\" That is the leak. It is also the most common caching implementation, which is exactly why it gets asked.",
-      follow: "A document was withdrawn. Which of your caches still answers from it?"
+      follow: "A document was withdrawn. Which of your caches still answers from it?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -297,7 +307,8 @@ window.IR.q["06-advanced-rag"] = {
       say: "I would not feed the data to the model at all. Two gigabytes is around 500 million tokens, and embedding rows is worse than useless for aggregations, because retrieval cannot count. I load it into DuckDB, put the schema and a few sample values in the prompt, let the model write SQL, execute it myself, and pass back only the result set. A pandas agent works too, but it executes generated code, so it needs a real sandbox.",
       numbers: "Rough rule: 1 MB of CSV is about 250k tokens. A 100 MB file is already ~25M tokens — past every production context window, and that is before you pay for it on every request.",
       wrong: "'I would chunk the CSV and put it in a vector store.' It demos well on ten rows and produces silently wrong totals on ten million. The panel is listening for whether you separate lookup from aggregation.",
-      follow: "The user asks something needing both a number from the table and an explanation from a policy PDF. What happens?"
+      follow: "The user asks something needing both a number from the table and an explanation from a policy PDF. What happens?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -325,7 +336,8 @@ window.IR.q["06-advanced-rag"] = {
       say: "I stop pasting the schema and start retrieving it. Each table becomes a document — name, columns, a written description and sample values — and I pull only the ten or twenty relevant ones per question. Descriptions matter more than names, because real tables are called DIM_CUST_MSTR_V2. I store the foreign-key graph so bridging tables come along, and for a stable workload I point the model at a curated view layer instead of the raw warehouse.",
       numbers: "200 tables of DDL is easily 30k–50k tokens per query. Schema retrieval typically cuts that to a couple of thousand and raises accuracy at the same time.",
       wrong: "\"I would use a model with a bigger context window.\" It costs more per query, and it does not fix the real problem, which is that the model picks the wrong table when offered 200 of them.",
-      follow: "Two tables both look like the right one and the model keeps picking the deprecated one. What do you change?"
+      follow: "Two tables both look like the right one and the model keeps picking the deprecated one. What do you change?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -354,7 +366,8 @@ window.IR.q["06-advanced-rag"] = {
       say: "Vector search answers similarity questions; a graph answers connection questions. The giveaway is multi-hop traversal — which suppliers are two hops from a sanctioned entity — because that answer lives between chunks and no chunking recovers it. But the cost is entity extraction and entity resolution, which is a data engineering programme rather than a feature. So I default to vectors with metadata filtering and escalate only on a demonstrated multi-hop failure.",
       numbers: "Entity resolution is the hidden cost. Deciding that ACME Ltd, Acme Limited and ACME LTD. are one node is never fully solved and needs ongoing stewardship.",
       wrong: "'Graphs give richer context so they are better.' It skips the build and maintenance cost entirely, and the follow-up about entity resolution usually ends it.",
-      follow: "You have the graph. How do you actually feed a traversal result to the model?"
+      follow: "You have the graph. How do you actually feed a traversal result to the model?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
   ]
 };

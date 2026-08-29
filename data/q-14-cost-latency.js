@@ -33,7 +33,8 @@ window.IR.q["14-cost-latency"] = {
       say: "Cost per request times volume, but the per-request number has to include everything: system prompt, tool definitions, history and retrieved context, which usually dominates, plus embedding, reranking, guardrail calls, retries and reasoning tokens. In an agent I multiply by loop steps, since each step re-sends the whole history. Then I report cost per completed task, because a cheap model needing two attempts is not cheap.",
       numbers: "Worked example: 4 chunks × 600 tokens = 2,400 context tokens, plus ~600 of prompt and history, ~500 output. At 10,000 requests a day that is 30M input and 5M output tokens a month — price it against your provider's current rates.",
       wrong: "Quoting only the model's per-token price. It ignores embeddings, reranking, guardrails and retries, which together are often a third of the bill.",
-      follow: "Where would you look first to cut that number by half?"
+      follow: "Where would you look first to cut that number by half?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -60,7 +61,8 @@ window.IR.q["14-cost-latency"] = {
       say: "I get the per-stage breakdown first — embedding, retrieval, reranking, prefill, decode, guardrails — because the bottleneck is rarely where people guess. If prefill dominates I cut prompt length and turn on prompt caching. If decode dominates I cap output. I move guardrail calls off the critical path, run independent steps concurrently, and stream so the user sees output early. If it still misses, the scope changes.",
       numbers: "Time to first token under about 1 second reads as responsive. Past 3 seconds users assume failure, whatever the total time is.",
       wrong: "\"Use a faster model.\" Sometimes correct and it should not be first. Without the breakdown you may be swapping the model when retrieval was the problem.",
-      follow: "Prefill dominates and you cannot shorten the context. Now what?"
+      follow: "Prefill dominates and you cannot shorten the context. Now what?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -114,7 +116,8 @@ window.IR.q["14-cost-latency"] = {
       say: "Four layers. Provider prompt caching keeps the processed stable prefix, cutting input cost and prefill latency together — but the stable content has to come first or the cache never hits. Embedding cache keyed on text plus model version. Exact-match answer cache, keyed to include entitlements and corpus version, or it leaks or goes stale. And semantic caching, which needs a high threshold. I start with prompt caching.",
       numbers: "Prompt caching typically discounts cached input tokens substantially and cuts time to first token. Check your provider's current rate rather than quoting one from memory.",
       wrong: "\"We cache the responses.\" Which cache, keyed on what? Keyed on question text alone, it is both a staleness bug and a data leak.",
-      follow: "A timestamp in your system prompt. What does that do to your cache hit rate?"
+      follow: "A timestamp in your system prompt. What does that do to your cache hit rate?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -140,7 +143,8 @@ window.IR.q["14-cost-latency"] = {
       say: "Static batching runs a batch and waits for every request in it to finish, so one request writing 800 tokens holds up a batch where others wrote 20 — most of the GPU idles. Continuous batching works per token step: a finished request leaves immediately and a queued one takes its slot. That is a large throughput gain on the same hardware, and with paged attention managing KV cache in blocks, it is what makes self-hosting economical.",
       numbers: "It improves throughput, not single-request latency. If you are optimising one user's wait, this is the wrong lever.",
       wrong: "\"vLLM makes inference faster.\" Faster in aggregate throughput, not for a single request. That distinction is exactly what a serving-focused interviewer is checking.",
-      follow: "So does continuous batching help my p95 for one user?"
+      follow: "So does continuous batching help my p95 for one user?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -167,7 +171,8 @@ window.IR.q["14-cost-latency"] = {
       say: "Constraints first — residency, contract terms, model availability, guaranteed capacity — because those often decide it before cost comes up. Then economics: an API is pure variable cost and wins at low or bursty volume, while self-hosting is fixed cost and only wins above a break-even utilisation, including the engineering time and on-call. The split that usually wins is API for hard tasks and a self-hosted small model for high-volume narrow work.",
       numbers: "A GPU costs the same idle as busy — that is the whole break-even argument. Compute yours from your actual duty cycle, not a blog post's threshold.",
       wrong: "\"Self-hosting is cheaper.\" Only above a utilisation you have not stated, and only if the engineering time is free, which it never is.",
-      follow: "What utilisation would you need to justify a dedicated GPU?"
+      follow: "What utilisation would you need to justify a dedicated GPU?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -193,7 +198,8 @@ window.IR.q["14-cost-latency"] = {
       say: "Most traffic is easy and a minority is hard, so paying frontier prices for the majority is where budgets go. I route by task first — classification, extraction, rewriting and short summarisation go to a small model, final generation on hard questions to the large one. Then by difficulty using length, question type and retrieval score. And try-small-then-escalate, so I pay for the big model only when needed.",
       numbers: "Price tiers commonly differ by 10–20×. Moving the high-volume narrow steps down a tier is usually the largest single saving available.",
       wrong: "\"We use the cheaper model everywhere.\" That trades a cost problem for a quality problem, and the escalations and retries often erase the saving.",
-      follow: "Your router sends 30% to the expensive model. How would you get that to 10%?"
+      follow: "Your router sends 30% to the expensive model. How would you get that to 10%?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -220,7 +226,8 @@ window.IR.q["14-cost-latency"] = {
       say: "Traffic flat and cost up means tokens per request grew, so I check which component. Usually: retrieved context grew after a chunk-count or ingestion change; retries increased because a tool or parser started failing; history stopped being trimmed; an agent loop is averaging more steps; or prompt caching stopped hitting because something variable entered the stable prefix. Logging tokens per request split by input and output answers it in minutes.",
       numbers: "Alert on a 30% day-over-day move in tokens per request. Monthly spend alerts arrive after the money is spent.",
       wrong: "\"I'd check the provider's billing dashboard.\" It tells you the total went up, which you already knew. The breakdown has to be in your own telemetry.",
-      follow: "You find prompt caching stopped hitting. Why would that happen silently?"
+      follow: "You find prompt caching stopped hitting. Why would that happen silently?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
 
     {
@@ -247,7 +254,8 @@ window.IR.q["14-cost-latency"] = {
       say: "First the arithmetic: weights are parameters times bytes per parameter, so 7B in FP16 is about 14 GB and 70B is about 140 GB, plus twenty to thirty percent for KV cache. A 7B fits one A10G; a 70B fits no single GPU, so I quantise to INT8 for an 80 GB card or shard it. Tensor parallelism within a node where NVLink is available, pipeline across nodes. Usually though, the right answer is a smaller model or an API.",
       numbers: "Rule of thumb: usable GPU memory should be roughly 1.3x the model weights. An 80 GB H100 comfortably serves a quantised 70B; in FP16 it does not.",
       wrong: "Naming a GPU before doing the memory arithmetic. The panel wants to see you size the model, not recall a product page.",
-      follow: "You sharded across four GPUs and throughput barely improved. What went wrong?"
+      follow: "You sharded across four GPUs and throughput barely improved. What went wrong?",
+      followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     }
   ]
 };
