@@ -332,13 +332,13 @@
   var ALIGNS = ["left", "justify"];
 
   function defaultSize() {
-    return window.matchMedia && window.matchMedia("(max-width:860px)").matches ? "s" : "xs";
+    return "m";
   }
   function readReading() {
     var raw = store(READING_KEY, {});
     return {
-      size: SIZES.indexOf(raw.size) >= 0 ? raw.size : defaultSize(),
-      width: WIDTHS.indexOf(raw.width) >= 0 ? raw.width : "default",
+      size: SIZES.indexOf(raw.size) >= 0 ? raw.size : "m",
+      width: WIDTHS.indexOf(raw.width) >= 0 ? raw.width : "wide",
       align: ALIGNS.indexOf(raw.align) >= 0 ? raw.align : "left"
     };
   }
@@ -473,7 +473,7 @@
       });
     });
     panel.querySelector(".reader-reset").addEventListener("click", function () {
-      settings.size = defaultSize(); settings.align = "left"; settings.width = "default";
+      settings.size = "m"; settings.align = "left"; settings.width = "wide";
       commit();
     });
     document.addEventListener("click", function (ev) {

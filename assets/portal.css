@@ -59,17 +59,17 @@
   --bg-code: #202329;
   --surface: #f8f9fb;
   --surface-strong: #f3f5f7;
-  --border: #e0e3e8;
-  --border-strong: #cfd4dc;
+  --border: #e2e5eb;
+  --border-strong: #cbd2dc;
   /* This portal's own rules ask for a lighter hairline and a sunken fill.
      Mapped onto the office palette rather than kept as separate greys. */
-  --border-soft: #e0e3e8;
+  --border-soft: #e2e5eb;
   --bg-sunken: #f8f9fb;
-  --text: #20232b;
-  --text-secondary: #505665;
-  --text-muted: #7b8290;
+  --text: #1f232b;
+  --text-secondary: #333946;
+  --text-muted: #64748b;
   --text-inverse: #ffffff;
-  --heading: #20232b;
+  --heading: #111827;
 
   /* Office 365 (Excel) green is the single accent, exactly as in the parent. */
   --accent: #107c41;
@@ -781,12 +781,30 @@ html[data-reading-size="m"]  { --reading-scale: 1.14; }
 html[data-reading-size="l"]  { --reading-scale: 1.28; }
 html[data-reading-size="xl"] { --reading-scale: 1.42; }
 
+@media (max-width: 860px) {
+  html[data-reading-size="xs"] { --reading-scale: .82; }
+  html[data-reading-size="s"]  { --reading-scale: .90; }
+  html[data-reading-size="m"]  { --reading-scale: 1.00; }
+  html[data-reading-size="l"]  { --reading-scale: 1.12; }
+  html[data-reading-size="xl"] { --reading-scale: 1.24; }
+}
+
 html[data-reading-size] {
   --fs-base: calc(0.90625rem * var(--reading-scale));
-  --fs-h1:   calc(clamp(1.625rem, 2.05vw, 2.0625rem) * var(--reading-scale));
+  --fs-h1:   calc(clamp(1.5rem, 2.05vw, 2.0625rem) * var(--reading-scale));
   --fs-h2:   calc(1.28125rem * var(--reading-scale));
   --fs-h3:   calc(0.9375rem * var(--reading-scale));
   --fs-lead: calc(clamp(0.9375rem, 1.2vw, 1.0625rem) * var(--reading-scale));
+}
+
+@media (max-width: 860px) {
+  html[data-reading-size] {
+    --fs-base: calc(0.90625rem * var(--reading-scale));
+    --fs-h1:   calc(clamp(1.35rem, 5.5vw, 1.65rem) * var(--reading-scale));
+    --fs-h2:   calc(1.15rem * var(--reading-scale));
+    --fs-h3:   calc(0.92rem * var(--reading-scale));
+    --fs-lead: calc(0.95rem * var(--reading-scale));
+  }
 }
 /* Components that state their own px size do not ride --fs-base, so the
    multiplier has to reach them explicitly. Two families were missed and stayed
@@ -889,13 +907,23 @@ html[data-reading-width="default"] .content { max-width: 65rem; }
 html[data-reading-width="wide"] .content,
 html[data-reading-width="full"] body:not(.focus-mode) .content { max-width: 82.5rem; }
 
-/* Ragged-right is the default; justification is opt-in. Only prose is
-   justified — never a card label, a table cell, or code. */
-html[data-reading-align="justify"] .content > p,
-html[data-reading-align="justify"] .content > ul li,
-html[data-reading-align="justify"] .content .lede,
-html[data-reading-align="justify"] .q-simple p,
-html[data-reading-align="justify"] .q-say p { text-align: justify; }
+/* Ragged-right is the default; justification is opt-in on desktop only. */
+@media (min-width: 861px) {
+  html[data-reading-align="justify"] .content > p,
+  html[data-reading-align="justify"] .content > ul li,
+  html[data-reading-align="justify"] .content .lede,
+  html[data-reading-align="justify"] .q-simple p,
+  html[data-reading-align="justify"] .q-say p { text-align: justify; text-justify: inter-word; }
+}
+
+@media (max-width: 860px) {
+  html[data-reading-align="justify"] .content p,
+  html[data-reading-align="justify"] .content li,
+  .content, .content p, .content li, .q-simple p, .q-say p, .card p, .tile p {
+    text-align: left !important;
+    text-justify: auto !important;
+  }
+}
 
 /* Visible to screen readers only — used for the Display panel's live region. */
 .sr-only {
