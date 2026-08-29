@@ -165,7 +165,7 @@ window.IR.q["05-rag"] = {
         "**Augment** — put the top pieces into the prompt as context.",
         "**Generate** — the model answers from that context, and cites it."
       ],
-      say: "RAG means we search our own data before the model answers. The user asks a question, we retrieve the few most relevant document chunks, put them in the prompt, and the model answers from that text and cites it. It gives us fresh, private and traceable answers without retraining the model. In our system that was around four chunks per query.",
+      say: "RAG means we search our own data before the model answers. The user asks a question, we retrieve the few most relevant document chunks, put them in the prompt, and the model answers from that text and cites it. It gives us fresh, private and traceable answers without fine-tuning the model. In our system that was around four chunks per query.",
       numbers: "Typical production setup: retrieve 20 candidates, rerank to 4–6 chunks, 300–800 tokens per chunk.",
       wrong: "\"RAG stops hallucination.\" It does not. It reduces one cause of hallucination. The model can still ignore the context, or the retrieval can hand it the wrong page confidently.",
       follow: "Then why not just put the whole document in the context window?",
