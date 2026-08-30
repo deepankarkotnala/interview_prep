@@ -1,4 +1,4 @@
-/* Rehearsal room — pick a question, start the timer, say it out loud.
+/* Rehearsal room - pick a question, start the timer, say it out loud.
    Depends on portal.js having loaded IR.allCards and IR.renderCard.
    Runs after ir:ready so the shared runtime is fully initialised. */
 (function () {
@@ -54,7 +54,7 @@
       head.className = "note";
       head.innerHTML = "<strong>Say it out loud, from memory, before you open the answer.</strong> " +
         "Target for this one: " + target + " seconds. " +
-        "Topic: " + (pick._topic ? pick._topic.title : "—") + ".";
+        "Topic: " + (pick._topic ? pick._topic.title : " - ") + ".";
       stage.appendChild(head);
       stage.appendChild(IR.renderCard(pick, 0, { showTopic: true }));
       reset();

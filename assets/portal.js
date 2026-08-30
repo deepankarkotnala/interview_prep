@@ -1,7 +1,7 @@
-/* Interview Room — runtime.
+/* Interview Room - runtime.
    Standalone: theme, sidebar, card rendering, search and filters.
    Loaded as a classic deferred script so it runs after the data files, which
-   are plain assignments onto window.IR. No fetch, no modules — the portal has
+   are plain assignments onto window.IR. No fetch, no modules - the portal has
    to work when opened straight off the filesystem. */
 (function () {
   "use strict";
@@ -30,7 +30,8 @@
   function fmt(s) {
     return esc(s)
       .replace(/`([^`]+)`/g, "<code>$1</code>")
-      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/\n/g, "<br>");
   }
   function paras(s) {
     return String(s || "").split(/\n\n+/).map(function (p) {
@@ -128,7 +129,7 @@
     var h = "";
     h += '<a href="' + base + 'index.html" class="brand" style="text-decoration: none; color: inherit;" aria-label="Go to homepage">' +
          '<span class="brand-mark" aria-hidden="true">' +
-         '<img src="' + base + 'assets/brand/interview-room-logo.png?v=4" alt="" ' +
+         '<img src="' + base + 'assets/brand/interview-room-logo.png?v=6" alt="" ' +
          'onerror="this.remove();this.parentNode.textContent=\'IR\'">' +
          '</span>' +
          '<span class="brand-text"><strong>Interview Room</strong>' +
@@ -376,8 +377,8 @@
       { v: "xl", label: "A", cls: "sz-5", name: "Extra large text" }
     ];
     var ALIGN_CHOICES = [
-      { v: "left", label: "Left", name: "Ragged right edge — even word spacing" },
-      { v: "justify", label: "Justified", name: "Flush right edge — word spacing varies per line" }
+      { v: "left", label: "Left", name: "Ragged right edge - even word spacing" },
+      { v: "justify", label: "Justified", name: "Flush right edge - word spacing varies per line" }
     ];
     var WIDTH_CHOICES = [
       { v: "default", label: "Standard", name: "Optimal reading line-length (70–80 chars)" },
@@ -726,7 +727,7 @@
     var host = document.querySelector("[data-topic-body]");
     if (!topic || !set || !host) return;
 
-    document.title = topic.title + " — Interview Room";
+    document.title = topic.title + " - Interview Room";
     if (head) {
       head.innerHTML =
         '<div class="eyebrow">Topic ' + esc(topic.num) + '</div>' +
@@ -741,7 +742,7 @@
     if (set.evening && set.evening.length) {
       var note = el("div", "note");
       note.innerHTML = "<strong>If you only have one evening:</strong> do these " +
-        set.evening.length + " first — " +
+        set.evening.length + " first - " +
         set.evening.map(function (id) {
           var c = set.cards.filter(function (x) { return x.id === id; })[0];
           return c ? '<a href="#' + esc(id) + '">' + fmt(c.q) + '</a>' : "";

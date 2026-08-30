@@ -1,10 +1,10 @@
-/* Interview Room — standalone stylesheet.
+/* Interview Room - standalone stylesheet.
 
    Design system: this file is a deliberate mirror of the GenAI Mastery portal's
    office-theme.css. Same tokens, same values, same names. The Interview Room
    is a separate portal with its own markup and its own runtime, but a reader
    moving between the two should not be able to tell that they crossed a
-   boundary — same Excel-green accent, same neutral greys, same 0.5rem radii, same
+   boundary - same Excel-green accent, same neutral greys, same 0.5rem radii, same
    0.90625rem base, same 14.875rem rail, same 53.75rem drawer breakpoint.
 
    It stays standalone (no @import of the parent's CSS) because this portal must
@@ -12,7 +12,7 @@
    duplication, so the rule is: when a token below disagrees with
    ../assets/office-theme.css, office-theme.css is right and this file is stale.
 
-   The font files are the one shared asset — ../assets/fonts/ — so the type is
+   The font files are the one shared asset - ../assets/fonts/ - so the type is
    byte-identical rather than a near-match from a system stack. If the parent
    directory is absent the @font-face rules simply fail and the fallback stacks
    in --font-sans / --font-mono take over. */
@@ -44,7 +44,7 @@
   src: url(fonts/jetbrains-mono-latin-wght-normal.woff2) format("woff2");
 }
 
-/* ---------- tokens — mirrored from office-theme.css ---------- */
+/* ---------- tokens - mirrored from office-theme.css ---------- */
 :root {
   --font-sans: "Inter", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", Consolas, monospace;
@@ -101,7 +101,7 @@
 
   --ease: cubic-bezier(.4, 0, .2, 1);
 
-  /* Sidebar geometry — the parent's two-token split. --sidebar-w is the layout
+  /* Sidebar geometry - the parent's two-token split. --sidebar-w is the layout
      width; --sidebar-track is what you see after the desktop density scaling. */
   --sidebar-w: 17.5rem;
   --density: .9;
@@ -111,7 +111,7 @@
      rail's 1.5rem numeral column and roomier rows without wrapping every
      question label onto three lines. */
   --toc-w: 15.625rem;
-  /* 2.875rem, not the 2.625rem the parent's first :root declares — office-theme.css
+  /* 2.875rem, not the 2.625rem the parent's first :root declares - office-theme.css
      raises it later in the file (the chip and the active marker need the
      vertical room) and that later value is the one that actually wins. Every
      sticky offset here derives from this var, so the rest follows. */
@@ -293,19 +293,19 @@ html[data-theme="dark"] { --sb-panel: rgba(32, 35, 41, .86); }
   border-bottom: 0;
 }
 .brand-mark {
-  height: 2.5rem;
-  width: auto;
-  flex: 0 0 auto;
-  display: flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
   overflow: visible;
 }
 html[data-theme="dark"] .brand-mark { }
 .brand-mark img {
   display: block;
+  width: 100%;
   height: 100%;
-  width: auto;
   object-fit: contain;
   filter: none;
 }
@@ -321,7 +321,7 @@ html[data-theme="dark"] .brand-mark { }
 /* ---------- sidebar search ----------
    The reference's rounded pill: taller, 0.75rem radius, sunken fill that lifts to
    the elevated surface on focus with an accent ring. Still quieter than a
-   topic page's filter bar — this is a way out of wherever you are, not the
+   topic page's filter bar - this is a way out of wherever you are, not the
    primary control on the page. */
 .sb-search {
   position: relative;
@@ -360,7 +360,7 @@ html[data-theme="dark"] .brand-mark { }
 }
 .sb-clear:hover { background: var(--bg-elevated); color: var(--text); }
 
-/* Results replace the nav rather than pushing it down — see buildSearch. The
+/* Results replace the nav rather than pushing it down - see buildSearch. The
    rail is one column, and a result list stacked above eighteen topic rows puts
    the answer below the fold on a laptop. */
 .sb-results {
@@ -499,7 +499,7 @@ html[data-theme="dark"] .brand-mark { }
   border-color: var(--accent-ring);
 }
 
-/* The card count has no reference equivalent — its rail carries no per-chapter
+/* The card count has no reference equivalent - its rail carries no per-chapter
    number. Sized to sit quietly at the end of the row. */
 .nav-count {
   margin-left: auto;
@@ -511,7 +511,7 @@ html[data-theme="dark"] .brand-mark { }
 .main { min-width: 0; display: flex; flex-direction: column; }
 
 /* The translucent, blurred bar the parent settles on. This portal has no
-   ribbon under the header, so — like the parent's ribbon-less hub pages — the
+   ribbon under the header, so - like the parent's ribbon-less hub pages - the
    bar closes itself with a bottom hairline. */
 .topbar {
   position: sticky; top: 0; z-index: 40;
@@ -632,7 +632,7 @@ body.is-scrolled .topbar {
 .home-lbl,
 .focus-lbl,
 .reader-lbl { font-size: 0.71875rem; }
-/* The active state of a toggle is a tinted pill, not a filled one — this is a
+/* The active state of a toggle is a tinted pill, not a filled one - this is a
    view control, not a primary action. */
 .focus-btn[aria-pressed="true"],
 .reader-btn[aria-expanded="true"] {
@@ -641,7 +641,7 @@ body.is-scrolled .topbar {
 
 /* Desktop control size. The parent's base geometry above is 1.75rem, but its
    CHAPTER TOP BAR layer raises every control in the bar to 1.875rem at a 0.4375rem
-   radius — that later block is the one that renders, so it is the one matched
+   radius - that later block is the one that renders, so it is the one matched
    here. */
 .topbar .icon-btn,
 .home-btn,
@@ -650,7 +650,7 @@ body.is-scrolled .topbar {
 .topbar .icon-btn { width: 1.875rem; }
 
 /* Narrow laptops: the two labelled buttons give up their labels before the
-   crumbs give up any width. Display keeps its label here — it is the one
+   crumbs give up any width. Display keeps its label here - it is the one
    control whose icon alone does not say what it does. */
 @media (min-width: 861px) and (max-width: 1120px) {
   .home-lbl,
@@ -726,7 +726,7 @@ body:not(.focus-mode) .reader-popover [data-reader-width] button[data-value="ful
 .reader-segment button:hover { color: var(--text); background: var(--bg-elevated); }
 .reader-segment button.active { color: #fff; background: var(--accent); }
 .reader-segment button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-/* The size choices are the same letter at five sizes — the control shows what
+/* The size choices are the same letter at five sizes - the control shows what
    it does rather than naming it. */
 .reader-segment .sz-1 { font-size: 0.6875rem; }
 .reader-segment .sz-2 { font-size: 0.78125rem; }
@@ -748,7 +748,7 @@ body:not(.focus-mode) .reader-popover [data-reader-width] button[data-value="ful
   opacity: 0; visibility: hidden;
   transition: opacity .18s ease, visibility .18s;
 }
-/* The scrim is for the sheet form only — on a pointer device the panel closes
+/* The scrim is for the sheet form only - on a pointer device the panel closes
    on outside-click without dimming the page behind it. */
 .reader-scrim.open { opacity: 0; visibility: hidden; }
 
@@ -773,7 +773,7 @@ body:not(.focus-mode) .reader-popover [data-reader-width] button[data-value="ful
    One multiplier, applied to the type tokens themselves rather than to each
    element. Everything in the portal already derives its size from --fs-*, so
    scaling the tokens moves the whole page together and keeps the ladder
-   (hero > lead > body) intact — which is what setting sizes one element at a
+   (hero > lead > body) intact - which is what setting sizes one element at a
    time gets wrong. The base values here must match the :root block above. */
 html[data-reading-size="xs"] { --reading-scale: .88; }
 html[data-reading-size="s"]  { --reading-scale: 1; }
@@ -812,12 +812,12 @@ html[data-reading-size] {
    links, badges, counts) and the cards (tiles on the hubs, question cards and
    every slot inside them, plus the filter bar that sits above them). Each rule
    below restates that component's own base px times the scale, so the internal
-   ladder — title over body over label — survives the scaling intact. */
+   ladder - title over body over label - survives the scaling intact. */
 
 /* --- left sidebar --- */
 /* The rail is a fixed track. Left at its base 17.5rem, larger text would only
    wrap the topic labels onto three lines instead of reading bigger, so the
-   track grows with the type — dampened (half the excess) and capped, because
+   track grows with the type - dampened (half the excess) and capped, because
    the rail is navigation and must not start eating the reading column.
    Every px below is the redesigned rail's own base size times the scale, so
    the internal ladder survives scaling intact. */
@@ -847,8 +847,8 @@ html[data-reading-size] .nav-chev {
 }
 /* The brand tile scales with its lettering so the mark never overflows it. */
 html[data-reading-size] .brand-mark {
-  height: calc(2.5rem * var(--reading-scale));
-  width: auto;
+  width: calc(2.25rem * var(--reading-scale));
+  height: calc(2.25rem * var(--reading-scale));
   flex: 0 0 auto;
 }
 
@@ -925,7 +925,7 @@ html[data-reading-width="full"] body:not(.focus-mode) .content { max-width: 82.5
   }
 }
 
-/* Visible to screen readers only — used for the Display panel's live region. */
+/* Visible to screen readers only - used for the Display panel's live region. */
 .sr-only {
   position: absolute; width: 1px; height: 1px;
   margin: -1px; padding: 0; border: 0;
@@ -1000,7 +1000,7 @@ html[data-reading-width="full"] body.focus-mode .content    { max-width: none; }
 .chip.is-accent { border-color: var(--border); background: var(--excel-soft); color: var(--excel); }
 
 /* ---------- notes ---------- */
-/* Flat card, no coloured left bar — the parent retired those. The variant is
+/* Flat card, no coloured left bar - the parent retired those. The variant is
    carried by the label colour inside, not by the container edge. */
 .note {
   padding: 0.875rem 1rem; margin: 0 0 1.25rem;
@@ -1101,7 +1101,7 @@ html[data-reading-width="full"] body.focus-mode .content    { max-width: none; }
      lift starts is what makes the text visibly re-rasterise mid-animation. */
   will-change: transform;
 }
-/* A tile is an <a> — it navigates. The lift says so: 2px is enough to read as
+/* A tile is an <a> - it navigates. The lift says so: 2px is enough to read as
    "this one is live" at a glance and small enough that crossing a dense grid
    does not feel like walking over piano keys. The shadow bloom was already
    here and still does most of the work; the movement only sharpens it. */
@@ -1114,7 +1114,7 @@ html[data-reading-width="full"] body.focus-mode .content    { max-width: none; }
 /* Pressing puts it back down. Without this the card stays lifted through the
    click and the tile feels stuck rather than pressed. */
 .tile:active { transform: translateY(0); transition-duration: .06s; }
-/* Keyboard tabbing gets the same affordance as the mouse — the lift is what
+/* Keyboard tabbing gets the same affordance as the mouse - the lift is what
    marks a tile as live, and it should not be mouse-only. */
 .tile:focus-visible {
   border-color: var(--border-strong);
@@ -1140,8 +1140,8 @@ html[data-reading-width="full"] body.focus-mode .content    { max-width: none; }
 
 /* ---------- filter bar ----------
    One compact row: search, tag chips, count and reset. It stays sticky so the
-   controls are reachable, but retreats on the way down the page — the questions
-   are what you are reading, not the filters — and comes straight back on the
+   controls are reachable, but retreats on the way down the page - the questions
+   are what you are reading, not the filters - and comes straight back on the
    first upward scroll. */
 .filters {
   position: sticky; top: var(--header-h); z-index: 30;
@@ -1181,7 +1181,7 @@ html[data-reading-width="full"] body.focus-mode .content    { max-width: none; }
 }
 
 /* Chips scroll sideways inside their own lane instead of wrapping the bar onto
-   a second and third line — keeping the bar exactly one row tall is the point. */
+   a second and third line - keeping the bar exactly one row tall is the point. */
 .filter-tags {
   flex: 1 1 auto; min-width: 0;
   display: flex; align-items: center; gap: 0.25rem;
@@ -1225,10 +1225,10 @@ html[data-reading-width="full"] body.focus-mode .content    { max-width: none; }
 }
 .q-card[hidden] { display: none; }
 /* A question card expands in place rather than navigating, and only its
-   summary row is clickable — so it gets a shallower 1px lift than a tile's 2px.
+   summary row is clickable - so it gets a shallower 1px lift than a tile's 2px.
    The distinction is deliberate: the depth of the movement tracks how far the
    click takes you. An open card is already the thing you are reading and stops
-   responding to hover entirely — lifting it would be reporting an affordance
+   responding to hover entirely - lifting it would be reporting an affordance
    the card no longer has. */
 .q-card:hover:not([open]) {
   border-color: var(--border-strong);
@@ -1244,8 +1244,8 @@ html[data-reading-width="full"] body.focus-mode .content    { max-width: none; }
   transform: translateY(-1px);
 }
 .q-card[open] { border-color: var(--border-strong); box-shadow: var(--shadow-md); }
-/* During a close the element is still [open] — the content has to exist to be
-   animated out — so these three restore the closed look for the duration of
+/* During a close the element is still [open] - the content has to exist to be
+   animated out - so these three restore the closed look for the duration of
    the animation. Without them the chevron, badge and border all snap on the
    final frame instead of easing back with everything else. */
 .q-card.is-closing { border-color: var(--border); box-shadow: var(--shadow-sm); }
@@ -1302,7 +1302,7 @@ html[data-reading-width="full"] body.focus-mode .content    { max-width: none; }
 
 /* The old rule ran a fade-and-slide keyframe here on every open. It has been
    removed rather than tuned: the jump being complained about was the layout,
-   not the fade — <details> reflows to full height in one frame — so the body's
+   not the fade - <details> reflows to full height in one frame - so the body's
    height is now animated in JS (see the card open/close block in portal.js) and
    a second animation on the same element would only fight it. */
 .q-body { padding: 0 1.125rem 1.125rem 3.5625rem; }
@@ -1310,7 +1310,7 @@ html[data-reading-width="full"] body.focus-mode .content    { max-width: none; }
    partial height show a partial card instead of the content spilling past the
    card's edge on the way open. */
 .q-card.is-animating .q-body { overflow: hidden; }
-/* A card mid-animation must not also be resizing for another reason — the
+/* A card mid-animation must not also be resizing for another reason - the
    hover lift would compound with the height change and read as a wobble. */
 .q-card.is-animating { transform: none !important; }
 
@@ -1573,7 +1573,7 @@ tr:last-child td { border-bottom: 0; }
     --fs-h1: clamp(1.5rem, 6.1vw, 1.875rem);
     --fs-h2: 1.21875rem;
     --fs-h3: 0.9375rem;
-    /* Density scaling is a desktop measure — it buys back screen on a wide
+    /* Density scaling is a desktop measure - it buys back screen on a wide
        canvas. A drawer is already sized as a fraction of the viewport, so
        shrinking it again only makes the tap targets smaller. Setting the
        factor to 1 neutralises the zoom and the height correction together. */
@@ -1611,7 +1611,7 @@ tr:last-child td { border-bottom: 0; }
     background: rgba(17, 20, 26, .38);
   }
   .brand { margin-bottom: 1rem; padding: 0; }
-  .brand-mark { height: 2.25rem; width: auto; flex: 0 0 auto; }
+  .brand-mark { width: 2.25rem; height: 2.25rem; flex: 0 0 auto; }
   .brand-text strong { font-size: 0.875rem; }
   .brand-text span { font-size: 0.71875rem; }
   /* Touch rows: a little taller than the desktop rail, and no hover slide,
@@ -1687,7 +1687,7 @@ tr:last-child td { border-bottom: 0; }
   .reader-btn { width: 1.875rem; min-width: 1.875rem; height: 1.875rem; min-height: 1.875rem; }
 }
 
-/* Touch devices get no hover border change — it sticks after a tap. The lift
+/* Touch devices get no hover border change - it sticks after a tap. The lift
    has exactly the same problem, and worse: a card left floating with no cursor
    on screen to explain it just looks misrendered. */
 @media (hover: none) {
@@ -1708,7 +1708,7 @@ tr:last-child td { border-bottom: 0; }
     transition-duration: .01ms !important;
     scroll-behavior: auto !important;
   }
-  /* Zeroing the duration alone would still move the card — instantly, which is
+  /* Zeroing the duration alone would still move the card - instantly, which is
      the one thing this setting is asking us not to do. The border and shadow
      stay, so the hover is still fully legible without any motion at all. */
   .tile:hover, .tile:focus-visible,
@@ -1764,11 +1764,11 @@ tr:last-child td { border-bottom: 0; }
 }
 
 /* =========================================================================
-   RIGHT RAIL — "on this page"
+   RIGHT RAIL - "on this page"
 
    Ported from the parent portal (assets/office-theme.css: .toc-rail / .toc and
    the max-width:61.25rem block that turns it into a "Jump to section" dropdown).
-   Values, breakpoints, transitions and easing are the parent's, not new ones —
+   Values, breakpoints, transitions and easing are the parent's, not new ones - 
    the point of this block is that the two portals scroll and animate the same.
 
    The parent offsets the rail by --header-h + --ribbon-h. This portal has no
@@ -1778,7 +1778,7 @@ tr:last-child td { border-bottom: 0; }
 :root { --ribbon-h: 0px; }
 
 /* The reading row: content, then rail. Only pages that ship a .toc-rail get
-   the second track — index/rounds/tracks keep a single full-width column. */
+   the second track - index/rounds/tracks keep a single full-width column. */
 .content-wrap {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -1786,7 +1786,7 @@ tr:last-child td { border-bottom: 0; }
   width: 100%; max-width: none;
   margin: 0; padding: 0;
   /* .main is a column flexbox and .content used to be the growing child. Once
-     the rail wraps it, the wrapper inherits that job — without this the shell
+     the rail wraps it, the wrapper inherits that job - without this the shell
      stops at content height and a short page leaves the rail's border hanging
      in mid-air. */
   flex: 1;
@@ -1827,8 +1827,8 @@ tr:last-child td { border-bottom: 0; }
   box-shadow: none;
 }
 /* The reference heads its rail with one quiet all-caps label and no rule under
-   it. The topic name is kept — this portal's rail is per-topic where the
-   reference's was a single hard-coded page — but demoted under the label, and
+   it. The topic name is kept - this portal's rail is per-topic where the
+   reference's was a single hard-coded page - but demoted under the label, and
    the divider goes: the panel edge already separates the rail from the page. */
 .toc-book-head {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem;
@@ -1860,7 +1860,7 @@ tr:last-child td { border-bottom: 0; }
   border-color: var(--accent-ring); color: var(--accent);
   background: var(--accent-soft);
 }
-/* The same rounded pill as the left rail's search, one step smaller — it
+/* The same rounded pill as the left rail's search, one step smaller - it
    filters a single chapter, not the eighteen-chapter index. */
 .toc-filter {
   display: flex; align-items: center; gap: 0.375rem;
@@ -1917,7 +1917,7 @@ tr:last-child td { border-bottom: 0; }
 [data-theme="dark"] .toc a {
   color: #e2e8f0;
 }
-/* Rounded left bar — identical to this portal's sidebar nav highlight. Kept
+/* Rounded left bar - identical to this portal's sidebar nav highlight. Kept
    mounted but collapsed so it grows in as scroll moves the active section. */
 .toc a::before {
   content: "";
@@ -1962,7 +1962,7 @@ body.focus-mode .content-wrap:has(.toc-rail),
 body.focus-mode .content-wrap.has-toc { grid-template-columns: minmax(0, 1fr); }
 
 /* ---- Tablet and phone: the rail becomes a "Jump to section" dropdown ----
-   The parent's breakpoint is 61.25rem, above its 53.75rem drawer step — so on a
+   The parent's breakpoint is 61.25rem, above its 53.75rem drawer step - so on a
    tablet the left nav is still a drawer and this bar is already a dropdown. */
 @media (max-width: 980px) {
   .content-wrap,
@@ -2018,7 +2018,7 @@ body.focus-mode .content-wrap.has-toc { grid-template-columns: minmax(0, 1fr); }
   .toc.toc-open .toc-toggle { border-color: var(--border-strong); }
   .toc.toc-open .toc-toggle-caret { transform: rotate(180deg); }
 
-  /* Expanded list — an overlay dropdown so it never pushes content down.
+  /* Expanded list - an overlay dropdown so it never pushes content down.
      The parent animates this rather than flipping `display` (genai-motion.css
      §5): it stays laid out and rides opacity + a small rise, with `visibility`
      delayed by the duration so it is not focusable while closed. */
@@ -2038,7 +2038,7 @@ body.focus-mode .content-wrap.has-toc { grid-template-columns: minmax(0, 1fr); }
                 transform .28s cubic-bezier(.16, 1, .3, 1),
                 visibility 0s linear .28s;
   }
-  /* .toc-open sits on .toc (the <nav>), not on .toc-rail — portal.js follows
+  /* .toc-open sits on .toc (the <nav>), not on .toc-rail - portal.js follows
      the parent's convention here so the two behave identically. */
   .toc.toc-open .toc-list {
     visibility: visible; opacity: 1;
@@ -2091,7 +2091,7 @@ body.focus-mode .content-wrap.has-toc { grid-template-columns: minmax(0, 1fr); }
    rather than helpful.
 
    Every colour is a token, so light and dark work from one definition and a
-   theme switch needs no re-render — the SVG is in the document, not an <img>,
+   theme switch needs no re-render - the SVG is in the document, not an <img>,
    so it inherits like any other element. */
 .q-diagram { margin: 0 0 0.875rem; }
 .q-diagram .slot-label { color: var(--text-muted); }
@@ -2103,7 +2103,7 @@ body.focus-mode .content-wrap.has-toc { grid-template-columns: minmax(0, 1fr); }
 }
 /* The drawing scales to the column; it never scrolls sideways and never sets a
    min-width. An earlier version pinned 30rem and pushed a horizontal scrollbar
-   onto every phone — the fix is a second, single-column rendering of the same
+   onto every phone - the fix is a second, single-column rendering of the same
    spec, swapped below, not a scroll container. */
 .dg { display: block; width: 100%; height: auto; font-family: var(--font-sans); }
 .dg-narrow { display: none; }
@@ -2111,7 +2111,7 @@ body.focus-mode .content-wrap.has-toc { grid-template-columns: minmax(0, 1fr); }
   .dg-wide { display: none; }
   .dg-narrow { display: block; }
   /* The narrow SVG is a 700-unit canvas painted into roughly 320 CSS pixels,
-     so every glyph lands at well under half its authored size — 0.71875rem of
+     so every glyph lands at well under half its authored size - 0.71875rem of
      label renders around 0.3125rem, which is what made the phone view unreadable.
      Scaling the type up in USER UNITS is the fix: the viewBox does the
      shrinking, so authoring at ~2.2x lands back near the intended size on
@@ -2149,7 +2149,7 @@ body.focus-mode .content-wrap.has-toc { grid-template-columns: minmax(0, 1fr); }
 .dg-node.is-muted .dg-label { fill: var(--text-muted); }
 
 .dg-edge { fill: none; stroke: var(--border-strong); stroke-width: 1.25; }
-/* A back edge is a loop — the retry, the rewrite, the hand-back. Colouring and
+/* A back edge is a loop - the retry, the rewrite, the hand-back. Colouring and
    dashing it is what stops a graph reading as a chain at a glance, which is
    precisely the distinction these questions ask about. */
 .dg-edge.is-back { stroke: var(--amber); stroke-dasharray: 5 4; }
@@ -2199,7 +2199,7 @@ body.focus-mode .content-wrap.has-toc { grid-template-columns: minmax(0, 1fr); }
 @media (prefers-reduced-motion: reduce) {
   .dg-flow { animation: none; opacity: 0; }
 }
-/* Printed, the drawing is the point — keep it, drop the pulse, let it break
+/* Printed, the drawing is the point - keep it, drop the pulse, let it break
    cleanly, and always print the wide layout regardless of viewport. */
 @media print {
   .dg-flow { display: none; }
@@ -2214,7 +2214,7 @@ body.focus-mode .content-wrap.has-toc { grid-template-columns: minmax(0, 1fr); }
    what is left, equal width and equal height.
 
    Flex, not grid: `repeat(auto-fit, minmax(…, 1fr))` only collapses a track
-   nothing occupies, and a full-width caption occupies every one of them — so a
+   nothing occupies, and a full-width caption occupies every one of them - so a
    wide column would keep three tracks alive for two cards and stop the row
    short. `flex: 1 1 13.75rem` has no track to leave empty.
 
@@ -2261,9 +2261,11 @@ html[data-theme="dark"] .page-nav {
   position: relative;
   overflow: hidden;
   display: flex;
-  flex-direction: column;
-  gap: 0.1875rem;
-  padding: 0.5rem 1rem;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg, 10px);
   background: var(--bg-elevated);
@@ -2286,7 +2288,7 @@ html[data-theme="dark"] .page-nav {
   content: none !important;
 }
 
-/* Same affordance as genai_cx — elevated navigation cards with rich shadow and lift */
+/* Same affordance as genai_cx - elevated navigation cards with rich shadow and lift */
 .page-nav a:hover,
 .page-nav a:focus-visible,
 .page-nav .pn-link:hover,
@@ -2311,6 +2313,8 @@ html[data-theme="dark"] .page-nav {
   letter-spacing: .06em;
   text-transform: uppercase;
   line-height: 1.2;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 .page-nav .ttl,
 .page-nav .pn-ttl {
@@ -2320,6 +2324,11 @@ html[data-theme="dark"] .page-nav {
   font-size: 0.875rem;
   font-weight: 500;
   line-height: 1.25;
+  flex: 1 1 auto;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .page-nav .pn-num {
   color: var(--text-muted);

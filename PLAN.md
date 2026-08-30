@@ -1,4 +1,4 @@
-# Implementation Plan — Theory-First CampusX Transformation of GenAI CX Portal
+# Implementation Plan: Theory-First CampusX Transformation of GenAI CX Portal
 
 Transform the entire **GenAI CX Learning Hub** (`genai_cx-main`) into a **100% Theory-Based, Code-Free Knowledge Hub** modeled on the signature **CampusX (Nitish Singh)** pedagogical style:
 1. **Establishing the Base**: Intuitive real-world hook, everyday analogies, and why classical approaches broke down without this technology.
@@ -32,7 +32,7 @@ flowchart TD
 - **Intermediate**: Tokenizer vocabulary mapping (BPE), embedding spaces, temperature probability sharpening/flattening, context window attention bounds.
 
 #### [MODIFY] [`modules/02_transformers.html`](file:///Users/deepankar/Desktop/interview_prep-main/genai_cx-main/modules/02_transformers.html)
-- **Base**: The "Cocktail Party Problem" — focusing on relevant signals amid background noise.
+- **Base**: The "Cocktail Party Problem" - focusing on relevant signals amid background noise.
 - **Simple**: Query (what I seek), Key (what you provide), Value (what you actually say) matching intuition.
 - **Intermediate**: Scaled Dot-Product Attention derivation, positional encodings (RoPE), Multi-Head attention specialization, Feed-Forward projections.
 

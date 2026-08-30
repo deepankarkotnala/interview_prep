@@ -1,7 +1,7 @@
-/* Interview Room — runtime.
+/* Interview Room - runtime.
    Standalone: theme, sidebar, card rendering, search and filters.
    Loaded as a classic deferred script so it runs after the data files, which
-   are plain assignments onto window.IR. No fetch, no modules — the portal has
+   are plain assignments onto window.IR. No fetch, no modules - the portal has
    to work when opened straight off the filesystem. */
 (function () {
   "use strict";
@@ -51,7 +51,7 @@
   /* ---------- topbar icons ----------
      The same line-art set the parent portal uses. The theme toggle was a text
      glyph (☀/☾) here, which rendered as a different weight and colour from every
-     other control in the bar because it was font, not stroke — that is the
+     other control in the bar because it was font, not stroke - that is the
      mismatch. These are stroked SVGs like the rest. */
   var ICON_HOME =
     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
@@ -127,7 +127,7 @@
 
     var h = "";
     /* The mark is vendored into this portal's own assets/brand/, never read from
-       a sibling directory — the folder has to render on its own from a USB stick.
+       a sibling directory - the folder has to render on its own from a USB stick.
        `onerror` still drops back to the "IR" lettering if the file is missing. */
     h += '<div class="brand">' +
          '<span class="brand-mark" aria-hidden="true">' +
@@ -176,7 +176,7 @@
            (live ? "" : ' tabindex="-1" aria-disabled="true"') + '>' +
            '<span class="nav-num">' + t.num + "</span>" +
            '<span>' + esc(t.title) + "</span>" +
-           /* n is 0 when that topic's data file is not loaded on this page —
+           /* n is 0 when that topic's data file is not loaded on this page - 
               show nothing rather than a misleading zero */
            '<span class="nav-count">' + (live ? (n || "") : "soon") + "</span></a>";
     });
@@ -226,7 +226,7 @@
         byTopic[k].push(r);
       });
 
-      /* Topic hits lead — someone typing a subject name usually wants the
+      /* Topic hits lead - someone typing a subject name usually wants the
          subject, and it is one row rather than a block. */
       var topics = rows.filter(function (r) { return r.kind === "topic"; });
       if (topics.length) {
@@ -250,7 +250,7 @@
         h += '<div class="sb-sec">' + esc(meta ? meta.t : k) + "</div>";
         list.slice(0, 6).forEach(function (r) {
           /* Deep link straight to the card. The topic page opens it and
-             scrolls to it — see the hash handling in bootTopic. */
+             scrolls to it - see the hash handling in bootTopic. */
           h += '<a class="sb-hit" href="' + base + "topics/" + k + ".html#" + esc(r.card.i) + '">'
             + '<span class="sb-hit-t">' + esc(r.card.q) + "</span></a>";
         });
@@ -270,7 +270,7 @@
 
     input.addEventListener("input", function () {
       /* The search itself is a few milliseconds, so this is not for throughput
-         — it is so the result list is not re-rendering under the reader's eyes
+         - it is so the result list is not re-rendering under the reader's eyes
          on every keystroke of a long word. */
       clearTimeout(timer);
       timer = setTimeout(run, 110);
@@ -364,7 +364,7 @@
   /* ---------- Display panel ----------
      Text size, alignment and reading width, under one key, mirroring the
      parent's contract. Written to <html> as data attributes so the stylesheet
-     owns the actual sizes — see the reading-settings block in portal.css. */
+     owns the actual sizes - see the reading-settings block in portal.css. */
   var READING_KEY = "ir.reading";
   var SIZES = ["xs", "s", "m", "l", "xl"];
   var WIDTHS = ["default", "wide", "full"];
@@ -409,13 +409,13 @@
       { v: "xl", label: "A", cls: "sz-5", name: "Extra large text" }
     ];
     var ALIGN_CHOICES = [
-      { v: "left", label: "Left", name: "Ragged right edge — even word spacing" },
-      { v: "justify", label: "Justified", name: "Flush right edge — word spacing varies per line" }
+      { v: "left", label: "Left", name: "Ragged right edge - even word spacing" },
+      { v: "justify", label: "Justified", name: "Flush right edge - word spacing varies per line" }
     ];
     var WIDTH_CHOICES = [
       { v: "default", label: "Standard", name: "Standard reading measure" },
       { v: "wide", label: "Wide", name: "Wide reading measure" },
-      { v: "full", label: "Full", name: "Full width — text spans the whole screen" }
+      { v: "full", label: "Full", name: "Full width - text spans the whole screen" }
     ];
     function segment(group, choices) {
       return '<div class="reader-segment" data-reader-' + group + ' role="group">' +
@@ -536,7 +536,7 @@
     trail.split("|").filter(Boolean).forEach(function (c) {
       crumbs += "<span>/</span><span>" + esc(c) + "</span>";
     });
-    /* Home · Focus · Display · theme, in that reading order — the same bar the
+    /* Home · Focus · Display · theme, in that reading order - the same bar the
        parent portal builds, so moving between the two portals does not move the
        controls. Home points at this portal's own index, not the parent's: the
        folder has to work on its own. */
@@ -600,7 +600,7 @@
 
   /* ---------- whiteboard diagrams ----------
      Some questions are answered at a whiteboard, not in a paragraph. "Build a
-     RAG agent in LangGraph — what nodes and edges?" is marked in its own `why`
+     RAG agent in LangGraph - what nodes and edges?" is marked in its own `why`
      as a whiteboard question, and the answer only lands if you can draw it
      while you talk.
 
@@ -610,7 +610,7 @@
      slot, and layout stays consistent instead of drifting per author.
 
      Deliberately plain. This is a picture you have to reproduce on a
-     whiteboard under pressure, so it is boxes, arrows and labels — nothing you
+     whiteboard under pressure, so it is boxes, arrows and labels - nothing you
      could not draw with one marker in about forty seconds.
 
      ---- Why the layout is measured rather than guessed ----
@@ -619,7 +619,7 @@
      it produced a mess: edge labels ran off the canvas, two back-edges wrote
      their labels on top of each other, and a curve between diagonal cells cut
      straight through the box sitting between them. All three have the same
-     cause — nothing tracked how much room a thing actually needed before
+     cause - nothing tracked how much room a thing actually needed before
      committing to a position.
 
      So this version measures first. Text width is estimated per string and
@@ -632,7 +632,7 @@
 
      The same spec renders at two widths. Above the breakpoint, rows lay out as
      authored. Below it, every row collapses to one column and the drawing
-     becomes a single vertical track — which is the only honest way to show a
+     becomes a single vertical track - which is the only honest way to show a
      graph on a 360px screen. Both are produced at build time and swapped with
      CSS, so there is no resize listener and no re-render.
 
@@ -646,7 +646,7 @@
   /* Character-width factors for the two type sizes used inside a drawing.
      There is no text measurement available while building a string, and an
      estimate is fine here because it is only ever used to decide whether
-     something FITS — erring wide costs a little whitespace, which is the safe
+     something FITS - erring wide costs a little whitespace, which is the safe
      direction. Tuned against the Inter metrics the portal actually loads. */
   var DIA_CH_LABEL = 6.55;   /* 11.5px, weight 650 */
   var DIA_CH_NOTE  = 4.85;   /* 9px, weight 600   */
@@ -655,7 +655,7 @@
   /* On a phone the narrow SVG's 700-unit canvas is painted into ~320 CSS
      pixels, so authored type lands at under half its size and the drawing
      becomes unreadable. The narrow layout therefore authors its text larger in
-     user units — the viewBox scales it back down to something legible on
+     user units - the viewBox scales it back down to something legible on
      glass. Layout has to know this, or boxes get sized for 11.5px type and the
      bigger glyphs overflow them. Kept in step with the font-size rules for
      `.dg-narrow` in portal.css. */
@@ -682,7 +682,7 @@
   var DIA = {
     w: 700,
     minNodeH: 44,
-    rowGap: 52,       /* vertical room between rows — connectors route in here */
+    rowGap: 52,       /* vertical room between rows - connectors route in here */
     colGap: 26,
     padX: 18,
     padY: 16,
@@ -690,7 +690,7 @@
     laneGap: 10       /* gap between the outermost lane and the boxes */
   };
 
-  /* Greedy wrap to a pixel width. Returns every line — nothing is dropped,
+  /* Greedy wrap to a pixel width. Returns every line - nothing is dropped,
      because a silently truncated label is exactly the failure this is here to
      prevent; a box grows taller instead. */
   function diaWrapPx(text, maxPx, ch) {
@@ -714,10 +714,10 @@
     var lanesL = [], lanesR = [];
 
     /* Lane allocation first, because it decides how much horizontal room the
-       boxes have left. Each long connector gets its OWN lane on its own side —
+       boxes have left. Each long connector gets its OWN lane on its own side - 
        that is what stops two loop labels landing on the same pixel. */
     /* Row index per node. When narrow, every row collapses to one column, so
-       a node's effective row is its position in the FLATTENED list — not the
+       a node's effective row is its position in the FLATTENED list - not the
        row it was authored in. Getting this wrong is what drew a three-row jump
        as a straight vertical line through the two boxes in between. */
     var rowOf = {};
@@ -745,7 +745,7 @@
     /* Reserve: the widest label on each side, plus one step per extra lane. */
     /* Reserve for the WORST case: each lane sits one step further out than the
        last, and its label extends inward from there. Sizing to the widest
-       label alone under-reserves as soon as a third lane appears — the label
+       label alone under-reserves as soon as a third lane appears - the label
        on the outermost lane then starts left of zero. */
     function reserve(list) {
       if (!list.length) return 0;
@@ -755,7 +755,7 @@
       });
       return DIA.laneGap + need + 6;
     }
-    /* Narrow reserves the same way — a label needs its width whatever the
+    /* Narrow reserves the same way - a label needs its width whatever the
        viewport, and an earlier version that reserved a flat 22px is exactly
        how "regenerate once" ended up hanging off the left edge. It is capped
        so a long label cannot squeeze the boxes to nothing; the label wraps
@@ -787,7 +787,7 @@
     var inner = DIA.w - DIA.padX * 2 - resL - resR;
 
     /* Place boxes. Height is derived from wrapped content, and every box in a
-       row shares the tallest — a ragged row reads as a mistake. */
+       row shares the tallest - a ragged row reads as a mistake. */
     var widestRow = 0;
     rows.forEach(function (row) { widestRow = Math.max(widestRow, row.length); });
 
@@ -877,7 +877,7 @@
     if (lane != null) {
       /* Long or looping. Leaving through the side at the box's own centre
          height is what drove a line straight through whatever box sat beside
-         it in the same row — `grade → rewrite` passing through `retrieve` was
+         it in the same row - `grade → rewrite` passing through `retrieve` was
          exactly this. So drop out of the bottom edge into the gap below the
          row first, run sideways there where nothing is drawn, and only then
          take the lane. The same on arrival, entering through the target's top. */
@@ -885,7 +885,7 @@
       var sx = a.x + a.w / 2, tx = b.x + b.w / 2;
       /* Leave and arrive on the side the connector is heading, so the detour
          always uses a gap that exists. An upward loop that left through the
-         source's BOTTOM had to travel below the last row — which is off the
+         source's BOTTOM had to travel below the last row - which is off the
          canvas entirely, and is why the dashed edges ran off the bottom. */
       var leaveY = upward ? a.y - GAP : a.y + a.h + GAP;
       var outY = upward ? a.y - DIA.rowGap / 2 : a.y + a.h + DIA.rowGap / 2;
@@ -903,7 +903,7 @@
          put "weak" and "new query" back on top of each other. Anchoring at the
          top means slot N is always 16px below slot N-1 for as long as the run
          allows, and only the last one or two lanes on a very short run need to
-         share — by which point they have been pushed apart as far as the
+         share - by which point they have been pushed apart as far as the
          geometry permits. */
       var top = Math.min(outY, enterAt), bot = Math.max(outY, enterAt);
       var slot = (L.laneSlot && L.laneSlot[key]) || 0;
@@ -917,7 +917,7 @@
       lx = (x1 + x2) / 2; ly = y - 8;
     } else if (back) {
       /* Adjacent-row loop, running back up. It leaves the source's top edge
-         and enters the target's bottom, through the gap the two rows share —
+         and enters the target's bottom, through the gap the two rows share - 
          offset sideways from the box centres so it never sits underneath the
          forward connector going the other way. */
       var upB = b.y < a.y;
@@ -946,7 +946,7 @@
     var d = diaPath(pts);
     var out = '<path class="' + cls + '" d="' + d + '" marker-end="url(#dg-ar)"/>';
     /* The flow pulse. A second copy of the same path, dashed, animated along
-       its own length — so data visibly moves in the direction of the arrow.
+       its own length - so data visibly moves in the direction of the arrow.
        Purely decorative: it is behind the label, respects reduced-motion, and
        the drawing is complete and correct with it switched off. */
     out += '<path class="dg-flow' + (back ? " is-back" : "") + '" d="' + d + '"/>';
@@ -954,7 +954,7 @@
       /* Wrap the label to whatever room it actually has beside its lane, then
          plate it so a connector never reads through the text where the two
          cross. Wrapping rather than widening the reservation is what keeps a
-         long branch label — "no · skip retrieval" — from either running off a
+         long branch label - "no · skip retrieval" - from either running off a
          phone canvas or squeezing every box to make room for itself. */
       var room = anchor === "end" ? lx - 4
                : anchor === "start" ? DIA.w - lx - 4
@@ -1192,7 +1192,7 @@
 
   /* ---------- filter bar auto-hide ----------
      Reading a page means going down it, so the bar gets out of the way on the
-     way down and returns the instant you scroll back up — filtering is almost
+     way down and returns the instant you scroll back up - filtering is almost
      always something you decide to do after looking back at something. The
      small threshold keeps the trackpad's own jitter from flickering it. */
   function autoHideOnScroll(bar) {
@@ -1226,7 +1226,7 @@
     }, { passive: true });
 
     /* A hidden bar is visibility:hidden, so tabbing skips it entirely and
-       focusin can never fire on it — the keyboard route back has to be an
+       focusin can never fire on it - the keyboard route back has to be an
        explicit one. "/" brings it back and puts the caret in the box, which is
        what then keeps it open via busy(). */
     document.addEventListener("keydown", function (ev) {
@@ -1342,7 +1342,7 @@
     var host = document.querySelector("[data-topic-body]");
     if (!topic || !set || !host) return;
 
-    document.title = topic.title + " — Interview Room";
+    document.title = topic.title + " - Interview Room";
     if (head) {
       head.innerHTML =
         '<div class="eyebrow">Topic ' + esc(topic.num) + "</div>" +
@@ -1356,7 +1356,7 @@
     if (set.evening && set.evening.length) {
       var note = el("div", "note");
       note.innerHTML = "<strong>If you only have one evening:</strong> do these " +
-        set.evening.length + " first — " +
+        set.evening.length + " first - " +
         set.evening.map(function (id) {
           var c = set.cards.filter(function (x) { return x.id === id; })[0];
           return c ? '<a href="#' + esc(id) + '">' + fmt(c.q) + "</a>" : "";
@@ -1399,7 +1399,7 @@
   /* ---------- employer tracks ----------
      A track owns no questions. It names ten existing cards in priority order and
      supplies the framing that changes how you answer them. Cards are looked up
-     from the loaded set, so a track can never drift out of sync with the bank —
+     from the loaded set, so a track can never drift out of sync with the bank - 
      a missing id shows as a visible gap rather than a silent omission. */
   function bootTracks() {
     var host = document.querySelector("[data-tracks-body]");
@@ -1413,8 +1413,8 @@
     IR.tracks.forEach(function (t) {
       h += '<section class="track" id="track-' + esc(t.key) + '">';
       /* The id sits on the heading as well as the section: the right rail
-         indexes `h2[id]`, and an id one level up leaves this page — the longest
-         one in the portal — without a contents list. The section keeps its own
+         indexes `h2[id]`, and an id one level up leaves this page - the longest
+         one in the portal - without a contents list. The section keeps its own
          id so existing #track-… links still land. */
       h += '<h2 id="h-track-' + esc(t.key) + '">' + esc(t.label) + "</h2>";
       h += '<div class="chip-row"><span class="chip">Grounded in: ' + esc(t.grounding) + "</span></div>";
@@ -1454,7 +1454,7 @@
 
      What it indexes differs, and has to. The parent's chapters are prose under
      `h2[id]`. A topic page here is a flat list of question cards, so those are
-     the sections — the rail lists `h2[id]` when a page has them (rounds,
+     the sections - the rail lists `h2[id]` when a page has them (rounds,
      tracks) and falls back to the question cards when it does not. Either way
      each entry is a numbered anchor, which is what the parent's rail is.
 
@@ -1635,7 +1635,7 @@
      portal from every page, and it matches on meaning rather than on letters.
 
      The requirement that shapes the whole design: "llm tabular data" has to
-     find a card that says "table" and "LLM". A substring test cannot do that —
+     find a card that says "table" and "LLM". A substring test cannot do that - 
      "tabular" is not a substring of "table", and no card contains the phrase
      as typed. So the query is broken into words and each word is scored
      independently against an inverted index, with four ways to match:
@@ -1648,13 +1648,13 @@
 
      A card scores by how many query words it matched and how well, weighted by
      where the word appears (a title hit outranks a hit deep in prose) and by
-     how rare the word is across the corpus (idf — "model" appears in half the
+     how rare the word is across the corpus (idf - "model" appears in half the
      cards and tells you almost nothing; "hnsw" appears in three and tells you
      everything). Cards matching more of the query always outrank cards matching
      fewer, whatever the individual word scores. */
 
   /* Mirrors tokens() in tools/build-search-index.js. If these two disagree the
-     index is unsearchable — a word split one way at build time and another way
+     index is unsearchable - a word split one way at build time and another way
      here simply never matches. Change one, change both. */
   var SEARCH_STOP = {};
   ("a an and are as at be but by for from has have how i in is it its of on or "
@@ -1672,7 +1672,7 @@
 
   /* A crude, deliberately conservative suffix strip. It exists to collapse the
      handful of English endings that separate a query word from the same idea
-     written differently — tabular/table, chunking/chunk, embeddings/embedding.
+     written differently - tabular/table, chunking/chunk, embeddings/embedding.
      It is not a real stemmer (Porter would fold far more aggressively and
      start producing false matches in a corpus this technical); it only has to
      be good enough that the plural and the participle of a term meet. */
@@ -1713,7 +1713,7 @@
         );
         if (cur[j] < best) best = cur[j];
       }
-      if (best > max) return false;   /* whole row already too far — stop */
+      if (best > max) return false;   /* whole row already too far - stop */
       for (j = 0; j <= b.length; j++) prev[j] = cur[j];
     }
     return prev[b.length] <= max;
@@ -1754,7 +1754,7 @@
 
     /* Topic rows are searched alongside cards so that typing a subject name
        offers the topic page itself, not only the questions inside it. Inverted
-       the same way as the cards — scanning every topic bag per term was both
+       the same way as the cards - scanning every topic bag per term was both
        slower and, because bag entries are numbers and Object.keys hands back
        strings, quietly never matched. */
     var topicPostings = {};
@@ -1764,7 +1764,7 @@
         (topicPostings[tb[j]] || (topicPostings[tb[j]] = [])).push(i);
       }
     }
-    /* A topic title hit is the strongest signal this index has — it is the
+    /* A topic title hit is the strongest signal this index has - it is the
        name of the subject, not a word inside an answer about it. */
     var topicTitleTerms = ix.topics.map(function (t) {
       var m = {};
@@ -1805,7 +1805,7 @@
     if (fam) for (i = 0; i < fam.length; i++) add(fam[i], 0.65);
 
     /* Typos, but only for words long enough that one edit is not a different
-       word entirely — at 3 letters "rag" and "tag" are one edit apart. */
+       word entirely - at 3 letters "rag" and "tag" are one edit apart. */
     if (w.length >= 5) {
       for (i = 0; i < ix.vocab.length; i++) {
         if (out[i] !== undefined) continue;
@@ -1923,8 +1923,8 @@
      out from the same manifest, and stepping "next" into a page with no
      questions on it is a dead end, not a step forward.
 
-     The markup mirrors the roadmap portal's `.page-nav` — a wrapping flex row
-     of link cards, direction label above, page title below — so the two sites
+     The markup mirrors the roadmap portal's `.page-nav` - a wrapping flex row
+     of link cards, direction label above, page title below - so the two sites
      read as one family. */
   var ROUTE_PAGES = [
     { page: "home",      href: "index.html",     label: "Home" },
@@ -2002,7 +2002,7 @@
      A <details> element has no in-between state: the moment `open` flips, the
      browser reflows to the full height in a single frame. The old CSS animated
      only the body's opacity and a 5px slide, so the card snapped to its final
-     size while the text faded in behind — the jump was the layout, and no
+     size while the text faded in behind - the jump was the layout, and no
      amount of tuning the fade could hide it.
 
      So the height itself has to be animated, and that means taking over the
@@ -2012,7 +2012,7 @@
      content vanishes before the animation can play.
 
      Web Animations rather than CSS transitions, because each card animates
-     to its own measured height — a value CSS cannot know — and because an
+     to its own measured height - a value CSS cannot know - and because an
      animation can be cancelled cleanly mid-flight when someone clicks the same
      card twice quickly, which is exactly when height animations usually break.
 
@@ -2052,7 +2052,7 @@
     var padTop = pad.paddingTop, padBottom = pad.paddingBottom;
     card.classList.add("is-animating");
 
-    /* The body is the thing that grows — animating the card wrapper would
+    /* The body is the thing that grows - animating the card wrapper would
        collapse the summary row along with it. Padding collapses with the
        height so the content does not appear to sit in a gap on frame one. */
     var anim = body.animate(
@@ -2081,7 +2081,7 @@
     var pad = window.getComputedStyle(body);
     var padTop = pad.paddingTop, padBottom = pad.paddingBottom;
     card.classList.add("is-animating");
-    /* `open` cannot come off yet — the content is still being animated out —
+    /* `open` cannot come off yet - the content is still being animated out - 
        but every [open] rule (chevron rotation, the accent number badge, the
        border) would otherwise hold its open look for the whole close and then
        snap at the last frame. This class lets those rules stand down now, so
@@ -2097,7 +2097,7 @@
     );
     card._anim = anim;
     anim.onfinish = function () {
-      card.open = false;           /* only now — the animation needed the content */
+      card.open = false;           /* only now - the animation needed the content */
       card.classList.remove("is-animating");
       card.classList.remove("is-closing");
       card._anim = null;
@@ -2118,7 +2118,7 @@
       if (!summary) return;
       var card = summary.parentNode;
 
-      /* Reduced motion keeps the native instant toggle — the browser default is
+      /* Reduced motion keeps the native instant toggle - the browser default is
          already the no-motion behaviour, so the correct thing is to not
          interfere at all. */
       if (prefersReducedMotion()) return;

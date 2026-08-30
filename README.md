@@ -1,8 +1,8 @@
 # Interview Room
 
 An independent portal of GenAI / AI / ML interview questions for **senior engineer
-roles in India**, answered in simple language — the way CampusX explains LangChain
-and LangGraph — plus the exact words to say out loud in the room.
+roles in India**, answered in simple language - the way CampusX explains LangChain
+and LangGraph - plus the exact words to say out loud in the room.
 
 ## Run it
 
@@ -15,12 +15,12 @@ It works from `file://` on purpose: all data is plain JavaScript assigned onto
 
 Nothing in this folder reads anything outside it. No path climbing to a sibling
 directory, no CDN, no `curriculum.js` registration, no shared validator. Fonts
-and the brand logo are vendored into `assets/`. Copy the folder anywhere — a USB
-stick, a different machine — open `index.html`, and it still works.
+and the brand logo are vendored into `assets/`. Copy the folder anywhere - a USB
+stick, a different machine - open `index.html`, and it still works.
 
 `node tools/check.js` enforces this: it fails on any `../..` path and on any
 external URL, so the guarantee cannot quietly rot. (Pages in `topics/` do use
-`../assets/…` — that resolves inside the portal, which is the point.)
+`../assets/…` - that resolves inside the portal, which is the point.)
 
 ```
 0_interview_focused_portal/
@@ -33,7 +33,7 @@ external URL, so the guarantee cannot quietly rot. (Pages in `topics/` do use
 │   ├── portal.css             all styling, light + dark
 │   ├── portal.js              theme, sidebar, search, filters, card renderer
 │   ├── rehearsal.js           timer and progress
-│   ├── fonts/                 vendored woff2 — Inter, JetBrains Mono
+│   ├── fonts/                 vendored woff2 - Inter, JetBrains Mono
 │   └── brand/                 vendored logo for the sidebar mark
 ├── data/
 │   ├── topics.js              topic registry + round and level vocabulary
@@ -68,7 +68,7 @@ external URL, so the guarantee cannot quietly rot. (Pages in `topics/` do use
 | 18 System design, project story, HR | 13 |
 | **Total** | **167** |
 
-Plus **5 employer tracks** in `data/tracks.js` — each naming its ten
+Plus **5 employer tracks** in `data/tracks.js` - each naming its ten
 most-likely questions in priority order and one worked 40-minute scenario.
 A track owns no questions of its own; it points at cards by id, and
 `tools/check.js` fails the build if any id no longer exists.
@@ -77,7 +77,7 @@ All 18 topics are live. Wave history is in `PLAN.md` §8.
 
 ## Adding a question
 
-Add an object to the `cards` array in the topic's data file. Nothing else — the
+Add an object to the `cards` array in the topic's data file. Nothing else - the
 renderer, search, filters, round pages and rehearsal room pick it up
 automatically.
 
@@ -108,12 +108,12 @@ before formatting, so authored text can never inject markup.
 2. Create `data/q-NN-slug.js` following the shape above.
 3. Copy any file in `topics/` and change the three `NN-slug` references.
 4. Add the new data file's `<script>` tag to `index.html`, `rounds.html`,
-   `rehearsal.html` and `tracks.html` — those four aggregate across all topics.
+   `rehearsal.html` and `tracks.html` - those four aggregate across all topics.
 
 ## Adding or editing an employer track
 
 Edit `data/tracks.js`. A track holds framing plus a `ten` array of card ids in
-priority order, and an optional worked scenario. It never holds question text —
+priority order, and an optional worked scenario. It never holds question text - 
 that stays in the topic files, so a track cannot drift out of sync with the bank.
 `tools/check.js` fails if a track names an id that no longer exists, if `ten` is
 not ten entries, or if it repeats an id.
@@ -128,7 +128,7 @@ Exits non-zero on failure, so it can gate a commit. It checks the things that
 actually go wrong when adding questions:
 
 - an empty slot on any card
-- a `say` that has quietly grown past 85 words — too long to deliver in one breath
+- a `say` that has quietly grown past 85 words - too long to deliver in one breath
 - a duplicate card id
 - a round or level outside the vocabulary in `data/topics.js`
 - a live topic with no page in `topics/`, or no data file
@@ -156,7 +156,7 @@ public job descriptions, the domain the employer actually operates in, published
 interview processes, and what the technology forces you to know. Each topic page
 carries its grounding label. See `PLAN.md` §1.
 
-If you have real questions from your own interviews, add them with a date — that
+If you have real questions from your own interviews, add them with a date - that
 is how this becomes a real bank rather than an inferred one.
 
 ## Storage

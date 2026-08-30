@@ -1,4 +1,4 @@
-# Topic-wise interview questions — gap analysis and additions
+# Topic-wise interview questions: gap analysis and additions
 
 **Portal:** `0_interview_focused_portal`
 **Date:** 18 August 2026
@@ -10,14 +10,14 @@
 
 The portal has **167 cards across 18 topics**. `PLAN.md §4` sets a target of
 **≈505**. So the portal stands at **33% of its own stated bar**, and the plan
-already says so in §8 — counts are "below the wave-2 targets by design."
+already says so in §8 - counts are "below the wave-2 targets by design."
 
 That design decision was right for launch. It is now the binding constraint.
 Here is why the current depth does not clear an Indian AI/ML interview loop:
 
 | Symptom | What the count causes |
 | --- | --- |
-| **Rehearsal repeats too fast** | 167 cards across a 4-round loop means a candidate cycling the portal for two weeks sees every card 6–8 times. Recall replaces understanding — the exact failure the portal was built to prevent. |
+| **Rehearsal repeats too fast** | 167 cards across a 4-round loop means a candidate cycling the portal for two weeks sees every card 6–8 times. Recall replaces understanding - the exact failure the portal was built to prevent. |
 | **No second question on a theme** | An interviewer never asks "what is chunking?" and stops. They ask it, then push twice. Most topics carry the opener but not the two follow-ups, so the card teaches the answer that ends the conversation, not the one that survives it. |
 | **Thin topics are the ones that decide offers** | MCP (6), Python coding (6), cloud (6), fine-tuning (7), cost-latency (7). These are exactly where product-company and services panels concentrate. A 6-card topic is a demo, not preparation. |
 | **Coding round is effectively uncovered** | 6 cards for topic 17. An Indian AI/ML loop almost always has a live coding or debugging round. This is the single largest risk in the portal. |
@@ -31,9 +31,9 @@ Here is why the current depth does not clear an Indian AI/ML interview loop:
 | 02 | Transformers and attention | **14** | 25 | −11 | Low |
 | 03 | Prompting and structured output | 10 | 25 | −15 | Medium |
 | 04 | Embeddings and vector DBs | 10 | 30 | −20 | High |
-| 05 | RAG | **40** | 40 | **0 — done** | ~~Critical~~ |
+| 05 | RAG | **40** | 40 | **0 - done** | ~~Critical~~ |
 | 06 | Advanced RAG | 10 | 25 | −15 | Medium |
-| 07 | Agents | **35** | 35 | **0 — done** | ~~Critical~~ |
+| 07 | Agents | **35** | 35 | **0 - done** | ~~Critical~~ |
 | 08 | LangChain and LangGraph | 12 | 30 | −18 | High |
 | 09 | MCP and A2A | 6 | 20 | −14 | Medium |
 | 10 | Fine-tuning | 7 | 25 | −18 | High |
@@ -42,19 +42,19 @@ Here is why the current depth does not clear an Indian AI/ML interview loop:
 | 13 | Guardrails and responsible AI | 8 | 30 | −22 | High |
 | 14 | Cost, latency, serving | 7 | 25 | −18 | High |
 | 15 | Cloud and deployment | 6 | 25 | −19 | Medium |
-| 16 | ML fundamentals | **30** | 30 | **0 — done** | ~~Critical~~ |
-| 17 | Python and coding round | **30** | 30 | **0 — done** | ~~Critical~~ |
+| 16 | ML fundamentals | **30** | 30 | **0 - done** | ~~Critical~~ |
+| 17 | Python and coding round | **30** | 30 | **0 - done** | ~~Critical~~ |
 | 18 | System design and behavioural | **21** | 25 | −4 | Low |
 | | **Total** | **280** | **505** | **−225** | |
 
 ### Recommended sequence
 
-1. **Wave 5 — the four critical topics.** 17 (coding), 16 (ML fundamentals),
+1. **Wave 5 - the four critical topics.** 17 (coding), 16 (ML fundamentals),
    05 (RAG), 07 (agents). ~90 cards. These decide more offers than the other
    fourteen topics combined.
-2. **Wave 6 — the high-priority eight.** 01, 04, 08, 10, 11, 12, 13, 14.
+2. **Wave 6 - the high-priority eight.** 01, 04, 08, 10, 11, 12, 13, 14.
    ~150 cards.
-3. **Wave 7 — the remainder.** 02, 03, 06, 09, 15, 18. ~100 cards.
+3. **Wave 7 - the remainder.** 02, 03, 06, 09, 15, 18. ~100 cards.
 
 A realistic working floor is **~20 cards per topic (≈360 total)**, not 505. Below
 20, a topic cannot carry an opener plus two follow-up depths plus a failure
@@ -71,11 +71,11 @@ Each new card must fill the same eleven slots the existing cards use
 **CampusX teaching style**, as the plan defines it in §2:
 
 - **Start from the problem, not the definition.** "Why does this exist?" before
-  "what is it?" — the learner should feel the pain the technique solves.
+  "what is it?" - the learner should feel the pain the technique solves.
 - **One concrete analogy is allowed, in the `simple` slot only.** Never in `say`,
   where precision decides the outcome.
 - **Build up in layers.** Intuition → mechanism → the number → the failure mode.
-- **Indian context where it is real** — rupee costs, Hindi/Tamil tokenisation,
+- **Indian context where it is real** - rupee costs, Hindi/Tamil tokenisation,
   data residency, the services-company delivery framing.
 - **Name the wrong answer explicitly.** Every card ends by telling the learner
   what a weak candidate says and why it loses the room.
@@ -90,7 +90,7 @@ Questions already in the portal are **not** repeated here. Everything below is
 new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 (`screening`, `tech1`, `tech2`, `design`, `hiring-manager`).
 
-### Topic 01 — LLM foundations (add 20)
+### Topic 01: LLM foundations (add 20)
 
 | # | Question | L | R | Teaching angle |
 | ---: | --- | --- | --- | --- |
@@ -99,25 +99,25 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 | 3 | What is a logit, and what does softmax do to it? | 2-5 | tech1 | The one piece of maths worth knowing cold. Score becomes probability. |
 | 4 | Explain perplexity. Would you use it to pick a model? | 5-10 | tech2 | Intuition first (how surprised is the model), then why it is near-useless for ranking instruct models on your task. |
 | 5 | What is BPE, and why does the tokeniser matter for Indian languages? | 2-5 | tech1 | Merge-frequency intuition, then the rupee cost of Devanagari against Latin script. |
-| 6 | Greedy decoding vs beam search — why has beam search largely disappeared in LLM serving? | 5-10 | tech2 | Latency and diversity trade-off. Why it survives in translation but not chat. |
+| 6 | Greedy decoding vs beam search - why has beam search largely disappeared in LLM serving? | 5-10 | tech2 | Latency and diversity trade-off. Why it survives in translation but not chat. |
 | 7 | Explain what reasoning models do differently at inference. | 5-10 | tech1 | Thinking tokens as a compute-at-inference lever, and the cost consequence. |
 | 8 | What is the difference between pre-training, continued pre-training, instruction tuning and alignment? | 2-5 | tech1 | The four-stage pipeline as one clean mental ladder. |
-| 9 | What does knowledge cutoff mean and how do you engineer around it? | 0-2 | screening | Cheapest question in the set — the follow-up about RAG vs tools is the real one. |
+| 9 | What does knowledge cutoff mean and how do you engineer around it? | 0-2 | screening | Cheapest question in the set - the follow-up about RAG vs tools is the real one. |
 | 10 | Why do models struggle with arithmetic and character counting? | 2-5 | tech1 | Tokenisation as the root cause. Ties back to the first card of the topic. |
 | 11 | What is quantisation, and what does INT8 or INT4 actually cost you? | 5-10 | tech2 | Memory against quality trade curve. Where the knee sits. |
-| 12 | Model parameters vs context — which one holds knowledge? | 2-5 | tech1 | Parametric and non-parametric memory — the frame that makes RAG obvious. |
+| 12 | Model parameters vs context - which one holds knowledge? | 2-5 | tech1 | Parametric and non-parametric memory - the frame that makes RAG obvious. |
 | 13 | Your model refuses a legitimate business request. How do you debug it? | 5-10 | tech2 | Safety-tuning overshoot. Prompt reframing before model swap. |
 | 14 | What is speculative decoding? | 5-10 | tech2 | Draft-then-verify. Why it is free latency with no quality loss. |
-| 15 | Streaming vs non-streaming — what changes in your architecture? | 2-5 | tech1 | TTFT against total latency, and what streaming breaks (validation, guardrails). |
+| 15 | Streaming vs non-streaming - what changes in your architecture? | 2-5 | tech1 | TTFT against total latency, and what streaming breaks (validation, guardrails). |
 | 16 | What is a seed parameter and why is it not a reproducibility guarantee? | 5-10 | tech2 | Best-effort determinism. Pairs with question 2. |
 | 17 | How do you count tokens before sending a request, and why not estimate? | 2-5 | tech1 | Practical: the tokeniser library, and the cost of a wrong estimate at scale. |
-| 18 | Open-weight or closed API model — how do you actually decide? | 5-10 | design | Decision framework: data residency, cost curve, control, latency, team capacity. |
+| 18 | Open-weight or closed API model - how do you actually decide? | 5-10 | design | Decision framework: data residency, cost curve, control, latency, team capacity. |
 | 19 | What is the difference between a model and an endpoint or deployment? | 0-2 | screening | Trips up candidates on Azure OpenAI. Quota lives on the deployment. |
 | 20 | Explain the trade-off between a large model and a small fine-tuned one. | 5-10 | design | The cost-per-request argument a hiring manager wants to hear. |
 
 ---
 
-### Topic 02 — Transformers and attention (add 17)
+### Topic 02: Transformers and attention (add 17)
 
 | # | Question | L | R | Teaching angle |
 | ---: | --- | --- | --- | --- |
@@ -128,7 +128,7 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 | 5 | What does the feed-forward layer do? Most parameters live there. | 5-10 | tech2 | Attention mixes, FFN thinks. Where knowledge is stored. |
 | 6 | Why layer normalisation, and why did pre-norm replace post-norm? | 5-10 | tech2 | Training stability at depth. |
 | 7 | What are residual connections doing? | 2-5 | tech1 | Gradient highway. One-line answer, asked to check fundamentals. |
-| 8 | RoPE vs learned vs sinusoidal positional encoding — why did RoPE win? | 5-10 | tech2 | Relative position and extrapolation to longer contexts. |
+| 8 | RoPE vs learned vs sinusoidal positional encoding - why did RoPE win? | 5-10 | tech2 | Relative position and extrapolation to longer contexts. |
 | 9 | What is causal masking and where exactly is it applied? | 2-5 | tech1 | Prevents looking ahead. Mask before softmax, not after. |
 | 10 | What is FlashAttention and why does it matter? | 5-10 | tech2 | IO-aware, not an approximation. Memory bandwidth is the bottleneck, not FLOPs. |
 | 11 | Explain prefill vs decode as compute-bound and memory-bound. | 5-10 | tech2 | Deepens the existing first-token card into the serving argument. |
@@ -141,11 +141,11 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 
 ---
 
-### Topic 03 — Prompting and structured output (add 15)
+### Topic 03: Prompting and structured output (add 15)
 
 | # | Question | L | R | Teaching angle |
 | ---: | --- | --- | --- | --- |
-| 1 | Zero-shot, few-shot, many-shot — what changed now that contexts are long? | 2-5 | tech1 | The curve flattens. Where the knee is. |
+| 1 | Zero-shot, few-shot, many-shot - what changed now that contexts are long? | 2-5 | tech1 | The curve flattens. Where the knee is. |
 | 2 | What is self-consistency and what does it cost? | 5-10 | tech2 | Sample N, take the majority. N times the cost for a few points of accuracy. |
 | 3 | Explain ReAct, chain-of-thought and tree-of-thought as one family. | 5-10 | tech2 | A ladder from linear to branching, with cost rising at each step. |
 | 4 | How do you stop a model apologising or padding every answer? | 2-5 | tech1 | Practical prompt surgery. Negative instruction against positive framing. |
@@ -163,19 +163,19 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 
 ---
 
-### Topic 04 — Embeddings and vector databases (add 20)
+### Topic 04: Embeddings and vector databases (add 20)
 
 | # | Question | L | R | Teaching angle |
 | ---: | --- | --- | --- | --- |
 | 1 | Why normalise embeddings, and what does it do to cosine against dot product? | 2-5 | tech1 | After normalising they rank identically. The clean insight. |
 | 2 | What is the curse of dimensionality and does it actually hurt vector search? | 5-10 | tech2 | Nuanced: distances concentrate, but learned embeddings live on a manifold. |
-| 3 | HNSW, IVF, ScaNN or flat — pick one for 1M, 100M and 10B vectors. | 5-10 | design | A decision table the candidate can reproduce. |
-| 4 | What is product quantisation and what does it cost in recall? | 5-10 | tech2 | Compression intuition — codebooks as a lossy dictionary. |
+| 3 | HNSW, IVF, ScaNN or flat - pick one for 1M, 100M and 10B vectors. | 5-10 | design | A decision table the candidate can reproduce. |
+| 4 | What is product quantisation and what does it cost in recall? | 5-10 | tech2 | Compression intuition - codebooks as a lossy dictionary. |
 | 5 | What is ef_search and how do you tune recall against latency? | 5-10 | tech2 | The single knob most asked about after HNSW. Show the curve. |
 | 6 | What is a binary or int8 embedding and when is it worth it? | 5-10 | tech2 | Large memory reduction, small recall loss. The current cost lever. |
 | 7 | What is Matryoshka representation learning? | 5-10 | tech2 | Truncate dimensions without retraining. Increasingly asked. |
 | 8 | Why do dense embeddings fail on exact identifiers like part numbers? | 2-5 | tech1 | The motivating pain for hybrid search. Common in retail and manufacturing. |
-| 9 | Explain sparse embeddings — BM25 and SPLADE. | 5-10 | tech2 | Lexical and learned-sparse as one family. |
+| 9 | Explain sparse embeddings - BM25 and SPLADE. | 5-10 | tech2 | Lexical and learned-sparse as one family. |
 | 10 | How do you chunk for embedding when a document has hierarchy? | 5-10 | tech2 | Parent-child and small-to-big retrieval. |
 | 11 | What is the max sequence length of your embedding model and what happens beyond it? | 2-5 | tech1 | Silent truncation is the trap. Most candidates miss it. |
 | 12 | How do you handle multilingual embeddings for an Indian product? | 5-10 | design | Cross-lingual alignment. Directly relevant to the market. |
@@ -190,19 +190,19 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 
 ---
 
-### Topic 05 — RAG — ✅ **BUILT** (28 added, now 44 cards)
+### Topic 05: RAG: ✅ **BUILT** (28 added, now 44 cards)
 
 | # | Question | L | R | Teaching angle |
 | ---: | --- | --- | --- | --- |
 | 1 | Walk me through every stage of a RAG pipeline and name the failure mode of each. | 2-5 | tech1 | The spine card. Ingest, chunk, embed, index, retrieve, rerank, generate. |
-| 2 | Fixed-size, recursive, semantic or document-aware chunking — defend your default. | 2-5 | tech1 | Deepens the existing chunking card into a defended choice. |
+| 2 | Fixed-size, recursive, semantic or document-aware chunking - defend your default. | 2-5 | tech1 | Deepens the existing chunking card into a defended choice. |
 | 3 | How do you pick chunk size and overlap without guessing? | 2-5 | tech1 | Measure with a retrieval eval set. The anti-cargo-cult card. |
 | 4 | What metadata do you attach to a chunk, and why each field? | 2-5 | tech1 | Source, page, section, date, ACL, version. Each earns its place. |
 | 5 | How do you handle a 400-page document with a table of contents? | 5-10 | tech2 | Hierarchy-aware ingestion. Very common in BFSI and pharma. |
 | 6 | Your retriever returns the right chunk at rank 8. The LLM misses it. Fix it. | 5-10 | tech2 | Rerank, or cut k. The lost-in-the-middle failure made concrete. |
-| 7 | How do you decide k — how many chunks to pass? | 2-5 | tech1 | Recall against noise and cost. There is a measurable optimum. |
+| 7 | How do you decide k - how many chunks to pass? | 2-5 | tech1 | Recall against noise and cost. There is a measurable optimum. |
 | 8 | The user asks something the corpus does not cover. What should happen? | 2-5 | tech1 | Refusal design. The most-skipped requirement in RAG demos. |
-| 9 | How do you handle multi-turn conversation in RAG? | 5-10 | tech2 | Query contextualisation — resolving "what about the second one?" |
+| 9 | How do you handle multi-turn conversation in RAG? | 5-10 | tech2 | Query contextualisation - resolving "what about the second one?" |
 | 10 | How do you build the retrieval eval set when you have no labelled data? | 5-10 | tech2 | Synthetic question generation from chunks, then human spot-check. |
 | 11 | What is context precision against context recall? | 5-10 | tech2 | The two RAGAS metrics that actually diagnose. |
 | 12 | How do you ingest from SharePoint, Confluence and a shared drive at once? | 5-10 | design | Connector reality. Enterprise India interviews love this. |
@@ -225,7 +225,7 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 
 ---
 
-### Topic 06 — Advanced RAG (add 15 — 3 built: see #16-18)
+### Topic 06: Advanced RAG (add 15: 3 built: see #16-18)
 
 | # | Question | L | R | Teaching angle |
 | ---: | --- | --- | --- | --- |
@@ -237,7 +237,7 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 | 6 | How do you decide whether to retrieve at all for a given query? | 5-10 | tech2 | A routing classifier. Saves cost and latency on chitchat. |
 | 7 | What is a small-to-big or parent-document retriever? | 5-10 | tech2 | Embed small for precision, return large for context. |
 | 8 | What is a sentence-window retriever? | 5-10 | tech2 | Retrieve the sentence, expand the neighbours. |
-| 9 | How do you build RAG that answers aggregate questions like "how many contracts expire in March"? | 5-10 | design | The card that exposes RAG's real limit — this needs SQL, not retrieval. |
+| 9 | How do you build RAG that answers aggregate questions like "how many contracts expire in March"? | 5-10 | design | The card that exposes RAG's real limit - this needs SQL, not retrieval. |
 | 10 | What is text-to-SQL and how do you make it safe? | 5-10 | design | Read-only role, schema in prompt, query validation, row limits. |
 | 11 | How do you route between a vector store, a SQL database and a web search? | 5-10 | design | Router design. The realistic modern architecture. |
 | 12 | What is a semantic cache and how do you avoid a wrong cache hit? | 5-10 | tech2 | Similarity threshold and its failure mode. Deepens the existing cache card. |
@@ -250,11 +250,11 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 
 ---
 
-### Topic 07 — Agents — ✅ **BUILT** (23 added, now 35 cards)
+### Topic 07: Agents: ✅ **BUILT** (23 added, now 35 cards)
 
 | # | Question | L | R | Teaching angle |
 | ---: | --- | --- | --- | --- |
-| 1 | What is the difference between a workflow and an agent, and which do you default to? | 5-10 | design | The defining modern distinction. Default to workflow — say why. |
+| 1 | What is the difference between a workflow and an agent, and which do you default to? | 5-10 | design | The defining modern distinction. Default to workflow - say why. |
 | 2 | Explain the difference between function calling and an agent loop. | 2-5 | tech1 | One call against iterate-until-done. |
 | 3 | How does a model decide which tool to call? | 2-5 | tech1 | The schema and description are the whole interface. |
 | 4 | How do you write a tool description that the model gets right? | 2-5 | tech1 | Practical, high-value card. Describe when to use it, not just what it does. |
@@ -263,13 +263,13 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 | 7 | What is planning against reactive execution in an agent? | 5-10 | tech2 | Plan-and-execute against ReAct. Trade-offs of each. |
 | 8 | How do you handle an agent that needs 40 steps? | 5-10 | design | Context management, sub-agents, compaction, checkpoints. |
 | 9 | What is context compaction and when does it lose something important? | 5-10 | tech2 | Summarise-and-continue and its risks. |
-| 10 | Short-term, long-term, episodic, semantic memory — make the distinction concrete. | 5-10 | tech2 | Deepens the existing memory card with a taxonomy that survives follow-ups. |
+| 10 | Short-term, long-term, episodic, semantic memory - make the distinction concrete. | 5-10 | tech2 | Deepens the existing memory card with a taxonomy that survives follow-ups. |
 | 11 | How do you decide what an agent should remember across sessions? | 5-10 | design | Write policy, not just read policy. Most candidates only discuss reading. |
 | 12 | How do you give an agent access to a database safely? | 5-10 | design | Least privilege, read replicas, query allowlists. |
 | 13 | What is the difference between supervisor, swarm and hierarchical multi-agent patterns? | 5-10 | design | Three named patterns with a use case each. |
 | 14 | How do agents hand off context to each other without losing information? | 5-10 | design | The main multi-agent failure mode. |
 | 15 | How do you estimate the cost of an agent run before you build it? | 5-10 | design | Steps times tokens times price. The arithmetic hiring managers want. |
-| 16 | What is your termination policy — list every condition. | 5-10 | tech2 | Max steps, max cost, max time, repeated state, confidence. |
+| 16 | What is your termination policy - list every condition. | 5-10 | tech2 | Max steps, max cost, max time, repeated state, confidence. |
 | 17 | How do you make an agent run reproducible for debugging? | 5-10 | tech2 | Trace, seed, tool-call recording, replay. |
 | 18 | How do you test an agent in CI when every run differs? | 5-10 | tech2 | Mock tools, assert trajectory properties, not exact output. |
 | 19 | What is trajectory evaluation against final-answer evaluation? | 5-10 | tech2 | Deepens the existing agent-eval card. |
@@ -280,38 +280,38 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 
 ---
 
-### Topic 08 — LangChain and LangGraph (add 18)
+### Topic 08: LangChain and LangGraph (add 18)
 
 | # | Question | L | R | Teaching angle |
 | ---: | --- | --- | --- | --- |
-| 1 | What are the core LangChain abstractions and which do you actually use? | 2-5 | tech1 | Honest map. Many are legacy — say which. |
+| 1 | What are the core LangChain abstractions and which do you actually use? | 2-5 | tech1 | Honest map. Many are legacy - say which. |
 | 2 | What is a Runnable and what interface does everything share? | 2-5 | tech1 | invoke, batch, stream, astream. One interface explains the whole library. |
-| 3 | Sync, async, batch and stream — when do you use each? | 5-10 | tech2 | Ties to the Python async topic. |
+| 3 | Sync, async, batch and stream - when do you use each? | 5-10 | tech2 | Ties to the Python async topic. |
 | 4 | How do you build a custom retriever or custom tool? | 2-5 | tech1 | Practical extension point. |
 | 5 | What is a conditional edge in LangGraph and how do you write one? | 5-10 | tech2 | Routing as a pure function of state. |
 | 6 | How do cycles work in a LangGraph and how do you bound them? | 5-10 | tech2 | The reason the graph exists. Recursion limit as the safety net. |
 | 7 | What is the difference between a state graph and a message graph? | 5-10 | tech2 | Custom state against append-only messages. |
 | 8 | How do you write a reducer for a custom state field? | 5-10 | tech2 | Deepens the existing state card into code. |
-| 9 | What happens to state when two parallel nodes write the same key? | 5-10 | tech2 | Concurrency conflict — a real LangGraph gotcha. |
+| 9 | What happens to state when two parallel nodes write the same key? | 5-10 | tech2 | Concurrency conflict - a real LangGraph gotcha. |
 | 10 | What is a subgraph and when do you use one? | 5-10 | design | Composition and reuse. |
 | 11 | How do you persist checkpoints to Postgres for production? | 5-10 | design | Deepens the checkpointer card into a deployment answer. |
 | 12 | What is a thread id and how does it map to a user session? | 5-10 | tech2 | Multi-tenant memory boundary. Security-relevant. |
 | 13 | How do you implement time travel or replay from a checkpoint? | 5-10 | tech2 | Debugging superpower most candidates cannot describe. |
 | 14 | What is LangGraph Platform or a self-hosted deployment, and do you need it? | 5-10 | design | Honest build-against-buy answer. |
 | 15 | How do you handle errors and retries at node level? | 5-10 | tech2 | Node-level policy against global try/except. |
-| 16 | LlamaIndex against LangChain — when would you pick the other one? | 5-10 | design | Shows breadth. LlamaIndex is stronger on ingestion and indexing. |
+| 16 | LlamaIndex against LangChain - when would you pick the other one? | 5-10 | design | Shows breadth. LlamaIndex is stronger on ingestion and indexing. |
 | 17 | How do you keep framework upgrades from breaking production? | 5-10 | design | Pinning, eval gates, adapter layer. A real pain with these libraries. |
 | 18 | Convert this chain into a graph on the whiteboard. | 5-10 | tech2 | Live-conversion exercise. Tests real understanding. |
 
 ---
 
-### Topic 09 — MCP and A2A (add 14)
+### Topic 09: MCP and A2A (add 14)
 
 | # | Question | L | R | Teaching angle |
 | ---: | --- | --- | --- | --- |
-| 1 | Explain the MCP architecture — host, client, server. | 2-5 | tech1 | The three-part map. Most candidates blur client and host. |
+| 1 | Explain the MCP architecture - host, client, server. | 2-5 | tech1 | The three-part map. Most candidates blur client and host. |
 | 2 | What are tools, resources and prompts in MCP, and how do they differ? | 2-5 | tech1 | The three primitives. Model-controlled against app-controlled. |
-| 3 | stdio against HTTP transport — when do you use each? | 5-10 | tech2 | Local against remote. Deployment consequence. |
+| 3 | stdio against HTTP transport - when do you use each? | 5-10 | tech2 | Local against remote. Deployment consequence. |
 | 4 | How does authentication work for a remote MCP server? | 5-10 | design | OAuth flow and token scoping. The enterprise blocker. |
 | 5 | What is tool poisoning and how would you detect it? | 5-10 | tech2 | Malicious description injection. The main novel MCP risk. |
 | 6 | How do you handle tool-name collisions across multiple servers? | 5-10 | tech2 | Namespacing. A real operational problem. |
@@ -322,15 +322,15 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 | 11 | How does MCP change your observability story? | 5-10 | design | Tracing across the process boundary. |
 | 12 | Would you expose your production database through MCP? Defend your answer. | 5-10 | design | Judgement card. The right answer is heavily qualified. |
 | 13 | How does A2A differ from MCP in the problem it solves? | 5-10 | tech2 | Deepens the existing card: tools against peer agents. |
-| 14 | Build an MCP server for our internal ticketing system — design it out loud. | 5-10 | design | Synthesis card. Tool granularity is the real test. |
+| 14 | Build an MCP server for our internal ticketing system - design it out loud. | 5-10 | design | Synthesis card. Tool granularity is the real test. |
 
 ---
 
-### Topic 10 — Fine-tuning (add 18)
+### Topic 10: Fine-tuning (add 18)
 
 | # | Question | L | R | Teaching angle |
 | ---: | --- | --- | --- | --- |
-| 1 | Explain the LoRA rank and alpha parameters — what do they actually control? | 5-10 | tech2 | Capacity and scaling. Deepens the existing LoRA card. |
+| 1 | Explain the LoRA rank and alpha parameters - what do they actually control? | 5-10 | tech2 | Capacity and scaling. Deepens the existing LoRA card. |
 | 2 | What is QLoRA and what does the 4-bit quantisation cost you? | 5-10 | tech2 | Fine-tune a large model on one GPU. The India-budget answer. |
 | 3 | Which layers do you apply LoRA to, and why not all of them? | 5-10 | tech2 | Attention projections first. Diminishing returns. |
 | 4 | How do you build a fine-tuning dataset from production logs? | 5-10 | design | Collection, filtering, dedup, human review. The real workflow. |
@@ -338,20 +338,20 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 | 6 | What hyperparameters do you actually tune, and what are sane defaults? | 5-10 | tech2 | LR, epochs, batch size, warmup. Give the numbers. |
 | 7 | How do you know when to stop training? | 5-10 | tech2 | Validation loss against eval-set performance. They diverge. |
 | 8 | What is instruction masking and why does it matter for loss? | 10+ | tech2 | Train on completion only, not on the prompt. |
-| 9 | Explain DPO mechanically — what does the loss do? | 5-10 | tech2 | Preference pairs without a reward model. Deepens the SFT/DPO card. |
+| 9 | Explain DPO mechanically - what does the loss do? | 5-10 | tech2 | Preference pairs without a reward model. Deepens the SFT/DPO card. |
 | 10 | What is GRPO or RLVR, and when is verifiable reward possible? | 10+ | tech2 | Current frontier. Only for research-leaning roles. |
 | 11 | How do you evaluate a fine-tuned model against the base model fairly? | 5-10 | tech2 | Held-out set plus regression check on general ability. |
 | 12 | Your fine-tune improved the target task and broke everything else. Diagnose it. | 5-10 | tech2 | Deepens catastrophic forgetting into a debugging story. |
 | 13 | How do you serve many LoRA adapters efficiently on one base model? | 5-10 | design | Multi-adapter serving. A genuine cost win worth naming. |
 | 14 | What GPU do you need, and what does it cost in India per month? | 5-10 | design | A100 and H100 pricing, cloud against colocation. Concrete rupees. |
-| 15 | Continued pre-training against fine-tuning — when do you need the former? | 5-10 | design | New domain vocabulary or a new language. |
+| 15 | Continued pre-training against fine-tuning - when do you need the former? | 5-10 | design | New domain vocabulary or a new language. |
 | 16 | How would you fine-tune for a low-resource Indian language? | 5-10 | design | Tokeniser extension, data scarcity, transfer. Market-relevant. |
 | 17 | What is model merging and would you use it? | 10+ | tech2 | Combine adapters. Emerging, cheap, worth knowing. |
 | 18 | Make the business case for fine-tuning against prompting to a CFO. | 5-10 | hiring-manager | Break-even volume arithmetic. The senior framing. |
 
 ---
 
-### Topic 11 — Evaluation (add 20)
+### Topic 11: Evaluation (add 20)
 
 | # | Question | L | R | Teaching angle |
 | ---: | --- | --- | --- | --- |
@@ -360,7 +360,7 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 | 3 | How do you stop your golden set going stale? | 5-10 | design | Refresh policy, drawn from production failures. |
 | 4 | What are position bias, verbosity bias and self-preference bias in LLM judges? | 5-10 | tech2 | Name three, give the mitigation for each. Deepens the judge card. |
 | 5 | How do you validate that your judge agrees with humans? | 5-10 | tech2 | Agreement rate on a labelled subset. The step everyone skips. |
-| 6 | Pairwise comparison against absolute scoring — which is more reliable? | 5-10 | tech2 | Pairwise is more consistent. Explain why. |
+| 6 | Pairwise comparison against absolute scoring - which is more reliable? | 5-10 | tech2 | Pairwise is more consistent. Explain why. |
 | 7 | How do you write a judge rubric that produces consistent scores? | 5-10 | tech2 | Concrete anchors per score level. |
 | 8 | What is RAGAS and what does each of its metrics actually measure? | 2-5 | tech1 | Faithfulness, relevancy, precision, recall. One line each. |
 | 9 | How do you evaluate a multi-turn conversation? | 5-10 | tech2 | Turn-level against session-level, and goal completion. |
@@ -378,12 +378,12 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 
 ---
 
-### Topic 12 — LLMOps and observability (add 17)
+### Topic 12: LLMOps and observability (add 17)
 
 | # | Question | L | R | Teaching angle |
 | ---: | --- | --- | --- | --- |
 | 1 | What is a span, a trace and a session, and how do they nest? | 2-5 | tech1 | The OpenTelemetry vocabulary applied to LLM apps. |
-| 2 | Langfuse, LangSmith, Arize or Phoenix — how would you choose? | 5-10 | design | Self-host against SaaS, data residency, cost. India-relevant. |
+| 2 | Langfuse, LangSmith, Arize or Phoenix - how would you choose? | 5-10 | design | Self-host against SaaS, data residency, cost. India-relevant. |
 | 3 | How do you trace across a multi-service architecture? | 5-10 | design | Context propagation. Where traces break. |
 | 4 | What do you log when the input contains PII? | 5-10 | design | Redaction at the edge, or hashed reference. Ties to guardrails. |
 | 5 | How do you sample traces at high volume without losing the failures? | 5-10 | design | Head against tail sampling. Always keep errors. |
@@ -393,7 +393,7 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 | 9 | What does a blue-green or canary deployment look like for a prompt? | 5-10 | design | Deepens the safe-deploy card with concrete mechanics. |
 | 10 | How do you roll back a prompt in under five minutes? | 5-10 | design | Config-driven prompts, not code-deployed. |
 | 11 | What is a feature flag strategy for GenAI features? | 5-10 | design | Per-tenant, per-user, percentage rollout. |
-| 12 | How do you run a post-mortem for a non-deterministic system? | 5-10 | design | You cannot reproduce — so what replaces reproduction? Traces. |
+| 12 | How do you run a post-mortem for a non-deterministic system? | 5-10 | design | You cannot reproduce - so what replaces reproduction? Traces. |
 | 13 | What is your on-call runbook for a GenAI service? | 5-10 | design | The document a senior engineer is expected to have written. |
 | 14 | How do you manage secrets and API keys across environments? | 2-5 | tech1 | Basic but frequently asked in enterprise loops. |
 | 15 | How do you handle a model deprecation notice with 60 days warning? | 5-10 | design | Migration plan with an eval gate. Happens constantly. |
@@ -402,12 +402,12 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 
 ---
 
-### Topic 13 — Guardrails and responsible AI (add 22)
+### Topic 13: Guardrails and responsible AI (add 22)
 
 | # | Question | L | R | Teaching angle |
 | ---: | --- | --- | --- | --- |
 | 1 | Walk through the OWASP Top 10 for LLM applications. | 5-10 | tech2 | The named framework enterprise panels expect. |
-| 2 | Direct against indirect prompt injection — why is the second one harder? | 5-10 | tech2 | Deepens the existing card. The attacker is not the user. |
+| 2 | Direct against indirect prompt injection - why is the second one harder? | 5-10 | tech2 | Deepens the existing card. The attacker is not the user. |
 | 3 | Why can prompt injection not be fully solved by prompting? | 5-10 | tech2 | Instructions and data share one channel. The architectural answer. |
 | 4 | What is the dual-LLM or privileged-unprivileged pattern? | 10+ | design | A real architectural mitigation. Impresses security-minded panels. |
 | 5 | What is jailbreaking and how does it differ from injection? | 2-5 | tech1 | Bypass safety against hijack instructions. Commonly conflated. |
@@ -416,11 +416,11 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 | 8 | What does DPDP Act compliance mean for a GenAI system in India? | 5-10 | design | Consent, purpose limitation, erasure. Highly market-specific. |
 | 9 | How do you honour a data-deletion request when data is in a vector index? | 5-10 | design | Right to erasure against index immutability. A genuinely hard problem. |
 | 10 | How do you prevent training on customer data by accident? | 5-10 | design | Contract terms, endpoint choice, zero-retention flags. |
-| 11 | Where do you put a guardrail — input, output or both, and what does each cost? | 2-5 | tech1 | Deepens the output-guardrail card with latency accounting. |
+| 11 | Where do you put a guardrail - input, output or both, and what does each cost? | 2-5 | tech1 | Deepens the output-guardrail card with latency accounting. |
 | 12 | How do you guardrail a streaming response? | 5-10 | tech2 | You cannot validate what you already sent. Buffer against risk. |
 | 13 | What is a canary token for detecting system-prompt leakage? | 5-10 | tech2 | Practical detection trick. |
 | 14 | How do you red-team your own application? | 5-10 | design | Systematic attack taxonomy, not ad-hoc poking. |
-| 15 | What is model refusal calibration — too strict against too loose? | 5-10 | tech2 | Both directions are failures. Measure both. |
+| 15 | What is model refusal calibration - too strict against too loose? | 5-10 | tech2 | Both directions are failures. Measure both. |
 | 16 | How do you handle hate speech and toxicity in Indian languages? | 5-10 | design | Classifiers are weak outside English. An honest, market-relevant answer. |
 | 17 | What is fairness testing for an LLM feature, concretely? | 5-10 | design | Slice evaluation by group. Concrete, not philosophical. |
 | 18 | How would you audit a GenAI system for a regulator? | 5-10 | design | Traceability, versioning, human oversight, documentation. |
@@ -431,7 +431,7 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 
 ---
 
-### Topic 14 — Cost, latency and serving (add 18)
+### Topic 14: Cost, latency and serving (add 18)
 
 | # | Question | L | R | Teaching angle |
 | ---: | --- | --- | --- | --- |
@@ -443,11 +443,11 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 | 6 | What is tensor parallelism against pipeline parallelism? | 10+ | tech2 | Multi-GPU serving. For infrastructure-leaning roles. |
 | 7 | How many concurrent users can one A100 serve for a 7B model? | 5-10 | design | Do the arithmetic live. Candidates who can are rare. |
 | 8 | What is the break-even volume between an API and self-hosting? | 5-10 | design | The rupee calculation. The most practical card in the topic. |
-| 9 | How do you handle bursty traffic — a 10x spike at 9am? | 5-10 | design | Queue, autoscale, degrade. Provisioned against on-demand. |
+| 9 | How do you handle bursty traffic - a 10x spike at 9am? | 5-10 | design | Queue, autoscale, degrade. Provisioned against on-demand. |
 | 10 | What is a provisioned throughput unit and when is it worth committing? | 5-10 | design | Azure and Bedrock reality. Enterprise-relevant. |
 | 11 | How do you implement a fallback chain across providers? | 5-10 | design | Primary, secondary, degraded mode. Ties to outage handling. |
 | 12 | What is a token bucket and how do you rate-limit per tenant? | 5-10 | design | Fair-share design in a multi-tenant product. |
-| 13 | How do you make a cascade or router that is actually cheaper in practice? | 5-10 | design | Deepens the routing card — the escalation rate decides everything. |
+| 13 | How do you make a cascade or router that is actually cheaper in practice? | 5-10 | design | Deepens the routing card - the escalation rate decides everything. |
 | 14 | How do you measure cost per resolved query rather than cost per call? | 5-10 | hiring-manager | Business framing. Retries and escalations count. |
 | 15 | What is batch API and when can you use it? | 2-5 | tech1 | Roughly half price, delayed. Great for offline jobs. |
 | 16 | How do you reduce output tokens without truncating the answer? | 2-5 | tech1 | Format instruction and structured output. Output is the expensive half. |
@@ -456,7 +456,7 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 
 ---
 
-### Topic 15 — Cloud and deployment (add 19)
+### Topic 15: Cloud and deployment (add 19)
 
 | # | Question | L | R | Teaching angle |
 | ---: | --- | --- | --- | --- |
@@ -468,7 +468,7 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 | 6 | What is a Bedrock knowledge base and when is it enough? | 5-10 | design | Managed RAG. Where it stops being enough. |
 | 7 | What does Vertex AI give you that a raw Gemini API does not? | 5-10 | design | Grounding, tuning, evaluation, governance. |
 | 8 | How do you deploy a fine-tuned open model on AWS or Azure? | 5-10 | design | SageMaker endpoint or AKS with vLLM. Concrete path. |
-| 9 | Containerise a GenAI service — what goes in the image and what does not? | 5-10 | tech2 | Model weights outside the image. A common mistake. |
+| 9 | Containerise a GenAI service - what goes in the image and what does not? | 5-10 | tech2 | Model weights outside the image. A common mistake. |
 | 10 | How do you autoscale a GPU workload? | 5-10 | design | Cold start is the problem. Warm pools. |
 | 11 | What does a Terraform module for a GenAI stack contain? | 5-10 | design | IaC expectation at senior level. |
 | 12 | How do you run evaluation as a CI gate in Azure DevOps or GitHub Actions? | 5-10 | design | Deepens the existing CI/CD card with a concrete pipeline. |
@@ -482,7 +482,7 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 
 ---
 
-### Topic 16 — ML fundamentals — ✅ **BUILT** (22 added, now 30 cards)
+### Topic 16: ML fundamentals: ✅ **BUILT** (22 added, now 30 cards)
 
 | # | Question | L | R | Teaching angle |
 | ---: | --- | --- | --- | --- |
@@ -490,19 +490,19 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 | 2 | What is the ROC curve, and when is PR-AUC the better choice? | 2-5 | tech1 | Class imbalance changes the answer. |
 | 3 | How do you pick a classification threshold? | 2-5 | tech1 | Business cost matrix, not 0.5. |
 | 4 | Explain overfitting and every technique you would use against it. | 0-2 | screening | Regularisation, dropout, early stopping, more data, simpler model. |
-| 5 | L1 against L2 regularisation — what is the geometric intuition? | 2-5 | tech1 | Corners against circles. Sparsity from L1. |
+| 5 | L1 against L2 regularisation - what is the geometric intuition? | 2-5 | tech1 | Corners against circles. Sparsity from L1. |
 | 6 | Explain gradient descent and its variants. | 2-5 | tech1 | SGD, momentum, Adam. What each fixes. |
 | 7 | What is the vanishing gradient problem and how was it solved? | 2-5 | tech1 | ReLU, residuals, normalisation. Ties to transformers. |
 | 8 | How do decision trees split, and what does a random forest add? | 2-5 | tech1 | Gini or entropy, then variance reduction by bagging. |
 | 9 | Explain gradient boosting. Why does XGBoost still win on tabular data? | 5-10 | tech2 | Sequential error correction. Still the honest answer for tables. |
-| 10 | Bagging against boosting — bias or variance? | 2-5 | tech1 | Clean one-line distinction. |
+| 10 | Bagging against boosting - bias or variance? | 2-5 | tech1 | Clean one-line distinction. |
 | 11 | Explain k-means and how you choose k. | 2-5 | tech1 | Elbow, silhouette. Limitations of both. |
 | 12 | What is PCA and when would you use it? | 2-5 | tech1 | Variance-preserving projection. Ties to embedding dimensionality. |
 | 13 | How do you handle missing data? | 2-5 | tech1 | Why the missingness mechanism decides the method. |
 | 14 | What is feature engineering and does it still matter? | 2-5 | tech1 | Yes for tabular, less for text. Honest and current. |
 | 15 | Explain the difference between correlation and causation with a work example. | 2-5 | tech1 | Stakeholder-facing reasoning. |
 | 16 | What is a p-value, and what does it not mean? | 5-10 | tech2 | Asked in A/B test discussions. Most candidates get it wrong. |
-| 17 | How do you design an A/B test — sample size, duration, guardrail metrics? | 5-10 | design | Ties to the GenAI A/B card in topic 11. |
+| 17 | How do you design an A/B test - sample size, duration, guardrail metrics? | 5-10 | design | Ties to the GenAI A/B card in topic 11. |
 | 18 | Explain data drift against concept drift and how you detect each. | 5-10 | design | Deepens the degradation card with the right vocabulary. |
 | 19 | What is a feature store and do you need one? | 5-10 | design | Training and serving skew is the real motivation. |
 | 20 | Explain train-serve skew with an example of how it happened. | 5-10 | tech2 | The classic production ML failure. |
@@ -511,7 +511,7 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 
 ---
 
-### Topic 17 — Python and the coding round — ✅ **BUILT** (24 added, now 30 cards)
+### Topic 17: Python and the coding round: ✅ **BUILT** (24 added, now 30 cards)
 
 This is the largest single gap in the portal and the highest-risk topic. Each
 card should carry runnable code in the `simple` slot and a stated complexity.
@@ -523,7 +523,7 @@ card should carry runnable code in the `simple` slot and a stated complexity.
 | 3 | Write a text chunker with configurable size and overlap. | 2-5 | tech1 | Off-by-one errors are the whole test. |
 | 4 | Implement a token-aware chunker that never splits mid-sentence. | 5-10 | tech2 | Harder variant. Boundary logic. |
 | 5 | Implement exponential backoff with jitter from scratch. | 2-5 | tech1 | Deepens the existing retry card into an implementation. |
-| 6 | Write a rate limiter — token bucket or sliding window. | 5-10 | tech2 | Very common. Thread safety is the follow-up. |
+| 6 | Write a rate limiter - token bucket or sliding window. | 5-10 | tech2 | Very common. Thread safety is the follow-up. |
 | 7 | Implement an LRU cache without functools. | 2-5 | tech1 | OrderedDict or dict plus a linked list. Classic. |
 | 8 | Write a semantic cache with a similarity threshold. | 5-10 | tech2 | Applied version of the LRU question. |
 | 9 | Parse streaming SSE output from an LLM API. | 5-10 | tech2 | Buffering and partial JSON. Practical and discriminating. |
@@ -538,14 +538,14 @@ card should carry runnable code in the `simple` slot and a stated complexity.
 | 18 | Implement a simple vector store class with add, search and delete. | 5-10 | tech2 | Design question disguised as coding. |
 | 19 | Write a decorator that logs latency and token usage for any LLM call. | 5-10 | tech2 | Decorators plus observability. Two topics in one card. |
 | 20 | Mock an LLM API in pytest and test the retry path. | 5-10 | tech2 | Deepens the existing testing card into code. |
-| 21 | Debug this code — it deadlocks under concurrency. | 5-10 | tech2 | Debugging round. Provide broken code in the card. |
+| 21 | Debug this code - it deadlocks under concurrency. | 5-10 | tech2 | Debugging round. Provide broken code in the card. |
 | 22 | This retrieval function is O(n) per query. Make it faster. | 5-10 | tech2 | Optimisation round with a stated target. |
-| 23 | Two sum, group anagrams, merge intervals — the DSA baseline you still get. | 2-5 | tech1 | Honest card: product companies still ask these. Link to the DSA portal. |
+| 23 | Two sum, group anagrams, merge intervals - the DSA baseline you still get. | 2-5 | tech1 | Honest card: product companies still ask these. Link to the DSA portal. |
 | 24 | Write a FastAPI endpoint that streams an LLM response. | 5-10 | tech2 | The most realistic take-home task in this market. |
 
 ---
 
-### Topic 18 — System design and behavioural (add 12)
+### Topic 18: System design and behavioural (add 12)
 
 | # | Question | L | R | Teaching angle |
 | ---: | --- | --- | --- | --- |
@@ -577,28 +577,28 @@ or above the 20-card working floor.
 
 ### What to build first
 
-1. ~~**Topic 17 — Python and coding (24 cards).**~~ ✅ **Built 18 Aug 2026** —
+1. ~~**Topic 17 - Python and coding (24 cards).**~~ ✅ **Built 18 Aug 2026** - 
    now 30 cards. Largest gap closed; it was the only topic where a weak answer
    ends the loop immediately.
-2. ~~**Topic 16 — ML fundamentals (22 cards).**~~ ✅ **Built 18 Aug 2026** —
+2. ~~**Topic 16 - ML fundamentals (22 cards).**~~ ✅ **Built 18 Aug 2026** - 
    now 30 cards. Every services-company loop opens here.
-3. ~~**Topic 05 — RAG (24 cards).**~~ ✅ **Built 18 Aug 2026** — now 40 cards,
+3. ~~**Topic 05 - RAG (24 cards).**~~ ✅ **Built 18 Aug 2026** - now 40 cards,
    the portal's deepest topic. Most-asked GenAI subject in this market.
-4. ~~**Topic 07 — Agents (23 cards).**~~ ✅ **Built 18 Aug 2026** — now 35 cards.
+4. ~~**Topic 07 - Agents (23 cards).**~~ ✅ **Built 18 Aug 2026** - now 35 cards.
    Where senior roles are actually decided in 2026.
 
-**All four critical topics are built — 93 cards added.** The portal has moved from
+**All four critical topics are built - 93 cards added.** The portal has moved from
 "a good revision aid" to sufficient preparation for the majority of Indian AI/ML
 loops. What remains (245 cards across the high and medium tiers) is depth, not
 coverage: every critical topic now carries an opener, two follow-up depths and a
 failure story.
 
-**Round-2 top-up — ✅ built 18 Aug 2026 (20 cards).** After the critical tier, a
+**Round-2 top-up - ✅ built 18 Aug 2026 (20 cards).** After the critical tier, a
 `tech2` audit found three topics too thin for a second technical round:
 LLM foundations (5 tech2 cards), transformers (4) and system design (4). Adding
 20 targeted cards took those to 11, 10 and 8. Portal tech2 coverage is now 211
 cards. **This closes round-1 and round-2 sufficiency for AI/ML/GenAI/agentic/RAG
-roles** — what remains is optional depth, not a gap.
+roles** - what remains is optional depth, not a gap.
 
 **Remaining (optional, ~225 cards):** topics 04, 08, 10, 11, 12, 13, 14 carry the
 most value; 03, 06, 09, 15 are narrow topics where current coverage is adequate.
@@ -606,7 +606,7 @@ most value; 03, 06, 09, 15 are narrow topics where current coverage is adequate.
 ### Rules that must hold for every card added
 
 - Fill all eleven slots; `node tools/check.js` must pass.
-- `say` stays between 50 and 85 words — speakable in one breath.
+- `say` stays between 50 and 85 words - speakable in one breath.
 - The `wrong` slot names the weak answer explicitly and says why it loses.
 - The `follow` slot carries the real follow-up, because the follow-up is where
   interviews are actually decided.

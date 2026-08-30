@@ -1,7 +1,7 @@
-/* Interview Room — topic registry.
+/* Interview Room - topic registry.
    One entry per topic page. `status: "live"` means the data file exists and the
    page is built; "planned" means it is on the roadmap and renders greyed out.
-   Nothing here reads the parent portal's curriculum.js — this is the only
+   Nothing here reads the parent portal's curriculum.js - this is the only
    manifest this portal has. */
 
 window.IR = window.IR || {};
@@ -14,7 +14,7 @@ window.IR.topics = [
 
   { num: "02", slug: "transformers",
     title: "Transformers and attention",
-    blurb: "Self-attention, KV cache, positional encoding, encoder vs decoder — asked when the panel wants to know if you read past the API docs.",
+    blurb: "Self-attention, KV cache, positional encoding, encoder vs decoder - asked when the panel wants to know if you read past the API docs.",
     status: "live" },
 
   { num: "03", slug: "prompting",
@@ -28,7 +28,7 @@ window.IR.topics = [
     status: "live" },
 
   { num: "05", slug: "rag",
-    title: "RAG — build, evaluate, debug",
+    title: "RAG",
     blurb: "The most-asked topic in Indian GenAI interviews. Chunking, retrieval failure, citations, and the debugging story that gets you hired.",
     status: "live" },
 
@@ -38,13 +38,13 @@ window.IR.topics = [
     status: "live" },
 
   { num: "07", slug: "agents",
-    title: "Agents — loop, tools, memory",
+    title: "Agents",
     blurb: "What makes something an agent, tool design, termination, memory, multi-agent, and why most agent demos fail in production.",
     status: "live" },
 
   { num: "08", slug: "langchain",
     title: "LangChain",
-    blurb: "Chains, Runnables, LCEL, testing, cost and latency — and the judgement call about when to drop the framework entirely.",
+    blurb: "Chains, Runnables, LCEL, testing, cost and latency - and the judgement call about when to drop the framework entirely.",
     status: "live" },
 
   /* Numbered 19 but placed here on purpose: the sidebar renders this array in
@@ -52,7 +52,7 @@ window.IR.topics = [
      while topics 09–18 keep the numbers their URLs and deep links already use. */
   { num: "19", slug: "langgraph",
     title: "LangGraph",
-    blurb: "State and reducers, checkpointers, tool wiring, subgraphs, human in the loop, streaming — the graph questions, on their own.",
+    blurb: "State and reducers, checkpointers, tool wiring, subgraphs, human in the loop, streaming - the graph questions, on their own.",
     status: "live" },
 
   { num: "09", slug: "mcp",
@@ -92,7 +92,7 @@ window.IR.topics = [
 
   { num: "16", slug: "ml-fundamentals",
     title: "ML fundamentals",
-    blurb: "Bias-variance, overfitting, metrics, imbalanced data, feature leakage — still asked, still failed by GenAI-only candidates.",
+    blurb: "Bias-variance, overfitting, metrics, imbalanced data, feature leakage - still asked, still failed by GenAI-only candidates.",
     status: "live" },
 
   { num: "17", slug: "python-coding",

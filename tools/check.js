@@ -1,4 +1,4 @@
-/* Interview Room — content validator.
+/* Interview Room - content validator.
    Run from the portal root:  node tools/check.js
    Exits non-zero on any failure, so it can gate a commit.
 
@@ -76,7 +76,7 @@ IR.topics.forEach(function (t) {
     }
 
     /* A diagram is optional, but a broken one renders as a picture with a
-       missing box or an arrow pointing at nothing — which is worse than no
+       missing box or an arrow pointing at nothing - which is worse than no
        diagram, because the reader would take it to the whiteboard. So the
        spec is validated as strictly as any other slot. */
     if (c.diagram) {
@@ -87,7 +87,7 @@ IR.topics.forEach(function (t) {
 
       if (g.kind === "lanes") {
         if (!g.lanes || !g.lanes.length) problems.push(gw + ": lanes diagram has no lanes");
-        else if (g.lanes.length > 8) problems.push(gw + ": " + g.lanes.length + " lanes — too many to stay legible (max 8)");
+        else if (g.lanes.length > 8) problems.push(gw + ": " + g.lanes.length + " lanes - too many to stay legible (max 8)");
         (g.lanes || []).forEach(function (l, i) {
           if (!l.label) problems.push(gw + ": lane " + i + " has no label");
         });
@@ -95,7 +95,7 @@ IR.topics.forEach(function (t) {
         if (!g.rows || !g.rows.length) { problems.push(gw + ": no rows"); return; }
         var seen = {};
         g.rows.forEach(function (row, r) {
-          if (row.length > 3) problems.push(gw + ": row " + r + " has " + row.length + " nodes — boxes get too narrow (max 3)");
+          if (row.length > 3) problems.push(gw + ": row " + r + " has " + row.length + " nodes - boxes get too narrow (max 3)");
           row.forEach(function (n) {
             if (!n.id) problems.push(gw + ": a node in row " + r + " has no id");
             else if (seen[n.id]) problems.push(gw + ": duplicate node id \"" + n.id + "\"");
@@ -133,7 +133,7 @@ IR.topics.forEach(function (t) {
           });
         }
         Object.keys(seen).forEach(function (id) {
-          if (!reach[id]) problems.push(gw + ": node \"" + id + "\" is unreachable — nothing points at it");
+          if (!reach[id]) problems.push(gw + ": node \"" + id + "\" is unreachable - nothing points at it");
         });
       }
     }
@@ -146,14 +146,14 @@ IR.topics.forEach(function (t) {
     }
   });
 
-  console.log("  " + key + " — " + set.cards.length + " cards");
+  console.log("  " + key + " - " + set.cards.length + " cards");
 });
 
 console.log("\n" + total + " cards across " +
             IR.topics.filter(function (t) { return t.status === "live"; }).length +
             " live topics");
 
-/* Tracks own no questions — they point at cards by id. A track that names a card
+/* Tracks own no questions - they point at cards by id. A track that names a card
    that no longer exists would render a visible gap, so fail the build instead. */
 var tracksFile = path.join(root, "data/tracks.js");
 if (fs.existsSync(tracksFile)) {
@@ -182,16 +182,16 @@ if (fs.existsSync(tracksFile)) {
   console.log((IR.tracks || []).length + " employer tracks");
 }
 
-/* This portal must render standalone — copy the folder anywhere, open
+/* This portal must render standalone - copy the folder anywhere, open
    index.html, everything works. Two ways that silently breaks: a path that
    climbs out to a sibling directory, or a CDN URL. Both look fine on this
    machine and fail on a USB stick, so fail the build instead of finding out
    later. Root-level files use `assets/…`; pages in topics/ use `../assets/…`,
-   which is still inside the portal — only `../../` or `../` from a root-level
+   which is still inside the portal - only `../../` or `../` from a root-level
    file escapes. */
 var OFFENDERS = [
   [/\.\.\/\.\.\//, "path climbs above the portal root (../../)"],
-  [/https?:\/\/(?!(?:www\.)?w3\.org|schema\.org)/, "external URL — vendor the asset instead"]
+  [/https?:\/\/(?!(?:www\.)?w3\.org|schema\.org)/, "external URL - vendor the asset instead"]
 ];
 function scan(dir) {
   fs.readdirSync(dir).forEach(function (name) {
@@ -218,20 +218,20 @@ scan(root);
 
 /* The search index is generated from the card data, so it can silently fall
    behind an edit and leave the sidebar searching a corpus that no longer
-   matches the pages. Compare card ids rather than timestamps — a rebuild that
+   matches the pages. Compare card ids rather than timestamps - a rebuild that
    changed nothing is not a failure, and a file mtime says nothing about
    content. */
 (function checkSearchIndex() {
   var idxFile = path.join(root, "data/search-index.js");
   if (!fs.existsSync(idxFile)) {
-    problems.push("data/search-index.js is missing — run: node tools/build-search-index.js");
+    problems.push("data/search-index.js is missing - run: node tools/build-search-index.js");
     return;
   }
   delete global.window.IR.searchIndex;
   require(idxFile);
   var idx = global.window.IR.searchIndex;
   if (!idx || !idx.cards) {
-    problems.push("data/search-index.js is unreadable — run: node tools/build-search-index.js");
+    problems.push("data/search-index.js is unreadable - run: node tools/build-search-index.js");
     return;
   }
   var live = {}, nLive = 0;
@@ -248,7 +248,7 @@ scan(root);
   if (missing.length || stale.length) {
     problems.push("data/search-index.js is out of date ("
       + missing.length + " card(s) missing, " + stale.length
-      + " removed) — run: node tools/build-search-index.js");
+      + " removed) - run: node tools/build-search-index.js");
   }
 })();
 

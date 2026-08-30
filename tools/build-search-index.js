@@ -1,4 +1,4 @@
-/* Interview Room — search index builder.
+/* Interview Room - search index builder.
    Run from the portal root:  node tools/build-search-index.js
 
    Writes data/search-index.js, which the sidebar search reads.
@@ -9,8 +9,8 @@
    would have nothing but that one topic to search. Adding the other seventeen
    files to every page would mean shipping the whole corpus to read one topic.
 
-   So this reduces each card to just what search needs — title, tags, topic,
-   and a deduplicated bag of words from the prose — and drops the long-form
+   So this reduces each card to just what search needs - title, tags, topic,
+   and a deduplicated bag of words from the prose - and drops the long-form
    answer text that makes the source files big. The result is a fraction of the
    size and is the only data file the search needs, on any page.
 
@@ -34,7 +34,7 @@ var STOP = ("a an and are as at be but by for from has have how i in is it its o
 var STOPSET = {};
 STOP.forEach(function (w) { STOPSET[w] = 1; });
 
-/* Mirrors normalise() in assets/portal.js — the index and the query must be
+/* Mirrors normalise() in assets/portal.js - the index and the query must be
    tokenised identically or a word that is split one way at build time and
    another way at search time can never match. Change one, change both. */
 function tokens(s) {
@@ -49,8 +49,8 @@ function tokens(s) {
 }
 
 /* A card's searchable prose. The full `simple` text is included here at build
-   time — that breadth is the point, it is what lets an off-vocabulary phrase
-   find a card — but it is reduced to a unique word set, so a 400-word answer
+   time - that breadth is the point, it is what lets an off-vocabulary phrase
+   find a card - but it is reduced to a unique word set, so a 400-word answer
    costs only its distinct terms. */
 function bag(c) {
   var text = [c.q, (c.tags || []).join(" "), c.why, c.simple, c.say,
@@ -69,7 +69,7 @@ var topicMeta = [];
 IR.topics.forEach(function (t) {
   var key = t.num + "-" + t.slug;
   var file = path.join(root, "data/q-" + key + ".js");
-  /* A planned topic still belongs in the index — searching for it should find
+  /* A planned topic still belongs in the index - searching for it should find
      the topic even though it has no cards yet. */
   topicMeta.push({
     k: key, n: t.num, t: t.title, s: t.status,
@@ -90,7 +90,7 @@ IR.topics.forEach(function (t) {
   });
 });
 
-/* The word bags are almost all of the weight, and they repeat heavily — a
+/* The word bags are almost all of the weight, and they repeat heavily - a
    corpus this focused uses the same few thousand terms over and over. So the
    vocabulary is emitted once as a dictionary and each bag becomes a list of
    integer ids into it. Same information, a fraction of the bytes, and the
@@ -114,7 +114,7 @@ var payload = {
   cards: entries
 };
 
-var out = "/* Interview Room — generated search index. DO NOT EDIT BY HAND.\n"
+var out = "/* Interview Room - generated search index. DO NOT EDIT BY HAND.\n"
   + "   Regenerate with:  node tools/build-search-index.js\n"
   + "   Source of truth is data/topics.js + data/q-*.js. */\n\n"
   + "window.IR = window.IR || {};\n"
@@ -123,5 +123,5 @@ var out = "/* Interview Room — generated search index. DO NOT EDIT BY HAND.\n"
 fs.writeFileSync(path.join(root, "data/search-index.js"), out, "utf8");
 
 var kb = Math.round(Buffer.byteLength(out) / 1024);
-console.log("search-index.js written — " + entries.length + " cards, "
+console.log("search-index.js written - " + entries.length + " cards, "
   + topicMeta.length + " topics, " + kb + "KB");

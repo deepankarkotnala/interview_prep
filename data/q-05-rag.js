@@ -1,4 +1,4 @@
-/* Topic 05 — RAG. Build, evaluate, debug.
+/* Topic 05 - RAG. Build, evaluate, debug.
    Grounding: public JDs for GenAI / AI Engineer roles at India centres, plus
    what running retrieval in production forces you to know. */
 
@@ -159,11 +159,11 @@ window.IR.q["05-rag"] = {
       simple:
         "A language model only knows what it saw during training. It does not know your company's policy document that was updated last week.\n\n" +
         "RAG fixes this by doing a search first. When the user asks a question, we search our own documents, pick the few most relevant pieces, paste them into the prompt, and then ask the model to answer using only those pieces.\n\n" +
-        "Think of an open-book exam. The model is the student. Retrieval is the moment the student flips to the right page before writing the answer. The student is still doing the writing — we are only making sure the right page is open.",
+        "Think of an open-book exam. The model is the student. Retrieval is the moment the student flips to the right page before writing the answer. The student is still doing the writing - we are only making sure the right page is open.",
       points: [
-        "**Retrieve** — search your documents for the question.",
-        "**Augment** — put the top pieces into the prompt as context.",
-        "**Generate** — the model answers from that context, and cites it."
+        "**Retrieve** - search your documents for the question.",
+        "**Augment** - put the top pieces into the prompt as context.",
+        "**Generate** - the model answers from that context, and cites it."
       ],
       say: "RAG means we search our own data before the model answers. The user asks a question, we retrieve the few most relevant document chunks, put them in the prompt, and the model answers from that text and cites it. It gives us fresh, private and traceable answers without fine-tuning the model. In our system that was around four chunks per query.",
       numbers: "Typical production setup: retrieve 20 candidates, rerank to 4–6 chunks, 300–800 tokens per chunk.",
@@ -181,7 +181,7 @@ window.IR.q["05-rag"] = {
       why: "Whether you choose architecture from constraints or from headlines.",
       simple:
         "Because context is not free, and it is not reliable at scale.\n\n" +
-        "Three problems. First, cost — you pay for every token, on every single request. Ten thousand queries a day against a 200,000-token context is a bill nobody approves. Second, latency — more input means slower first token. Third, quality — models get less accurate at finding one fact buried in the middle of a very long input. This is often called the lost-in-the-middle problem.\n\n" +
+        "Three problems. First, cost - you pay for every token, on every single request. Ten thousand queries a day against a 200,000-token context is a bill nobody approves. Second, latency - more input means slower first token. Third, quality - models get less accurate at finding one fact buried in the middle of a very long input. This is often called the lost-in-the-middle problem.\n\n" +
         "And a fourth, which is the one senior candidates remember: permissions. If your corpus has documents that only some users may see, you have to filter at retrieval time. You cannot paste the whole corpus and hope the model respects access control.\n\n" +
         "Long context is genuinely better for a small, bounded set of documents where you need reasoning across all of them at once. Contract comparison, for example. Choose per use case, not per fashion.",
       say: "Long context works well for a few bounded documents where cross-document reasoning matters. It breaks down on cost, latency and access control. We pay for every token on every request, accuracy drops when the fact is buried mid-context, and we cannot enforce per-user permissions if we paste the whole corpus. So we retrieve, filter by entitlement, and use long context only for the final synthesis step.",
@@ -199,7 +199,7 @@ window.IR.q["05-rag"] = {
       tags: ["rag", "chunking", "ingestion"],
       why: "Whether you have ingested real messy documents or only clean text files.",
       simple:
-        "Chunking is cutting documents into pieces small enough to retrieve accurately. The common trap is treating it as an arbitrary character-count problem — it is an information architecture and meaning problem.\n\n" +
+        "Chunking is cutting documents into pieces small enough to retrieve accurately. The common trap is treating it as an arbitrary character-count problem - it is an information architecture and meaning problem.\n\n" +
         "The core principle: a chunk must be the smallest autonomous semantic unit that can answer a question without missing crucial qualifiers or diluting embedding relevance.\n\n" +
         "My thought process across document types:\n" +
         "1. **Document-Aware / Structural Chunking**: First choice whenever structure exists. Split on Markdown headings (`#`, `##`), contract clauses (`Section 4.1`), or code ASTs (functions/classes). Human authors already grouped related meaning there.\n" +
@@ -207,7 +207,7 @@ window.IR.q["05-rag"] = {
         "3. **Recursive Character Splitting**: The robust default for generic or unstructured prose, falling back through paragraph breaks, line breaks, and sentence boundaries.\n" +
         "4. **Multimodal / Vision Pipelines**: Essential for scanned PDFs, balance sheets, and diagrams. Vision LLMs or layout models (Docling, ColPali) extract tables into structured Markdown and generate searchable captions for charts.\n\n" +
         "**Why 10–15% Overlap?**\n" +
-        "0% overlap causes 'boundary loss' — a conditional clause (*'provided that...'*) or relational fact cut mid-sentence loses its meaning. 10–15% preserves 1–2 complete boundary sentences so self-attention in embedding models stays intact. Beyond 20%, you suffer diminishing returns: inflated vector DB storage, duplicate passages crowding the LLM context window, and degraded reranker scoring.\n\n" +
+        "0% overlap causes 'boundary loss' - a conditional clause (*'provided that...'*) or relational fact cut mid-sentence loses its meaning. 10–15% preserves 1–2 complete boundary sentences so self-attention in embedding models stays intact. Beyond 20%, you suffer diminishing returns: inflated vector DB storage, duplicate passages crowding the LLM context window, and degraded reranker scoring.\n\n" +
         "**Where Ingestion Costs Actually Live:**\n" +
         "Text chunking is virtually free (CPU regex). Semantic chunking doubles embedding API costs by embedding every sentence twice. Vision-based parsing (extracting tables/diagrams with multimodal models) is genuinely expensive ($0.002–$0.02+/page). Production systems use a **smart router**: digital text routes through fast structural parsers, while only scanned pages and complex visual layouts hit vision models.",
       points: [
@@ -215,9 +215,9 @@ window.IR.q["05-rag"] = {
         "Document-aware splitting (headings, clauses, code AST) beats fixed-size.",
         "Parent-child retrieval decouples search granularity from LLM context size.",
         "10–15% overlap prevents boundary fragmentation without context pollution.",
-        "Vision models are costly ($$$) — use a classifier to route only scans/charts to multimodal parsing."
+        "Vision models are costly ($$$) - use a classifier to route only scans/charts to multimodal parsing."
       ],
-      say: "I choose chunking based on semantic units rather than static token limits. For structured content like contracts or code, I use document-aware splitting on headings or AST boundaries. For dense manuals, I use parent-child retrieval — embedding 256-token child chunks for precise search but returning 1024-token parent blocks to the LLM. I keep 10–15% overlap specifically to prevent boundary fragmentation on conditional clauses without inflating vector storage or duplicating text in the prompt. For scanned PDFs or diagrams, I route only visual pages to vision models for table extraction and captioning to keep ingestion costs strictly controlled.",
+      say: "I choose chunking based on semantic units rather than static token limits. For structured content like contracts or code, I use document-aware splitting on headings or AST boundaries. For dense manuals, I use parent-child retrieval: embedding 256-token child chunks for precise search while returning 1024-token parent blocks to the LLM. I keep 10–15% overlap to prevent boundary loss without inflating storage. For scanned PDFs or diagrams, I route only visual pages to vision models to keep ingestion costs controlled.",
       numbers: "Baseline: 500–800 tokens, 10–15% overlap. Parent-child: 128–256t child / 1024t parent. Vision parsing costs 10x–50x pure text; route scans selectively.",
       wrong: "\"I used RecursiveCharacterTextSplitter with 1000 and 200.\" That is a framework default, not a strategy. If you cannot explain the trade-offs of overlap and structure, you did not engineer the pipeline.",
       follow: "How would you chunk a 90-page scanned PDF with tables?",
@@ -233,7 +233,7 @@ window.IR.q["05-rag"] = {
       why: "Whether your RAG experience is with real enterprise documents or with clean markdown.",
       simple:
         "Most real enterprise corpora are PDFs, and most PDFs are hostile. Text order is wrong, tables become jumbled lines, and some pages are just images.\n\n" +
-        "So ingestion becomes its own pipeline. For scanned pages you need OCR. For tables, you extract the table as a unit and store it as markdown or HTML, plus a short natural-language summary of what the table contains — because the summary is what matches a user's question, while the table itself is what the model needs to answer. For diagrams, use a vision model to write a caption and index the caption.\n\n" +
+        "So ingestion becomes its own pipeline. For scanned pages you need OCR. For tables, you extract the table as a unit and store it as markdown or HTML, plus a short natural-language summary of what the table contains - because the summary is what matches a user's question, while the table itself is what the model needs to answer. For diagrams, use a vision model to write a caption and index the caption.\n\n" +
         "The important part for the interview is this: I check ingestion quality before I blame retrieval. If OCR turned a number into a letter, no amount of reranking will save the answer.",
       points: [
         "OCR for scanned pages; keep a confidence score and flag low-confidence pages.",
@@ -242,7 +242,7 @@ window.IR.q["05-rag"] = {
         "Keep the page number and bounding box so citations can point at the exact place."
       ],
       say: "Enterprise PDFs need their own pipeline. I OCR scanned pages, extract tables as whole units and index a short summary alongside the raw table, and caption diagrams with a vision model. Every chunk keeps its page number so a citation can point to the exact place. I validate ingestion quality first, because if OCR corrupted a figure, no retrieval tuning will recover the correct answer.",
-      numbers: "On a real scanned corpus, expect 5–15% of pages to need OCR review. Track that number — it becomes your data-quality SLA.",
+      numbers: "On a real scanned corpus, expect 5–15% of pages to need OCR review. Track that number - it becomes your data-quality SLA.",
       wrong: "\"PyPDF handles it.\" It handles text-layer PDFs. Say this about a scanned insurance corpus and the interviewer knows you have not shipped one.",
       follow: "How do you keep the pipeline from re-processing the whole corpus on every update?",
       followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
@@ -257,17 +257,17 @@ window.IR.q["05-rag"] = {
       why: "The core senior question. Whether you debug systematically or change the prompt and hope.",
       simple:
         "The first move is to split the problem in two. Either the right text never reached the model, or the right text reached it and the model still got it wrong. These have completely different fixes, and mixing them up wastes weeks.\n\n" +
-        "So I look at the trace for a failing query and read the retrieved chunks myself. If the correct chunk is not in there, it is a retrieval problem — look at ingestion, chunking, the query, filters and the embedding model. If the correct chunk is right there and the answer is still wrong, it is a generation problem — look at the prompt, the context ordering, and whether the model is being asked to do too much at once.\n\n" +
+        "So I look at the trace for a failing query and read the retrieved chunks myself. If the correct chunk is not in there, it is a retrieval problem - look at ingestion, chunking, the query, filters and the embedding model. If the correct chunk is right there and the answer is still wrong, it is a generation problem - look at the prompt, the context ordering, and whether the model is being asked to do too much at once.\n\n" +
         "Only after that do I touch anything. And I fix one layer at a time, measured against a labelled set, not against the feeling that the last answer looked better.",
       points: [
-        "**Step 1** — collect 30–50 real failing queries. Not synthetic ones.",
-        "**Step 2** — for each, check: was the correct chunk retrieved at all?",
-        "**Step 3** — retrieval failures: check ingestion quality, chunk boundaries, metadata filters, query phrasing, embedding model, and whether a keyword term needed lexical search.",
-        "**Step 4** — generation failures: check prompt instructions, position of context, conflicting chunks, and whether the model was told it may say \"not in the documents\".",
-        "**Step 5** — fix one thing, re-run the labelled set, keep the change only if recall@k or answer accuracy moved."
+        "**Step 1** - collect 30–50 real failing queries. Not synthetic ones.",
+        "**Step 2** - for each, check: was the correct chunk retrieved at all?",
+        "**Step 3** - retrieval failures: check ingestion quality, chunk boundaries, metadata filters, query phrasing, embedding model, and whether a keyword term needed lexical search.",
+        "**Step 4** - generation failures: check prompt instructions, position of context, conflicting chunks, and whether the model was told it may say \"not in the documents\".",
+        "**Step 5** - fix one thing, re-run the labelled set, keep the change only if recall@k or answer accuracy moved."
       ],
       say: "First I separate retrieval failure from generation failure, because they have different fixes. I take fifty real failing queries and check whether the correct chunk was retrieved at all. If it was not, I look at ingestion, chunking, filters and the embedding model. If it was retrieved and the answer is still wrong, it is a prompt or context-ordering problem. Then I fix one layer at a time and measure against a labelled set.",
-      numbers: "Build a labelled set of 50–100 query-to-correct-chunk pairs. Track recall@10 and answer accuracy separately — they move independently.",
+      numbers: "Build a labelled set of 50–100 query-to-correct-chunk pairs. Track recall@10 and answer accuracy separately - they move independently.",
       wrong: "\"I would improve the prompt.\" This is the most common failing answer in the whole topic. It assumes the model saw the right text, which in most real failures it did not.",
       follow: "Recall is good but answers are still wrong. Now what?",
       followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
@@ -292,8 +292,8 @@ window.IR.q["05-rag"] = {
         "No refusal path → explicitly allow \"not in the provided documents\".",
         "Multi-hop question → query decomposition or an agentic retrieval loop."
       ],
-      say: "Usually one of four things. Conflicting document versions and the model picked the stale one. Position — the fact was buried mid-context and got missed. No refusal instruction, so the model invented rather than saying it did not know. Or the question needs facts from two documents and no single chunk has the answer, which is a retrieval design problem. I check them in that order.",
-      numbers: "Adding an explicit refusal instruction typically cuts confident-wrong answers noticeably. Measure it — track your unsupported-answer rate before and after.",
+      say: "Usually one of four things. Conflicting document versions and the model picked the stale one. Position - the fact was buried mid-context and got missed. No refusal instruction, so the model invented rather than saying it did not know. Or the question needs facts from two documents and no single chunk has the answer, which is a retrieval design problem. I check them in that order.",
+      numbers: "Adding an explicit refusal instruction typically cuts confident-wrong answers noticeably. Measure it - track your unsupported-answer rate before and after.",
       wrong: "\"I'd switch to a bigger model.\" Sometimes true, usually expensive, and it hides the real defect. Diagnose before you upgrade.",
       follow: "How do you detect that an answer was not supported by the retrieved context?",
       followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
@@ -308,7 +308,7 @@ window.IR.q["05-rag"] = {
       why: "Whether you can prove an improvement, or only claim one.",
       simple:
         "Evaluate the two halves separately, then the whole thing end to end.\n\n" +
-        "For retrieval, you need a set of questions where you already know which chunk holds the answer. Then measure recall@k — how often the correct chunk appears in the top k — and MRR, which rewards it being near the top. This part is cheap, fast and objective, and you can run it on every commit.\n\n" +
+        "For retrieval, you need a set of questions where you already know which chunk holds the answer. Then measure recall@k - how often the correct chunk appears in the top k - and MRR, which rewards it being near the top. This part is cheap, fast and objective, and you can run it on every commit.\n\n" +
         "For generation, the standard four are: faithfulness, meaning is the answer actually supported by the retrieved context; answer relevance, does it address the question; context precision, is the retrieved context mostly useful rather than noise; and context recall, did we get everything needed. Frameworks like RAGAS compute these using an LLM as judge.\n\n" +
         "Then online: thumbs up and down, whether users rephrase, whether they click the citation, escalation rate to a human. Offline tells you if you broke something. Online tells you if it matters.",
       points: [
@@ -318,7 +318,7 @@ window.IR.q["05-rag"] = {
         "Online: thumbs, rephrase rate, citation clicks, escalation to human.",
         "Every change is measured against the same frozen set, or the comparison means nothing."
       ],
-      say: "I evaluate retrieval and generation separately. Retrieval gets a labelled set and recall at k plus MRR, which runs on every commit. Generation gets faithfulness, answer relevance and context precision, computed with an LLM judge that I calibrate against human labels. Then online signals — thumbs, rephrase rate, escalation. Offline tells me if I broke something, online tells me whether it mattered to users.",
+      say: "I evaluate retrieval and generation separately. Retrieval gets a labelled set and recall at k plus MRR, which runs on every commit. Generation gets faithfulness, answer relevance and context precision, computed with an LLM judge that I calibrate against human labels. Then online signals - thumbs, rephrase rate, escalation. Offline tells me if I broke something, online tells me whether it mattered to users.",
       numbers: "A useful bar: recall@10 above 0.90 before you touch the prompt. And 100+ items in the golden set, or the numbers are noise.",
       wrong: "\"We tested it manually and it looked good.\" Fine for a demo. Says you have never had to defend a regression.",
       follow: "Your LLM judge scores 0.9 faithfulness. Do you trust it?",
@@ -360,17 +360,17 @@ window.IR.q["05-rag"] = {
       why: "The question that separates demo builders from people who shipped inside an enterprise.",
       simple:
         "If a junior employee asks a question and the system quotes a document only the finance director can see, you have caused a data breach. The model will happily do this, because it has no idea who is asking.\n\n" +
-        "So access control has to happen at retrieval, before anything reaches the model. Each chunk carries the access groups from its source document, copied at ingestion time. Each query carries the user's identity and groups. The vector search applies that as a hard metadata filter — a pre-filter, so restricted chunks are never candidates, rather than a post-filter that retrieves everything and drops some afterwards.\n\n" +
-        "Two things to add. Permissions change, so you need a re-sync path when a document's access changes, not just when its text changes. And never cache an answer across users — a cache keyed only on question text will leak one user's context to another.",
+        "So access control has to happen at retrieval, before anything reaches the model. Each chunk carries the access groups from its source document, copied at ingestion time. Each query carries the user's identity and groups. The vector search applies that as a hard metadata filter - a pre-filter, so restricted chunks are never candidates, rather than a post-filter that retrieves everything and drops some afterwards.\n\n" +
+        "Two things to add. Permissions change, so you need a re-sync path when a document's access changes, not just when its text changes. And never cache an answer across users - a cache keyed only on question text will leak one user's context to another.",
       points: [
         "Copy access groups onto every chunk at ingestion.",
         "Pre-filter in the vector query. Never post-filter.",
         "Re-sync chunks when source permissions change, not only when text changes.",
         "Cache keys must include the user's entitlement set, or not cache at all.",
-        "Log which chunks were shown to which user — you will be audited on this."
+        "Log which chunks were shown to which user - you will be audited on this."
       ],
       say: "Access control happens at retrieval, never in the prompt. Every chunk inherits its source document's access groups at ingestion, and the query carries the user's groups as a hard pre-filter, so restricted chunks are never candidates. I re-sync when permissions change, not just when text changes. And I never cache across users, because a cache keyed only on question text leaks context between them.",
-      numbers: "No number applies. This is a binary control — it either holds on every request or it is broken.",
+      numbers: "No number applies. This is a binary control - it either holds on every request or it is broken.",
       wrong: "\"I tell the model in the system prompt not to reveal restricted documents.\" That is not access control. That is asking politely, and prompt injection defeats it.",
       follow: "How do you audit which user saw which document chunk?",
       followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
@@ -385,8 +385,8 @@ window.IR.q["05-rag"] = {
       why: "Whether you have operated a RAG system, not just built one.",
       simple:
         "You do not re-embed the whole corpus every night. That is slow and expensive and it will eventually be the reason your bill gets a meeting.\n\n" +
-        "Instead you make ingestion incremental. Every source document gets a content hash. On each run you compare hashes, and only changed documents get re-chunked and re-embedded. Deleted documents get their chunks removed — this is the step people skip, and it is why stale answers keep appearing after a policy is withdrawn.\n\n" +
-        "The other half is versioning. Chunks, embeddings and the embedding model version travel together. If you change embedding models, you cannot mix old and new vectors in one index — the geometry is different. You build a new index alongside and switch over once it is validated.",
+        "Instead you make ingestion incremental. Every source document gets a content hash. On each run you compare hashes, and only changed documents get re-chunked and re-embedded. Deleted documents get their chunks removed - this is the step people skip, and it is why stale answers keep appearing after a policy is withdrawn.\n\n" +
+        "The other half is versioning. Chunks, embeddings and the embedding model version travel together. If you change embedding models, you cannot mix old and new vectors in one index - the geometry is different. You build a new index alongside and switch over once it is validated.",
       points: [
         "Content hash per document; re-embed only what changed.",
         "Handle deletes explicitly, or stale chunks answer forever.",
@@ -395,7 +395,7 @@ window.IR.q["05-rag"] = {
         "Track ingestion lag as a metric: how old is the freshest missing document."
       ],
       say: "Ingestion is incremental. Every source document has a content hash, and only changed documents get re-chunked and re-embedded. Deletes are handled explicitly, because stale chunks keep answering long after a policy is withdrawn. Chunks and embeddings carry the embedding model version, so switching models means building a parallel index and cutting over after validation, never mixing vectors from two models.",
-      numbers: "Track ingestion lag — target is usually under 24 hours for policy corpora, under an hour for support tickets. Pick the number from the business, not the tooling.",
+      numbers: "Track ingestion lag - target is usually under 24 hours for policy corpora, under an hour for support tickets. Pick the number from the business, not the tooling.",
       wrong: "\"We re-index nightly.\" Works at a thousand documents. Ask the candidate what happens at two million and the answer usually stops.",
       follow: "You need to switch embedding models. Walk me through the migration.",
       followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
@@ -410,7 +410,7 @@ window.IR.q["05-rag"] = {
       why: "Whether you understand what vector search is bad at.",
       simple:
         "Vector search understands meaning. Ask about \"leave policy\" and it will find a chunk that says \"time-off entitlement\", even though no word matches. That is its strength.\n\n" +
-        "Its weakness is exact strings. Product code XR-4471B, an employee ID, an error code, a rare drug name — embeddings blur these, because the model never learned that this specific code matters. Keyword search, usually BM25, nails them.\n\n" +
+        "Its weakness is exact strings. Product code XR-4471B, an employee ID, an error code, a rare drug name - embeddings blur these, because the model never learned that this specific code matters. Keyword search, usually BM25, nails them.\n\n" +
         "Hybrid search runs both and merges the results. The usual merge is reciprocal rank fusion, which combines by rank position rather than by score, so you avoid the mess of comparing two different score scales. In enterprise corpora full of acronyms, part numbers and internal jargon, hybrid is not an optimisation. It is usually the difference between working and not working.",
       code:
         "# Reciprocal rank fusion: merge by position, not by score\n" +
@@ -439,7 +439,7 @@ window.IR.q["05-rag"] = {
         "A reranker is a different kind of model, a cross-encoder. It reads the question and one chunk together, at the same time, and scores how well that chunk answers that question. Much more accurate, and far too slow to run on the whole corpus.\n\n" +
         "So the pattern is two stages. Retrieve fifty cheaply, rerank those fifty carefully, keep the top five. You buy accuracy with latency.\n\n" +
         "Whether it is worth it is an empirical question, and that is the answer the panel wants. Measure recall and answer accuracy with and without it, measure the added p95 latency, and decide against your latency budget.",
-      say: "Retrieval is fast but approximate — it compares the question and chunks as separate vectors. A reranker is a cross-encoder that reads the question and each chunk together, so it scores relevance much more accurately, but it is too slow to run on the full corpus. So I retrieve fifty, rerank to five, and decide with numbers: what accuracy it buys against what it adds to p95 latency.",
+      say: "Retrieval is fast but approximate - it compares the question and chunks as separate vectors. A reranker is a cross-encoder that reads the question and each chunk together, so it scores relevance much more accurately, but it is too slow to run on the full corpus. So I retrieve fifty, rerank to five, and decide with numbers: what accuracy it buys against what it adds to p95 latency.",
       numbers: "A hosted reranker on 50 candidates typically adds 100–300 ms. If your p95 budget is 3 seconds, that is affordable. If it is 800 ms, it is not.",
       wrong: "\"I always add a reranker, it improves quality.\" A senior answer names the latency cost and the budget it fits inside.",
       follow: "Your p95 budget is 800 ms end to end. What do you cut?",
@@ -460,7 +460,7 @@ window.IR.q["05-rag"] = {
       points: [
         "Requirements first: QPS, latency budget, freshness, permissions, cost per query.",
         "Shard the index; use HNSW for speed, IVF-PQ when memory is the constraint.",
-        "Pre-filter on metadata — tenant, date, access group — before vector search.",
+        "Pre-filter on metadata - tenant, date, access group - before vector search.",
         "Two-stage retrieval: cheap recall, then rerank.",
         "Ingestion is a separate scaled service with a queue and dead-letter handling.",
         "Cache embeddings for repeated queries and answers for repeated questions, keyed with entitlements.",
@@ -494,7 +494,7 @@ window.IR.q["05-rag"] = {
         caption: "**Pre-filter before the vector search**, not after - filtering afterwards means you searched fifty million vectors to throw most of them away. Then say the operational half out loud: monitoring on recall, latency and cost per query, and index **versions with a cutover** so a bad ingestion run is rolled back rather than mutated in place."
       },
       say: "First I ask for peak QPS, latency budget, freshness requirement, permission model and cost per query, because those decide the design. Then: a sharded vector index with approximate search, hard metadata pre-filters to shrink the candidate space, two-stage retrieve-and-rerank, and ingestion as a separately scaled service with a queue. Plus index versioning so a bad ingestion run can be rolled back instead of debugged live.",
-      numbers: "50M documents at ~4 chunks each is 200M vectors. At 1024 dimensions in float32 that is roughly 800 GB raw — which is exactly why quantisation and sharding come up.",
+      numbers: "50M documents at ~4 chunks each is 200M vectors. At 1024 dimensions in float32 that is roughly 800 GB raw - which is exactly why quantisation and sharding come up.",
       wrong: "Naming a vector database in the first sentence. The panel is testing whether you gather requirements. Products come after constraints.",
       follow: "Your index does not fit in memory. What changes?",
       followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
@@ -509,8 +509,8 @@ window.IR.q["05-rag"] = {
       why: "Senior candidates are expected to argue against their own default.",
       simple:
         "RAG is for when the answer lives in text you own, and that text changes.\n\n" +
-        "It is the wrong tool when the answer lives in a database — then you want text-to-SQL or a plain API call, because a query gives you an exact number and retrieval gives you a paragraph that mentions a number.\n\n" +
-        "It is wrong when the problem is style or format rather than knowledge — that is fine-tuning or better prompting. It is wrong when the corpus is tiny and stable, say twenty pages that never change, because then you just put them in the prompt. And it is wrong when the task is classification or extraction on a document you already have in hand, because there is nothing to retrieve.\n\n" +
+        "It is the wrong tool when the answer lives in a database - then you want text-to-SQL or a plain API call, because a query gives you an exact number and retrieval gives you a paragraph that mentions a number.\n\n" +
+        "It is wrong when the problem is style or format rather than knowledge - that is fine-tuning or better prompting. It is wrong when the corpus is tiny and stable, say twenty pages that never change, because then you just put them in the prompt. And it is wrong when the task is classification or extraction on a document you already have in hand, because there is nothing to retrieve.\n\n" +
         "Saying this out loud is a strong signal. It shows you pick tools rather than apply one.",
       points: [
         "Answer is in a database → text-to-SQL or an API, not retrieval.",
@@ -534,18 +534,18 @@ window.IR.q["05-rag"] = {
       tags: ["rag", "hallucination", "monitoring", "guardrails"],
       why: "Whether you can watch a non-deterministic system in production.",
       simple:
-        "In production you have no ground truth. Nobody is standing there with the correct answer. So you cannot measure correctness — you measure support.\n\n" +
+        "In production you have no ground truth. Nobody is standing there with the correct answer. So you cannot measure correctness - you measure support.\n\n" +
         "The main check is groundedness: take each claim in the answer and check whether the retrieved context actually contains it. That can be done cheaply with a small model or an entailment check, on every response or on a sample. If a claim is not supported, that is a hallucination signal even without knowing the truth.\n\n" +
-        "Around that, cheaper signals. Citation validity — does every cited id exist. Refusal rate — a sudden drop often means the model started inventing instead of declining. Retrieval score distribution — if the top score collapses, the model is answering from nothing. And user behaviour: rephrases, thumbs down, escalation to a human.\n\n" +
+        "Around that, cheaper signals. Citation validity - does every cited id exist. Refusal rate - a sudden drop often means the model started inventing instead of declining. Retrieval score distribution - if the top score collapses, the model is answering from nothing. And user behaviour: rephrases, thumbs down, escalation to a human.\n\n" +
         "Then a sampled human review, weekly, weighted toward low-confidence responses. Automated checks tell you where to look. Humans tell you whether it is actually wrong.",
       points: [
-        "Groundedness check per claim against retrieved context — the primary signal.",
+        "Groundedness check per claim against retrieved context - the primary signal.",
         "Citation validity on 100% of responses; it is a cheap string check.",
         "Watch refusal rate. A sudden fall usually means invention, not improvement.",
         "Watch top retrieval score. Low scores plus a confident answer is the danger zone.",
         "Sampled human review, weighted toward low-confidence responses."
       ],
-      say: "In production there is no ground truth, so I measure support rather than correctness. The main check is groundedness — is each claim actually present in the retrieved context — run with a small model on every response or a sample. Around it: citation validity, refusal rate, and retrieval score distribution, because a confident answer on low-scoring context is the danger case. Then weekly sampled human review.",
+      say: "In production there is no ground truth, so I measure support rather than correctness. The main check is groundedness - is each claim actually present in the retrieved context - run with a small model on every response or a sample. Around it: citation validity, refusal rate, and retrieval score distribution, because a confident answer on low-scoring context is the danger case. Then weekly sampled human review.",
       numbers: "Sample 1–5% of production traffic for human review, weighted toward low-confidence responses. Full automated groundedness checks on 100% if the small-model cost allows.",
       wrong: "\"We have an eval suite, so we catch hallucinations.\" Eval suites cover the queries you thought of. Production is the ones you did not.",
       follow: "Your groundedness checker is itself an LLM. Who checks it?",
@@ -569,10 +569,10 @@ window.IR.q["05-rag"] = {
         "One specific failure, with the signal that revealed it.",
         "What you measured before changing anything.",
         "The fix, and the number after.",
-        "One thing you would do differently — it makes the whole story credible."
+        "One thing you would do differently - it makes the whole story credible."
       ],
       say: "We ran a policy assistant for about four hundred internal users. Three weeks in, support flagged answers quoting a withdrawn policy. Our ingestion handled updates but never handled deletes, so removed documents kept answering. I added tombstone handling and a nightly reconciliation between source and index. Stale-answer reports went to zero. I would have built the delete path from day one.",
-      numbers: "Use your real numbers — users, documents, latency, the metric before and after. Vague scale reads as a project you watched rather than built.",
+      numbers: "Use your real numbers - users, documents, latency, the metric before and after. Vague scale reads as a project you watched rather than built.",
       wrong: "\"It worked well, we did not face major issues.\" This answers a different question and wastes the round's best opportunity.",
       follow: "What would you build differently if you started that system today?",
       followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
@@ -588,9 +588,9 @@ window.IR.q["05-rag"] = {
       why: "The spine question. If you can name the stages and what breaks at each, every later debugging question has somewhere to land.",
       simple:
         "There are seven stages, and each one has a characteristic way of failing quietly.\n\n" +
-        "Parse. Get text out of the source. Fails on scanned PDFs, tables flattened into gibberish, and multi-column layouts read in the wrong order. Nothing errors — you just get bad text.\n\n" +
+        "Parse. Get text out of the source. Fails on scanned PDFs, tables flattened into gibberish, and multi-column layouts read in the wrong order. Nothing errors - you just get bad text.\n\n" +
         "Chunk. Split into retrievable units. Fails by cutting mid-sentence or separating a heading from the paragraph it governs.\n\n" +
-        "Embed. Turn chunks into vectors. Fails by silent truncation when a chunk exceeds the model's sequence limit — you embed the first half and never know.\n\n" +
+        "Embed. Turn chunks into vectors. Fails by silent truncation when a chunk exceeds the model's sequence limit - you embed the first half and never know.\n\n" +
         "Index. Store for search. Fails on stale entries after updates, and on filters that quietly exclude what you needed.\n\n" +
         "Retrieve. Fetch candidates for a query. Fails when vocabulary differs from the corpus, or on exact identifiers that dense vectors handle badly.\n\n" +
         "Rerank. Reorder candidates. Fails by adding latency without measurable gain, or by being skipped when it was the fix.\n\n" +
@@ -621,7 +621,7 @@ window.IR.q["05-rag"] = {
         ],
         caption: "Almost none of these raise an error - they degrade quietly, which is why the picture is worth drawing. The discipline that follows: **measure retrieval separately from generation.** If the right chunk was never retrieved, no amount of prompt engineering saves you, and that one split resolves most RAG problems."
       },
-      say: "Seven stages: parse, chunk, embed, index, retrieve, rerank, generate. What matters is that nearly all of them fail silently — a scanned PDF parses to noise, an oversized chunk gets truncated at embedding, a filter quietly excludes the right document. So when debugging I split retrieval from generation first and check whether the correct chunk was even retrieved, because if it was not, no amount of prompt work will fix the answer.",
+      say: "Seven stages: parse, chunk, embed, index, retrieve, rerank, generate. What matters is that nearly all of them fail silently - a scanned PDF parses to noise, an oversized chunk gets truncated at embedding, a filter quietly excludes the right document. So when debugging I split retrieval from generation first and check whether the correct chunk was even retrieved, because if it was not, no amount of prompt work will fix the answer.",
       numbers: "In practice most RAG quality problems are retrieval problems, not generation problems. Measure recall@k before touching the prompt.",
       wrong: "Describing it as retrieve-then-generate. It is technically true and useless for debugging, because it collapses five distinct failure modes into one box.",
       follow: "Which of those stages would you instrument first, and what would you log?",
@@ -630,7 +630,7 @@ window.IR.q["05-rag"] = {
 
     {
       id: "rag-18",
-      q: "Fixed-size, recursive, semantic or document-aware chunking — defend your default.",
+      q: "Fixed-size, recursive, semantic or document-aware chunking - defend your default.",
       round: ["tech1", "tech2"],
       level: "2-5",
       tags: ["rag", "chunking", "ingestion"],
@@ -638,20 +638,20 @@ window.IR.q["05-rag"] = {
       simple:
         "Four strategies, increasing in cost and sophistication.\n\n" +
         "Fixed-size splits every N characters. Fast, predictable, and it cuts sentences in half.\n\n" +
-        "Recursive character splitting tries separators in order — paragraph breaks, then line breaks, then sentences, then characters — falling back only when a piece is still too big. It respects natural boundaries when they exist.\n\n" +
+        "Recursive character splitting tries separators in order - paragraph breaks, then line breaks, then sentences, then characters - falling back only when a piece is still too big. It respects natural boundaries when they exist.\n\n" +
         "Semantic chunking embeds each sentence and splits where consecutive similarity drops, on the theory that a topic shift shows up as a similarity dip. It sounds principled and is expensive, because you embed everything twice.\n\n" +
         "Document-aware splitting uses actual structure: markdown headings, HTML tags, contract clause numbers, code functions.\n\n" +
-        "My default is recursive, and the reason is the honest one — it captures most of the benefit for almost none of the cost, and it works on arbitrary input without knowing the format ahead of time.\n\n" +
+        "My default is recursive, and the reason is the honest one - it captures most of the benefit for almost none of the cost, and it works on arbitrary input without knowing the format ahead of time.\n\n" +
         "But I upgrade to document-aware whenever structure exists, because it reliably beats everything else. A contract split on clause boundaries retrieves far better than one split every thousand characters. The structure was authored by a human to group related meaning, which is exactly what you want a chunk to be.\n\n" +
-        "Semantic chunking I have rarely found worth its cost against document-aware splitting. Say that plainly rather than listing it as an equal option — having an opinion is the point of the question.",
+        "Semantic chunking I have rarely found worth its cost against document-aware splitting. Say that plainly rather than listing it as an equal option - having an opinion is the point of the question.",
       points: [
         "Recursive is the sensible default: cheap, format-agnostic, respects boundaries.",
-        "Document-aware wins whenever real structure exists — use it.",
+        "Document-aware wins whenever real structure exists - use it.",
         "Semantic chunking is expensive and rarely beats structure.",
         "Fixed-size only for uniform, structureless text.",
         "The right answer is measured on your eval set, not chosen by reputation."
       ],
-      say: "My default is recursive character splitting, because it respects paragraph and sentence boundaries at almost no cost and works on any input. But wherever real structure exists — headings, clause numbers, code functions — I use document-aware splitting, since a human already grouped related meaning there and it reliably retrieves better. Semantic chunking is expensive and I have not seen it beat structure often enough to justify embedding the corpus twice.",
+      say: "My default is recursive character splitting, because it respects paragraph and sentence boundaries at almost no cost and works on any input. But wherever real structure exists - headings, clause numbers, code functions - I use document-aware splitting, since a human already grouped related meaning there and it reliably retrieves better. Semantic chunking is expensive and I have not seen it beat structure often enough to justify embedding the corpus twice.",
       numbers: "Semantic chunking roughly doubles ingestion cost. Document-aware splitting usually gives a bigger retrieval gain for none of that overhead.",
       wrong: "Listing all four neutrally with no default. The question asked you to defend one, and neutrality reads as never having chosen.",
       follow: "Your corpus is 50,000 scanned invoices with no headings. Now what?",
@@ -668,10 +668,10 @@ window.IR.q["05-rag"] = {
       simple:
         "Everyone uses 1000 characters with 200 overlap, and almost nobody can say why. It came from a LangChain default.\n\n" +
         "The real method is to measure, and it is a couple of hours of work.\n\n" +
-        "Build a small evaluation set — fifty to a hundred questions with the passage that answers each. You can generate candidates by prompting a model over your own chunks and then verifying by hand.\n\n" +
+        "Build a small evaluation set - fifty to a hundred questions with the passage that answers each. You can generate candidates by prompting a model over your own chunks and then verifying by hand.\n\n" +
         "Then sweep. Ingest at 256, 512, 1024, 2048 tokens with a few overlap values, and measure recall@k for each configuration: how often the correct passage appears in the top k. Pick the winner. It is a grid search, and it takes an afternoon.\n\n" +
-        "What you will usually find is that the optimum depends on your content, which is why no universal default exists. Dense reference material — policies, specifications, FAQs — favours smaller chunks, because precision matters and answers are localised. Narrative or analytical documents favour larger chunks, because meaning spans paragraphs.\n\n" +
-        "Two things to hold onto. Measure in tokens, not characters, because the embedding model's limit is in tokens. And overlap exists only to stop an answer being split across a boundary — beyond roughly 10 to 20% of chunk size you are paying storage and retrieval noise for duplicate text.\n\n" +
+        "What you will usually find is that the optimum depends on your content, which is why no universal default exists. Dense reference material - policies, specifications, FAQs - favours smaller chunks, because precision matters and answers are localised. Narrative or analytical documents favour larger chunks, because meaning spans paragraphs.\n\n" +
+        "Two things to hold onto. Measure in tokens, not characters, because the embedding model's limit is in tokens. And overlap exists only to stop an answer being split across a boundary - beyond roughly 10 to 20% of chunk size you are paying storage and retrieval noise for duplicate text.\n\n" +
         "The senior framing: chunk size trades retrieval precision against context completeness. Small chunks retrieve precisely and may lack surrounding context; large chunks carry context and dilute the embedding. Small-to-big retrieval sidesteps the trade entirely by embedding small and returning large.",
       points: [
         "1000/200 is a tutorial default, not an analysis.",
@@ -682,7 +682,7 @@ window.IR.q["05-rag"] = {
       ],
       say: "I would not guess. I build fifty to a hundred question-and-passage pairs, then sweep chunk sizes from 256 to 2048 tokens with a few overlap values and measure recall@k for each. That is an afternoon of work and it replaces an argument with a number. Generally dense reference content favours smaller chunks and narrative favours larger, and overlap beyond about 20% just duplicates storage without improving recall.",
       numbers: "Sweep 256, 512, 1024, 2048 tokens. Keep overlap at 10–20% of chunk size. Measure in tokens, since that is the embedding model's actual limit.",
-      wrong: "'1000 characters with 200 overlap, it is the standard.' There is no standard — it is a default from a framework, and the follow-up will ask why.",
+      wrong: "'1000 characters with 200 overlap, it is the standard.' There is no standard - it is a default from a framework, and the follow-up will ask why.",
       follow: "Your eval says 2048 wins on recall but answers got worse. Explain that.",
       followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
@@ -696,24 +696,24 @@ window.IR.q["05-rag"] = {
       why: "Metadata decides what you can filter, cite and secure later. Most of it cannot be backfilled cheaply.",
       simple:
         "Every field should earn its place by enabling something specific downstream.\n\n" +
-        "Source identifier and URI — so you can cite and so the user can open the original. Without it your answer is unverifiable and nobody in a regulated setting will sign off on it.\n\n" +
-        "Page or section and position — so a citation points at the exact place rather than a 200-page document.\n\n" +
-        "Document date and ingestion timestamp — so you can prefer recent policy over superseded policy, and so you can find what a stale reindex missed.\n\n" +
-        "Access control list or tenant identifier — so retrieval can filter by permission. This one is load-bearing: without it you cannot enforce document permissions at query time, and retrofitting it means reingesting the corpus.\n\n" +
-        "Document type and department — the filters users actually want. 'Only search HR policies.'\n\n" +
-        "Content hash — so re-ingestion is idempotent. If the hash is unchanged, skip the chunk and do not pay to re-embed it.\n\n" +
-        "Version or supersedes — so a replaced document can be excluded rather than competing with its own replacement.\n\n" +
+        "Source identifier and URI - so you can cite and so the user can open the original. Without it your answer is unverifiable and nobody in a regulated setting will sign off on it.\n\n" +
+        "Page or section and position - so a citation points at the exact place rather than a 200-page document.\n\n" +
+        "Document date and ingestion timestamp - so you can prefer recent policy over superseded policy, and so you can find what a stale reindex missed.\n\n" +
+        "Access control list or tenant identifier - so retrieval can filter by permission. This one is load-bearing: without it you cannot enforce document permissions at query time, and retrofitting it means reingesting the corpus.\n\n" +
+        "Document type and department - the filters users actually want. 'Only search HR policies.'\n\n" +
+        "Content hash - so re-ingestion is idempotent. If the hash is unchanged, skip the chunk and do not pay to re-embed it.\n\n" +
+        "Version or supersedes - so a replaced document can be excluded rather than competing with its own replacement.\n\n" +
         "The rule that matters: attach anything you might filter on, because adding a field later means reprocessing everything. Storage is cheap and reingestion is not. But be deliberate about high-cardinality fields, since some vector stores build an index per filterable field and it is not free.",
       points: [
         "Source and URI for citation; page and position for precision.",
         "Dates for recency and for finding stale entries.",
-        "ACL or tenant id — cannot be retrofitted without reingestion.",
+        "ACL or tenant id - cannot be retrofitted without reingestion.",
         "Content hash makes re-ingestion idempotent and cheap.",
         "Attach anything you might filter on; backfilling means reprocessing."
       ],
       say: "Source and URI for citation, page and position so the citation is precise, document date and ingestion timestamp for recency and staleness checks, an ACL or tenant id so retrieval can filter by permission, document type for user-facing filters, and a content hash so re-ingestion skips unchanged chunks. The rule is to attach anything I might filter on later, because adding a field afterwards means reprocessing the whole corpus.",
       numbers: "A content hash typically lets an incremental reindex skip the large majority of chunks, turning a full re-embed into a small one.",
-      wrong: "Storing only the text and a filename. It works in a demo and blocks permissions, recency and citation all at once — and every fix requires reingestion.",
+      wrong: "Storing only the text and a filename. It works in a demo and blocks permissions, recency and citation all at once - and every fix requires reingestion.",
       follow: "You now need per-department access control. What does that cost you?",
       followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
@@ -726,7 +726,7 @@ window.IR.q["05-rag"] = {
       tags: ["rag", "ingestion", "structure"],
       why: "Common in BFSI, pharma and manufacturing. Flat chunking destroys exactly the structure that makes these documents usable.",
       simple:
-        "A 400-page manual has hierarchy — parts, chapters, sections, subsections — and flat chunking throws all of it away. A chunk reading 'this limit does not apply' is useless when the section heading that scoped it is three chunks earlier.\n\n" +
+        "A 400-page manual has hierarchy - parts, chapters, sections, subsections - and flat chunking throws all of it away. A chunk reading 'this limit does not apply' is useless when the section heading that scoped it is three chunks earlier.\n\n" +
         "Parse the structure first. Use the table of contents or the heading levels to build a tree, so every chunk knows its ancestry.\n\n" +
         "Then chunk within sections, never across them. A section boundary is a real semantic boundary that a human author chose.\n\n" +
         "Now the technique that does most of the work: prepend the heading path to each chunk before embedding.\n\n" +
@@ -739,7 +739,7 @@ window.IR.q["05-rag"] = {
       points: [
         "Parse the heading hierarchy into a tree before chunking.",
         "Chunk within sections, never across them.",
-        "Prepend the heading path before embedding — cheap and high-impact.",
+        "Prepend the heading path before embedding - cheap and high-impact.",
         "Store the path as metadata for filtering and precise citation.",
         "Page boundaries are not semantic boundaries."
       ],
@@ -756,23 +756,23 @@ window.IR.q["05-rag"] = {
       round: ["tech2"],
       level: "5-10",
       tags: ["rag", "debugging", "reranking"],
-      why: "A precise diagnostic. Retrieval worked, so the fix is downstream — and knowing that saves you tuning the wrong stage.",
+      why: "A precise diagnostic. Retrieval worked, so the fix is downstream - and knowing that saves you tuning the wrong stage.",
       simple:
         "This is a good failure to get, because it tells you retrieval is not the problem. The right chunk was found. The model just did not use it.\n\n" +
-        "The cause is position. Models attend most reliably to the beginning and end of their context and measurably less to the middle — the lost-in-the-middle effect. Rank 8 of 10 sits in the dead zone, buried under seven chunks that scored higher but matter less.\n\n" +
+        "The cause is position. Models attend most reliably to the beginning and end of their context and measurably less to the middle - the lost-in-the-middle effect. Rank 8 of 10 sits in the dead zone, buried under seven chunks that scored higher but matter less.\n\n" +
         "Three fixes, in order of what I would try.\n\n" +
         "Add a reranker. The retriever is a bi-encoder that embedded query and document separately, which is fast and approximate. A cross-encoder reads the query and each candidate together and scores relevance directly. It is far more accurate at ordering, so the rank-8 chunk moves to rank 1. Retrieve 20 to 50 candidates, rerank, keep the top 3 to 5.\n\n" +
-        "Cut k. If you are passing 10 chunks and the answer is in one, the other 9 are noise. Fewer, better chunks usually beat more chunks — and it is cheaper and faster.\n\n" +
+        "Cut k. If you are passing 10 chunks and the answer is in one, the other 9 are noise. Fewer, better chunks usually beat more chunks - and it is cheaper and faster.\n\n" +
         "Reorder deliberately. If you must pass many, put the highest-scoring chunks at the start and end rather than in descending order, so nothing important sits in the middle.\n\n" +
         "Then verify it stayed fixed. Add this query to your eval set, because the next chunking change can silently undo it.",
       points: [
-        "Retrieval succeeded — the failure is position, not recall.",
+        "Retrieval succeeded - the failure is position, not recall.",
         "Lost-in-the-middle: models attend to the ends, not the middle.",
         "A cross-encoder reranker is the direct fix for ordering.",
-        "Fewer chunks often beats more — cut k.",
+        "Fewer chunks often beats more - cut k.",
         "Add the query to the eval set so the fix is protected."
       ],
-      say: "Retrieval worked, so this is not a recall problem — it is position. Models attend to the start and end of context far more reliably than the middle, so rank 8 of 10 sits in the dead zone. The direct fix is a cross-encoder reranker, which reads query and chunk together and reorders properly, so I retrieve 20 to 50 and keep the top 3 after reranking. Cutting k also helps, since fewer better chunks beat more noisy ones.",
+      say: "Retrieval worked, so this is not a recall problem - it is position. Models attend to the start and end of context far more reliably than the middle, so rank 8 of 10 sits in the dead zone. The direct fix is a cross-encoder reranker, which reads query and chunk together and reorders properly, so I retrieve 20 to 50 and keep the top 3 after reranking. Cutting k also helps, since fewer better chunks beat more noisy ones.",
       numbers: "Retrieve 20–50 candidates, rerank, pass 3–5. Reranking adds roughly 50–200ms depending on the model and candidate count.",
       wrong: "Rewriting the prompt to say 'read all the context carefully'. It does not address position, and it is the reflex fix that wastes a day.",
       follow: "Reranking added 200ms and your latency budget is gone. What else?",
@@ -781,28 +781,28 @@ window.IR.q["05-rag"] = {
 
     {
       id: "rag-23",
-      q: "How do you decide k — how many chunks to pass?",
+      q: "How do you decide k - how many chunks to pass?",
       round: ["tech1"],
       level: "2-5",
       tags: ["rag", "tuning", "cost"],
       why: "A single number that trades recall, noise, latency and cost. There is a measurable optimum and most teams never look for it.",
       simple:
         "k is how many retrieved chunks you put in the prompt, and it pulls in four directions at once.\n\n" +
-        "Raise k and recall improves — the answer is more likely to be in there somewhere. But you also add noise, and irrelevant context measurably degrades answers. You pay more tokens per request. And latency rises.\n\n" +
+        "Raise k and recall improves - the answer is more likely to be in there somewhere. But you also add noise, and irrelevant context measurably degrades answers. You pay more tokens per request. And latency rises.\n\n" +
         "So there is a real optimum, and you find it the same way as chunk size: sweep it on your eval set and plot answer quality against k. The curve typically rises steeply, peaks, then declines as noise takes over. Teams are consistently surprised that quality gets worse past the peak.\n\n" +
         "In practice, with a reranker in front, 3 to 5 chunks is usually the sweet spot. Without a reranker you need more raw candidates to hit the same recall, so 5 to 10.\n\n" +
         "The important structural point: separate retrieval k from generation k. Retrieve 20 to 50 candidates so recall is high, then rerank and pass only the top 3 to 5 to the model. High recall in the candidate set, high precision in the prompt. Conflating those two numbers is the common mistake.\n\n" +
-        "Two refinements worth mentioning. Score thresholding — drop chunks below a relevance floor even if that leaves you with two, since padding to a fixed k with weak chunks adds pure noise. And adapting k by query type, since a summary question needs broad coverage while a lookup needs one precise chunk.",
+        "Two refinements worth mentioning. Score thresholding - drop chunks below a relevance floor even if that leaves you with two, since padding to a fixed k with weak chunks adds pure noise. And adapting k by query type, since a summary question needs broad coverage while a lookup needs one precise chunk.",
       points: [
         "k trades recall against noise, cost and latency.",
-        "Answer quality peaks then declines — more is not better.",
+        "Answer quality peaks then declines - more is not better.",
         "Separate retrieval k from generation k.",
         "Retrieve 20–50, rerank, pass 3–5.",
         "Threshold on score rather than always padding to a fixed k."
       ],
-      say: "k trades recall against noise, cost and latency, and there is a measurable optimum — quality rises, peaks, then falls as irrelevant context degrades the answer. I separate retrieval k from generation k: retrieve twenty to fifty for recall, rerank, then pass three to five to the model for precision. I also threshold on score rather than always padding to a fixed k, because filling the prompt with weak chunks is pure noise.",
+      say: "k trades recall against noise, cost and latency, and there is a measurable optimum - quality rises, peaks, then falls as irrelevant context degrades the answer. I separate retrieval k from generation k: retrieve twenty to fifty for recall, rerank, then pass three to five to the model for precision. I also threshold on score rather than always padding to a fixed k, because filling the prompt with weak chunks is pure noise.",
       numbers: "3–5 chunks to the model with a reranker, 5–10 without. Retrieve 20–50 candidates before reranking.",
-      wrong: "'k=5 because that is the default.' Same problem as chunk size — it is a framework default standing in for a measurement you never took.",
+      wrong: "'k=5 because that is the default.' Same problem as chunk size - it is a framework default standing in for a measurement you never took.",
       follow: "For a question needing facts from four documents, does your k still work?",
       followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
@@ -815,24 +815,24 @@ window.IR.q["05-rag"] = {
       tags: ["rag", "refusal", "hallucination"],
       why: "The most-skipped requirement in RAG demos, and the first thing a regulated buyer tests.",
       simple:
-        "The system should say it does not know. That is a feature you have to build — nothing gives it to you for free.\n\n" +
-        "The default behaviour is bad. Vector search always returns k results, because it returns the nearest neighbours whether or not they are relevant. Ask about parental leave when the corpus is all engineering documentation and you still get five chunks back — the least-distant ones. The model then dutifully writes a confident answer from irrelevant context.\n\n" +
+        "The system should say it does not know. That is a feature you have to build - nothing gives it to you for free.\n\n" +
+        "The default behaviour is bad. Vector search always returns k results, because it returns the nearest neighbours whether or not they are relevant. Ask about parental leave when the corpus is all engineering documentation and you still get five chunks back - the least-distant ones. The model then dutifully writes a confident answer from irrelevant context.\n\n" +
         "So you need three layers.\n\n" +
-        "A relevance threshold. If the best chunk scores below a floor, treat it as no result. Set the floor by looking at score distributions for known-good and known-bad queries — do not invent it.\n\n" +
+        "A relevance threshold. If the best chunk scores below a floor, treat it as no result. Set the floor by looking at score distributions for known-good and known-bad queries - do not invent it.\n\n" +
         "An instruction with an explicit escape. Tell the model directly: if the context does not contain the answer, say so and do not use outside knowledge. Models comply with this far more reliably when the refusal path is named rather than implied.\n\n" +
         "A groundedness check on the output. Verify the claims are supported by the retrieved context, and suppress or flag the answer if not.\n\n" +
         "Then design what the refusal looks like, because a bare 'I don't know' is a bad product. Say what was searched, offer the closest documents found, and route to a human or a support channel. A useful refusal builds trust; a confident wrong answer destroys it, and in a regulated setting it is a liability.\n\n" +
         "Measure this deliberately: put unanswerable questions in your eval set and score refusal rate. Most teams only test questions that have answers, so they never discover the system cannot say no.",
       points: [
         "Vector search always returns k results, relevant or not.",
-        "Threshold on relevance score — below the floor means no result.",
+        "Threshold on relevance score - below the floor means no result.",
         "Name the refusal path explicitly in the prompt.",
         "Check groundedness on the output before returning it.",
         "Put unanswerable questions in the eval set and score refusals."
       ],
       say: "It should refuse, and that has to be built. Vector search always returns k nearest neighbours whether or not they are relevant, so I threshold on relevance score and treat anything below the floor as no result. I state the refusal path explicitly in the prompt, and I check groundedness on the output. I also put unanswerable questions in the eval set, because teams test only answerable ones and never find out the system cannot say no.",
-      numbers: "Set the score floor from the distributions of known-good and known-bad queries. Track refusal rate as a monitored metric — a sudden drop often means retrieval broke.",
-      wrong: "Assuming the model will notice the context is irrelevant. It usually will not — it will write a fluent answer from whatever you gave it.",
+      numbers: "Set the score floor from the distributions of known-good and known-bad queries. Track refusal rate as a monitored metric - a sudden drop often means retrieval broke.",
+      wrong: "Assuming the model will notice the context is irrelevant. It usually will not - it will write a fluent answer from whatever you gave it.",
       follow: "Your refusal rate jumped from 2% to 20% overnight. What happened?",
       followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
@@ -849,21 +849,21 @@ window.IR.q["05-rag"] = {
         "    User: What is the notice period for senior engineers?\n" +
         "    Bot:  Ninety days.\n" +
         "    User: What about during probation?\n\n" +
-        "Embed 'What about during probation?' and search. It contains no mention of notice period or senior engineers, so retrieval returns documents about probation generally — performance reviews, confirmation criteria — and the answer is wrong.\n\n" +
+        "Embed 'What about during probation?' and search. It contains no mention of notice period or senior engineers, so retrieval returns documents about probation generally - performance reviews, confirmation criteria - and the answer is wrong.\n\n" +
         "The fix is query contextualisation: before retrieving, rewrite the follow-up into a standalone question using the conversation history. A cheap fast model does this well.\n\n" +
         "    Rewritten: What is the notice period for senior engineers during probation?\n\n" +
         "Now retrieval works, because the query carries its own context.\n\n" +
-        "Details that matter in production. Use a small fast model — this is on the critical path and adds latency to every turn. Only rewrite when needed; a self-contained question should pass through untouched, so classify first or instruct the rewriter to return the input unchanged when it already stands alone. Bound the history you feed it to the last few turns, since the whole conversation is expensive and mostly irrelevant.\n\n" +
-        "And keep the rewritten query in your traces. When a multi-turn answer is wrong, the first thing you check is what was actually searched — and without that logged, you are debugging blind.\n\n" +
+        "Details that matter in production. Use a small fast model - this is on the critical path and adds latency to every turn. Only rewrite when needed; a self-contained question should pass through untouched, so classify first or instruct the rewriter to return the input unchanged when it already stands alone. Bound the history you feed it to the last few turns, since the whole conversation is expensive and mostly irrelevant.\n\n" +
+        "And keep the rewritten query in your traces. When a multi-turn answer is wrong, the first thing you check is what was actually searched - and without that logged, you are debugging blind.\n\n" +
         "One caveat: rewriting can lose nuance on a topic change. If the user pivots entirely, an over-eager rewriter drags in irrelevant prior context.",
       points: [
         "Follow-ups are not self-contained; raw retrieval on them fails.",
         "Rewrite into a standalone query before retrieving.",
-        "Use a small fast model — it is on every turn's critical path.",
+        "Use a small fast model - it is on every turn's critical path.",
         "Skip the rewrite when the question already stands alone.",
         "Log the rewritten query, or multi-turn debugging is blind."
       ],
-      say: "The second turn breaks naive retrieval, because a follow-up like 'what about during probation' has none of the context it needs. So I rewrite it into a standalone query against the last few turns of history before retrieving. I use a small fast model since it is on the critical path, skip the rewrite when the question already stands alone, and always log the rewritten query — otherwise you cannot debug why a multi-turn answer was wrong.",
+      say: "The second turn breaks naive retrieval, because a follow-up like 'what about during probation' has none of the context it needs. So I rewrite it into a standalone query against the last few turns of history before retrieving. I use a small fast model since it is on the critical path, skip the rewrite when the question already stands alone, and always log the rewritten query - otherwise you cannot debug why a multi-turn answer was wrong.",
       numbers: "Keep the rewrite under about 200ms with a small model. Feed it the last 3–5 turns rather than the full history.",
       wrong: "Concatenating the whole conversation into the search query. It dilutes the embedding with old topics and retrieval gets worse as the conversation grows.",
       follow: "The user changes topic completely. Does your rewriter cope?",
@@ -887,15 +887,15 @@ window.IR.q["05-rag"] = {
         "Then the step that decides whether this is useful or theatre: verify by hand. Read every generated question. Throw out ones that are trivially answerable from the wording, that are ambiguous, or that other chunks answer equally well. Expect to discard a meaningful share. Two hours of a human reading questions is what makes the set trustworthy.\n\n" +
         "Deliberately include hard cases: questions needing two documents, questions using vocabulary the corpus does not use, and unanswerable questions to measure refusal.\n\n" +
         "Now you can measure recall@k, MRR and nDCG, and every chunking or embedding decision becomes an experiment rather than an argument.\n\n" +
-        "The honest limitation: synthetic questions are phrased like the document, and real users phrase things differently. So this is a starting point. As soon as you have production traffic, replace synthetic questions with real logged queries — those are the ground truth that matters.",
+        "The honest limitation: synthetic questions are phrased like the document, and real users phrase things differently. So this is a starting point. As soon as you have production traffic, replace synthetic questions with real logged queries - those are the ground truth that matters.",
       points: [
-        "Generate questions from chunks — ground truth by construction.",
+        "Generate questions from chunks - ground truth by construction.",
         "Stratify the sample across document types.",
         "Human verification is what makes it real; expect to discard many.",
         "Include multi-document and unanswerable questions deliberately.",
         "Replace with real logged queries as soon as you have traffic."
       ],
-      say: "I generate it backwards: take a chunk, have a model write a question that chunk answers, and the correct chunk is known by construction. I sample a hundred to two hundred chunks stratified across document types, then verify by hand and discard the ambiguous or trivially-worded ones — that human pass is what makes it trustworthy. I include unanswerable questions to measure refusal, and I replace synthetic queries with real logged ones once there is traffic.",
+      say: "I generate it backwards: take a chunk, have a model write a question that chunk answers, and the correct chunk is known by construction. I sample a hundred to two hundred chunks stratified across document types, then verify by hand and discard the ambiguous or trivially-worded ones - that human pass is what makes it trustworthy. I include unanswerable questions to measure refusal, and I replace synthetic queries with real logged ones once there is traffic.",
       numbers: "100–200 verified pairs is enough to compare configurations. Expect to discard a substantial fraction of generated questions during review.",
       wrong: "Generating a thousand questions and never reading them. Unverified synthetic data produces confident metrics that measure the generator, not your retrieval.",
       follow: "Your synthetic eval says recall is 92% and users still complain. Why?",
@@ -911,13 +911,13 @@ window.IR.q["05-rag"] = {
       why: "The two RAGAS metrics that actually diagnose, and candidates routinely confuse them.",
       simple:
         "These are the two retrieval metrics worth knowing, and they answer opposite questions.\n\n" +
-        "Context recall: of everything needed to answer the question, how much did retrieval find? Low recall means the answer was not in the context at all — the model could not have succeeded.\n\n" +
+        "Context recall: of everything needed to answer the question, how much did retrieval find? Low recall means the answer was not in the context at all - the model could not have succeeded.\n\n" +
         "Context precision: of what retrieval returned, how much was actually relevant, and was it ranked near the top? Low precision means you found the answer but buried it in noise.\n\n" +
         "The diagnostic value is that they point at different fixes.\n\n" +
-        "Low recall, decent precision — the answer is not being retrieved. Look at chunking, the embedding model, or query rewriting. Raising k may help. No prompt change will fix this.\n\n" +
-        "Decent recall, low precision — the answer is there but surrounded by noise or ranked low. Add a reranker, cut k, tighten filters.\n\n" +
-        "Both low — retrieval is fundamentally broken. Check the basics: is the index stale, is a filter excluding everything, did ingestion actually complete.\n\n" +
-        "Both high but answers still wrong — retrieval is fine and the problem is generation. Now look at the prompt, the model, or faithfulness.\n\n" +
+        "Low recall, decent precision - the answer is not being retrieved. Look at chunking, the embedding model, or query rewriting. Raising k may help. No prompt change will fix this.\n\n" +
+        "Decent recall, low precision - the answer is there but surrounded by noise or ranked low. Add a reranker, cut k, tighten filters.\n\n" +
+        "Both low - retrieval is fundamentally broken. Check the basics: is the index stale, is a filter excluding everything, did ingestion actually complete.\n\n" +
+        "Both high but answers still wrong - retrieval is fine and the problem is generation. Now look at the prompt, the model, or faithfulness.\n\n" +
         "That last row is why measuring both matters. It is the only clean way to prove retrieval is not at fault, and it stops the team from tuning chunking for a week when the prompt was the problem.\n\n" +
         "Faithfulness is the third metric and it is separate: does the answer only claim things the context supports? High retrieval scores with low faithfulness means the model is inventing despite having good context.",
       points: [
@@ -927,7 +927,7 @@ window.IR.q["05-rag"] = {
         "Low precision points at reranking, k, filters.",
         "Both high with bad answers means the problem is generation."
       ],
-      say: "Context recall asks whether retrieval found everything needed; context precision asks whether what it returned was relevant and ranked highly. They point at different fixes — low recall means chunking, embeddings or query rewriting, while low precision means add a reranker or cut k. Measuring both is what lets me prove retrieval is fine and the problem is generation, which stops the team tuning the wrong stage for a week.",
+      say: "Context recall asks whether retrieval found everything needed; context precision asks whether what it returned was relevant and ranked highly. They point at different fixes - low recall means chunking, embeddings or query rewriting, while low precision means add a reranker or cut k. Measuring both is what lets me prove retrieval is fine and the problem is generation, which stops the team tuning the wrong stage for a week.",
       numbers: "Target recall above 0.9 on your eval set before tuning anything downstream. If recall is low, generation improvements cannot help.",
       wrong: "Reporting a single RAG score. It tells you something is wrong and nothing about which of five stages to look at.",
       follow: "Recall is 0.95, precision is 0.9, and users say answers are wrong. Where do you look?",
@@ -942,15 +942,15 @@ window.IR.q["05-rag"] = {
       tags: ["rag", "ingestion", "enterprise"],
       why: "Enterprise reality in India. The interesting part is permissions and incremental sync, not the connectors.",
       simple:
-        "The connectors themselves are the easy part — every platform has an API. The hard parts are the four things underneath.\n\n" +
+        "The connectors themselves are the easy part - every platform has an API. The hard parts are the four things underneath.\n\n" +
         "Permissions. Each system has its own model: SharePoint groups, Confluence space permissions, filesystem ACLs. You must capture the effective permission per document at ingestion and store it as chunk metadata, then filter every query by the user's identity. This is the requirement that most often gets deferred and most often blocks go-live, because retrofitting it means reingesting everything.\n\n" +
-        "Incremental sync. A full reindex nightly does not scale past a modest corpus. Use each platform's change feed — SharePoint delta queries, Confluence's updated-since — plus a content hash so unchanged documents are skipped. Handle deletions explicitly, or removed documents keep being cited.\n\n" +
+        "Incremental sync. A full reindex nightly does not scale past a modest corpus. Use each platform's change feed - SharePoint delta queries, Confluence's updated-since - plus a content hash so unchanged documents are skipped. Handle deletions explicitly, or removed documents keep being cited.\n\n" +
         "Normalisation. A Confluence page, a Word document and a PDF need to arrive as one internal representation with consistent metadata, so the rest of the pipeline does not branch per source.\n\n" +
-        "Rate limits and failure isolation. These APIs throttle aggressively. One slow source must not block the others, and one failed document must not abort the run — dead-letter it and continue.\n\n" +
+        "Rate limits and failure isolation. These APIs throttle aggressively. One slow source must not block the others, and one failed document must not abort the run - dead-letter it and continue.\n\n" +
         "Architecturally: one scheduler, per-source workers, a normalised queue into a shared chunk-embed-index pipeline. Each source tracks its own cursor so it can resume.\n\n" +
         "The thing to say out loud is that permissions and deletion are what turn a two-week prototype into a two-month project. Naming that upfront reads as experience.",
       points: [
-        "Capture effective permissions per document at ingestion — cannot be retrofitted.",
+        "Capture effective permissions per document at ingestion - cannot be retrofitted.",
         "Incremental sync via change feeds plus content hashing.",
         "Handle deletions, or removed documents keep being cited.",
         "Normalise all sources to one internal representation.",
@@ -969,24 +969,24 @@ window.IR.q["05-rag"] = {
       round: ["tech2"],
       level: "5-10",
       tags: ["rag", "versioning", "bfsi"],
-      why: "A real BFSI and compliance failure — answering correctly from a policy that is no longer in force.",
+      why: "A real BFSI and compliance failure - answering correctly from a policy that is no longer in force.",
       simple:
         "The failure is specific and expensive: a user asks about the current leave policy, retrieval returns the 2023 version because it happens to be a better lexical match, and the system answers confidently with a rule that no longer applies. Nothing errors. The answer is wrong in a way that carries compliance consequences.\n\n" +
         "Three mechanisms, and you generally want all three.\n\n" +
-        "Version metadata. Every chunk carries an effective-from date, an effective-to date, and a status of current or superseded. Then filter to current by default at query time. This is the primary fix, and it is a filter rather than a ranking hint — you exclude superseded content rather than hoping it ranks lower.\n\n" +
+        "Version metadata. Every chunk carries an effective-from date, an effective-to date, and a status of current or superseded. Then filter to current by default at query time. This is the primary fix, and it is a filter rather than a ranking hint - you exclude superseded content rather than hoping it ranks lower.\n\n" +
         "Explicit supersedes links. When version 4 lands, mark version 3 superseded and point at its replacement. That lets you answer 'what changed' questions and lets a citation show which version applied.\n\n" +
         "Recency in ranking. Even among current documents, prefer the newer where dates are close.\n\n" +
-        "Now the requirement people miss: you often cannot delete the old versions. In BFSI and insurance you must be able to answer what the policy was on a given past date, for audits and disputes. So keep history and make time a query parameter — default to today, allow as-of queries.\n\n" +
+        "Now the requirement people miss: you often cannot delete the old versions. In BFSI and insurance you must be able to answer what the policy was on a given past date, for audits and disputes. So keep history and make time a query parameter - default to today, allow as-of queries.\n\n" +
         "And put the effective date in the answer itself. 'Under the policy effective 1 April 2026...' lets the reader catch a version error you did not. That is cheap and it is what a compliance reviewer will look for.",
       points: [
         "Effective-from, effective-to and status on every chunk.",
-        "Filter to current by default — exclude, do not just down-rank.",
+        "Filter to current by default - exclude, do not just down-rank.",
         "Link superseded versions to their replacement.",
         "Keep history: audits need as-of-date answers.",
         "State the effective date in the answer text."
       ],
       say: "Every chunk carries effective-from, effective-to and a current-or-superseded status, and I filter to current by default rather than hoping the newer version ranks higher. I link superseded documents to their replacement so I can answer what-changed questions. Crucially I do not delete history, because audits and disputes need as-of-date answers, so time is a query parameter. And I put the effective date in the answer so a reader can catch a version error.",
-      numbers: "Retention is usually driven by regulation — commonly seven years or more in Indian BFSI. Design for as-of-date queries from the start.",
+      numbers: "Retention is usually driven by regulation - commonly seven years or more in Indian BFSI. Design for as-of-date queries from the start.",
       wrong: "Deleting the old version on upload. It solves retrieval and breaks audit, and in a regulated setting that is the more serious failure.",
       follow: "An auditor asks what the policy was in March 2024. Can your system answer?",
       followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
@@ -1001,21 +1001,21 @@ window.IR.q["05-rag"] = {
       why: "Directly relevant to the Indian market, and it touches embeddings, cost and evaluation at once.",
       simple:
         "Almost every stage changes, and the cost model changes most.\n\n" +
-        "Embeddings. You need a multilingual model with genuine cross-lingual alignment, so a Hindi question retrieves a relevant English document and the reverse. Test that explicitly — many models handle both languages separately without aligning them, which looks fine until a query crosses languages.\n\n" +
-        "Tokenisation cost. Devanagari costs substantially more tokens per word than Latin script, because tokenisers saw far less of it in training. The same paragraph in Hindi can cost two to three times what the English costs. That reshapes your chunk sizes — measured in tokens, a Hindi chunk holds less text — and it reshapes your budget. Never quote a cost figure from English benchmarks for a Hindi-majority corpus.\n\n" +
+        "Embeddings. You need a multilingual model with genuine cross-lingual alignment, so a Hindi question retrieves a relevant English document and the reverse. Test that explicitly - many models handle both languages separately without aligning them, which looks fine until a query crosses languages.\n\n" +
+        "Tokenisation cost. Devanagari costs substantially more tokens per word than Latin script, because tokenisers saw far less of it in training. The same paragraph in Hindi can cost two to three times what the English costs. That reshapes your chunk sizes - measured in tokens, a Hindi chunk holds less text - and it reshapes your budget. Never quote a cost figure from English benchmarks for a Hindi-majority corpus.\n\n" +
         "Chunking. Sentence splitting on the full stop does not work for Devanagari, which uses the danda. Use a script-aware splitter.\n\n" +
-        "Retrieval. Hybrid search matters more here, because BM25 behaves differently across scripts and transliteration is common — users type Hindi words in Latin script constantly. Normalising or indexing transliterated forms is often necessary.\n\n" +
+        "Retrieval. Hybrid search matters more here, because BM25 behaves differently across scripts and transliteration is common - users type Hindi words in Latin script constantly. Normalising or indexing transliterated forms is often necessary.\n\n" +
         "Generation. Instruct the model to answer in the user's language regardless of the retrieved document's language. Cross-lingual answering is a common requirement and it does not happen by default.\n\n" +
         "Evaluation. Your eval set must cover both languages and the cross-lingual cases, and be reviewed by someone who reads Hindi. An English-only eval set will report good numbers on a system that fails for the majority of the corpus.\n\n" +
         "Mixed-script content within one document is normal in Indian enterprises, so do not assume one language per document.",
       points: [
         "Verify cross-lingual alignment, not just multilingual support.",
-        "Devanagari costs 2–3× more tokens per word — budget and chunk for it.",
+        "Devanagari costs 2–3× more tokens per word - budget and chunk for it.",
         "Sentence splitting must handle the danda, not just the full stop.",
         "Hybrid search and transliteration handling matter more.",
         "Eval set must cover both languages and cross-lingual queries."
       ],
-      say: "I would pick a multilingual embedding model and explicitly test cross-lingual alignment, so a Hindi query retrieves relevant English documents. Tokenisation is the big cost change — Devanagari runs two to three times more tokens per word, so chunk sizes and the budget both shift. Sentence splitting needs to handle the danda, hybrid search matters more because of transliteration, and the eval set has to cover both languages and be reviewed by a Hindi reader.",
+      say: "I would pick a multilingual embedding model and explicitly test cross-lingual alignment, so a Hindi query retrieves relevant English documents. Tokenisation is the big cost change - Devanagari runs two to three times more tokens per word, so chunk sizes and the budget both shift. Sentence splitting needs to handle the danda, hybrid search matters more because of transliteration, and the eval set has to cover both languages and be reviewed by a Hindi reader.",
       numbers: "Hindi commonly costs 2–3× the tokens of equivalent English text. Cost estimates built on English benchmarks will be badly wrong for this corpus.",
       wrong: "'Use a multilingual embedding model' and stopping. It ignores the token economics, the splitting problem and the evaluation gap, which are where the project actually gets hard.",
       follow: "A user types a Hindi question in Latin script. Does retrieval work?",
@@ -1028,22 +1028,22 @@ window.IR.q["05-rag"] = {
       round: ["tech2"],
       level: "5-10",
       tags: ["rag", "deduplication", "diversity"],
-      why: "Extremely common in enterprises — the same policy exists in six near-identical copies, and they crowd out everything else.",
+      why: "Extremely common in enterprises - the same policy exists in six near-identical copies, and they crowd out everything else.",
       simple:
         "Real corpora are full of near-duplicates: the same policy attached to five emails, a template reused across forty contracts, a document and its lightly-edited revision. Retrieve top 5 and you get the same paragraph five times. Recall looks fine and the model sees one fact repeated instead of five useful ones.\n\n" +
         "Fix it at two points.\n\n" +
-        "At ingestion, which is where you should prefer to solve it. An exact content hash catches identical chunks for free. Near-duplicates need similarity comparison — MinHash or SimHash for scale, or cosine above a high threshold within the embedding space. Keep one canonical copy and record the others as alternate sources, so citations can still point at the copy the user has access to. Cheaper to store, cheaper to embed, cheaper to search.\n\n" +
+        "At ingestion, which is where you should prefer to solve it. An exact content hash catches identical chunks for free. Near-duplicates need similarity comparison - MinHash or SimHash for scale, or cosine above a high threshold within the embedding space. Keep one canonical copy and record the others as alternate sources, so citations can still point at the copy the user has access to. Cheaper to store, cheaper to embed, cheaper to search.\n\n" +
         "At query time, for what slips through. Maximal marginal relevance reranks for relevance and diversity together, penalising a candidate that closely resembles something already selected. A lambda around 0.5 to 0.7 keeps relevance dominant while breaking up clusters. Or simply drop candidates above a similarity threshold to an already-chosen chunk.\n\n" +
-        "The judgement call worth voicing: deduplicate carefully. Two chunks can be textually near-identical and differ in one number that is the entire answer — a limit that changed between regional variants of a policy. Dedup on content plus the metadata that distinguishes them, and set the threshold high.\n\n" +
+        "The judgement call worth voicing: deduplicate carefully. Two chunks can be textually near-identical and differ in one number that is the entire answer - a limit that changed between regional variants of a policy. Dedup on content plus the metadata that distinguishes them, and set the threshold high.\n\n" +
         "Watch for it by monitoring the mean pairwise similarity of retrieved sets. A high value means you are spending your k on repetition.",
       points: [
         "Near-duplicates waste k and starve the answer of other facts.",
         "Content hash at ingestion is free; MinHash or cosine for near-dupes.",
         "Keep one canonical copy, record alternates for citation.",
-        "MMR at query time for what slips through — lambda 0.5 to 0.7.",
+        "MMR at query time for what slips through - lambda 0.5 to 0.7.",
         "Dedup cautiously: one differing number can be the whole answer."
       ],
-      say: "I solve it at ingestion where possible — a content hash catches exact copies free, and MinHash or a high cosine threshold catches near-duplicates. I keep one canonical chunk and record the others as alternate sources so citations still work. For what slips through I use MMR at query time, which balances relevance against diversity. I set thresholds high, because two chunks can differ by one number that is the entire answer.",
+      say: "I solve it at ingestion where possible - a content hash catches exact copies free, and MinHash or a high cosine threshold catches near-duplicates. I keep one canonical chunk and record the others as alternate sources so citations still work. For what slips through I use MMR at query time, which balances relevance against diversity. I set thresholds high, because two chunks can differ by one number that is the entire answer.",
       numbers: "MMR lambda around 0.5–0.7 keeps relevance dominant. Monitor mean pairwise similarity within retrieved sets to detect duplicate flooding.",
       wrong: "Aggressive dedup on text similarity alone. It silently merges regional policy variants that differ in exactly the number the user asked about.",
       follow: "Two chunks are 99% identical but one limit differs. How does your dedup handle it?",
@@ -1058,25 +1058,25 @@ window.IR.q["05-rag"] = {
       tags: ["rag", "citations", "compliance"],
       why: "What regulated buyers actually demand. 'Source: policy.pdf' is not a citation they will accept.",
       simple:
-        "Pointing at a 200-page PDF is not a citation — it moves the verification work to the reader. Regulated buyers want the specific sentence.\n\n" +
+        "Pointing at a 200-page PDF is not a citation - it moves the verification work to the reader. Regulated buyers want the specific sentence.\n\n" +
         "Three approaches, increasing in fidelity.\n\n" +
         "Ask the model to cite inline. Number the chunks in the prompt and require a marker after each claim, then map markers back to sources.\n\n" +
         "    [1] {chunk text}\n" +
         "    [2] {chunk text}\n" +
         "    Cite the chunk number after every factual claim.\n\n" +
         "Cheap and it works reasonably, but the model can attach a marker to the wrong claim, so it needs verification.\n\n" +
-        "Post-hoc attribution. Generate the answer, split it into sentences, and for each sentence find the supporting chunk by entailment or similarity. More reliable because it is computed rather than self-reported, and it catches sentences that nothing supports — which are exactly your hallucinations.\n\n" +
-        "Span-level highlighting. Go further and locate the exact character offsets within the chunk. This needs offsets preserved from ingestion — chunk start and end positions within the original document — so the UI can deep-link and highlight. If you did not store offsets during parsing, you cannot do this without reingesting.\n\n" +
+        "Post-hoc attribution. Generate the answer, split it into sentences, and for each sentence find the supporting chunk by entailment or similarity. More reliable because it is computed rather than self-reported, and it catches sentences that nothing supports - which are exactly your hallucinations.\n\n" +
+        "Span-level highlighting. Go further and locate the exact character offsets within the chunk. This needs offsets preserved from ingestion - chunk start and end positions within the original document - so the UI can deep-link and highlight. If you did not store offsets during parsing, you cannot do this without reingesting.\n\n" +
         "The verification step is what makes it real: check every citation actually supports its claim, and flag or drop the ones that do not. An unverified citation is worse than none, because it looks authoritative.\n\n" +
-        "Design the UI for one-click verification — click the citation, land on the highlighted sentence in the source. That single interaction is what makes a compliance team trust the system.",
+        "Design the UI for one-click verification - click the citation, land on the highlighted sentence in the source. That single interaction is what makes a compliance team trust the system.",
       points: [
         "Document-level citation shifts verification onto the reader.",
         "Inline markers are cheap but self-reported and need checking.",
         "Post-hoc attribution is computed, and it exposes unsupported sentences.",
         "Span highlighting needs character offsets stored at ingestion.",
-        "Verify every citation — an unverified one looks authoritative and misleads."
+        "Verify every citation - an unverified one looks authoritative and misleads."
       ],
-      say: "Document-level citation just moves verification to the reader. I number chunks in the prompt and require inline markers, then verify each one post-hoc by checking the cited chunk actually supports the sentence — that also surfaces unsupported sentences, which are the hallucinations. For span-level highlighting I need character offsets preserved from ingestion, so I store those upfront since it cannot be retrofitted without reprocessing.",
+      say: "Document-level citation just moves verification to the reader. I number chunks in the prompt and require inline markers, then verify each one post-hoc by checking the cited chunk actually supports the sentence - that also surfaces unsupported sentences, which are the hallucinations. For span-level highlighting I need character offsets preserved from ingestion, so I store those upfront since it cannot be retrofitted without reprocessing.",
       numbers: "Store chunk start and end offsets at ingestion. Without them, span-level citation requires reprocessing the entire corpus.",
       wrong: "Returning the source filenames beneath the answer and calling it cited. A compliance reviewer will ask which sentence, and there is no answer.",
       follow: "The model cites a chunk that does not support the claim. How do you catch it?",
@@ -1091,7 +1091,7 @@ window.IR.q["05-rag"] = {
       tags: ["rag", "faithfulness", "evaluation"],
       why: "Faithfulness is the metric that separates a demo from a system you can defend.",
       simple:
-        "Groundedness, or faithfulness, asks a narrow question: is every claim in the answer supported by the retrieved context? Note what it does not ask — whether the answer is correct. An answer can be perfectly faithful to a document that is itself out of date. These are separate measurements and conflating them causes confusion.\n\n" +
+        "Groundedness, or faithfulness, asks a narrow question: is every claim in the answer supported by the retrieved context? Note what it does not ask - whether the answer is correct. An answer can be perfectly faithful to a document that is itself out of date. These are separate measurements and conflating them causes confusion.\n\n" +
         "The standard method decomposes the answer:\n\n" +
         "    1. Break the answer into atomic claims.\n" +
         "    2. For each claim, ask a judge model whether the context entails it.\n" +
@@ -1099,10 +1099,10 @@ window.IR.q["05-rag"] = {
         "Decomposition is what makes this work. Judging a whole paragraph gives you a mushy verdict, because three sentences are supported and one is invented. Per-claim scoring localises the problem, and you can show exactly which sentence was unsupported.\n\n" +
         "Cheaper signals exist for production, where running a judge on every response is expensive. Token overlap or an NLI model gives a fast approximate score. Sample a percentage of live traffic for full judging rather than all of it.\n\n" +
         "Validate the judge itself. Hand-label fifty responses, check the judge agrees with you, and only then trust its numbers at scale. An unvalidated judge is a confident random number generator.\n\n" +
-        "Then the diagnostic pairing that matters. High faithfulness with a wrong answer means retrieval gave you the wrong document — go fix retrieval. Low faithfulness means the model is inventing despite good context — tighten the prompt, lower the temperature, or add an output check. Measuring both is what tells you which team owns the bug.",
+        "Then the diagnostic pairing that matters. High faithfulness with a wrong answer means retrieval gave you the wrong document - go fix retrieval. Low faithfulness means the model is inventing despite good context - tighten the prompt, lower the temperature, or add an output check. Measuring both is what tells you which team owns the bug.",
       points: [
         "Faithfulness asks if claims are supported, not if they are true.",
-        "Decompose into atomic claims — paragraph-level judging is mush.",
+        "Decompose into atomic claims - paragraph-level judging is mush.",
         "Score as supported claims over total claims.",
         "Validate the judge against human labels before trusting it.",
         "Faithful but wrong means retrieval; unfaithful means generation."
@@ -1126,19 +1126,19 @@ window.IR.q["05-rag"] = {
         "Query embedding. One short embedding call. Negligible per request, but it is on every request including cache misses.\n\n" +
         "Vector search. Compute or managed-service cost, usually priced by index size and queries rather than per call. Often billed as fixed infrastructure.\n\n" +
         "Reranking. A cross-encoder over 20 to 50 candidates. Small if self-hosted, a real line item on a hosted API.\n\n" +
-        "Generation input. The dominant cost and the one people underestimate. System prompt plus retrieved chunks plus conversation history. Five chunks of 500 tokens is 2,500 tokens before anything else — the retrieved context, not the user's question, is almost always the largest input.\n\n" +
+        "Generation input. The dominant cost and the one people underestimate. System prompt plus retrieved chunks plus conversation history. Five chunks of 500 tokens is 2,500 tokens before anything else - the retrieved context, not the user's question, is almost always the largest input.\n\n" +
         "Generation output. Priced several times higher than input per token, but usually far fewer tokens, so typically smaller in total than input.\n\n" +
         "Then the multipliers people forget when they build the estimate: retries after failures, the query-rewrite call on multi-turn, evaluation and judge calls on sampled traffic, and re-embedding the corpus whenever you change models or reingest.\n\n" +
         "Present it per thousand requests, because per-request numbers in fractions of a rupee are hard to reason about. Then the levers, in order of impact: cut retrieved context first since it is the biggest line, then cache, then route simple queries to a cheaper model, then trim output length.\n\n" +
         "And separate fixed from variable. Vector database and any self-hosted reranker are largely fixed; model calls scale with traffic. That distinction is what a finance conversation actually needs.",
       points: [
         "Embedding, search, rerank, generation input, generation output.",
-        "Retrieved context dominates input tokens — usually the biggest line.",
+        "Retrieved context dominates input tokens - usually the biggest line.",
         "Output costs more per token but there are far fewer of them.",
         "Include retries, rewrites, and eval calls in the estimate.",
         "Separate fixed infrastructure from per-request variable cost."
       ],
-      say: "Query embedding, vector search, reranking, generation input and generation output. Generation input dominates, because five chunks of five hundred tokens is far more than the user's question — retrieved context is almost always the largest line. Output is pricier per token but there is much less of it. I add retries, query rewrites and sampled eval calls, present it per thousand requests, and separate fixed infrastructure from variable per-call cost.",
+      say: "Query embedding, vector search, reranking, generation input and generation output. Generation input dominates, because five chunks of five hundred tokens is far more than the user's question - retrieved context is almost always the largest line. Output is pricier per token but there is much less of it. I add retries, query rewrites and sampled eval calls, present it per thousand requests, and separate fixed infrastructure from variable per-call cost.",
       numbers: "Quote per thousand requests. The fastest lever is cutting retrieved context, since it is usually the largest single component of the bill.",
       wrong: "Quoting only the generation call. It ignores embedding, reranking and eval traffic, and the real bill comes in well above the estimate.",
       follow: "Cut this by half without hurting quality. What goes first?",
@@ -1172,12 +1172,12 @@ window.IR.q["05-rag"] = {
         "Measure p95, not the mean. The mean hides the tail, and the tail is what users complain about. Trace per stage so you know which one moved.",
       points: [
         "Allocate a budget per stage, then measure against it.",
-        "With streaming, TTFT is what the user feels — optimise that.",
+        "With streaming, TTFT is what the user feels - optimise that.",
         "Parallelise independent stages; cache aggressively.",
         "Fewer chunks improves latency and quality together.",
         "Track p95 per stage, not the overall mean."
       ],
-      say: "I allocate a budget per stage — rewrite, embed, search, rerank, generation — then measure against it. The reframing is that with streaming the user feels time to first token, not total time, so I stream first. Then parallelise independent stages, cache exact and near-duplicate queries, and cut k, which improves latency and quality together. I track p95 per stage rather than the mean, because the tail is what people complain about.",
+      say: "I allocate a budget per stage - rewrite, embed, search, rerank, generation - then measure against it. The reframing is that with streaming the user feels time to first token, not total time, so I stream first. Then parallelise independent stages, cache exact and near-duplicate queries, and cut k, which improves latency and quality together. I track p95 per stage rather than the mean, because the tail is what people complain about.",
       numbers: "A workable split: ~50ms embedding, ~50ms search, ~150ms rerank, ~600ms to first token. Optimise the stage that actually dominates your p95.",
       wrong: "Jumping to a smaller model first. It costs quality, and retrieval and prompt size usually offer larger savings before you touch the model.",
       follow: "Your p95 is 4s but p50 is 900ms. What is going on?",
@@ -1195,7 +1195,7 @@ window.IR.q["05-rag"] = {
         "The motivation is usually cost, data residency, or wanting one database instead of two. Say which, because it shapes the plan.\n\n" +
         "The sequence I would follow.\n\n" +
         "Baseline first. Run your retrieval eval against the current system and record recall@k and latency. Without this you cannot tell whether the migration degraded anything, and 'it feels the same' is not a migration sign-off.\n\n" +
-        "Set up pgvector with a matching index. HNSW with equivalent parameters — m and ef_construction — and the same distance metric. A silent metric mismatch between cosine and L2 changes your ranking entirely.\n\n" +
+        "Set up pgvector with a matching index. HNSW with equivalent parameters - m and ef_construction - and the same distance metric. A silent metric mismatch between cosine and L2 changes your ranking entirely.\n\n" +
         "Backfill. Export vectors with their ids and metadata and bulk-load them. Do not re-embed if you can avoid it: re-embedding is expensive and risks a different model version producing slightly different vectors. Build the index after loading, not during, which is substantially faster.\n\n" +
         "Dual-write. Point ingestion at both stores so they stay in sync while you validate. This is what lets you take your time.\n\n" +
         "Shadow-read. Send production queries to both, compare result sets and latency, and log the differences. Some divergence is expected because these are approximate indexes; large divergence means a configuration mismatch.\n\n" +
@@ -1210,7 +1210,7 @@ window.IR.q["05-rag"] = {
         "Roll out behind a flag; keep dual-write until confident."
       ],
       say: "I baseline recall@k and latency first, so I can prove the migration did not regress. Then set up pgvector with a matching distance metric and HNSW parameters, bulk-load exported vectors rather than re-embedding, and build the index after loading. I dual-write to keep both in sync, shadow-read production queries to compare results, re-run the eval and tune ef_search until recall matches, then cut over behind a feature flag.",
-      numbers: "Build the index after bulk loading, not per row. Tune ef_search until recall matches baseline — that is the knob that trades recall against latency.",
+      numbers: "Build the index after bulk loading, not per row. Tune ef_search until recall matches baseline - that is the knob that trades recall against latency.",
       wrong: "Exporting, importing and switching over in one step. Any recall regression from a mismatched metric or index parameter reaches users before you notice.",
       follow: "Post-migration recall dropped 4 points. What do you check first?",
       followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
@@ -1224,16 +1224,16 @@ window.IR.q["05-rag"] = {
       tags: ["rag", "multimodal", "ingestion"],
       why: "Financial reports, manuals and slide decks carry meaning in figures. Text-only ingestion silently drops it.",
       simple:
-        "A text-only pipeline extracts nothing useful from a chart. The number the user wants is in the bars, and your index contains at best a caption. The failure is silent — ingestion succeeds and the content is simply absent.\n\n" +
+        "A text-only pipeline extracts nothing useful from a chart. The number the user wants is in the bars, and your index contains at best a caption. The failure is silent - ingestion succeeds and the content is simply absent.\n\n" +
         "Three approaches.\n\n" +
-        "Caption and index. At ingestion, send each image to a vision model and generate a rich text description — what the chart shows, its axes, the notable values and the trend. Index that text alongside the surrounding document text, storing the image reference in metadata. Retrieval stays entirely text-based, so nothing else in the pipeline changes. This is the pragmatic default: cheap at query time, one-off cost at ingestion, and it works with the infrastructure you already have.\n\n" +
+        "Caption and index. At ingestion, send each image to a vision model and generate a rich text description - what the chart shows, its axes, the notable values and the trend. Index that text alongside the surrounding document text, storing the image reference in metadata. Retrieval stays entirely text-based, so nothing else in the pipeline changes. This is the pragmatic default: cheap at query time, one-off cost at ingestion, and it works with the infrastructure you already have.\n\n" +
         "Multimodal embeddings. Embed images and text into a shared space so a query can match an image directly. Elegant, but it needs a multimodal embedding model and generally retrieves less precisely on text-heavy corpora.\n\n" +
         "Retrieve then look. Retrieve the page, then pass the actual image to a vision-capable model at generation time so it reads the chart to answer. Most accurate for detailed numeric questions, most expensive, and slower.\n\n" +
         "In practice I combine the first and third: caption for retrieval, then pass the source image to the model when the retrieved chunk is figure-derived.\n\n" +
-        "Two details. Keep the image reference in metadata so the answer can display the figure — showing the chart is often a better answer than describing it. And separate decorative images from meaningful ones during ingestion, or you will pay to caption every logo and page-border in the corpus.",
+        "Two details. Keep the image reference in metadata so the answer can display the figure - showing the chart is often a better answer than describing it. And separate decorative images from meaningful ones during ingestion, or you will pay to caption every logo and page-border in the corpus.",
       points: [
         "Text-only ingestion drops figure content silently.",
-        "Caption-and-index is the pragmatic default — nothing downstream changes.",
+        "Caption-and-index is the pragmatic default - nothing downstream changes.",
         "Multimodal embeddings are elegant but less precise on text-heavy corpora.",
         "For numeric detail, pass the actual image at generation time.",
         "Filter decorative images or you pay to caption every logo."
@@ -1254,20 +1254,20 @@ window.IR.q["05-rag"] = {
       why: "The pilot-to-production gap is where most Indian enterprise GenAI projects actually die.",
       simple:
         "Pilots succeed under conditions that do not survive contact with real users. Four things change at once.\n\n" +
-        "Query diversity. The pilot had ten friendly testers asking questions the team anticipated. A hundred real users ask things nobody designed for — vague, misspelled, multi-part, in mixed languages, about documents outside the corpus. Retrieval quality falls because the query distribution shifted, not because anything technically broke.\n\n" +
+        "Query diversity. The pilot had ten friendly testers asking questions the team anticipated. A hundred real users ask things nobody designed for - vague, misspelled, multi-part, in mixed languages, about documents outside the corpus. Retrieval quality falls because the query distribution shifted, not because anything technically broke.\n\n" +
         "Corpus growth. The pilot ran on a curated set. Production has everything: duplicates, drafts, superseded versions, scanned files, irrelevant departments. More documents means more ways to retrieve the wrong one, and precision falls even with recall unchanged.\n\n" +
         "Concurrency. Rate limits, connection pool exhaustion, and index memory pressure all appear together. p95 latency degrades sharply while p50 still looks fine, which is why the dashboard looks healthy while users complain.\n\n" +
         "Trust. Ten testers forgive a wrong answer. A hundred users tell each other, and one confident wrong answer in a visible case can end adoption regardless of your accuracy numbers.\n\n" +
-        "What I would do: instrument first — log queries, retrieved chunks, scores and feedback, because you cannot fix what you cannot see. Then cluster the failing queries; there are usually two or three dominant patterns rather than a hundred unique problems. Build the eval set from real logged queries rather than the synthetic ones. Add refusal so the system stops answering confidently outside its corpus. Then fix the top cluster.\n\n" +
+        "What I would do: instrument first - log queries, retrieved chunks, scores and feedback, because you cannot fix what you cannot see. Then cluster the failing queries; there are usually two or three dominant patterns rather than a hundred unique problems. Build the eval set from real logged queries rather than the synthetic ones. Add refusal so the system stops answering confidently outside its corpus. Then fix the top cluster.\n\n" +
         "The preventable version of this is running the pilot on the full corpus with real users from the start, rather than a curated set with colleagues.",
       points: [
-        "Query distribution shifts — real users ask what nobody designed for.",
+        "Query distribution shifts - real users ask what nobody designed for.",
         "Full corpus adds duplicates, drafts and superseded versions.",
         "Concurrency exposes rate limits and p95 degradation.",
         "One visible wrong answer can end adoption regardless of metrics.",
         "Instrument, cluster failures, rebuild the eval set from real queries."
       ],
-      say: "Usually four things at once: real users ask questions nobody anticipated so the query distribution shifts, the full corpus brings duplicates and superseded documents that hurt precision, concurrency exposes rate limits and p95 latency, and trust breaks after one visible wrong answer. I would instrument everything first, cluster the failing queries — there are normally two or three patterns, not a hundred — rebuild the eval set from real logged queries, and add refusal.",
+      say: "Usually four things at once: real users ask questions nobody anticipated so the query distribution shifts, the full corpus brings duplicates and superseded documents that hurt precision, concurrency exposes rate limits and p95 latency, and trust breaks after one visible wrong answer. I would instrument everything first, cluster the failing queries - there are normally two or three patterns, not a hundred - rebuild the eval set from real logged queries, and add refusal.",
       numbers: "Failing queries usually cluster into a handful of patterns. Fixing the top two often recovers most of the perceived quality gap.",
       wrong: "Concluding the model is not good enough and proposing a bigger one. The failures are almost always retrieval, corpus hygiene and unhandled query types.",
       follow: "You have one week. Which of those four do you fix first?",
@@ -1283,16 +1283,16 @@ window.IR.q["05-rag"] = {
       why: "Single-shot retrieval fails on multi-hop questions, and most candidates do not notice why.",
       simple:
         "Take: 'Does the leave policy for contractors differ from the one for full-time staff?' The answer lives in two documents, and neither alone is sufficient.\n\n" +
-        "Standard retrieval struggles because the query embedding is a blend of both topics and matches neither cleanly. Worse, top-k can fill entirely with chunks from the better-matching document, so one side of the comparison is simply absent — and the model answers confidently from half the evidence.\n\n" +
+        "Standard retrieval struggles because the query embedding is a blend of both topics and matches neither cleanly. Worse, top-k can fill entirely with chunks from the better-matching document, so one side of the comparison is simply absent - and the model answers confidently from half the evidence.\n\n" +
         "Three approaches.\n\n" +
         "Query decomposition. Split the question into sub-questions, retrieve for each independently, then combine the contexts:\n\n" +
         "    -> What is the leave policy for contractors?\n" +
         "    -> What is the leave policy for full-time staff?\n\n" +
         "Each sub-query is clean and retrieves well. This handles most comparison and multi-part questions, and it is the one I would reach for first.\n\n" +
-        "Iterative retrieval. Retrieve, let the model identify what is still missing, retrieve again. Necessary for genuine multi-hop chains where the second query depends on the first result — 'who approves expenses for the department that owns this system' needs the department before you can find its approver.\n\n" +
+        "Iterative retrieval. Retrieve, let the model identify what is still missing, retrieve again. Necessary for genuine multi-hop chains where the second query depends on the first result - 'who approves expenses for the department that owns this system' needs the department before you can find its approver.\n\n" +
         "Graph traversal. If entity relationships are explicit, follow edges rather than searching. Powerful for well-defined relational questions, expensive to build.\n\n" +
         "Practical detail: allocate k per sub-question rather than sharing one budget, so each side of a comparison gets guaranteed representation. That single change fixes most comparison failures.\n\n" +
-        "And detect these queries rather than decomposing everything — a cheap classifier or the presence of comparison language is enough. Decomposition costs an extra model call and latency, so spend it only where it is needed.",
+        "And detect these queries rather than decomposing everything - a cheap classifier or the presence of comparison language is enough. Decomposition costs an extra model call and latency, so spend it only where it is needed.",
       points: [
         "Blended queries match neither topic cleanly.",
         "Top-k can fill from one document, hiding half the answer.",
@@ -1301,7 +1301,7 @@ window.IR.q["05-rag"] = {
         "Allocate k per sub-question so each side is represented."
       ],
       say: "A blended query matches neither topic cleanly, and top-k often fills entirely from one document so half the comparison is missing. I decompose into sub-questions, retrieve for each independently with its own k allocation so both sides are guaranteed representation, then combine the contexts. For genuine multi-hop chains where the second query depends on the first answer, I iterate. I detect these queries rather than decomposing every request.",
-      numbers: "Allocate k per sub-question rather than sharing one budget. Decomposition adds one model call — roughly 100–300ms with a small model.",
+      numbers: "Allocate k per sub-question rather than sharing one budget. Decomposition adds one model call - roughly 100–300ms with a small model.",
       wrong: "Raising k and hoping both documents appear. It sometimes works, it doubles your input cost, and it fails silently when one document dominates the ranking.",
       follow: "The second question depends on the first answer. Does decomposition still work?",
       followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
@@ -1319,9 +1319,9 @@ window.IR.q["05-rag"] = {
         "That single check splits the problem in two and it takes minutes. Take twenty failing queries, look at what was retrieved, and ask whether the answer was present.\n\n" +
         "If the right chunk was not retrieved, nothing downstream can help. No prompt engineering, no better model, no temperature change. The information was not there. You are looking at chunking, embeddings, query phrasing or filters.\n\n" +
         "If the right chunk was retrieved and the answer is still wrong, retrieval is fine and you look at ranking position, k, the prompt or the model.\n\n" +
-        "I lead with this for two reasons. Retrieval failures are the most common cause of bad RAG by a wide margin — most quality problems are retrieval problems, not generation problems. And it is the cheapest diagnostic available; it needs no infrastructure, just reading twenty examples.\n\n" +
+        "I lead with this for two reasons. Retrieval failures are the most common cause of bad RAG by a wide margin - most quality problems are retrieval problems, not generation problems. And it is the cheapest diagnostic available; it needs no infrastructure, just reading twenty examples.\n\n" +
         "It is also the check teams skip. The instinct is to tune the prompt, because prompts feel editable and retrieval feels like plumbing. So teams spend a week rewriting instructions for a system that was never given the right context.\n\n" +
-        "If pressed for the single most common root cause underneath: chunking that separated the answer from the context that makes it findable — a value split from its heading, a clause split from its scope.\n\n" +
+        "If pressed for the single most common root cause underneath: chunking that separated the answer from the context that makes it findable - a value split from its heading, a clause split from its scope.\n\n" +
         "The habit worth stating: never debug RAG end to end. Always split retrieval from generation first, because they have different owners, different fixes and different metrics.",
       points: [
         "Check first whether the correct chunk was retrieved at all.",
@@ -1332,7 +1332,7 @@ window.IR.q["05-rag"] = {
       ],
       say: "Whether the correct chunk was retrieved at all. I take twenty failing queries and read what came back. If the answer was not in the context, no prompt or model change can help and I go to chunking, embeddings or filters. If it was there, retrieval is fine and I look at ranking, k and the prompt. It is the cheapest diagnostic available and the one teams skip, because prompts feel editable and retrieval feels like plumbing.",
       numbers: "Twenty failing queries is usually enough to see the pattern. Most RAG quality problems resolve to retrieval rather than generation.",
-      wrong: "'I would improve the prompt.' It is the most common instinct and it is the wrong first move — you may be instructing a model that never received the answer.",
+      wrong: "'I would improve the prompt.' It is the most common instinct and it is the wrong first move - you may be instructing a model that never received the answer.",
       follow: "You check and the right chunk was there every time. Where do you go next?",
       followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
@@ -1345,18 +1345,18 @@ window.IR.q["05-rag"] = {
       tags: ["rag", "summarisation", "long-context", "cost", "architecture"],
       why: "The question that catches people who have only built question-answering. Retrieval is the reflex answer and it is the wrong one.",
       simple:
-        "The first thing to say is that this is not a retrieval problem, and saying so is most of the mark. Retrieval answers a question by finding the few chunks that matter. A summary needs every page to have been read — you cannot summarise a corpus from its top ten chunks, because the pages you skipped are exactly the ones nobody asked about.\n\n" +
-        "So the shape is map-reduce. Map: summarise each document, or each section, independently. Those calls are independent, so they parallelise, and a cheap model is fine for this pass. Reduce: summarise the summaries, in a tree if the intermediate set is still too large for one context — combine ten at a time until one remains. The final reduce is where you spend the good model, because that is the output the client actually reads.\n\n" +
-        "Refine is the alternative — carry a running summary forward document by document. It preserves narrative order, which matters for something like a chronological case file, but it is strictly sequential, so it is slow, and one bad early summary poisons everything after it. I default to map-reduce and reach for refine only when order genuinely carries meaning.\n\n" +
-        "Then the parts people forget. Cost is knowable in advance: you pay for every page at least once, so quote it before you build. Detail loss is real — each reduce level throws away specifics, so carry citations back to the source page at every level, or the final summary cannot be audited. And ask what the summary is for, because 'summarise everything' is usually a proxy for a real question, and if it is, a targeted query is cheaper and better.",
+        "The first thing to say is that this is not a retrieval problem, and saying so is most of the mark. Retrieval answers a question by finding the few chunks that matter. A summary needs every page to have been read - you cannot summarise a corpus from its top ten chunks, because the pages you skipped are exactly the ones nobody asked about.\n\n" +
+        "So the shape is map-reduce. Map: summarise each document, or each section, independently. Those calls are independent, so they parallelise, and a cheap model is fine for this pass. Reduce: summarise the summaries, in a tree if the intermediate set is still too large for one context - combine ten at a time until one remains. The final reduce is where you spend the good model, because that is the output the client actually reads.\n\n" +
+        "Refine is the alternative - carry a running summary forward document by document. It preserves narrative order, which matters for something like a chronological case file, but it is strictly sequential, so it is slow, and one bad early summary poisons everything after it. I default to map-reduce and reach for refine only when order genuinely carries meaning.\n\n" +
+        "Then the parts people forget. Cost is knowable in advance: you pay for every page at least once, so quote it before you build. Detail loss is real - each reduce level throws away specifics, so carry citations back to the source page at every level, or the final summary cannot be audited. And ask what the summary is for, because 'summarise everything' is usually a proxy for a real question, and if it is, a targeted query is cheaper and better.",
       points: [
         "Say it first: summarisation is not retrieval. Every page must be read.",
         "Map-reduce: parallel per-document summaries on a cheap model, then a tree reduce.",
         "Spend the expensive model only on the final reduce.",
-        "Refine preserves order but is sequential and propagates early errors — use it only when order matters.",
+        "Refine preserves order but is sequential and propagates early errors - use it only when order matters.",
         "Cost is predictable: every page is paid for at least once. Quote it up front.",
         "Carry citations through every reduce level, or the output cannot be audited.",
-        "Ask what the summary is for — it is often a proxy for one specific question."
+        "Ask what the summary is for - it is often a proxy for one specific question."
       ],
       say: "First I would say this is not a retrieval problem, because a summary needs every page read and retrieval only finds the few that match. So map-reduce: summarise each document independently on a cheap model, in parallel, then reduce those summaries in a tree, spending the good model only on the final pass. I carry citations through every level so the output stays auditable, and I quote the cost up front, because every page gets paid for at least once.",
       numbers: "5,000 pages is roughly 2.5M tokens. One map pass on a cheap model is a few dollars; the same corpus through a frontier model on every request is not something you do twice.",
@@ -1371,23 +1371,23 @@ window.IR.q["05-rag"] = {
       round: ["tech2"],
       level: "5-10",
       tags: ["rag", "generation", "trust", "citations", "judgement"],
-      why: "Guaranteed in any real corpus with history, and the default behaviour — silently picking one — is the worst possible outcome.",
+      why: "Guaranteed in any real corpus with history, and the default behaviour - silently picking one - is the worst possible outcome.",
       simple:
         "First, understand what the model does by default: it picks one, usually the one that appears earlier or reads more confidently, and presents it as settled fact. The user has no idea a conflict existed. That is the failure to name.\n\n" +
-        "Most contradictions are not real disagreements, so triage first. Usually one document is simply superseded — an old policy and its revision, both ingested. That is a metadata problem, not a reasoning problem, and it is solved at ingestion with effective dates and a current-version flag, then filtered at retrieval so the stale one never competes. Fixing this in the prompt is fixing it in the wrong place.\n\n" +
-        "Second class: both are current but scoped differently. A leave policy for permanent staff and one for contractors genuinely differ, and the right response is to ask which applies, or to answer with both scopes stated. That is a chunking and metadata failure too — the scope was in a heading that got separated from the text.\n\n" +
+        "Most contradictions are not real disagreements, so triage first. Usually one document is simply superseded - an old policy and its revision, both ingested. That is a metadata problem, not a reasoning problem, and it is solved at ingestion with effective dates and a current-version flag, then filtered at retrieval so the stale one never competes. Fixing this in the prompt is fixing it in the wrong place.\n\n" +
+        "Second class: both are current but scoped differently. A leave policy for permanent staff and one for contractors genuinely differ, and the right response is to ask which applies, or to answer with both scopes stated. That is a chunking and metadata failure too - the scope was in a heading that got separated from the text.\n\n" +
         "Third class: genuinely conflicting current sources. Now the model must not arbitrate. It should surface the conflict, cite both, and say they disagree. In regulated domains that is the only defensible behaviour, and 'I found two conflicting answers, here they are' is far more useful than a confident wrong one.\n\n" +
-        "So the instruction in the prompt is explicit: if retrieved context conflicts, do not choose — report both with citations. And detect it, because you cannot fix what you cannot see: log when retrieved chunks disagree, and route repeat offenders to whoever owns the content. The real fix is usually upstream, in the corpus.",
+        "So the instruction in the prompt is explicit: if retrieved context conflicts, do not choose - report both with citations. And detect it, because you cannot fix what you cannot see: log when retrieved chunks disagree, and route repeat offenders to whoever owns the content. The real fix is usually upstream, in the corpus.",
       points: [
         "Default behaviour is silently picking one. That is the failure to name first.",
         "Triage: superseded versions, different scopes, or genuine conflict.",
-        "Superseded is a metadata fix — effective dates, current-version flag, filter at retrieval.",
-        "Different scopes is a chunking fix — the qualifier got separated from the text.",
+        "Superseded is a metadata fix - effective dates, current-version flag, filter at retrieval.",
+        "Different scopes is a chunking fix - the qualifier got separated from the text.",
         "Genuine conflict: surface both with citations. The model must not arbitrate.",
         "Instruct explicitly in the prompt: on conflict, report both rather than choose.",
-        "Log detected conflicts and route them to the content owner — the real fix is upstream."
+        "Log detected conflicts and route them to the content owner - the real fix is upstream."
       ],
-      say: "By default it picks one and states it as fact, which is the worst outcome because the user never learns there was a conflict. So I triage: most contradictions are superseded versions, which is a metadata fix with effective dates and filtering at retrieval. Some are different scopes, which is a chunking fix. For genuine conflicts the model must not arbitrate — it surfaces both with citations and says they disagree, and I log it for the content owner.",
+      say: "By default it picks one and states it as fact, which is the worst outcome because the user never learns there was a conflict. So I triage: most contradictions are superseded versions, which is a metadata fix with effective dates and filtering at retrieval. Some are different scopes, which is a chunking fix. For genuine conflicts the model must not arbitrate - it surfaces both with citations and says they disagree, and I log it for the content owner.",
       numbers: "In a corpus with any history, superseded documents are the majority of apparent contradictions. Fix ingestion metadata before you touch the prompt.",
       wrong: "Instructing the model to 'use the most reliable source'. It has no basis for that judgement, so it invents one and you get a confident answer chosen at random.",
       follow: "Both documents are current, both are in scope, and the user needs one answer now. What do you return?",
@@ -1402,10 +1402,10 @@ window.IR.q["05-rag"] = {
       tags: ["rag", "ingestion", "parsing", "multimodal", "architecture"],
       why: "The most common real enterprise brief, and the answer reveals immediately whether you have ingested anything beyond clean PDFs.",
       simple:
-        "The instinct is to find one loader that handles everything. Resist it — the formats fail in genuinely different ways, and a single parser handles all of them badly.\n\n" +
+        "The instinct is to find one loader that handles everything. Resist it - the formats fail in genuinely different ways, and a single parser handles all of them badly.\n\n" +
         "So: a router by file type, format-specific parsers behind it, and one normalised internal document that everything converges to. That contract is the design. Every parser, whatever it consumed, emits the same thing: text, a structural path, a source id, a page or sheet or slide reference, and permissions. Downstream chunking and embedding then never know or care what the original format was, which is what keeps the pipeline maintainable as formats get added.\n\n" +
-        "Per format, the thing that actually breaks. PDFs are the worst case — a text layer if you are lucky, OCR if not, plus two-column layouts that scramble reading order and tables that become jumbled lines. Word files are structurally easy and carry a real heading hierarchy you should keep, but watch tracked changes and comments, which you almost certainly do not want indexed as content. Excel is not prose and should not be treated as prose: a sheet is either a table, which belongs in a database for aggregation as in ar-11, or it is a form with labelled cells, which you serialise per row into sentences. Getting that call wrong is the classic Excel mistake. Images need a vision model to produce a caption or an extraction, and you index that text while keeping a pointer back to the image. CSVs are the same decision as Excel — usually aggregation, so usually not the vector store.\n\n" +
-        "Then the operational half that separates senior answers. Every parser fails on something, so quarantine rather than crash: a dead-letter queue with the file and the error, because in a real corpus a few percent will not parse and you need to see which. Keep a per-format quality metric — characters extracted per page is a cheap and effective smoke test for a silently empty OCR run. Make ingestion idempotent with a content hash so re-runs are safe. And process out of a queue, since one 800-page scanned PDF should not block a thousand small files.\n\n" +
+        "Per format, the thing that actually breaks. PDFs are the worst case - a text layer if you are lucky, OCR if not, plus two-column layouts that scramble reading order and tables that become jumbled lines. Word files are structurally easy and carry a real heading hierarchy you should keep, but watch tracked changes and comments, which you almost certainly do not want indexed as content. Excel is not prose and should not be treated as prose: a sheet is either a table, which belongs in a database for aggregation as in ar-11, or it is a form with labelled cells, which you serialise per row into sentences. Getting that call wrong is the classic Excel mistake. Images need a vision model to produce a caption or an extraction, and you index that text while keeping a pointer back to the image. CSVs are the same decision as Excel - usually aggregation, so usually not the vector store.\n\n" +
+        "Then the operational half that separates senior answers. Every parser fails on something, so quarantine rather than crash: a dead-letter queue with the file and the error, because in a real corpus a few percent will not parse and you need to see which. Keep a per-format quality metric - characters extracted per page is a cheap and effective smoke test for a silently empty OCR run. Make ingestion idempotent with a content hash so re-runs are safe. And process out of a queue, since one 800-page scanned PDF should not block a thousand small files.\n\n" +
         "Finally, say that ingestion is where RAG quality is won or lost. If the parser dropped a table, no amount of reranking recovers it.",
       points: [
         "Router by file type, format-specific parsers, one normalised internal document.",
@@ -1413,13 +1413,13 @@ window.IR.q["05-rag"] = {
         "PDF is the hard case: OCR, reading order, tables. Word is easy but strip tracked changes.",
         "Excel and CSV are a decision, not a parse: table for aggregation, or form to serialise per row.",
         "Images: caption or extract with a vision model, index the text, keep a pointer to the original.",
-        "Quarantine failures in a dead-letter queue — a few percent always fail and you need to see them.",
+        "Quarantine failures in a dead-letter queue - a few percent always fail and you need to see them.",
         "Track characters extracted per page to catch silently empty OCR.",
         "Content-hash for idempotent re-runs; queue-based so one huge file blocks nothing."
       ],
-      say: "I route by file type into format-specific parsers that all emit one normalised document — text, structure path, source id, page or sheet reference and permissions — so chunking never knows the original format. PDFs need OCR and reading-order care, Word needs tracked changes stripped, and Excel and CSV are a decision rather than a parse: aggregation goes to a database, forms get serialised per row. Failures go to a dead-letter queue, because a few percent always fail.",
+      say: "I route by file type into format-specific parsers that all emit one normalised document - text, structure path, source id, page or sheet reference and permissions - so chunking never knows the original format. PDFs need OCR and reading-order care, Word needs tracked changes stripped, and Excel and CSV are a decision rather than a parse: aggregation goes to a database, forms get serialised per row. Failures go to a dead-letter queue, because a few percent always fail.",
       numbers: "Expect a few percent of any real corpus to fail parsing. Characters-per-page is the cheapest early warning that OCR silently produced nothing.",
-      wrong: "\"I'd use a loader that handles all formats.\" It parses everything and understands nothing — Excel becomes prose, tables dissolve, and the failures are silent rather than loud.",
+      wrong: "\"I'd use a loader that handles all formats.\" It parses everything and understands nothing - Excel becomes prose, tables dissolve, and the failures are silent rather than loud.",
       follow: "The same contract exists as a PDF and a Word file, both ingested. What happens at retrieval?",
       followAnswer: "In the room, address this by connecting the specific scenario directly to system trade-offs: First, state the immediate operational implication (e.g. impact on latency, cost, memory, or correctness). Second, provide the concrete architectural mitigation (such as adjusting thresholds, caching, fallback routing, or code-level validation). Finally, explain how you would measure and verify the resolution using automated metrics."
     },
@@ -1433,18 +1433,18 @@ window.IR.q["05-rag"] = {
       why: "Tests whether you have run ingestion as an operational process rather than a notebook cell.",
       simple:
         "Scanned means no text layer, so every page is an image and OCR is the whole job. That reframes it: this is not a parsing task measured in seconds, it is a batch job measured in minutes to hours, and the answer should sound like one.\n\n" +
-        "Do not load it into memory whole. Stream page by page, or split it into page ranges and process them as independent units. This matters for more than memory — it gives you per-page progress, per-page retry, and the ability to resume rather than restart when something fails at page 600.\n\n" +
+        "Do not load it into memory whole. Stream page by page, or split it into page ranges and process them as independent units. This matters for more than memory - it gives you per-page progress, per-page retry, and the ability to resume rather than restart when something fails at page 600.\n\n" +
         "OCR each page, and keep the confidence score. That score is the most useful number in the pipeline: pages below a threshold get flagged for review rather than silently entering the index as garbage. A page of noise that OCR rendered as random characters will embed happily and pollute retrieval forever.\n\n" +
-        "Then the structure problem, which is the part people miss. A scanned document has no headings, no bookmarks, no metadata — everything rag-21 relies on is gone. So you reconstruct: detect headings from font size and position if the OCR engine gives layout, or run a cheap model over each page to label its section. Without that you are left with page-number-only citations and flat chunks, which is a materially worse product.\n\n" +
-        "Operationally: run it as a queued background job with checkpointing per page range, make it idempotent on a content hash so a retry does not duplicate chunks, and write results incrementally rather than at the end. Budget it — 800 pages of OCR plus vision captioning is a real cost, and it should be quoted before it is run, once, not per query.\n\n" +
+        "Then the structure problem, which is the part people miss. A scanned document has no headings, no bookmarks, no metadata - everything rag-21 relies on is gone. So you reconstruct: detect headings from font size and position if the OCR engine gives layout, or run a cheap model over each page to label its section. Without that you are left with page-number-only citations and flat chunks, which is a materially worse product.\n\n" +
+        "Operationally: run it as a queued background job with checkpointing per page range, make it idempotent on a content hash so a retry does not duplicate chunks, and write results incrementally rather than at the end. Budget it - 800 pages of OCR plus vision captioning is a real cost, and it should be quoted before it is run, once, not per query.\n\n" +
         "And the honest check first: is it actually scanned? Many PDFs that look scanned have a partial text layer, and testing that takes seconds and can save the entire OCR bill.",
       points: [
-        "Check whether it is genuinely scanned first — a partial text layer saves the whole OCR cost.",
+        "Check whether it is genuinely scanned first - a partial text layer saves the whole OCR cost.",
         "Stream or split by page range; never load 800 pages into memory at once.",
         "Per-page units give progress, retry and resume instead of restart.",
         "Keep the OCR confidence score and flag low-confidence pages for review.",
         "Garbage OCR embeds happily and pollutes retrieval permanently.",
-        "Scanned documents have no heading structure — reconstruct it or lose citation quality.",
+        "Scanned documents have no heading structure - reconstruct it or lose citation quality.",
         "Queued background job, checkpointed, idempotent on content hash, incremental writes.",
         "Quote the one-time OCR and captioning cost up front."
       ],
