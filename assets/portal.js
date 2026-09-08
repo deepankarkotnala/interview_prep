@@ -306,6 +306,7 @@
         '<span class="focus-lbl">' + (active ? "Exit focus" : "Focus") + "</span>";
       if (active) document.body.classList.remove("nav-open");
       if (persist) save(FOCUS_KEY, active);
+      applyReading(readReading());
       document.dispatchEvent(new CustomEvent("ir-focus-change", { detail: { focus: active } }));
     }
 
@@ -340,6 +341,7 @@
     return {
       size: SIZES.indexOf(raw.size) >= 0 ? raw.size : "m",
       width: WIDTHS.indexOf(raw.width) >= 0 ? raw.width : "wide",
+      focusWidth: WIDTHS.indexOf(raw.focusWidth) >= 0 ? raw.focusWidth : "default",
       align: ALIGNS.indexOf(raw.align) >= 0 ? raw.align : "left"
     };
   }
@@ -347,7 +349,7 @@
     var doc = document.documentElement;
     doc.setAttribute("data-reading-size", s.size);
     var isFocus = document.body.classList.contains("focus-mode");
-    var effectiveWidth = (!isFocus && s.width === "full") ? "wide" : s.width;
+    var effectiveWidth = isFocus ? (s.focusWidth || "default") : ((!isFocus && s.width === "full") ? "wide" : s.width);
     doc.setAttribute("data-reading-width", effectiveWidth);
     doc.setAttribute("data-reading-align", s.align);
   }
@@ -429,7 +431,7 @@
     }
     function refresh() {
       var isFocus = document.body.classList.contains("focus-mode");
-      var effectiveWidth = (!isFocus && settings.width === "full") ? "wide" : settings.width;
+      var effectiveWidth = isFocus ? (settings.focusWidth || "default") : ((!isFocus && settings.width === "full") ? "wide" : settings.width);
       var groups = { size: settings.size, align: settings.align, width: effectiveWidth };
       Object.keys(groups).forEach(function (g) {
         var btns = panel.querySelectorAll("[data-reader-" + g + "] button");
@@ -469,12 +471,29 @@
       panel.querySelector("[data-reader-" + g + "]").addEventListener("click", function (ev) {
         var b = ev.target.closest("button[data-value]");
         if (!b) return;
-        settings[g] = b.getAttribute("data-value");
+        var val = b.getAttribute("data-value");
+        if (g === "width") {
+          var isFocus = document.body.classList.contains("focus-mode");
+          if (isFocus) {
+            settings.focusWidth = val;
+          } else {
+            settings.width = val;
+          }
+        } else {
+          settings[g] = val;
+        }
         commit();
       });
     });
     panel.querySelector(".reader-reset").addEventListener("click", function () {
-      settings.size = "m"; settings.align = "left"; settings.width = "wide";
+      var isFocus = document.body.classList.contains("focus-mode");
+      settings.size = "m";
+      settings.align = "left";
+      if (isFocus) {
+        settings.focusWidth = "default";
+      } else {
+        settings.width = "wide";
+      }
       commit();
     });
     document.addEventListener("click", function (ev) {
@@ -487,6 +506,7 @@
     window.addEventListener("resize", function () { if (isOpen()) place(); });
     window.addEventListener("scroll", function () { if (isOpen()) place(); }, { passive: true });
     document.addEventListener("ir-focus-change", function () {
+      settings = readReading();
       refresh();
       if (isOpen()) place();
     });
@@ -718,6 +738,195 @@
     roundSel.addEventListener("change", filter);
   }
 
+  /* ---------- CampusX comparison modal & trigger ---------- */
+  function setupCampusXSummary(host) {
+    var banner = el("div", "topic-summary-action");
+    banner.innerHTML =
+      '<button type="button" class="campusx-summary-btn" id="campusx-summary-trigger" aria-haspopup="dialog" aria-expanded="false">' +
+      '<span class="campusx-btn-badge">🚀 Summary</span>' +
+      '<span class="campusx-btn-text">Langgraph - CampusX comparison with Langchain - Summary</span>' +
+      '<svg class="campusx-btn-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>' +
+      '</button>';
+
+    if (host.firstChild) {
+      host.insertBefore(banner, host.firstChild);
+    } else {
+      host.appendChild(banner);
+    }
+
+    var trigger = banner.querySelector("#campusx-summary-trigger");
+    var modalId = "campusx-summary-modal";
+    var modalWrap = document.getElementById(modalId);
+
+    if (!modalWrap) {
+      modalWrap = el("div", "cx-modal-backdrop");
+      modalWrap.id = modalId;
+      modalWrap.setAttribute("role", "dialog");
+      modalWrap.setAttribute("aria-modal", "true");
+      modalWrap.setAttribute("aria-labelledby", "cx-modal-title");
+
+      modalWrap.innerHTML =
+        '<div class="cx-modal-dialog">' +
+          '<div class="cx-modal-header">' +
+            '<h2 class="cx-modal-title" id="cx-modal-title">LangChain vs. LangGraph: Topic-Wise Notes (CampusX Style) 🚀</h2>' +
+            '<button type="button" class="cx-modal-close-btn" aria-label="Close summary modal">&times;</button>' +
+          '</div>' +
+          '<div class="cx-modal-body">' +
+
+            '<!-- What is LangGraph? -->' +
+            '<section class="cx-article-section">' +
+              '<h3 class="cx-section-title">What is LangGraph? (The Big Picture) 💡</h3>' +
+              '<div class="cx-quote-box">' +
+                '<p class="cx-quote-lead">If LangChain is a set of Lego blocks, LangGraph is the flow chart engine that orchestrates them.</p>' +
+              '</div>' +
+              '<p class="cx-subhead">Think of it this way:</p>' +
+              '<ul class="cx-bullet-list">' +
+                '<li><strong>LangChain</strong> gives you the individual pieces&mdash;the LLMs, prompt templates, vector databases, and tools. It also lets you build simple, straight-line connections (Chains).</li>' +
+                '<li><strong>LangGraph</strong> is the actual flow chart canvas. You define your tasks as Nodes (just simple Python functions) and draw the connections between them as Edges. Because it is a graph, it naturally supports loops, decision-making forks, and pausing.</li>' +
+              '</ul>' +
+              '<p class="cx-body-text">So, LangGraph does not replace LangChain. You still use LangChain to talk to the LLM and run tools, but you use LangGraph to decide when and how those steps run in complex, real-world systems.</p>' +
+            '</section>' +
+
+            '<!-- Why LangGraph? Key Challenges -->' +
+            '<section class="cx-article-section">' +
+              '<h3 class="cx-section-title">Why LangGraph? Key Challenges in LangChain &amp; How LangGraph Solves Them</h3>' +
+
+              '<!-- Challenge 1 -->' +
+              '<div class="cx-challenge-entry">' +
+                '<h4 class="cx-challenge-heading">1. Control Flow (Linear Chains vs. Flexible Graphs) 🔀</h4>' +
+                '<div class="cx-point-problem">' +
+                  '<strong>The Problem in LangChain:</strong> LangChain is built for linear chains (Step A -&gt; Step B -&gt; Step C). But real-world workflows are rarely linear. If you want to build loops (like "if the manager rejects the job description, rewrite it and check again"), LangChain has no built-in way to do it. You have to write a lot of custom Python "glue code" to force it to work, which makes the project hard to manage and debug.' +
+                '</div>' +
+                '<div class="cx-point-solution">' +
+                  '<strong>How LangGraph Solves It:</strong> It treats your entire workflow as a Graph. Every step is a Node (a Python function), and the paths between them are Edges. It has native support for loops and conditional branching. No messy glue code required.' +
+                '</div>' +
+              '</div>' +
+
+              '<!-- Challenge 2 -->' +
+              '<div class="cx-challenge-entry">' +
+                '<h4 class="cx-challenge-heading">2. State Management (Stateless vs. Stateful) 💾</h4>' +
+                '<div class="cx-point-problem">' +
+                  '<strong>The Problem in LangChain:</strong> LangChain is stateless. It has conversational memory to remember chat history, but it cannot easily track custom variables (like candidate_score or is_jd_approved) across different steps. To do this, you have to manually maintain a massive global Python dictionary, which is highly error-prone.' +
+                '</div>' +
+                '<div class="cx-point-solution">' +
+                  '<strong>How LangGraph Solves It:</strong> It is stateful by default. It uses a central State object (a shared dictionary or Pydantic model). Every single node has access to this state&mdash;they can read from it, update it, and automatically pass the updated state to the next node.' +
+                '</div>' +
+              '</div>' +
+
+              '<!-- Challenge 3 -->' +
+              '<div class="cx-challenge-entry">' +
+                '<h4 class="cx-challenge-heading">3. Execution Style (Sequential vs. Event-Driven) ⏳</h4>' +
+                '<div class="cx-point-problem">' +
+                  '<strong>The Problem in LangChain:</strong> LangChain expects your code to run continuously from start to finish without stopping. It cannot naturally pause to wait for days or weeks for an external trigger (like waiting 7 days for candidates to apply).' +
+                '</div>' +
+                '<div class="cx-point-solution">' +
+                  '<strong>How LangGraph Solves It:</strong> It supports event-driven execution. Using Checkpointers, it can save the exact progress of your graph and safely pause. When the external event occurs (e.g., 7 days are up), it resumes exactly where it left off.' +
+                '</div>' +
+              '</div>' +
+
+              '<!-- Challenge 4 -->' +
+              '<div class="cx-challenge-entry">' +
+                '<h4 class="cx-challenge-heading">4. Fault Tolerance (Starting Over vs. Resuming) 🛠️</h4>' +
+                '<div class="cx-point-problem">' +
+                  '<strong>The Problem in LangChain:</strong> If you have a long 5-step chain and your server crashes at Step 3, LangChain has no way to remember where it was. You have to restart the entire chain from Step 1.' +
+                '</div>' +
+                '<div class="cx-point-solution">' +
+                  '<strong>How LangGraph Solves It:</strong> Because of its stateful design, it continuously saves snapshots (checkpoints) of the execution. If a server goes down or an API fails, you don\'t lose progress. You can trigger a resume function, and LangGraph will start right from the failed node.' +
+                '</div>' +
+              '</div>' +
+
+              '<!-- Challenge 5 -->' +
+              '<div class="cx-challenge-entry">' +
+                '<h4 class="cx-challenge-heading">5. Human-in-the-Loop (HITL) 🙋‍♂️</h4>' +
+                '<div class="cx-point-problem">' +
+                  '<strong>The Problem in LangChain:</strong> Pausing a chain to wait for human approval (like a manager signing off on a budget) is incredibly difficult. Keeping a script running for hours or days waiting for input wastes server resources and risks crashing.' +
+                '</div>' +
+                '<div class="cx-point-solution">' +
+                  '<strong>How LangGraph Solves It:</strong> It treats humans as a first-class feature. It works exactly like saving a video game. You can play up to Level 3 (e.g., creating a job description), save your state, shut down the game, and resume tomorrow once the human supervisor hits "Approve".' +
+                '</div>' +
+              '</div>' +
+
+              '<!-- Challenge 6 -->' +
+              '<div class="cx-challenge-entry">' +
+                '<h4 class="cx-challenge-heading">6. Observability (Partial vs. Complete Tracing in LangSmith) 🔍</h4>' +
+                '<div class="cx-point-problem">' +
+                  '<strong>The Problem in LangChain:</strong> LangSmith is great, but it can only track standard LangChain components (like LLM calls). It cannot track your custom Python loops or the glue code you wrote to hold the steps together. This gives you only partial visibility into what went wrong.' +
+                '</div>' +
+                '<div class="cx-point-solution">' +
+                  '<strong>How LangGraph Solves It:</strong> Because there is zero custom glue code and every transition is defined via LangGraph nodes and edges, LangSmith can map the entire journey. It tracks every state change, node transition, and human approval step-by-step, giving you complete observability.' +
+                '</div>' +
+              '</div>' +
+            '</section>' +
+
+            '<!-- Quick Summary Checklist -->' +
+            '<section class="cx-article-section">' +
+              '<h3 class="cx-section-title">Quick Summary Checklist: When to use what? 📋</h3>' +
+              '<div class="cx-checklist-box">' +
+                '<div class="cx-checklist-item">' +
+                  '<span class="cx-check-bullet">🔹</span>' +
+                  '<span><strong>Use LangChain</strong> when building simple, linear workflows (e.g., simple prompt chains, a quick summarizer, or a basic RAG system).</span>' +
+                '</div>' +
+                '<div class="cx-checklist-item">' +
+                  '<span class="cx-check-bullet">🔹</span>' +
+                  '<span><strong>Use LangGraph</strong> when building complex, non-linear workflows that require loops, state tracking, human approvals, or multi-agent coordination.</span>' +
+                '</div>' +
+              '</div>' +
+            '</section>' +
+
+          '</div>' +
+          '<div class="cx-modal-footer">' +
+            '<div class="cx-modal-footer-hint">' +
+              '<kbd>Esc</kbd> to close' +
+            '</div>' +
+            '<button type="button" class="btn primary cx-modal-done-btn">Close Notes</button>' +
+          '</div>' +
+        '</div>';
+
+      document.body.appendChild(modalWrap);
+
+      var closeBtn = modalWrap.querySelector(".cx-modal-close-btn");
+      var doneBtn = modalWrap.querySelector(".cx-modal-done-btn");
+
+      function closeModal() {
+        modalWrap.classList.remove("is-visible");
+        document.body.classList.remove("cx-modal-open");
+        var trig = document.getElementById("campusx-summary-trigger");
+        if (trig) {
+          trig.setAttribute("aria-expanded", "false");
+          trig.focus();
+        }
+      }
+
+      if (closeBtn) closeBtn.addEventListener("click", closeModal);
+      if (doneBtn) doneBtn.addEventListener("click", closeModal);
+
+      modalWrap.addEventListener("click", function (e) {
+        if (e.target === modalWrap) {
+          closeModal();
+        }
+      });
+
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && modalWrap.classList.contains("is-visible")) {
+          closeModal();
+        }
+      });
+    }
+
+    if (trigger) {
+      trigger.addEventListener("click", function () {
+        var m = document.getElementById(modalId);
+        if (m) {
+          m.classList.add("is-visible");
+          document.body.classList.add("cx-modal-open");
+          trigger.setAttribute("aria-expanded", "true");
+          var cb = m.querySelector(".cx-modal-close-btn");
+          if (cb) cb.focus();
+        }
+      });
+    }
+  }
+
   /* ---------- page bootstrap: topic ---------- */
   function bootTopic() {
     var key = document.body.getAttribute("data-topic");
@@ -739,6 +948,9 @@
         (set.grounding ? '<span class="chip">Grounded in: ' + esc(set.grounding) + '</span>' : "") +
         '</div>';
     }
+
+    mountList(host, set.cards, { showTopic: false });
+
     if (set.evening && set.evening.length) {
       var note = el("div", "note");
       note.innerHTML = "<strong>If you only have one evening:</strong> do these " +
@@ -747,9 +959,17 @@
           var c = set.cards.filter(function (x) { return x.id === id; })[0];
           return c ? '<a href="#' + esc(id) + '">' + fmt(c.q) + '</a>' : "";
         }).filter(Boolean).join(" · ");
-      host.appendChild(note);
+      if (host.firstChild) {
+        host.insertBefore(note, host.firstChild);
+      } else {
+        host.appendChild(note);
+      }
     }
-    mountList(host, set.cards, { showTopic: false });
+
+    /* For LangGraph, insert the CampusX summary comparison button at top before questions */
+    if (key === "19-langgraph" || key === "08-langchain-langgraph") {
+      setupCampusXSummary(host);
+    }
   }
 
   /* ---------- page bootstrap: index ---------- */
