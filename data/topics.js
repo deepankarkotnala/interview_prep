@@ -19,7 +19,7 @@ window.IR.topics = [
 
   { num: "03", slug: "prompting",
     title: "Prompting and structured output",
-    blurb: "Few-shot, chain of thought, JSON mode, function calling, and how to make output parseable every single time.",
+    blurb: "Prompting, context engineering, structured outputs, tool calling, and how to keep model-visible information focused, reliable and testable.",
     status: "live" },
 
   { num: "04", slug: "embeddings",
@@ -29,7 +29,7 @@ window.IR.topics = [
 
   { num: "05", slug: "rag",
     title: "RAG",
-    blurb: "The most-asked topic in Indian GenAI interviews. Chunking, retrieval failure, citations, and the debugging story that gets you hired.",
+    blurb: "One of the most-asked GenAI topics worldwide. Chunking, retrieval failure, citations, and the debugging story that gets you hired.",
     status: "live" },
 
   { num: "06", slug: "advanced-rag",
@@ -57,7 +57,7 @@ window.IR.topics = [
 
   { num: "09", slug: "mcp",
     title: "MCP, A2A and the tool boundary",
-    blurb: "Model Context Protocol, servers and clients, why a standard tool boundary matters, and the security questions that follow.",
+    blurb: "MCP 2026-07-28, servers and clients, stateless tool boundaries, Tasks, MCP Apps, A2A, and the security questions that follow.",
     status: "live" },
 
   { num: "10", slug: "fine-tuning",
@@ -67,7 +67,7 @@ window.IR.topics = [
 
   { num: "11", slug: "evaluation",
     title: "Evaluation",
-    blurb: "Offline sets, LLM as judge and its biases, retrieval metrics, online signals, and how you prove a change made things better.",
+    blurb: "Offline sets, LLM-as-judge, RAG metrics, agent trajectories and outcomes, online signals, and how you prove a change made things better.",
     status: "live" },
 
   { num: "12", slug: "llmops",
@@ -87,17 +87,17 @@ window.IR.topics = [
 
   { num: "15", slug: "cloud",
     title: "Cloud and deployment",
-    blurb: "Azure OpenAI, Bedrock, Vertex, Databricks, private endpoints, data residency in India, and CI/CD for prompts.",
+    blurb: "Azure, AWS, GCP and Databricks, private networking, data residency, containers, Kubernetes, infrastructure as code, and CI/CD.",
     status: "live" },
 
   { num: "16", slug: "ml-fundamentals",
     title: "ML fundamentals",
-    blurb: "Bias-variance, overfitting, metrics, imbalanced data, feature leakage - still asked, still failed by GenAI-only candidates.",
+    blurb: "Bias-variance, metrics, calibration, deep-learning training, distributed training, data drift and feature leakage - still asked in AI roles.",
     status: "live" },
 
   { num: "17", slug: "python-coding",
     title: "Python and the coding round",
-    blurb: "Generators, async, pydantic, decorators, and the live-coding tasks that actually come up for AI engineer roles.",
+    blurb: "Python, async, validation, SQL, tests, data pipelines, and the live-coding tasks that come up for AI engineer roles.",
     status: "live" },
 
   { num: "18", slug: "system-design",
@@ -115,7 +115,6 @@ window.IR.rounds = [
 ];
 
 window.IR.levels = [
-  { key: "2-5",  label: "2–5 yrs" },
-  { key: "5-10", label: "5–10 yrs" },
-  { key: "10+",  label: "10+ yrs" }
+  { key: "3-5",  label: "3–5 yrs" },
+  { key: "5-10", label: "5–10 yrs" }
 ];

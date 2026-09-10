@@ -1,21 +1,13 @@
 /* Interview Room - standalone stylesheet.
 
-   Design system: this file is a deliberate mirror of the GenAI Mastery portal's
-   office-theme.css. Same tokens, same values, same names. The Interview Room
-   is a separate portal with its own markup and its own runtime, but a reader
-   moving between the two should not be able to tell that they crossed a
-   boundary - same Excel-green accent, same neutral greys, same 0.5rem radii, same
-   0.90625rem base, same 14.875rem rail, same 53.75rem drawer breakpoint.
+   The portal keeps the original office-style structure, spacing model,
+   Excel-green accent and responsive breakpoints. The UI polish layer deliberately
+   softens typography, radii and motion without changing the page hierarchy or
+   navigation model.
 
-   It stays standalone (no @import of the parent's CSS) because this portal must
-   work when the directory is copied out on its own. The cost of that is this
-   duplication, so the rule is: when a token below disagrees with
-   ../assets/office-theme.css, office-theme.css is right and this file is stale.
-
-   The font files are the one shared asset - ../assets/fonts/ - so the type is
-   byte-identical rather than a near-match from a system stack. If the parent
-   directory is absent the @font-face rules simply fail and the fallback stacks
-   in --font-sans / --font-mono take over. */
+   It stays standalone: no CDN, no @import and no asset outside this folder.
+   Native rounded UI fonts are preferred when the platform provides them; the
+   vendored Inter and JetBrains Mono files remain reliable offline fallbacks. */
 
 /* ---------- fonts ----------
    Copied into this folder rather than referenced from the parent portal, so the
@@ -44,9 +36,9 @@
   src: url(fonts/jetbrains-mono-latin-wght-normal.woff2) format("woff2");
 }
 
-/* ---------- tokens - mirrored from office-theme.css ---------- */
+/* ---------- core tokens ---------- */
 :root {
-  --font-sans: "Inter", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: ui-rounded, "SF Pro Rounded", "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   /* Legacy aliases used throughout this file's older rules. */
   --font: var(--font-sans);
@@ -99,7 +91,11 @@
     0 0.5rem 1.125rem -0.5rem rgba(22, 27, 35, .09),
     0 1.375rem 2.875rem -1.125rem rgba(22, 27, 35, .15);
 
-  --ease: cubic-bezier(.4, 0, .2, 1);
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --ease-emphasized: cubic-bezier(.16, 1, .3, 1);
+  --dur-fast: 140ms;
+  --dur-base: 220ms;
+  --dur-slow: 420ms;
 
   /* Sidebar geometry - the parent's two-token split. --sidebar-w is the layout
      width; --sidebar-track is what you see after the desktop density scaling. */
@@ -117,9 +113,9 @@
      sticky offset here derives from this var, so the rest follows. */
   --header-h: 2.875rem;
   --topbar-pad: clamp(0.625rem, 1.6vw, 1.375rem);
-  --radius: 0.5rem;
-  --radius-sm: 0.375rem;
-  --radius-lg: 0.625rem;
+  --radius: 0.75rem;
+  --radius-sm: 0.5625rem;
+  --radius-lg: 1rem;
 
   --fs-base: 0.90625rem;
   --fs-h1: clamp(1.625rem, 2.05vw, 2.0625rem);
@@ -2802,3 +2798,458 @@ body.cx-modal-open {
     width: 100%;
   }
 }
+
+/* =========================================================================
+   2026 UI POLISH LAYER
+   Structure stays unchanged: these rules only refine type, radius, motion and
+   state transitions. The theme switch is handled as one root-level view
+   transition, so individual controls do not independently repaint between
+   light and dark.
+   ========================================================================= */
+
+html {
+  scrollbar-gutter: stable;
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  font-family: var(--font-sans);
+  font-optical-sizing: auto;
+}
+
+body {
+  letter-spacing: -0.004em;
+}
+
+h1, h2, h3, h4,
+.q-title,
+.tile h3,
+.track > h2,
+.cx-modal-title {
+  text-wrap: balance;
+}
+
+.lede,
+.q-simple,
+.q-say,
+.q-why,
+.q-follow-q,
+.track-moves,
+.tile p {
+  text-wrap: pretty;
+}
+
+/* More rounded, native-app-like surfaces without changing their geometry. */
+.sb-search,
+.reader-popover,
+.filters,
+.note,
+.tile,
+.q-card,
+.timer-box,
+.stat,
+.track,
+.table-wrap {
+  border-radius: var(--radius);
+}
+
+.q-why,
+.q-code,
+.q-say,
+.q-numbers,
+.q-wrong,
+.q-follow,
+.reader-segment,
+.reader-reset,
+.toc-filter {
+  border-radius: var(--radius-sm);
+}
+
+.nav-link,
+.sb-hit,
+.toc a {
+  border-radius: 0.6875rem;
+}
+
+.nav-num,
+.nav-chev,
+.q-no,
+.q-chev,
+.icon-btn,
+.menu-btn,
+.theme-btn,
+.home-btn,
+.focus-btn,
+.reader-btn {
+  border-radius: 0.625rem !important;
+}
+
+.chip,
+.pill,
+.q-meta span,
+.btn,
+.mini-btn,
+.track-topic {
+  border-radius: 999px;
+}
+
+/* Consistent motion language: short feedback, longer structural movement. */
+.tile,
+.q-card,
+.page-nav a,
+.page-nav .pn-link,
+.campusx-summary-btn {
+  transition-duration: var(--dur-base);
+  transition-timing-function: var(--ease-emphasized);
+}
+
+.tile:hover,
+.tile:focus-visible {
+  transform: translateY(-2px) scale(1.003);
+}
+
+.q-card:hover:not([open]),
+.q-card:not([open]):has(> summary:focus-visible) {
+  transform: translateY(-1px) scale(1.0015);
+}
+
+.btn,
+.mini-btn,
+.reader-segment button,
+.reader-reset,
+.campusx-summary-btn {
+  transition: transform var(--dur-fast) var(--ease),
+              border-color var(--dur-fast) var(--ease),
+              background var(--dur-fast) var(--ease),
+              color var(--dur-fast) var(--ease),
+              box-shadow var(--dur-fast) var(--ease);
+}
+
+.btn:hover,
+.mini-btn:hover,
+.campusx-summary-btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:active,
+.mini-btn:active,
+.campusx-summary-btn:active,
+.reader-segment button:active,
+.reader-reset:active {
+  transform: scale(.98);
+}
+
+.sb-search,
+.search-wrap input,
+.toc-filter {
+  transition: border-color var(--dur-base) var(--ease),
+              box-shadow var(--dur-base) var(--ease),
+              background var(--dur-base) var(--ease);
+}
+
+.reader-popover {
+  transform: translateY(-0.5rem) scale(.985);
+  transform-origin: top right;
+  transition: opacity var(--dur-base) var(--ease),
+              transform var(--dur-base) var(--ease-emphasized),
+              visibility var(--dur-base);
+}
+.reader-popover.open { transform: none; }
+
+.cx-modal-dialog {
+  border-radius: 1.125rem;
+  transform: translateY(12px) scale(.975);
+  transition: transform var(--dur-base) var(--ease-emphasized),
+              opacity var(--dur-base) var(--ease);
+}
+.cx-modal-backdrop {
+  transition: opacity var(--dur-base) var(--ease), visibility var(--dur-base);
+}
+
+/* Desktop sidebar collapse now glides closed instead of disappearing. */
+@media (min-width: 861px) {
+  .app {
+    transition: grid-template-columns 320ms var(--ease-emphasized);
+  }
+  .app.sidebar-collapsed {
+    grid-template-columns: 0 minmax(0, 1fr) !important;
+  }
+  .app.sidebar-collapsed > .sidebar {
+    display: block !important;
+    min-width: 0;
+    padding-left: 0;
+    padding-right: 0;
+    border-right-color: transparent;
+    opacity: 0;
+    transform: translateX(-0.75rem);
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .sidebar {
+    transition: opacity 220ms var(--ease),
+                transform 320ms var(--ease-emphasized),
+                padding 320ms var(--ease-emphasized),
+                border-color 220ms var(--ease);
+  }
+}
+
+/* Smooth expanding question cards. JS animates the card height; these rules
+   keep the content clipped and prevent hover transforms from fighting it. */
+.q-card.is-animating {
+  overflow: hidden;
+  will-change: height;
+}
+.q-card.is-animating .q-body {
+  overflow: hidden;
+}
+
+/* One coordinated light/dark transition. During the theme snapshot, normal
+   component transitions are suspended so there is no per-element flicker. */
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+  animation-play-state: paused !important;
+}
+
+::view-transition-image-pair(root) {
+  isolation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  display: block;
+}
+
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2; }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+  .app,
+  .sidebar {
+    transition: none !important;
+  }
+}
+
+/* =========================================================================
+   SNAPPY UI PASS
+   Keep the same structure and visual language, but favor native rendering,
+   lighter type and short functional state changes over decorative motion.
+   ========================================================================= */
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", "Inter",
+    system-ui, sans-serif;
+  --dur-fast: 70ms;
+  --dur-base: 100ms;
+  --dur-slow: 140ms;
+}
+
+body {
+  letter-spacing: 0;
+  text-rendering: auto;
+}
+
+/* Lighter, easier-to-scan type. */
+h1 { font-weight: 620; letter-spacing: -.025em; }
+h2 { font-weight: 600; }
+h3, h4 { font-weight: 580; }
+strong { font-weight: 600; }
+.q-title {
+  font-weight: 560;
+  letter-spacing: -.008em;
+}
+.tile h3,
+.track > h2,
+.cx-modal-title { font-weight: 590; }
+.q-meta span,
+.pill,
+.tile-foot,
+.reader-row > span { font-weight: 500; }
+.q-no,
+.q-chev,
+.nav-num,
+.sb-num { font-weight: 600; }
+
+/* Avoid costly always-on compositing and glass effects while scrolling. */
+.tile,
+.q-card,
+.page-nav a,
+.page-nav .pn-link { will-change: auto; }
+.sidebar,
+.toc-rail,
+.topbar,
+.cx-modal-backdrop {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+.sidebar,
+.toc-rail { background: var(--bg-subtle); }
+.topbar { background: var(--bg-elevated); }
+
+/* Cards stay visually responsive without moving under the pointer/finger. */
+.tile,
+.q-card,
+.page-nav a,
+.page-nav .pn-link,
+.campusx-summary-btn {
+  transition: border-color 90ms linear, background-color 90ms linear,
+              box-shadow 90ms linear, color 90ms linear;
+}
+.tile:hover,
+.tile:focus-visible,
+.q-card:hover:not([open]),
+.q-card:not([open]):has(> summary:focus-visible),
+.btn:hover,
+.mini-btn:hover,
+.campusx-summary-btn:hover {
+  transform: none;
+}
+.tile:active,
+.q-card:not([open]):has(> summary:active),
+.btn:active,
+.mini-btn:active,
+.campusx-summary-btn:active,
+.reader-segment button:active,
+.reader-reset:active {
+  transform: none;
+}
+.tile:hover,
+.tile:focus-visible,
+.q-card:hover:not([open]),
+.q-card:not([open]):has(> summary:focus-visible) {
+  box-shadow: var(--shadow-sm);
+}
+.q-card[open] { box-shadow: var(--shadow-sm); }
+
+/* Small state changes only. No height, scale, slide or spring animations. */
+.q-no {
+  transition: background-color 90ms linear, border-color 90ms linear,
+              color 90ms linear;
+}
+.q-chev {
+  transition: transform 90ms linear, background-color 90ms linear,
+              border-color 90ms linear, color 90ms linear;
+}
+.q-follow-chev { transition: transform 90ms linear; }
+.q-follow-answer { animation: none; }
+.filters {
+  transition: opacity 90ms linear, visibility 90ms linear;
+}
+.filters.is-hidden { transform: none; }
+
+.nav-link,
+.sb-hit,
+.icon-btn,
+.menu-btn,
+.theme-btn,
+.home-btn,
+.focus-btn,
+.reader-btn,
+.pill,
+.btn,
+.mini-btn,
+.reader-segment button,
+.reader-reset,
+.sb-search,
+.search-wrap input,
+.toc-filter,
+.toc-toggle,
+.campusx-summary-btn {
+  transition-duration: 90ms !important;
+  transition-timing-function: linear !important;
+}
+.nav-link:hover,
+.sb-hit:hover,
+.campusx-summary-btn:hover .campusx-btn-arrow { transform: none; }
+
+.reader-popover,
+.cx-modal-dialog,
+.cx-modal-backdrop {
+  transition-duration: 100ms !important;
+  transition-timing-function: linear !important;
+}
+.reader-popover {
+  transform: none;
+}
+.cx-modal-dialog {
+  transform: none;
+}
+.cx-modal-backdrop {
+  background: rgba(15, 18, 24, 0.58);
+}
+
+/* Stop decorative loops. They add paint work but no interview-prep value. */
+.note.note-guide,
+.note.is-highlight,
+[data-theme="dark"] .note.note-guide,
+[data-theme="dark"] .note.is-highlight,
+.dg-flow {
+  animation: none !important;
+}
+.dg-flow { opacity: .45; }
+
+/* Desktop collapse is immediate; the drawer stays a very short transform on
+   touch screens so its direction remains obvious. */
+@media (min-width: 861px) {
+  .app { transition: none !important; }
+  .app.sidebar-collapsed {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .app.sidebar-collapsed > .sidebar {
+    display: none !important;
+  }
+  .sidebar { transition: none !important; }
+}
+
+@media (max-width: 860px) {
+  .sidebar { transition: transform 120ms linear !important; }
+}
+
+@media (max-width: 980px) {
+  .toc-rail {
+    transition: opacity 100ms linear !important;
+  }
+  .toc-rail.toc-rail-hidden { transform: none; }
+  .toc-list {
+    transform: none;
+    transition: opacity 100ms linear, visibility 0s linear 100ms !important;
+  }
+  .toc.toc-open .toc-list {
+    transform: none;
+    transition: opacity 100ms linear, visibility 0s !important;
+  }
+  .toc-toggle-caret { transition: transform 90ms linear !important; }
+}
+
+/* Theme change: all component transitions are frozen while JS performs one
+   90ms page fade. This avoids both staggered color changes and View Transition
+   snapshot overhead on phones/tablets. */
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Remaining decorative/search motion is intentionally static. */
+.sb-results { animation: none !important; }
+.topbar { transition: box-shadow 90ms linear !important; }
+html { scroll-behavior: auto; }

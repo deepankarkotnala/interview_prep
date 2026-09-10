@@ -1,8 +1,7 @@
 # Interview Room
 
 An independent portal of GenAI / AI / ML interview questions for **senior engineer
-roles in India**, answered in simple language - the way CampusX explains LangChain
-and LangGraph - plus the exact words to say out loud in the room.
+roles worldwide**, focused on roughly **3–10 years of experience**, answered in simple language with the exact words to say out loud in the room.
 
 ## Run it
 
@@ -47,33 +46,59 @@ external URL, so the guarantee cannot quietly rot. (Pages in `topics/` do use
 ## What is built
 
 | Topic | Cards |
-| --- | --- |
-| 01 LLM foundations | 10 |
-| 02 Transformers and attention | 8 |
-| 03 Prompting and structured output | 10 |
+| --- | ---: |
+| 01 LLM foundations | 17 |
+| 02 Transformers and attention | 14 |
+| 03 Prompting and structured output | 11 |
 | 04 Embeddings and vector databases | 10 |
-| 05 RAG | 16 |
-| 06 Advanced RAG | 10 |
-| 07 Agents | 12 |
-| 08 LangChain and LangGraph | 12 |
-| 09 MCP, A2A and the tool boundary | 6 |
-| 10 Fine-tuning and adaptation | 7 |
-| 11 Evaluation | 10 |
-| 12 LLMOps and observability | 8 |
+| 05 RAG | 44 |
+| 06 Advanced RAG | 13 |
+| 07 Agents | 37 |
+| 08 LangChain | 9 |
+| 19 LangGraph | 10 |
+| 09 MCP, A2A and the tool boundary | 10 |
+| 10 Fine-tuning and adaptation | 8 |
+| 11 Evaluation | 14 |
+| 12 LLMOps and observability | 10 |
 | 13 Guardrails, security, responsible AI | 8 |
-| 14 Cost, latency and serving | 7 |
-| 15 Cloud and deployment | 6 |
-| 16 ML fundamentals | 8 |
-| 17 Python and the coding round | 6 |
-| 18 System design, project story, HR | 13 |
-| **Total** | **167** |
+| 14 Cost, latency and serving | 9 |
+| 15 Cloud and deployment | 8 |
+| 16 ML fundamentals | 36 |
+| 17 Python and the coding round | 31 |
+| 18 System design, project story, HR | 25 |
+| **Total** | **324** |
 
 Plus **5 employer tracks** in `data/tracks.js` - each naming its ten
 most-likely questions in priority order and one worked 40-minute scenario.
 A track owns no questions of its own; it points at cards by id, and
 `tools/check.js` fails the build if any id no longer exists.
 
-All 18 topics are live. Wave history is in `PLAN.md` §8.
+All 19 topics are live. Wave history is in `PLAN.md` §8.
+
+### 2026 role-scope refresh
+
+The bank is aimed at AI/ML/GenAI engineering roles worldwide in the 3–10 year
+range. Alongside RAG and agents, it now includes SQL and data pipelines,
+distributed APIs and queues, PyTorch training basics, mixed/distributed training,
+high-throughput inference, multimodal systems, Kubernetes/IaC, model registries,
+production evaluation, calibration, and reliability under retries/backpressure.
+Regional privacy and data-residency rules are treated as deployment constraints,
+not as assumptions about where the candidate works.
+
+### September 2026 content refresh
+
+The live bank now has **324 questions**. The version-sensitive sections were
+refreshed against current documentation: LangChain/LangGraph answers no longer
+describe LCEL as a straight-line-only abstraction; MCP covers the `2026-07-28`
+stateless core, discovery, routing/caching changes, MRTR, Tasks and MCP Apps; and
+dedicated questions now cover context engineering and multi-step agent evaluation.
+The longest teaching answers were also tightened so they stay easy to explain
+without losing the senior-level trade-offs.
+
+The UI remains on the performance-first snappy pass: native system typography,
+no card lift/scale effects, instant question expansion, a short single theme fade,
+short mobile drawer/dropdown transitions, no continuous decorative animation and
+no backdrop blur. Reduced-motion preferences are respected.
 
 ## Adding a question
 
@@ -163,3 +188,7 @@ is how this becomes a real bank rather than an inferred one.
 
 Only `localStorage`: `ir.theme` and `ir.delivered`. No account, no network calls,
 nothing leaves the browser.
+
+### Snappy UI pass (2026-09-10)
+
+The UI keeps the same page structure and content, with a performance-first motion pass: lighter native-system typography, no card lift/scale animations, native instant `<details>` question expansion, a single 90 ms page fade for theme changes, shorter mobile drawer/dropdown transitions, and no continuous decorative animations or backdrop blur. `prefers-reduced-motion` disables non-essential motion entirely.

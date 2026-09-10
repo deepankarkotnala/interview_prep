@@ -86,6 +86,37 @@
       btn.setAttribute("aria-label", t === "dark" ? "Switch to light theme" : "Switch to dark theme");
     }
   }
+
+  function switchTheme(t) {
+    var root = document.documentElement;
+    var current = root.getAttribute("data-theme") || "light";
+    if (t === current) return;
+
+    /* Keep theme switching cheap: change the theme once, then run one tiny
+       compositor-friendly fade on the page. No screenshots, clipping, blur or
+       per-component color animations. */
+    root.classList.add("theme-switching");
+    applyTheme(t);
+
+    var reduceMotion = false;
+    try { reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
+
+    if (!reduceMotion && document.body && typeof document.body.animate === "function") {
+      var fade = document.body.animate(
+        [{ opacity: 0.94 }, { opacity: 1 }],
+        { duration: 90, easing: "linear" }
+      );
+      fade.finished.then(function () {
+        root.classList.remove("theme-switching");
+      }, function () {
+        root.classList.remove("theme-switching");
+      });
+      return;
+    }
+
+    root.classList.remove("theme-switching");
+  }
+
   IR.initTheme = function () {
     var t = "light";
     try { t = localStorage.getItem(THEME_KEY) || "light"; } catch (e) {}
@@ -548,8 +579,8 @@
       themeBtn.addEventListener("click", function () {
         var cur = document.documentElement.getAttribute("data-theme") || "light";
         var next = cur === "dark" ? "light" : "dark";
-        localStorage.setItem(THEME_KEY, next);
-        applyTheme(next);
+        try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+        switchTheme(next);
       });
     }
 
@@ -660,6 +691,13 @@
     return d;
   }
   IR.renderCard = renderCard;
+
+  /* ---------- question-card motion ---------- */
+  function setupQuestionCardMotion() {
+    /* Native <details> toggling is deliberately used here. It is immediate,
+       reliable on touch devices, and avoids measuring/animating large answer
+       bodies on every open/close. */
+  }
 
   /* ---------- list mounting & filtering ---------- */
   function mountList(host, cards, opts) {
@@ -1398,6 +1436,7 @@
 
     buildRail();
     buildPager();
+    setupQuestionCardMotion();
     initResizers();
     initScrollState();
 

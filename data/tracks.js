@@ -12,10 +12,10 @@ window.IR.tracks = [
   {
     key: "healthcare",
     label: "Healthcare payer and provider",
-    includes: "Optum, UnitedHealth Group, Philips, Siemens Healthineers, Novartis, and the India delivery centres of most US payers.",
-    grounding: "public JDs for these employers' India centres + the regulatory regime they operate under",
+    includes: "Optum, UnitedHealth Group, Philips, Siemens Healthineers, Novartis, and other payer, provider, pharmaceutical, and health-tech organisations.",
+    grounding: "public job descriptions + the healthcare and privacy regimes that apply in the regions where the system operates",
     skew:
-      "PHI handling and de-identification. HIPAA, and India's DPDP on top of it. Running Azure OpenAI inside a regulated tenant with nothing leaving it. Audit trails - who saw which document chunk, and can you produce that six months later. Clinical-document RAG over scanned PDFs that OCR badly. And above all, why a human stays in the loop for anything touching a care or coverage decision.",
+      "PHI handling and de-identification. HIPAA where it applies, GDPR and other regional privacy rules where they apply. Keeping regulated workloads inside approved trust boundaries. Audit trails - who saw which document chunk, and can you produce that six months later. Clinical-document RAG over scanned PDFs that OCR badly. And above all, why a human stays in the loop for anything touching a care or coverage decision.",
     rounds:
       "Typically five: recruiter screen, a technical round on your GenAI depth, a design round that becomes a compliance conversation halfway through, a hiring manager round about ownership, and HR. The design round is the one that decides it, and it is usually where a security or privacy person joins.",
     watch:
@@ -41,10 +41,10 @@ window.IR.tracks = [
   {
     key: "banking",
     label: "Banking and financial services",
-    includes: "JPMorgan, Goldman Sachs, American Express, Wells Fargo, Deutsche Bank, and the large Indian private banks building internal GenAI platforms.",
-    grounding: "public JDs + published model risk governance expectations + RBI data localisation rules",
+    includes: "JPMorgan, Goldman Sachs, American Express, Wells Fargo, Deutsche Bank, major regional banks, and fintechs building internal GenAI platforms.",
+    grounding: "public job descriptions + published model-risk expectations + regional data-residency and privacy rules",
     skew:
-      "Auditability of every generated claim. Model risk governance - who signed off, against what evidence, and can it be re-run. Data residency, and whether inference may happen outside India at all. Deterministic fallbacks for when the model is unavailable or unsure. Text-to-SQL over sensitive schemas, and how you stop it reading a column it should not.",
+      "Auditability of every generated claim. Model risk governance - who signed off, against what evidence, and can it be re-run. Data residency, and whether inference may cross an approved jurisdiction or trust boundary. Deterministic fallbacks for when the model is unavailable or unsure. Text-to-SQL over sensitive schemas, and how you stop it reading a column it should not.",
     rounds:
       "Often six or more, and slower. Expect a dedicated round with risk or controls, separate from engineering. They will ask how you prove a change was safe, not just that it worked.",
     watch:
@@ -54,7 +54,7 @@ window.IR.tracks = [
       title: "Worked scenario - 40 minutes",
       prompt: "Build an internal assistant that answers analyst questions over research notes and a transactions warehouse. Answers must be defensible to an auditor.",
       moves: [
-        "**Requirements first.** Who the users are, what decisions the answers feed, retention obligations, and whether inference may leave India. That last answer changes the design.",
+        "**Requirements first.** Who the users are, what decisions the answers feed, retention obligations, and whether inference may leave the approved processing region. That last answer changes the design.",
         "**Route, do not blend.** \"How many transactions breached the threshold last quarter\" is SQL. \"What does our policy say about breaches\" is retrieval. Say the routing decision out loud - it is the mark.",
         "**Text-to-SQL safely.** Read-only connection, schema in context, a column allowlist, a statement validator, a row limit and a statement timeout. Generated SQL is untrusted input.",
         "**Citations and provenance.** Every claim carries its source; every number carries whether it came from the warehouse or from prose. Mark the difference explicitly - the warehouse number is exact and the prose is not.",
@@ -68,7 +68,7 @@ window.IR.tracks = [
   {
     key: "retail",
     label: "Retail and supply chain",
-    includes: "Walmart Global Tech, Target, Lowe's, Tesco, Maersk, Flipkart, and large Indian D2C platforms.",
+    includes: "Walmart, Target, Lowe's, Tesco, Maersk, Flipkart, and other large retail, ecommerce, logistics, and supply-chain platforms.",
     grounding: "public JDs + the cost and latency constraints of consumer-scale traffic",
     skew:
       "Cost per request at genuinely high volume - this is the track where token economics is a first-class interview subject rather than a footnote. Catalogue and product RAG, where the corpus is millions of short structured documents. Hard latency budgets, because the assistant sits in a purchase flow. Multilingual, because the customer base is. Caching at every layer.",
@@ -86,7 +86,7 @@ window.IR.tracks = [
         "**Hybrid search is not optional.** SKU codes and part numbers are exact strings that embeddings blur. BM25 plus dense, fused with reciprocal rank fusion.",
         "**Route by intent.** Most catalogue traffic is lookup, not reasoning - serve it from retrieval plus a template, with no generation at all. Reserve the model for the minority that needs prose. This is the single largest cost decision.",
         "**Cache in layers.** Provider prompt caching on the stable prefix, an embedding cache, and an exact-match answer cache for the head of the query distribution - which in retail is very heavy. Keys include locale and any entitlement.",
-        "**Multilingual honestly.** Indian-language answers cost 2–3× the tokens, so the per-request figure differs by locale. Cross-language retrieval needs a multilingual embedding model, tested per language, not assumed.",
+        "**Multilingual honestly.** Measure token use, retrieval quality and latency by locale instead of assuming one language behaves like another. Cross-language retrieval needs a multilingual embedding model, tested per language, not assumed.",
         "**Then state the guardrail metrics:** cost per request, p95, and quality per language - because an average hides the language that is failing."
       ]
     }
@@ -95,7 +95,7 @@ window.IR.tracks = [
   {
     key: "product",
     label: "Product and platform",
-    includes: "Microsoft IDC, Google, Salesforce, ServiceNow, Adobe, Intuit, Atlassian, and the India engineering centres of US product companies.",
+    includes: "Microsoft, Google, Salesforce, ServiceNow, Adobe, Intuit, Atlassian, and other global product and platform engineering organisations.",
     grounding: "public JDs + published interview processes for these employers",
     skew:
       "Depth on one system rather than breadth across ten. Evaluation rigour - expect to be asked how you proved a change helped, and then pushed on the answer twice more. Defending a trade-off under pressure, including one you got wrong. And a genuine coding round alongside the GenAI rounds.",

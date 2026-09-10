@@ -1,5 +1,10 @@
 # Topic-wise interview questions: gap analysis and additions
 
+> **Historical planning note:** this file is an older gap-analysis document and its
+> counts/market framing are not the live portal state. The live bank is maintained
+> in `data/q-*.js`; see `README.md` for the current 324-question, 3-10 year,
+> worldwide scope.
+
 **Portal:** `0_interview_focused_portal`
 **Date:** 18 August 2026
 **Scope:** GenAI / AI / ML engineer roles, India market, 2–10 years experience.
