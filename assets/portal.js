@@ -626,6 +626,35 @@
   };
   IR.priority = PRIORITY;
 
+  var ICON_COPY =
+    '<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>';
+  var ICON_CHECK =
+    '<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="m5 12 5 5L20 7"/></svg>';
+
+  /* Clipboard API where allowed; a hidden textarea otherwise (older browsers,
+     or pages opened from file:// in some of them). */
+  function copyText(text, done) {
+    function fallback() {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;pointer-events:none;";
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) {}
+      document.body.removeChild(ta);
+      done(ok);
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(function () { done(true); }, fallback);
+    } else {
+      fallback();
+    }
+  }
+
   function renderCard(c, i, opts) {
     opts = opts || {};
     var d = el("details", "q-card");
@@ -641,6 +670,31 @@
     /* Priority sits in the card's top-right corner. It floats inside the
        title so a long question wraps around it instead of losing width to a
        fixed column - which matters most on a phone. */
+    /* Copy sits just left of the priority pill. Both float right, so it is
+       inserted first and the pill is then put in front of it. */
+    var questionText = titleWrap.textContent.trim();
+    var copyBtn = el("button", "q-copy", ICON_COPY);
+    copyBtn.type = "button";
+    copyBtn.title = "Copy question";
+    copyBtn.setAttribute("aria-label", "Copy question");
+    copyBtn.addEventListener("click", function (ev) {
+      /* Inside <summary>, so stop the click from toggling the card. */
+      ev.preventDefault();
+      ev.stopPropagation();
+      copyText(questionText, function (ok) {
+        copyBtn.innerHTML = ok ? ICON_CHECK : ICON_COPY;
+        copyBtn.classList.toggle("is-copied", ok);
+        copyBtn.title = ok ? "Copied" : "Copy failed";
+        clearTimeout(copyBtn._t);
+        copyBtn._t = setTimeout(function () {
+          copyBtn.innerHTML = ICON_COPY;
+          copyBtn.classList.remove("is-copied");
+          copyBtn.title = "Copy question";
+        }, 1400);
+      });
+    });
+    titleWrap.insertBefore(copyBtn, titleWrap.firstChild);
+
     var prio = PRIORITY[c.priority];
     if (prio) {
       var pill = el("span", "q-prio is-" + c.priority,
@@ -1192,9 +1246,10 @@
       var full = "";
       if (h.classList && h.classList.contains("q-card")) {
         var titleEl = h.querySelector(".q-title");
-        /* The question text only - not the priority pill or the meta chips. */
+        /* The question text only - not the copy button, priority pill or meta chips. */
         full = titleEl ? [].filter.call(titleEl.childNodes, function (n) {
-          return !(n.classList && (n.classList.contains("q-prio") || n.classList.contains("q-meta")));
+          return !(n.classList && (n.classList.contains("q-prio") || n.classList.contains("q-copy") ||
+            n.classList.contains("q-meta")));
         }).map(function (n) { return n.textContent; }).join("").trim() : h.textContent.trim();
       } else {
         full = h.textContent.trim();
