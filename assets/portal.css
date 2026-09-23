@@ -1340,7 +1340,8 @@ html[data-reading-size] .q-prio { font-size: calc(0.65625rem * var(--reading-sca
    not the fade - <details> reflows to full height in one frame - so the body's
    height is now animated in JS (see the card open/close block in portal.js) and
    a second animation on the same element would only fight it. */
-.q-body { padding: 0 1.125rem 1.125rem 3.5625rem; }
+/* Right padding mirrors the left indent, so text keeps the same margin on both sides. */
+.q-body { padding: 0 3.5625rem 1.125rem 3.5625rem; }
 /* Held only while the JS animation runs. The overflow clip is what makes a
    partial height show a partial card instead of the content spilling past the
    card's edge on the way open. */
@@ -1362,10 +1363,9 @@ html[data-reading-size] .q-prio { font-size: calc(0.65625rem * var(--reading-sca
 }
 .q-why .slot-label { color: var(--text-muted); }
 .q-simple { margin-bottom: 0.875rem; }
-/* Long answers are read, then said aloud - keep lines to a comfortable length. */
-.q-body :is(p, li) { max-width: 70ch; line-height: 1.7; }
-/* Justified text should run to the card's right edge, so the line cap is removed. */
-html[data-reading-align="justify"] .q-body :is(p, li) { max-width: none; }
+/* Text fills the card body in both alignment modes; the body padding sets the margins.
+   Line length is controlled by the reader's width setting, not a per-paragraph cap. */
+.q-body :is(p, li) { max-width: none; line-height: 1.7; }
 .q-simple .slot-label { color: var(--excel); }
 .q-simple p:last-child { margin-bottom: 0; }
 .q-points { margin: 0 0 0.875rem; padding-left: 1.25rem; }
