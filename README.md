@@ -47,26 +47,26 @@ external URL, so the guarantee cannot quietly rot. (Pages in `topics/` do use
 
 | Topic | Cards |
 | --- | ---: |
-| 01 LLM foundations | 17 |
-| 02 Transformers and attention | 14 |
-| 03 Prompting and structured output | 11 |
-| 04 Embeddings and vector databases | 10 |
-| 05 RAG | 53 |
-| 06 Advanced RAG | 22 |
-| 07 Agents | 37 |
-| 08 LangChain | 9 |
-| 19 LangGraph | 10 |
-| 09 MCP, A2A and the tool boundary | 10 |
-| 10 Fine-tuning and adaptation | 8 |
-| 11 Evaluation | 14 |
-| 12 LLMOps and observability | 10 |
-| 13 Guardrails, security, responsible AI | 8 |
-| 14 Cost, latency and serving | 9 |
-| 15 Cloud and deployment | 8 |
-| 16 ML fundamentals | 36 |
-| 17 Python and the coding round | 31 |
-| 18 System design, project story, HR | 25 |
-| **Total** | **342** |
+| 01 LLM foundations | 20 |
+| 02 Transformers and attention | 16 |
+| 03 Prompting and structured output | 13 |
+| 04 Embeddings and vector databases | 13 |
+| 05 RAG | 58 |
+| 06 Advanced RAG | 24 |
+| 07 Agents | 42 |
+| 08 LangChain | 12 |
+| 19 LangGraph | 12 |
+| 09 MCP, A2A and the tool boundary | 12 |
+| 10 Fine-tuning and adaptation | 11 |
+| 11 Evaluation | 18 |
+| 12 LLMOps and observability | 12 |
+| 13 Guardrails, security, responsible AI | 11 |
+| 14 Cost, latency and serving | 11 |
+| 15 Cloud and deployment | 9 |
+| 16 ML fundamentals | 42 |
+| 17 Python and the coding round | 34 |
+| 18 System design, project story, HR | 28 |
+| **Total** | **398** |
 
 Plus **5 employer tracks** in `data/tracks.js` - each naming its ten
 most-likely questions in priority order and one worked 40-minute scenario.
@@ -87,7 +87,7 @@ not as assumptions about where the candidate works.
 
 ### September 2026 content refresh
 
-The live bank now has **324 questions**. The version-sensitive sections were
+The live bank now has **398 questions**. The version-sensitive sections were
 refreshed against current documentation: LangChain/LangGraph answers no longer
 describe LCEL as a straight-line-only abstraction; MCP covers the `2026-07-28`
 stateless core, discovery, routing/caching changes, MRTR, Tasks and MCP Apps; and
@@ -99,6 +99,19 @@ The UI remains on the performance-first snappy pass: native system typography,
 no card lift/scale effects, instant question expansion, a short single theme fade,
 short mobile drawer/dropdown transitions, no continuous decorative animation and
 no backdrop blur. Reduced-motion preferences are respected.
+
+### Interview-readiness audit (2026-09-23)
+
+Every topic now follows the RAG topic's format: each card carries a `priority`
+(high / medium / low), cards are ordered High → Medium → Low for a first read,
+and every High card has a `followAnswer` - a sample answer to its follow-up
+question. All answers were re-checked for correctness and currency, the
+teaching `simple` text was rewritten in shorter sentences where it was dense,
+and 56 high-frequency questions were added (for example: GenAI vs AI agents vs
+agentic AI, agentic design patterns, agent frameworks, OWASP LLM Top 10,
+QLoRA, backpropagation, and RAG-chatbot and multi-agent system design).
+Indented lines inside `simple` now render as an aligned block instead of
+collapsing into prose.
 
 ## Adding a question
 

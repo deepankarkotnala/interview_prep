@@ -4,7 +4,7 @@ window.IR = window.IR || {};
 window.IR.q = window.IR.q || {};
 
 window.IR.q["15-cloud"] = {
-  "lede": "Enterprise AI roles across regions usually name at least one cloud platform. The panel is checking whether you have deployed inside a locked-down production environment rather than on a personal API key, whether you can explain network and identity boundaries, and whether you know when containers, Kubernetes or infrastructure as code are worth the operational cost.",
+  "lede": "Enterprise AI roles across regions usually name at least one cloud platform. The panel is checking whether you have deployed inside a locked-down production environment rather than on a personal API key, whether you can explain network and identity boundaries, and whether you know when containers, Kubernetes or infrastructure as code are worth the operational cost. New to cloud deployment? The questions are ordered for a first read: High priority first, from the Docker, Kubernetes and Terraform basics through Azure OpenAI, choosing a cloud, secure deployment and CI/CD, then Medium (residency settings, capacity planning, cold starts), then Low.",
   "grounding": "public enterprise AI job descriptions + published cloud platform behaviour",
   "evening": [
     "cd-01",
@@ -14,6 +14,37 @@ window.IR.q["15-cloud"] = {
   ],
   "cards": [
     {
+      "id": "cd-08",
+      "q": "What do Docker, Kubernetes and Terraform each do in an AI deployment?",
+      "round": [
+        "screening",
+        "tech1"
+      ],
+      "level": "3-5",
+      "priority": "high",
+      "tags": [
+        "cloud",
+        "docker",
+        "kubernetes",
+        "terraform",
+        "deployment"
+      ],
+      "why": "AI engineering postings increasingly expect container, orchestration and infrastructure-as-code basics alongside model knowledge.",
+      "simple": "They solve three different deployment problems.\n\nDocker packages the application and its runtime dependencies into an image, so the same service can run consistently in development, CI and production.\n\nKubernetes runs and manages those containers across machines. It handles scheduling, restarts, service discovery, rolling updates and autoscaling. For GPU services it also needs the right node pools, device plugins and scheduling rules so expensive accelerators are actually used well.\n\nTerraform describes cloud infrastructure as code: networks, clusters, databases, queues, identities and policies. That makes environments reviewable and repeatable instead of being created by clicking around a console.\n\nFor a small managed-API application, I may not need Kubernetes at all. A serverless container or platform service can be simpler. I use these tools when their operational benefit is larger than the complexity they add.",
+      "points": [
+        "Docker packages the service and dependencies.",
+        "Kubernetes schedules and operates containers across machines.",
+        "Terraform declares repeatable cloud infrastructure and policies.",
+        "GPU workloads add node/scheduling/capacity concerns.",
+        "Do not add Kubernetes when a simpler managed runtime meets the requirement."
+      ],
+      "say": "Docker packages the application and dependencies into a repeatable image. Kubernetes operates those containers across machines: scheduling, restarts, services, rolling updates and scaling, with extra GPU scheduling concerns for self-hosted models. Terraform declares the surrounding cloud infrastructure such as networks, clusters, databases and identities so environments are reviewable and reproducible. I would not add Kubernetes automatically; for a small API-backed service, a simpler managed container platform may be the better production choice.",
+      "numbers": "No universal cluster size applies. Estimate from request rate, CPU/GPU utilisation, memory, scaling delay and failure-domain requirements.",
+      "wrong": "Saying Docker, Kubernetes and Terraform are three ways to deploy a container. Packaging, orchestration and infrastructure provisioning are different jobs.",
+      "follow": "Your GPU pods take several minutes to scale from zero. How would you protect an interactive latency SLA?",
+      "followAnswer": "I would not let the interactive path scale to zero. Keep a warm minimum sized for normal traffic, and scale on queue depth or requests in flight rather than CPU. Pre-pull images and cache weights on the nodes so a new pod is ready faster. For spikes beyond the warm pool, queue briefly, or fall back to a managed API or a smaller model, so the SLA holds while capacity catches up."
+    },
+    {
       "id": "cd-01",
       "q": "What changes when you use Azure OpenAI instead of the OpenAI API?",
       "round": [
@@ -21,25 +52,27 @@ window.IR.q["15-cloud"] = {
         "tech2"
       ],
       "level": "5-10",
+      "priority": "high",
       "tags": [
         "cloud",
         "azure",
         "enterprise"
       ],
       "why": "A common enterprise platform question. The useful answer is identity, networking, governance and regional availability, not a feature list.",
-      "simple": "Roughly the same OpenAI models, a very different operating environment - and the environment is the reason enterprises choose it. (Azure OpenAI now sits inside Microsoft Foundry, renamed from Azure AI Foundry in 2026; both names still appear in docs and JDs.)\n\nYou get a resource in your own subscription, inside your tenant, with your networking. That means private endpoints so traffic never crosses the public internet, Entra ID for authentication instead of a shared API key, role-based access control, and everything landing in your existing subscription billing and policy framework. For a bank or a payer, that list is the entire reason the project is approvable.\n\nWhat changes practically: you create a named model deployment and call that deployment, rather than a global model name. The deployment type matters: Global types may process data in any Azure region, Data Zone types keep processing inside a zone such as the US, EU or APAC, and Regional types stay in the resource's region. Quota depends on subscription, model, region and deployment type, and it is a real constraint you plan around rather than discover.\n\nAnd the two things that surprise teams. Model availability differs by region - the model you want may not exist in the required region, and that shapes the design. And new models can arrive later, or first only in Global deployments, so a plan that depends on something released last week may not be executable in your required region yet.",
+      "simple": "Roughly the same OpenAI models, in a very different operating environment - and the environment is why enterprises choose it. (Azure OpenAI now sits inside Microsoft Foundry, which was called Azure AI Foundry until Microsoft renamed it in November 2025; both names still appear in docs and job descriptions.)\n\nThe resource lives in your own Azure subscription and tenant. That gives you private endpoints, so traffic stays off the public internet; Entra ID sign-in instead of a shared API key; role-based access control; and billing and policy inside your existing setup. For a bank or an insurer, that list is what makes the project approvable.\n\nPractically, you create a named deployment of a model and call that deployment. Its deployment type decides where prompts are processed: Global types may use any Azure region, Data Zone types stay inside the US, EU or APAC zone, and Standard or Regional Provisioned types stay within the resource's Azure geography. Stored data stays in your geography either way.\n\nQuota is set per subscription, region, model and deployment type. Plan it early; do not discover it at launch.\n\nTwo things surprise teams. The model you want may not exist in your required region. And new models usually arrive in Global deployments first, then Data Zone, then single-geography - so a plan that depends on last month's model may not work in your region yet.",
       "points": [
         "Your subscription, your tenant, private endpoints, Entra ID, RBAC.",
-        "Named deployments with a type - Global, Data Zone or Regional - which decides where data is processed.",
+        "Named deployments with a type - Global, Data Zone (US, EU, APAC) or Standard/Regional - which decides where prompts are processed.",
         "Quota depends on subscription, model, region and deployment type - plan it, do not discover it.",
         "Model availability varies by region. Check the required region early.",
-        "New models can arrive later, or only in Global deployments first.",
+        "New models arrive in Global first, then Data Zone, then single-geography.",
         "Content filtering is on by default and is configurable - know its behaviour."
       ],
       "say": "Same models, different operating environment - and that is why enterprises pick it. The resource sits in my subscription and tenant, with private endpoints so traffic never crosses the public internet, Entra ID instead of a shared key, and RBAC. Practically, I call a named deployment, and its type - Global, Data Zone or Regional - decides where data is processed. The surprises are regional model availability and quota, and new models reaching my region later.",
       "numbers": "No number applies. Regional model availability, deployment type and quota are the constraints to check before designing.",
       "wrong": "\"It's the same thing with a different URL.\" The follow-up - where is the data processed and how does the app authenticate - exposes that the enterprise deployment details are the experience being probed.",
-      "follow": "The model you need is not in the required region. What do you do?"
+      "follow": "The model you need is not in the required region. What do you do?",
+      "followAnswer": "First I check whether a Data Zone deployment is acceptable - it often gets the model well before single-region types, and processing stays inside the US, EU or APAC zone. If policy demands one geography, I test the best model that is available there on our eval set; often it is good enough. Otherwise it is a formally approved exception or a dated wait. What I never do is quietly switch to Global."
     },
     {
       "id": "cd-02",
@@ -49,25 +82,28 @@ window.IR.q["15-cloud"] = {
         "manager"
       ],
       "level": "5-10",
+      "priority": "high",
       "tags": [
         "cloud",
         "architecture",
         "trade-off"
       ],
       "why": "A judgement question. The wrong instinct is to compare features when the answer is usually organisational.",
-      "simple": "In practice this is rarely a free choice, and saying so is the mature answer. You go where the data already is, where the enterprise agreement is, and where your security team has already done the work. Moving a regulated data estate to a second cloud to get a slightly better model is a project nobody funds.\n\nWhere they differ is narrower than it used to be. All three now offer multi-vendor catalogues - Claude, for example, is on Bedrock, Microsoft Foundry and Google Cloud - so model choice rarely decides it alone. Bedrock has the longest-standing multi-vendor API on AWS. Azure (Microsoft Foundry) has the deepest OpenAI integration, and for a Microsoft shop the identity and networking integration is the real draw. Google's platform - renamed in 2026 from Vertex AI to Gemini Enterprise Agent Platform, with the same APIs - is the natural fit if your data is in BigQuery.\n\nThen check the same four things everywhere, because they decide feasibility: which models exist in your required region (and whether the in-region option, not just a global one, offers them), what the quota and rate limits are, whether the retention and training terms satisfy your legal team, and whether private networking is supported.\n\nAnd keep provider access behind an interface, so this decision is not permanent.",
+      "simple": "Usually it is not a free choice, and saying so is the mature answer. You go where the data already is, where the enterprise agreement is, and where the security team has already approved the setup. Moving a regulated data estate to a second cloud for a slightly better model is a project nobody funds.\n\nThe model catalogues now overlap a lot. Claude is on Bedrock, Microsoft Foundry and Google Cloud. Since mid-2026, OpenAI's GPT models are on Bedrock as well as Azure. So model choice rarely decides it alone.\n\nThe real differences are integration. Bedrock fits teams already on AWS identity, networking and data. Azure (Microsoft Foundry) fits a Microsoft shop - Entra ID, Microsoft 365 and the longest-running enterprise OpenAI offering. Google's platform - renamed from Vertex AI to Gemini Enterprise Agent Platform in April 2026, with existing Vertex AI workloads and APIs still working - fits when the data is in BigQuery.\n\nThen check four things on each, because they decide feasibility: which models exist in your required region (the in-region option, not only the global one), the quota, whether the retention and training terms satisfy legal, and whether private networking is supported.\n\nAnd keep model access behind an interface in your code, so the decision can be reversed.",
       "points": [
         "Usually decided by where the data, the agreement and the security review already are.",
-        "All three now have multi-vendor catalogues; model choice rarely decides it alone.",
-        "Azure (Microsoft Foundry) - deepest OpenAI and Microsoft identity/network integration.",
+        "Catalogues overlap: Claude is on all three, and GPT models are on Bedrock as well as Azure since mid-2026.",
+        "Bedrock - natural fit for an AWS estate.",
+        "Azure (Microsoft Foundry) - Microsoft identity, Microsoft 365, the longest-running enterprise OpenAI offering.",
         "Google (Gemini Enterprise Agent Platform, formerly Vertex AI) - natural fit alongside BigQuery.",
         "Check everywhere: regional model availability, quota, retention terms, private networking.",
         "Abstract the provider so the decision stays reversible."
       ],
-      "say": "Usually it is not a free choice - you go where the data, the enterprise agreement and the completed security review already are, because moving a regulated data estate to get a slightly better model is not a fundable project. All three now offer multi-vendor catalogues, so the difference is integration: Azure for Microsoft identity and OpenAI models, Google's platform, formerly Vertex, for BigQuery, Bedrock on AWS. Then I check regional availability, quota, retention terms and private networking.",
+      "say": "Usually it is not a free choice - you go where the data, the enterprise agreement and the completed security review already are, because moving a regulated data estate for a slightly better model is not a fundable project. The catalogues now overlap heavily, so the difference is integration: Bedrock for an AWS estate, Azure for Microsoft identity, Google's platform, formerly Vertex, for BigQuery. Then I check regional availability, quota, retention terms and private networking.",
       "numbers": "No number applies. Regional model availability is the constraint that most often changes a design.",
       "wrong": "Comparing them on benchmark scores. The models are largely shared or comparable; the differences that decide it are organisational and operational.",
-      "follow": "Your company is on AWS but the best model for this is only on Azure. Argue it."
+      "follow": "Your company is on AWS but the best model for this is only on Azure. Argue it.",
+      "followAnswer": "I would first check whether the gap is real on our own eval set, because the catalogues overlap a lot. If the Azure model clearly wins, the case is about the cost of a second cloud: a new security review, private networking between clouds, data leaving the AWS boundary, and another bill. If the quality gain is worth that, we call Azure through a private link for that one use case, behind our model interface."
     },
     {
       "id": "cd-03",
@@ -77,6 +113,7 @@ window.IR.q["15-cloud"] = {
         "manager"
       ],
       "level": "5-10",
+      "priority": "high",
       "tags": [
         "cloud",
         "security",
@@ -97,34 +134,8 @@ window.IR.q["15-cloud"] = {
       "say": "Most of it is not about the model. Private endpoint with public access disabled and controlled egress. Managed identity rather than keys. The vector store, traces and logs inside the same boundary and region, because they hold prompts and prompts hold customer data - that is the layer teams forget. Per-user authorisation flowing into retrieval filters. And an audit log of who asked, what was retrieved and which versions produced it.",
       "numbers": "No number applies. Agree the audit log retention period with legal explicitly - it is usually the question a reviewer asks that nobody prepared for.",
       "wrong": "\"We use the enterprise tier, so it is secure.\" That covers the provider's side and none of yours - your traces, your index and your authorisation are all still open.",
-      "follow": "Where exactly does the end user's identity enter the retrieval query?"
-    },
-    {
-      "id": "cd-04",
-      "q": "What does Databricks add for GenAI work?",
-      "round": [
-        "tech1",
-        "tech2"
-      ],
-      "level": "5-10",
-      "tags": [
-        "cloud",
-        "databricks",
-        "data-platform"
-      ],
-      "why": "Named in many Indian enterprise JDs, particularly where the data platform team owns the GenAI work.",
-      "simple": "Its value is that the data is already there, and for RAG the data pipeline is most of the work.\n\nPractically: your source documents and tables already live in the lakehouse, so ingestion, chunking and embedding are jobs next to the data rather than an export to somewhere else - which matters because exporting regulated data is often the step that is not permitted.\n\nUnity Catalog is the piece worth naming, because it gives one governance and lineage model over tables, files, models and vector indexes. When a reviewer asks who can see what and where a value came from, that is one answer instead of four.\n\nThen Vector Search for the index, Model Serving for endpoints, and MLflow for tracking and evaluation runs - and MLflow now covering GenAI evaluation and tracing is the part people miss.\n\nThe honest framing: it is a strong choice when the data platform is already Databricks and governance is the binding constraint. It is not a reason to move a workload that is happily running elsewhere.",
-      "points": [
-        "The data is already there - ingestion runs next to it, no export of regulated data.",
-        "Unity Catalog: one governance and lineage model over tables, files, models, indexes.",
-        "Vector Search, Model Serving, and MLflow for tracking and GenAI evaluation.",
-        "Strongest when the data platform is already Databricks and governance is binding.",
-        "Not a reason to move a workload that already runs well elsewhere."
-      ],
-      "say": "Its value is that the data is already there, and for RAG the data pipeline is most of the work - ingestion, chunking and embedding run next to the data instead of exporting regulated data somewhere else. Unity Catalog gives one governance and lineage model across tables, files, models and vector indexes, which answers a reviewer's questions in one place. Plus Vector Search, Model Serving and MLflow for evaluation and tracing.",
-      "numbers": "No number applies. The governance and no-export argument is what carries weight in a regulated review.",
-      "wrong": "\"It's a Spark platform.\" Accurate a few years ago and it misses Unity Catalog, Vector Search and the GenAI evaluation tooling, which is what the JD is naming.",
-      "follow": "Who owns the GenAI pipeline in that setup - the data team or the application team?"
+      "follow": "Where exactly does the end user's identity enter the retrieval query?",
+      "followAnswer": "In the retrieval service, from the verified token - never from the prompt or a client parameter. The app validates the user's sign-in token, resolves their groups or entitlements on the server, and the retrieval layer adds them as a mandatory filter on every vector and keyword search before any chunk comes back. So the model never sees a document the user cannot open, and the applied filter is logged with the request."
     },
     {
       "id": "cd-05",
@@ -133,6 +144,7 @@ window.IR.q["15-cloud"] = {
         "tech2"
       ],
       "level": "5-10",
+      "priority": "high",
       "tags": [
         "cloud",
         "cicd",
@@ -152,7 +164,8 @@ window.IR.q["15-cloud"] = {
       "say": "Ordinary CI/CD plus three artefacts most pipelines lack. Prompts in version control, tested and compared against main on every pull request. The index as a deployable artefact - built alongside, validated against the labelled retrieval set, cut over, old one kept for rollback, never mutated in place. And an evaluation gate that blocks release on a quality drop. Then canary for a full daily cycle, with independent rollback for each artefact.",
       "numbers": "Canary on 5–10% of traffic for at least 24 hours. A shorter window misses the change in traffic mix between working hours and overnight.",
       "wrong": "\"We deploy the app; the prompts are configuration.\" That is how prompt regressions reach production untested, and prompt edits are a frequent source of regressions.",
-      "follow": "The index rebuild succeeded but recall dropped. What does your pipeline do?"
+      "follow": "The index rebuild succeeded but recall dropped. What does your pipeline do?",
+      "followAnswer": "It blocks the cutover. The new index is built next to the live one, so production keeps serving from the old index. The validation stage compares recall on the labelled retrieval set with the current production score and fails if it drops beyond the agreed tolerance. Then we diff what changed - chunking, embedding model, parser version - fix it and rebuild. Nothing was changed in place, so there is nothing to roll back."
     },
     {
       "id": "cd-06",
@@ -162,6 +175,7 @@ window.IR.q["15-cloud"] = {
         "manager"
       ],
       "level": "5-10",
+      "priority": "medium",
       "tags": [
         "cloud",
         "security",
@@ -169,7 +183,7 @@ window.IR.q["15-cloud"] = {
         "compliance"
       ],
       "why": "gr-06 covers residency principles. This is the implementation check: the deployment types, inference profiles, endpoints and org policies that decide where a prompt is actually processed - and the high-throughput defaults that quietly route it elsewhere.",
-      "simple": "**Short version: on every cloud the model call has a setting that decides where your prompt is processed, and the high-throughput option is often \"anywhere\". Choose the in-boundary option explicitly, then block the others with policy.** The principles are in gr-06; this is where they meet the console.\n\nAzure (Microsoft Foundry): the deployment type decides processing location. Global deployments may process in any Azure region; Data Zone deployments stay within a zone such as the US, EU or APAC; Regional deployments stay in the resource's region. Azure Policy can restrict allowed locations and which deployment types teams may create.\n\nAWS Bedrock: cross-Region inference profiles spread requests across regions for capacity. Geographic profiles stay within a geography such as the US or EU, global profiles can route worldwide, and calling the model in-Region keeps processing local. Service control policies and IAM conditions can deny the profiles and regions you have not approved.\n\nGoogle Cloud (Gemini Enterprise Agent Platform, formerly Vertex AI): regional endpoints versus the global endpoint make the same trade, and an organisation policy on resource locations constrains where resources can be created.\n\nThen the rest of the path: vector store, object storage, caches, traces and backups pinned to the same boundary, private networking, managed identities, and a tested failover that cannot silently cross the line. The in-boundary option often offers fewer models or less capacity than the global one - check that first, because it can change the model choice.",
+      "simple": "**Short version: on every cloud the model call has a setting that decides where your prompt is processed, and the high-throughput option is often \"anywhere\". Choose the in-boundary option explicitly, then block the others with policy.** The principles are in gr-06; this is where they meet the console.\n\nAzure (Microsoft Foundry): the deployment type decides processing location. Global deployments may process in any Azure region; Data Zone deployments stay within a zone such as the US, EU or APAC; Standard and Regional Provisioned deployments stay within the resource's Azure geography. Azure Policy can restrict allowed locations and which deployment types teams may create.\n\nAWS Bedrock: cross-Region inference profiles spread requests across regions for capacity. Geographic profiles stay within a geography such as the US or EU, global profiles can route worldwide, and calling the model in-Region keeps processing local. Service control policies and IAM conditions can deny the profiles and regions you have not approved.\n\nGoogle Cloud (Gemini Enterprise Agent Platform, formerly Vertex AI): regional endpoints versus the global endpoint make the same trade, and an organisation policy on resource locations constrains where resources can be created.\n\nThen the rest of the path: vector store, object storage, caches, traces and backups pinned to the same boundary, private networking, managed identities, and a tested failover that cannot silently cross the line. The in-boundary option often offers fewer models or less capacity than the global one - check that first, because it can change the model choice.",
       "points": [
         "Azure: Global, Data Zone or Regional deployment type decides where prompts are processed.",
         "AWS Bedrock: in-Region, geographic or global cross-Region inference - deny unapproved profiles with SCPs/IAM.",
@@ -184,12 +198,45 @@ window.IR.q["15-cloud"] = {
       "follow": "A managed model is not available in the required region. How do you compare another model, self-hosting, or a formally approved exception?"
     },
     {
+      "id": "cd-09",
+      "q": "Pay-as-you-go or provisioned throughput - how do you plan model capacity on Azure, AWS or Google Cloud?",
+      "round": [
+        "tech2",
+        "manager"
+      ],
+      "level": "5-10",
+      "priority": "medium",
+      "tags": [
+        "cloud",
+        "cost",
+        "quota",
+        "capacity",
+        "throughput"
+      ],
+      "why": "Enterprise launches fail on quota and 429 errors more often than on model quality. This checks that you can size capacity and choose between shared and reserved throughput.",
+      "simple": "**Short version: pay-as-you-go bills per token on shared capacity, so it is flexible but has quotas and can throttle. Provisioned throughput reserves capacity for you at a fixed price, so latency is steadier - but you pay whether you use it or not.**\n\nPay-as-you-go (Azure's Standard deployment types, Bedrock on-demand, Google's standard pay-as-you-go). You get a quota, usually in tokens per minute (TPM) and requests per minute (RPM). Go over it and you get HTTP 429, \"too many requests\". Latency can vary at busy times because you share hardware.\n\nProvisioned (Azure PTUs - provisioned throughput units; Bedrock Provisioned Throughput, sold in model units; Google Provisioned Throughput, sold in GSUs - generative AI scale units). You buy a fixed amount of capacity. Azure bills PTUs hourly, with big discounts for monthly or yearly reservations; Bedrock offers no-commitment, 1-month or 6-month terms; Google sells fixed-term subscriptions.\n\nHow to decide. Measure your peak tokens per minute, not the monthly total, and count input and output separately. Steady, high volume: provisioned is usually cheaper per token and more predictable. Spiky or small volume: pay-as-you-go wins. A common mix is provisioned for the baseline, pay-as-you-go for peaks, and the batch APIs - usually around half price - for anything that can wait.\n\nPlan it early. Quota increases and reserved capacity can take time, and the model you want may have no spare capacity in your region.",
+      "points": [
+        "Pay-as-you-go: per token, shared capacity, TPM/RPM quota, 429s when exceeded.",
+        "Provisioned: reserved capacity (Azure PTUs, Bedrock model units, Google GSUs), fixed price, steadier latency.",
+        "Size from peak tokens per minute, input and output separately - not monthly volume.",
+        "Steady high volume → provisioned. Spiky or small → pay-as-you-go.",
+        "Common mix: provisioned baseline + pay-as-you-go overflow + batch API for offline work.",
+        "Request quota and capacity early - it is per model, region and deployment type."
+      ],
+      "say": "Pay-as-you-go bills per token on shared capacity, with a tokens-per-minute quota and 429s when you exceed it, so latency can vary. Provisioned throughput - PTUs on Azure, model units on Bedrock, GSUs on Google - reserves capacity at a fixed price. I size from peak tokens per minute, not monthly totals. Steady high volume goes provisioned; spiky traffic stays pay-as-you-go, often with provisioned for the baseline and overflow for peaks.",
+      "numbers": "At the time of writing Azure's minimum provisioned deployment is 15 PTUs for Global and Data Zone types and more for Regional, and batch APIs on all three clouds are typically about 50% cheaper than real-time calls. Minimums and prices change - check the current pricing page.",
+      "wrong": "\"We'll just request more quota if we hit the limit.\" Quota increases are neither instant nor guaranteed, and 429s at launch look like an outage to users. Capacity is planned from measured peak TPM before go-live.",
+      "follow": "You get 429s at peak even though monthly volume is well under quota. Why?",
+      "followAnswer": "Because quota is per minute, not per month. A burst - a batch job, a retry storm, everyone logging in at nine - can exceed tokens per minute while the monthly total looks small. Some platforms also count the requested max_tokens against the limit up front, so a very high max_tokens uses quota you never consume. I smooth bursts with a queue, set realistic max_tokens, and retry with backoff."
+    },
+    {
       "id": "cd-07",
       "q": "Your first request after a quiet period takes 40 seconds. What is happening?",
       "round": [
         "tech2"
       ],
       "level": "5-10",
+      "priority": "medium",
       "tags": [
         "cloud",
         "deployment",
@@ -214,33 +261,32 @@ window.IR.q["15-cloud"] = {
       "follow": "Traffic is spiky and unpredictable. How do you size the warm pool?"
     },
     {
-      "id": "cd-08",
-      "q": "What do Docker, Kubernetes and Terraform each do in an AI deployment?",
+      "id": "cd-04",
+      "q": "What does Databricks add for GenAI work?",
       "round": [
-        "screening",
-        "tech1"
+        "tech1",
+        "tech2"
       ],
-      "level": "3-5",
+      "level": "5-10",
+      "priority": "low",
       "tags": [
         "cloud",
-        "docker",
-        "kubernetes",
-        "terraform",
-        "deployment"
+        "databricks",
+        "data-platform"
       ],
-      "why": "AI engineering postings increasingly expect container, orchestration and infrastructure-as-code basics alongside model knowledge.",
-      "simple": "They solve three different deployment problems.\n\nDocker packages the application and its runtime dependencies into an image, so the same service can run consistently in development, CI and production.\n\nKubernetes runs and manages those containers across machines. It handles scheduling, restarts, service discovery, rolling updates and autoscaling. For GPU services it also needs the right node pools, device plugins and scheduling rules so expensive accelerators are actually used well.\n\nTerraform describes cloud infrastructure as code: networks, clusters, databases, queues, identities and policies. That makes environments reviewable and repeatable instead of being created by clicking around a console.\n\nFor a small managed-API application, I may not need Kubernetes at all. A serverless container or platform service can be simpler. I use these tools when their operational benefit is larger than the complexity they add.",
+      "why": "Named in many enterprise JDs, particularly where the data platform team owns the GenAI work.",
+      "simple": "Its value is that the data is already there, and for RAG the data pipeline is most of the work.\n\nPractically: your source documents and tables already live in the lakehouse, so ingestion, chunking and embedding are jobs next to the data rather than an export to somewhere else - which matters because exporting regulated data is often the step that is not permitted.\n\nUnity Catalog is the piece worth naming, because it gives one governance and lineage model over tables, files, models and vector indexes. When a reviewer asks who can see what and where a value came from, that is one answer instead of four.\n\nThen Vector Search for the index, Model Serving for endpoints, and MLflow for tracking and evaluation runs - and MLflow now covering GenAI evaluation and tracing is the part people miss.\n\nThe honest framing: it is a strong choice when the data platform is already Databricks and governance is the binding constraint. It is not a reason to move a workload that is happily running elsewhere.",
       "points": [
-        "Docker packages the service and dependencies.",
-        "Kubernetes schedules and operates containers across machines.",
-        "Terraform declares repeatable cloud infrastructure and policies.",
-        "GPU workloads add node/scheduling/capacity concerns.",
-        "Do not add Kubernetes when a simpler managed runtime meets the requirement."
+        "The data is already there - ingestion runs next to it, no export of regulated data.",
+        "Unity Catalog: one governance and lineage model over tables, files, models, indexes.",
+        "Vector Search, Model Serving, and MLflow for tracking and GenAI evaluation.",
+        "Strongest when the data platform is already Databricks and governance is binding.",
+        "Not a reason to move a workload that already runs well elsewhere."
       ],
-      "say": "Docker packages the application and dependencies into a repeatable image. Kubernetes operates those containers across machines: scheduling, restarts, services, rolling updates and scaling, with extra GPU scheduling concerns for self-hosted models. Terraform declares the surrounding cloud infrastructure such as networks, clusters, databases and identities so environments are reviewable and reproducible. I would not add Kubernetes automatically; for a small API-backed service, a simpler managed container platform may be the better production choice.",
-      "numbers": "No universal cluster size applies. Estimate from request rate, CPU/GPU utilisation, memory, scaling delay and failure-domain requirements.",
-      "wrong": "Saying Docker, Kubernetes and Terraform are three ways to deploy a container. Packaging, orchestration and infrastructure provisioning are different jobs.",
-      "follow": "Your GPU pods take several minutes to scale from zero. How would you protect an interactive latency SLA?"
+      "say": "Its value is that the data is already there, and for RAG the data pipeline is most of the work - ingestion, chunking and embedding run next to the data instead of exporting regulated data somewhere else. Unity Catalog gives one governance and lineage model across tables, files, models and vector indexes, which answers a reviewer's questions in one place. Plus Vector Search, Model Serving and MLflow for evaluation and tracing.",
+      "numbers": "No number applies. The governance and no-export argument is what carries weight in a regulated review.",
+      "wrong": "\"It's a Spark platform.\" Accurate a few years ago and it misses Unity Catalog, Vector Search and the GenAI evaluation tooling, which is what the JD is naming.",
+      "follow": "Who owns the GenAI pipeline in that setup - the data team or the application team?"
     }
   ]
 };

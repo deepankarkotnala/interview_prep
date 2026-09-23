@@ -38,7 +38,8 @@ window.IR.q["05-rag"] = {
       "say": "RAG means we search our own data before the model answers. The user asks a question, we retrieve the few most relevant document chunks, put them in the prompt, and the model answers from that text and cites it. It gives us fresh, private and traceable answers without fine-tuning the model. A typical setup passes three to five chunks per query.",
       "numbers": "Typical production setup: retrieve 20 candidates, rerank to 4–6 chunks, 300–800 tokens per chunk.",
       "wrong": "\"RAG stops hallucination.\" It does not. It reduces one cause of hallucination. The model can still ignore the context, or the retrieval can hand it the wrong page confidently.",
-      "follow": "Then why not just put the whole document in the context window?"
+      "follow": "Then why not just put the whole document in the context window?",
+      "followAnswer": "For one small document, sometimes I do. But for a real corpus it fails on four things: cost, because I pay for every token on every request; latency; accuracy, since facts buried in the middle of a huge prompt get missed; and permissions, because I cannot paste documents a user is not allowed to see. Retrieval sends only the few relevant, permitted pieces."
     },
     {
       "id": "rag-02",
@@ -60,7 +61,8 @@ window.IR.q["05-rag"] = {
       "say": "Long context works well for a few bounded documents where cross-document reasoning matters. It breaks down on cost, latency and access control. Even with prompt caching we pay for large inputs on every request, accuracy can drop when the fact is buried mid-context, and we cannot enforce per-user permissions if we paste the whole corpus. So we retrieve, filter by entitlement, and use long context only for the final synthesis step.",
       "numbers": "A 100k-token context at roughly $3 per million input tokens is $0.30 per query. At 10,000 queries a day that is about $3,000 a day, versus a few dollars for retrieval-based prompts. Prompt caching cuts this sharply when the same context repeats, but a corpus bigger than any window still has to be retrieved.",
       "wrong": "\"Long context has made RAG obsolete.\" The panel will usually follow up on cost per query and per-user permissions, and this answer has no reply to either.",
-      "follow": "How do you enforce per-user document permissions inside retrieval?"
+      "follow": "How do you enforce per-user document permissions inside retrieval?",
+      "followAnswer": "I copy each source document's access groups onto its chunks at ingestion. At query time the server adds the user's groups as a hard metadata filter inside the vector search, so restricted chunks are never candidates - the prompt is never the control. I also re-sync chunks when permissions change, include entitlements in any cache key, and log which chunks each user was shown."
     },
     {
       "id": "rag-45",
@@ -117,6 +119,7 @@ window.IR.q["05-rag"] = {
       "numbers": "In practice most RAG quality problems are retrieval problems, not generation problems. Measure recall@k before touching the prompt.",
       "wrong": "Describing it as retrieve-then-generate. It is technically true and useless for debugging, because it collapses five distinct failure modes into one box.",
       "follow": "Which of those stages would you instrument first, and what would you log?",
+      "followAnswer": "Retrieval first, because that is where most failures hide. For every request I log the original and rewritten query, the filters applied, the retrieved chunk IDs with scores before and after reranking, and the final prompt and answer with citations. At ingestion I log characters extracted per page and any chunk truncated at embedding. That trace lets me place any bad answer in one stage.",
       "diagram": {
         "kind": "lanes",
         "alt": "The seven RAG stages - parse, chunk, embed, index, retrieve, rerank, generate - each with its characteristic silent failure.",
@@ -158,6 +161,36 @@ window.IR.q["05-rag"] = {
       }
     },
     {
+      "id": "rag-57",
+      "q": "What is a vector database, and what does it do in a RAG pipeline?",
+      "round": [
+        "screening",
+        "tech1"
+      ],
+      "level": "3-5",
+      "priority": "high",
+      "tags": [
+        "rag",
+        "vector-db",
+        "retrieval",
+        "basics"
+      ],
+      "why": "A screening staple. Whether you know what the vector store actually does - and that it is not where RAG quality comes from.",
+      "simple": "**A vector database stores the embeddings of your chunks and quickly finds the ones closest in meaning to the user's question.**\n\nAn embedding is a list of numbers that captures the meaning of a piece of text. Texts with similar meaning get similar numbers. At ingestion, every chunk is turned into an embedding and saved together with its ID, its text and metadata such as source, date and access group.\n\nAt question time, the question is embedded with the same model, and the database returns the chunks whose vectors are nearest to it.\n\nThe hard part is speed. Comparing the question with fifty million vectors one by one is too slow. So vector databases build an approximate index - HNSW is the common one - that jumps quickly to the right neighbourhood. It is very fast and finds almost all of the true nearest neighbours, though not always every one.\n\nA real vector database also does the unglamorous jobs: filtering by metadata (only this user's documents), updating and deleting chunks, and often keyword search too, for hybrid retrieval.\n\nThink of a library shelved by topic rather than by title: you walk straight to the right shelf instead of reading every spine.\n\nThe senior point: the vector database is plumbing. Pinecone, Qdrant, Weaviate, Milvus or pgvector usually give similar retrieval quality with the same embeddings and index settings. RAG quality comes from parsing, chunking, the embedding model and reranking.",
+      "points": [
+        "**Stores** each chunk's vector plus its ID, text and metadata.",
+        "**Searches** by nearest neighbour, using an approximate index (usually HNSW) so it stays fast at millions of vectors.",
+        "**Filters** by metadata such as tenant, date or access group - ideally inside the search, not after it.",
+        "**Maintains** the index: upserts, deletes and re-indexing when documents change.",
+        "Options: pgvector (inside Postgres), Pinecone, Qdrant, Weaviate, Milvus, Elasticsearch/OpenSearch. FAISS is a search library, not a database."
+      ],
+      "say": "A vector database stores the embedding of every chunk along with its ID, text and metadata, and at query time returns the chunks whose vectors are closest to the embedded question. It uses an approximate index, usually HNSW, so search stays fast across millions of vectors, and it handles metadata filtering, updates and deletes. But it is mostly plumbing - retrieval quality comes from chunking, the embedding model and reranking.",
+      "numbers": "HNSW typically answers in a few to tens of milliseconds over millions of vectors while finding roughly 95–99% of the true nearest neighbours, tunable against speed. Raw storage: one million 1,024-dimension float32 vectors is about 4 GB before index overhead.",
+      "wrong": "\"The vector database is what makes RAG accurate, so we picked the best one.\" Swapping databases rarely changes answer quality; chunking, embeddings and reranking do. It tells the panel you optimised the wrong layer.",
+      "follow": "Do you always need a dedicated vector database?",
+      "followAnswer": "No. Under a few million vectors, pgvector inside the Postgres we already run is usually enough, and it keeps permissions, joins and backups in one place. For a quick prototype an in-memory library like FAISS works. I move to a dedicated store when scale, filtered-search speed, multi-tenancy or hybrid search outgrow it - and I decide by testing recall and p95 latency on my own data."
+    },
+    {
       "id": "rag-03",
       "q": "How do you choose a chunking strategy?",
       "round": [
@@ -182,7 +215,8 @@ window.IR.q["05-rag"] = {
       "say": "I choose chunking from the document structure and the questions users ask, not from a tutorial default. I keep natural boundaries such as sections, clauses or code units, use parent-child retrieval when I need small search units but larger answer context, and treat tables or scans separately. Overlap is only a tuning knob. I run retrieval and answer evals, then choose the smallest chunks that preserve meaning without creating lots of duplicate context.",
       "numbers": "There is no universal chunk size or overlap. Start with a reasonable few-hundred-token range for prose, then tune on your corpus using retrieval recall, answer quality, duplicate hits, context size and latency.",
       "wrong": "\"I used RecursiveCharacterTextSplitter with 1000 and 200.\" That is a setting copied from tutorials, not a strategy. The interviewer wants to hear why that size suits your documents and how you checked it.",
-      "follow": "How would you chunk a 90-page scanned PDF with tables?"
+      "follow": "How would you chunk a 90-page scanned PDF with tables?",
+      "followAnswer": "First OCR with a layout-aware parser, keeping page numbers and a confidence score per page. Tables come out as whole units, stored as markdown or HTML, with a short text summary indexed next to them. The rest I chunk by the headings the parser recovers, with the heading path on each chunk. Then I spot-check low-confidence pages and a few table questions before indexing."
     },
     {
       "id": "rag-18",
@@ -205,12 +239,14 @@ window.IR.q["05-rag"] = {
         "Document-aware wins whenever real structure exists - use it.",
         "Semantic chunking is expensive and rarely beats structure.",
         "Fixed-size only for uniform, structureless text.",
-        "The right answer is measured on your eval set, not chosen by reputation."
+        "The right answer is measured on your eval set, not chosen by reputation.",
+        "**Late chunking** (Jina, 2024): run the whole document through a long-context embedding model first, then average the token vectors inside each chunk, so each chunk vector keeps the document's context. Worth testing when chunks say \"it\" or \"this clause\" and lose meaning alone."
       ],
       "say": "My default is recursive character splitting, because it respects paragraph and sentence boundaries at almost no cost and works on any input. But wherever real structure exists - headings, clause numbers, code functions - I use document-aware splitting, since a human already grouped related meaning there and it reliably retrieves better. Semantic chunking is expensive and I have not seen it beat structure often enough to justify embedding the corpus twice.",
       "numbers": "Semantic chunking roughly doubles ingestion cost. Document-aware splitting usually gives a bigger retrieval gain for none of that overhead.",
       "wrong": "Listing all four neutrally with no default. The question asked you to defend one, and neutrality reads as never having chosen.",
-      "follow": "Your corpus is 50,000 scanned invoices with no headings. Now what?"
+      "follow": "Your corpus is 50,000 scanned invoices with no headings. Now what?",
+      "followAnswer": "Invoices are not prose, so I would not chunk them like prose. After OCR, I extract fields - vendor, invoice number, date, amount, line items - into a table, and answer totals and filters with SQL over it. For free-text questions I keep one small chunk per invoice with those fields as metadata, plus hybrid search, because users search by exact invoice numbers."
     },
     {
       "id": "rag-19",
@@ -237,7 +273,8 @@ window.IR.q["05-rag"] = {
       "say": "I would not guess. I build fifty to a hundred question-and-passage pairs, then sweep chunk sizes from 256 to 2048 tokens with a few overlap values and measure recall@k for each. That is an afternoon of work and it replaces an argument with a number. Generally dense reference content favours smaller chunks and narrative favours larger, and overlap beyond about 20% just duplicates storage without improving recall.",
       "numbers": "Sweep 256, 512, 1024, 2048 tokens. Keep overlap at 10–20% of chunk size. Measure in tokens, since that is the embedding model's actual limit.",
       "wrong": "'1000 characters with 200 overlap, it is the standard.' There is no standard - it is a tutorial setting, and the follow-up will ask why it suits your documents.",
-      "follow": "Your eval says 2048 wins on recall but answers got worse. Explain that."
+      "follow": "Your eval says 2048 wins on recall but answers got worse. Explain that.",
+      "followAnswer": "Recall only asks whether the answer is somewhere in the chunks. With 2048-token chunks it usually is, but it is buried in a lot of unrelated text, so the model has more noise to read and misses or mixes facts. That is a precision problem. I would search over small chunks, return the larger parent section only when needed, and judge by answer quality, not recall alone."
     },
     {
       "id": "rag-11",
@@ -259,7 +296,8 @@ window.IR.q["05-rag"] = {
       "say": "Vector search matches meaning but blurs exact strings like part numbers and error codes. Keyword search with BM25 handles those precisely but misses paraphrases. Hybrid runs both and fuses them, usually with reciprocal rank fusion, which merges by rank position so I never have to reconcile two score scales. On enterprise corpora full of acronyms and identifiers, hybrid is normally the bigger win than any model upgrade.",
       "numbers": "RRF with k=60 is the standard starting constant. On identifier-heavy corpora, hybrid commonly lifts recall@10 more than switching to a larger embedding model.",
       "wrong": "\"Keyword search is old, embeddings replaced it.\" The natural follow-up is how you find part number XR-4471B - and pure embeddings often miss it.",
-      "follow": "How do you weight the lexical and dense results against each other?"
+      "follow": "How do you weight the lexical and dense results against each other?",
+      "followAnswer": "I start with plain reciprocal rank fusion, which needs no weights because it only uses rank positions. If one side is clearly stronger on my eval set, I add a weight per retriever, or normalise the scores and blend them, and tune that on labelled queries. Identifier-heavy queries often want more keyword weight, so some teams route by query type."
     },
     {
       "id": "rag-12",
@@ -277,11 +315,12 @@ window.IR.q["05-rag"] = {
         "trade-off"
       ],
       "why": "Whether you can justify a component with numbers instead of enthusiasm.",
-      "simple": "The first-stage retriever is fast but rough. It compares your question to each chunk separately, using vectors that were computed before your question existed. It is good enough to narrow two million chunks down to fifty.\n\nA reranker is a different kind of model, a cross-encoder. It reads the question and one chunk together, at the same time, and scores how well that chunk answers that question. Much more accurate, and far too slow to run on the whole corpus.\n\nSo the pattern is two stages. Retrieve fifty cheaply, rerank those fifty carefully, keep the top five. You buy accuracy with latency.\n\nWhether it is worth it is an empirical question, and that is the answer the panel wants. Measure recall and answer accuracy with and without it, measure the added p95 latency, and decide against your latency budget.",
+      "simple": "The first-stage retriever is fast but rough. It compares your question to each chunk separately, using vectors that were computed before your question existed. It is good enough to narrow two million chunks down to fifty.\n\nA reranker is a different kind of model, usually a cross-encoder (some teams now use a small LLM as the reranker). It reads the question and one chunk together, at the same time, and scores how well that chunk answers that question. Much more accurate, and far too slow to run on the whole corpus.\n\nSo the pattern is two stages. Retrieve fifty cheaply, rerank those fifty carefully, keep the top five. You buy accuracy with latency.\n\nWhether it is worth it is an empirical question, and that is the answer the panel wants. Measure recall and answer accuracy with and without it, measure the added p95 latency, and decide against your latency budget.",
       "say": "Retrieval is fast but approximate - it compares the question and chunks as separate vectors. A reranker is a cross-encoder that reads the question and each chunk together, so it scores relevance much more accurately, but it is too slow to run on the full corpus. So I retrieve fifty, rerank to five, and decide with numbers: what accuracy it buys against what it adds to p95 latency.",
       "numbers": "A reranker on 20–50 candidates typically adds about 50–300 ms, depending on model size, hosting and candidate count. If your p95 budget is 3 seconds, that is affordable. If it is 800 ms, it is not.",
       "wrong": "\"I always add a reranker, it improves quality.\" A senior answer names the latency cost and the budget it fits inside.",
-      "follow": "Your p95 budget is 800 ms end to end. What do you cut?"
+      "follow": "Your p95 budget is 800 ms end to end. What do you cut?",
+      "followAnswer": "First I measure where the time goes, because generation usually dominates. Then I stream the answer, cut the chunks sent to the model from ten to about four, and skip query rewriting when the question already stands alone. For the reranker I use a small model on twenty candidates, or drop it if the eval shows little gain. Caching repeated questions helps too."
     },
     {
       "id": "rag-22",
@@ -297,7 +336,7 @@ window.IR.q["05-rag"] = {
         "reranking"
       ],
       "why": "A precise diagnostic. Retrieval worked, so the fix is downstream - and knowing that saves you tuning the wrong stage.",
-      "simple": "This is a good failure to get, because it tells you retrieval is not the problem. The right chunk was found. The model just did not use it.\n\nThe cause is position. Models attend most reliably to the beginning and end of their context and measurably less to the middle - the lost-in-the-middle effect. Rank 8 of 10 sits in the dead zone, buried under seven chunks that scored higher but matter less.\n\nThree fixes, in order of what I would try.\n\nAdd a reranker. The retriever is a bi-encoder that embedded query and document separately, which is fast and approximate. A cross-encoder reads the query and each candidate together and scores relevance directly. It is far more accurate at ordering, so the rank-8 chunk moves to rank 1. Retrieve 20 to 50 candidates, rerank, keep the top 3 to 5.\n\nCut k. If you are passing 10 chunks and the answer is in one, the other 9 are noise. Fewer, better chunks usually beat more chunks - and it is cheaper and faster.\n\nReorder deliberately. If you must pass many, put the highest-scoring chunks at the start and end rather than in descending order, so nothing important sits in the middle.\n\nThen verify it stayed fixed. Add this query to your eval set, because the next chunking change can silently undo it.",
+      "simple": "This is a good failure to get, because it tells you retrieval is not the problem. The right chunk was found. The model just did not use it.\n\nThe cause is position. Models attend most reliably to the beginning and end of their context and less to the middle - the lost-in-the-middle effect. Newer models are better at this, but the effect has not gone away, and it grows with context length. Rank 8 of 10 sits in the dead zone, buried under seven chunks that scored higher but matter less.\n\nThree fixes, in order of what I would try.\n\nAdd a reranker. The retriever is a bi-encoder that embedded query and document separately, which is fast and approximate. A cross-encoder reads the query and each candidate together and scores relevance directly. It is far more accurate at ordering, so the rank-8 chunk moves to rank 1. Retrieve 20 to 50 candidates, rerank, keep the top 3 to 5.\n\nCut k. If you are passing 10 chunks and the answer is in one, the other 9 are noise. Fewer, better chunks usually beat more chunks - and it is cheaper and faster.\n\nReorder deliberately. If you must pass many, put the highest-scoring chunks at the start and end rather than in descending order, so nothing important sits in the middle.\n\nThen verify it stayed fixed. Add this query to your eval set, because the next chunking change can silently undo it.",
       "points": [
         "Retrieval succeeded - the failure is position, not recall.",
         "Lost-in-the-middle: models attend to the ends, not the middle.",
@@ -308,7 +347,8 @@ window.IR.q["05-rag"] = {
       "say": "Retrieval worked, so this is not a recall problem - it is position. Models attend to the start and end of context far more reliably than the middle, so rank 8 of 10 sits in the dead zone. The direct fix is a cross-encoder reranker, which reads query and chunk together and reorders properly, so I retrieve 20 to 50 and keep the top 3 after reranking. Cutting k also helps, since fewer better chunks beat more noisy ones.",
       "numbers": "Retrieve 20–50 candidates, rerank, pass 3–5. Reranking adds roughly 50–300 ms, depending on model size, hosting and candidate count.",
       "wrong": "Rewriting the prompt to say 'read all the context carefully'. It does not address position, and it is the reflex fix that wastes a day.",
-      "follow": "Reranking added 200ms and your latency budget is gone. What else?"
+      "follow": "Reranking added 200ms and your latency budget is gone. What else?",
+      "followAnswer": "Use a smaller reranker on fewer candidates, say twenty instead of fifty, or host it on a GPU. Cut k so the model reads less and starts answering sooner. Put the strongest chunks at the start and end of the context. And improve first-stage ranking with hybrid search or a better embedding model, so I only need to rerank low-confidence queries."
     },
     {
       "id": "rag-24",
@@ -336,7 +376,8 @@ window.IR.q["05-rag"] = {
       "say": "It should refuse, and that has to be built. Vector search always returns k nearest neighbours whether or not they are relevant, so I threshold on relevance score and treat anything below the floor as no result. I state the refusal path explicitly in the prompt, and I check groundedness on the output. I also put unanswerable questions in the eval set, because teams test only answerable ones and never find out the system cannot say no.",
       "numbers": "Set the score floor from the distributions of known-good and known-bad queries. Track refusal rate as a monitored metric - a sudden drop often means retrieval broke.",
       "wrong": "Assuming the model will notice the context is irrelevant. It usually will not - it will write a fluent answer from whatever you gave it.",
-      "follow": "Your refusal rate jumped from 2% to 20% overnight. What happened?"
+      "follow": "Your refusal rate jumped from 2% to 20% overnight. What happened?",
+      "followAnswer": "A jump that sudden is almost always a pipeline change, not users. I check the last deployment and ingestion run first: a failed or partial reindex, a new embedding model whose scores sit on a different scale so the threshold is now wrong, or a filter excluding too much. If the pipeline is clean, I check whether the refusals cluster on one new topic the corpus does not cover."
     },
     {
       "id": "rag-07",
@@ -353,7 +394,7 @@ window.IR.q["05-rag"] = {
         "metrics"
       ],
       "why": "Whether you can prove an improvement, or only claim one.",
-      "simple": "Evaluate the two halves separately, then the whole thing end to end.\n\nFor retrieval, you need a set of questions where you already know which chunk holds the answer. Then measure recall@k - how often the correct chunk appears in the top k - and MRR, which rewards it being near the top. This part is cheap, fast and objective, and you can run it on every commit. RAGAS adds two LLM-judged retrieval metrics on top: context precision - is what we retrieved mostly useful and ranked near the top - and context recall - did we retrieve everything the answer needs.\n\nFor generation, the two core metrics are faithfulness - is every claim in the answer supported by the retrieved context - and answer relevance - does it actually address the question. Both are scored with an LLM as judge, so check the judge against a small set of human labels before trusting it.\n\nThen online: thumbs up and down, whether users rephrase, whether they click the citation, escalation rate to a human. Offline tells you if you broke something. Online tells you if it matters.",
+      "simple": "Evaluate the two halves separately, then the whole thing end to end.\n\nFor retrieval, you need a set of questions where you already know which chunk holds the answer. Then measure recall@k - how often the correct chunk appears in the top k - and MRR, which rewards it being near the top. This part is cheap, fast and objective, and you can run it on every commit. RAGAS, a popular open-source evaluation library, adds two LLM-judged retrieval metrics on top: context precision - is what we retrieved mostly useful and ranked near the top - and context recall - did we retrieve everything the answer needs.\n\nFor generation, the two core metrics are faithfulness - is every claim in the answer supported by the retrieved context - and answer relevance (current RAGAS calls it response relevancy) - does it actually address the question. Both are scored with an LLM as judge, so check the judge against a small set of human labels before trusting it.\n\nThen online: thumbs up and down, whether users rephrase, whether they click the citation, escalation rate to a human. Offline tells you if you broke something. Online tells you if it matters.",
       "points": [
         "Retrieval: recall@k, MRR, hit rate - objective, cheap, run in CI - plus context precision and context recall.",
         "Generation: faithfulness and answer relevance, scored by a calibrated LLM judge.",
@@ -364,7 +405,8 @@ window.IR.q["05-rag"] = {
       "say": "I evaluate retrieval and generation separately. Retrieval gets a labelled set with recall at k and MRR on every commit, plus context precision and context recall. Generation gets faithfulness and answer relevance, scored by an LLM judge that I calibrate against human labels. Then online signals - thumbs, rephrase rate, escalation. Offline tells me if I broke something, online tells me whether it mattered to users.",
       "numbers": "A useful bar: recall@10 above 0.90 before you touch the prompt. And 100+ items in the golden set, or the numbers are noise.",
       "wrong": "\"We tested it manually and it looked good.\" Fine for a demo, but it gives you nothing to show when someone asks whether the last change made things worse.",
-      "follow": "Your LLM judge scores 0.9 faithfulness. Do you trust it?"
+      "follow": "Your LLM judge scores 0.9 faithfulness. Do you trust it?",
+      "followAnswer": "Not until I have checked the judge. I hand-label fifty to a hundred answers, run the judge on the same set, and measure how often it agrees with the humans, especially on the failures. I also check it does not simply reward long or confident answers. If agreement is high I use it to compare versions, and re-check it whenever the judge model or prompt changes."
     },
     {
       "id": "rag-27",
@@ -391,7 +433,8 @@ window.IR.q["05-rag"] = {
       "say": "Context recall asks whether retrieval found everything needed; context precision asks whether what it returned was relevant and ranked highly. They point at different fixes - low recall means chunking, embeddings or query rewriting, while low precision means add a reranker or cut k. Measuring both is what lets me prove retrieval is fine and the problem is generation, which stops the team tuning the wrong stage for a week.",
       "numbers": "Target recall above 0.9 on your eval set before tuning anything downstream. If recall is low, generation improvements cannot help.",
       "wrong": "Reporting a single RAG score. It tells you something is wrong and nothing about which of five stages to look at.",
-      "follow": "Recall is 0.95, precision is 0.9, and users say answers are wrong. Where do you look?"
+      "follow": "Recall is 0.95, precision is 0.9, and users say answers are wrong. Where do you look?",
+      "followAnswer": "Retrieval looks healthy, so I look at generation and at the data. First faithfulness: is the model adding claims the context does not support? Then the chunks themselves: are they outdated or superseded, so a faithful answer is still wrong? And I check the eval set matches real traffic, because good scores on synthetic questions can hide failures on real ones."
     },
     {
       "id": "rag-46",
@@ -437,7 +480,7 @@ window.IR.q["05-rag"] = {
         "evaluation"
       ],
       "why": "Faithfulness is the metric that separates a demo from a system you can defend.",
-      "simple": "**Short version: split the answer into single claims and check each one against the retrieved text.**\n\nGroundedness, or faithfulness, asks a narrow question: is every claim in the answer supported by the retrieved context? Note what it does not ask - whether the answer is correct. An answer can be perfectly faithful to a document that is itself out of date. These are separate measurements and conflating them causes confusion.\n\nThe standard method decomposes the answer:\n\n    1. Break the answer into atomic claims.\n    2. For each claim, ask a judge model whether the context entails it.\n    3. Faithfulness = supported claims / total claims.\n\nDecomposition is what makes this work. Judging a whole paragraph gives you a mushy verdict, because three sentences are supported and one is invented. Per-claim scoring localises the problem, and you can show exactly which sentence was unsupported.\n\nCheaper signals exist for production, where running a judge on every response is expensive. Token overlap or an NLI model gives a fast approximate score. Sample a percentage of live traffic for full judging rather than all of it.\n\nValidate the judge itself. Hand-label fifty responses, check the judge agrees with you, and only then trust its numbers at scale. An unvalidated judge is a confident random number generator.\n\nThen the diagnostic pairing that matters. High faithfulness with a wrong answer means retrieval gave you the wrong document - go fix retrieval. Low faithfulness means the model is inventing despite good context - tighten the prompt, lower the temperature, or add an output check. Measuring both is what tells you which team owns the bug.",
+      "simple": "**Short version: split the answer into single claims and check each one against the retrieved text.**\n\nGroundedness, or faithfulness, asks a narrow question: is every claim in the answer supported by the retrieved context? Note what it does not ask - whether the answer is correct. An answer can be perfectly faithful to a document that is itself out of date. These are separate measurements and conflating them causes confusion.\n\nThe standard method decomposes the answer:\n\n    1. Break the answer into atomic claims.\n    2. For each claim, ask a judge model whether the context supports it.\n    3. Faithfulness = supported claims / total claims.\n\nDecomposition is what makes this work. Judging a whole paragraph gives you a mushy verdict, because three sentences are supported and one is invented. Per-claim scoring localises the problem, and you can show exactly which sentence was unsupported.\n\nCheaper signals exist for production, where running a judge on every response is expensive. Word overlap, or a small natural-language-inference (NLI) model - a classifier that says whether one text supports another - gives a fast, rough score. Sample a percentage of live traffic for full judging rather than all of it.\n\nValidate the judge itself. Hand-label fifty responses, check the judge agrees with you, and only then trust its numbers at scale. An unvalidated judge is a confident random number generator.\n\nThen the diagnostic pairing that matters. High faithfulness with a wrong answer means retrieval gave you the wrong document - go fix retrieval. Low faithfulness means the model is inventing despite good context - tighten the prompt, lower the temperature, or add an output check. Measuring both is what tells you which team owns the bug.",
       "points": [
         "Faithfulness asks if claims are supported, not if they are true.",
         "Decompose into atomic claims - paragraph-level judging is mush.",
@@ -448,7 +491,8 @@ window.IR.q["05-rag"] = {
       "say": "I decompose the answer into atomic claims and check each against the retrieved context with a judge model, scoring supported claims over total. Decomposition matters because judging a whole paragraph hides one invented sentence among three good ones. I validate the judge against about fifty hand-labelled responses first. The diagnostic value is the pairing: faithful but wrong means retrieval failed, unfaithful means generation did.",
       "numbers": "Validate the judge on 50 hand-labelled examples. Sample production traffic for full judging rather than scoring every response.",
       "wrong": "Treating faithfulness as correctness. A perfectly grounded answer from a superseded policy scores 1.0 and is still wrong for the user.",
-      "follow": "Faithfulness is 0.98 and users report wrong answers. Where is the bug?"
+      "follow": "Faithfulness is 0.98 and users report wrong answers. Where is the bug?",
+      "followAnswer": "Faithfulness says the answer matches the retrieved context, so the context itself is probably wrong. The usual causes are retrieving the wrong document - an old policy version, the wrong region - or stale content in the index. I read what was retrieved for the failing queries, then check version metadata and freshness. The fix is in retrieval or the corpus, not the prompt."
     },
     {
       "id": "rag-05",
@@ -476,7 +520,8 @@ window.IR.q["05-rag"] = {
       "say": "First I separate retrieval failure from generation failure, because they have different fixes. I take fifty real failing queries and check whether the correct chunk was retrieved at all. If it was not, I look at ingestion, chunking, filters and the embedding model. If it was retrieved and the answer is still wrong, it is a prompt or context-ordering problem. Then I fix one layer at a time and measure against a labelled set.",
       "numbers": "Build a labelled set of 50–100 query-to-correct-chunk pairs. Track recall@10 and answer accuracy separately - they move independently.",
       "wrong": "\"I would improve the prompt.\" This is the most common failing answer in the whole topic. It assumes the model saw the right text, which in most real failures it did not.",
-      "follow": "Recall is good but answers are still wrong. Now what?"
+      "follow": "Recall is good but answers are still wrong. Now what?",
+      "followAnswer": "Then it is a generation problem, and I check four things. Conflicting chunks, like an old and a new policy both retrieved. Position, where the key fact is buried in the middle of a long context. A missing refusal instruction, so the model fills gaps from memory. And questions that need facts from several documents. I fix one, re-run the eval, and keep it only if the number moves."
     },
     {
       "id": "rag-06",
@@ -503,7 +548,8 @@ window.IR.q["05-rag"] = {
       "say": "Usually one of four things. Conflicting document versions and the model picked the stale one. Position - the fact was buried mid-context and got missed. No refusal instruction, so the model invented rather than saying it did not know. Or the question needs facts from two documents and no single chunk has the answer, which is a retrieval design problem. I check them in that order.",
       "numbers": "Adding an explicit refusal instruction typically cuts confident-wrong answers noticeably. Measure it - track your unsupported-answer rate before and after.",
       "wrong": "\"I'd switch to a bigger model.\" Sometimes true, usually expensive, and it hides the real defect. Diagnose before you upgrade.",
-      "follow": "How do you detect that an answer was not supported by the retrieved context?"
+      "follow": "How do you detect that an answer was not supported by the retrieved context?",
+      "followAnswer": "I split the answer into single claims and check each one against the retrieved chunks, using an LLM judge or a smaller entailment model. The score is supported claims over total claims. Alongside that I verify every citation points to a chunk that was actually retrieved. I validate the judge against human labels first, then run it on a sample of live traffic."
     },
     {
       "id": "rag-40",
@@ -531,7 +577,8 @@ window.IR.q["05-rag"] = {
       "say": "Whether the correct chunk was retrieved at all. I take twenty failing queries and read what came back. If the answer was not in the context, no prompt or model change can help and I go to chunking, embeddings or filters. If it was there, retrieval is fine and I look at ranking, k and the prompt. It is the cheapest diagnostic available and the one teams skip, because prompts feel editable and retrieval feels like plumbing.",
       "numbers": "Twenty failing queries is usually enough to see the pattern. Most RAG quality problems resolve to retrieval rather than generation.",
       "wrong": "'I would improve the prompt.' It is the most common instinct and it is the wrong first move - you may be instructing a model that never received the answer.",
-      "follow": "You check and the right chunk was there every time. Where do you go next?"
+      "follow": "You check and the right chunk was there every time. Where do you go next?",
+      "followAnswer": "Then retrieval is fine and I move to generation. I look at where the right chunk sits in the prompt, because a fact buried in the middle gets missed, and whether conflicting or outdated chunks sit beside it. Then the prompt: does it allow 'not found' and require citations? Finally I test other models on the same fixed context to see whether the generator is the weak link."
     },
     {
       "id": "rag-15",
@@ -549,7 +596,7 @@ window.IR.q["05-rag"] = {
         "guardrails"
       ],
       "why": "Whether you can watch a non-deterministic system in production.",
-      "simple": "In production you have no ground truth. Nobody is standing there with the correct answer. So you cannot measure correctness - you measure support.\n\nThe main check is groundedness: take each claim in the answer and check whether the retrieved context actually contains it. That can be done cheaply with a small model or an entailment check, on every response or on a sample. If a claim is not supported, that is a hallucination signal even without knowing the truth.\n\nAround that, cheaper signals. Citation validity - does every cited id exist. Refusal rate - a sudden drop often means the model started inventing instead of declining. Retrieval score distribution - if the top score collapses, the model is answering from nothing. And user behaviour: rephrases, thumbs down, escalation to a human.\n\nThen a sampled human review, weekly, weighted toward low-confidence responses. Automated checks tell you where to look. Humans tell you whether it is actually wrong.",
+      "simple": "In production you have no ground truth. Nobody is standing there with the correct answer. So you cannot measure correctness - you measure support.\n\nThe main check is groundedness: take each claim in the answer and check whether the retrieved context actually contains it. That can be done cheaply with a small model or an entailment check (a classifier that says whether one text supports another), on every response or on a sample. If a claim is not supported, that is a hallucination signal even without knowing the truth.\n\nAround that, cheaper signals. Citation validity - does every cited id exist. Refusal rate - a sudden drop often means the model started inventing instead of declining. Retrieval score distribution - if the top score collapses, the model is answering from nothing. And user behaviour: rephrases, thumbs down, escalation to a human.\n\nThen a sampled human review, weekly, weighted toward low-confidence responses. Automated checks tell you where to look. Humans tell you whether it is actually wrong.",
       "points": [
         "Groundedness check per claim against retrieved context - the primary signal.",
         "Citation validity on 100% of responses; it is a cheap string check.",
@@ -560,7 +607,8 @@ window.IR.q["05-rag"] = {
       "say": "In production there is no ground truth, so I measure support rather than correctness. The main check is groundedness - is each claim actually present in the retrieved context - run with a small model on every response or a sample. Around it: citation validity, refusal rate, and retrieval score distribution, because a confident answer on low-scoring context is the danger case. Then weekly sampled human review.",
       "numbers": "Sample 1–5% of production traffic for human review, weighted toward low-confidence responses. Full automated groundedness checks on 100% if the small-model cost allows.",
       "wrong": "\"We have an eval suite, so we catch hallucinations.\" Eval suites cover the queries you thought of. Production is the ones you did not.",
-      "follow": "Your groundedness checker is itself an LLM. Who checks it?"
+      "follow": "Your groundedness checker is itself an LLM. Who checks it?",
+      "followAnswer": "Humans, on a schedule. I build a labelled set of fifty to a hundred answers with known supported and unsupported claims, and measure the checker's agreement before trusting it. Then each week I review a sample of its verdicts, especially where it disagrees with user feedback. I re-run that calibration whenever the checker model or its prompt changes, because its accuracy can shift silently."
     },
     {
       "id": "rag-35",
@@ -576,7 +624,7 @@ window.IR.q["05-rag"] = {
         "optimisation"
       ],
       "why": "A concrete budget forces you to know where the milliseconds actually go.",
-      "simple": "**Short version: stream the answer, run steps in parallel, cache, and send fewer chunks.**\n\nStart by allocating the budget across stages, because you cannot optimise what you have not measured.\n\n    query rewrite       100ms   (skip when not needed)\n    query embedding      50ms\n    vector search        50ms\n    reranking           150ms\n    generation TTFT     600ms\n    ------------------------\n    to first token      ~950ms\n\nThe key reframing: with streaming, the number the user feels is time to first token, not total completion. That changes what you optimise. A four-second full response that starts rendering in under a second feels fast; a two-second response that appears all at once feels slower.\n\nThen the levers, roughly in order of payoff.\n\nStream. Largest perceived improvement for the least work.\n\nParallelise. Query embedding and any metadata lookup run concurrently, not in sequence.\n\nCache. Exact-match on repeated queries returns in milliseconds. Semantic caching catches paraphrases, with a high threshold.\n\nTrim retrieval. Fewer chunks means fewer input tokens means faster prefill. Cutting k from 10 to 4 helps latency and quality at once.\n\nRight-size the reranker. A small cross-encoder over 20 candidates rather than a large one over 100.\n\nSkip work conditionally. Not every query needs rewriting; not every query needs retrieval at all.\n\nMeasure p95, not the mean. The mean hides the tail, and the tail is what users complain about. Trace per stage so you know which one moved.",
+      "simple": "**Short version: stream the answer, run steps in parallel, cache, and send fewer chunks.**\n\nStart by allocating the budget across stages, because you cannot optimise what you have not measured.\n\n    query rewrite       100ms   (skip when not needed)\n    query embedding      50ms\n    vector search        50ms\n    reranking           150ms\n    generation TTFT     600ms\n    ------------------------\n    to first token      ~950ms\n\nThe key reframing: with streaming, the number the user feels is time to first token, not total completion. That changes what you optimise. A four-second full response that starts rendering in under a second feels fast; a two-second response that appears all at once feels slower.\n\nThen the levers, roughly in order of payoff.\n\nStream. Largest perceived improvement for the least work.\n\nParallelise. Query embedding and any metadata lookup run concurrently, not in sequence.\n\nCache. Exact-match on repeated queries returns in milliseconds. Semantic caching catches paraphrases, with a high threshold.\n\nTrim retrieval. Fewer chunks means fewer input tokens means faster prefill - the model's first pass over the prompt. Cutting k from 10 to 4 helps latency and quality at once.\n\nRight-size the reranker. A small cross-encoder over 20 candidates rather than a large one over 100.\n\nSkip work conditionally. Not every query needs rewriting; not every query needs retrieval at all.\n\nMeasure p95, not the mean. The mean hides the tail, and the tail is what users complain about. Trace per stage so you know which one moved.",
       "points": [
         "Allocate a budget per stage, then measure against it.",
         "With streaming, TTFT is what the user feels - optimise that.",
@@ -587,7 +635,8 @@ window.IR.q["05-rag"] = {
       "say": "I allocate a budget per stage - rewrite, embed, search, rerank, generation - then measure against it. The reframing is that with streaming the user feels time to first token, not total time, so I stream first. Then parallelise independent stages, cache exact and near-duplicate queries, and cut k, which improves latency and quality together. I track p95 per stage rather than the mean, because the tail is what people complain about.",
       "numbers": "A workable split: ~50ms embedding, ~50ms search, ~150ms rerank, ~600ms to first token. Optimise the stage that actually dominates your p95.",
       "wrong": "Jumping to a smaller model first. It costs quality, and retrieval and prompt size usually offer larger savings before you touch the model.",
-      "follow": "Your p95 is 4s but p50 is 900ms. What is going on?"
+      "follow": "Your p95 is 4s but p50 is 900ms. What is going on?",
+      "followAnswer": "Most requests are fast, so something slow happens to only some of them. I split latency by stage and by request type. The usual causes are very long prompts or outputs, cache misses, retries after rate limiting, cold starts, or queries that trigger extra steps like rewriting or several retrievals. Per-stage traces for the slowest one percent of requests usually show the pattern."
     },
     {
       "id": "rag-16",
@@ -616,7 +665,36 @@ window.IR.q["05-rag"] = {
       "say": "We ran a policy assistant for about four hundred internal users. Three weeks in, support flagged answers quoting a withdrawn policy. Our ingestion handled updates but never handled deletes, so removed documents kept answering. I added tombstone handling and a nightly reconciliation between source and index. Stale-answer reports went to zero. I would have built the delete path from day one.",
       "numbers": "Use your real numbers - users, documents, latency, the metric before and after. Vague scale reads as a project you watched rather than built.",
       "wrong": "\"It worked well, we did not face major issues.\" This answers a different question and wastes the round's best opportunity.",
-      "follow": "What would you build differently if you started that system today?"
+      "follow": "What would you build differently if you started that system today?",
+      "followAnswer": "Three things from day one. A labelled eval set and tracing before any tuning, so every change is measured. The delete and permission-change paths in ingestion, not just the add path. And version metadata on every document, so superseded policies never compete with current ones. All three are cheap at the start and expensive to add later, which is exactly why teams skip them."
+    },
+    {
+      "id": "rag-56",
+      "q": "Naive, advanced and modular RAG - what is the difference?",
+      "round": [
+        "screening",
+        "tech1"
+      ],
+      "level": "3-5",
+      "priority": "medium",
+      "tags": [
+        "rag",
+        "architecture",
+        "basics"
+      ],
+      "why": "A common vocabulary question. The panel wants to hear what you actually add to a basic pipeline, and in what order.",
+      "simple": "These three names come from a widely cited 2023 survey of RAG (Gao et al.). They describe how much you build around the basic loop.\n\n**Naive RAG** is the textbook version: chunk the documents, embed them, retrieve the top few for the question, paste them into the prompt, generate. It works in a demo and breaks on real users - vague questions, exact codes, noisy results.\n\n**Advanced RAG** keeps the same line but adds steps before and after retrieval. Before: better chunking, metadata, and rewriting the user's question into a better search query. After: reranking the results, removing duplicates, and trimming the context. Most production systems sit here.\n\n**Modular RAG** breaks the pipeline into swappable parts and lets the system choose a path per question: send it to a SQL tool or to the vector index, retrieve again if the first try was weak, or let an agent decide when to search. Agentic RAG is the far end of this.\n\nThe senior point: these are labels, not levels to climb. Start simple, measure, and add only the step that fixes a failure you can actually see. The additions that usually pay off first are hybrid search, a reranker, and query rewriting for follow-up questions. (Each technique has its own card in Advanced RAG.)",
+      "points": [
+        "**Naive:** chunk → embed → retrieve top-k → generate. One pass, no checks.",
+        "**Advanced:** adds pre-retrieval steps (chunking, metadata, query rewriting) and post-retrieval steps (reranking, dedup, compression).",
+        "**Modular:** swappable components plus routing, repeat retrieval and agent-driven search.",
+        "Add a component only when an eval shows the failure it fixes."
+      ],
+      "say": "Naive RAG is the basic loop: chunk, embed, retrieve the top few, generate. Advanced RAG keeps that line but adds steps around retrieval - better chunking and query rewriting before it, reranking and deduplication after it. Modular RAG splits the pipeline into swappable parts and routes each question, retrying or using tools when needed. They are labels, not a ladder: I add each piece only when an eval shows the failure it fixes.",
+      "numbers": "No number applies to the labels. What matters is measured lift: add one component at a time and keep it only if recall@k or answer accuracy moves on your eval set.",
+      "wrong": "\"We use advanced RAG\" with no detail, or treating modular RAG as automatically better. The follow-up is which component you added and what number it moved.",
+      "follow": "Your naive RAG demo works. What is the first thing you add for production, and why?",
+      "followAnswer": "Evaluation and tracing first, because without them I cannot tell whether any addition helps. Then usually hybrid search, since real users type codes, names and acronyms that pure vector search blurs. After that a reranker if the right chunk is retrieved but ranked low, and query rewriting once the product becomes a multi-turn chat. Each piece goes in only if the eval moves."
     },
     {
       "id": "rag-53",
@@ -633,7 +711,7 @@ window.IR.q["05-rag"] = {
         "generation"
       ],
       "why": "Whether you can write the step that actually turns retrieved chunks into a grounded, cited answer.",
-      "simple": "A normal prompt is instructions + the question. A RAG prompt has a third part: **the retrieved context** - and most of the prompt's job is telling the model how to treat that context.\n\nA good RAG prompt has five simple pieces:\n1. **The rule:** \"Answer using only the context below.\"\n2. **The context, clearly separated and labelled.** Each chunk sits inside tags with an ID and source, like `[doc-3 | Leave Policy 2025, p.4]`. The labels let the model cite. The separation tells it this is data, not instructions.\n3. **What to do if the answer is not there:** \"If the context does not contain the answer, say you don't know.\" Without this line, the model fills gaps from memory.\n4. **Citation format:** \"Put the chunk ID after every claim, like [doc-3].\"\n5. **The question** - usually at the end, after the context, so it is fresh when the model starts writing.\n\n**Generation settings:**\n- **Low temperature (0 to 0.3).** We want facts copied faithfully, not creativity. Higher temperature means more variety - and more invented details.\n- **Max output tokens** set to what the answer needs. It controls cost and rambling.\n- **Structured output** (JSON with answer + citations) when code will read or check the answer.\n- **Stable instructions first**, so the provider's prompt caching can reuse them across requests.\n\nThink of it as briefing a new analyst: \"Here are the files. Use only these. Tell me where each fact came from. If it is not in the files, say so.\"",
+      "simple": "A normal prompt is instructions + the question. A RAG prompt has a third part: **the retrieved context** - and most of the prompt's job is telling the model how to treat that context.\n\nA good RAG prompt has five simple pieces:\n1. **The rule:** \"Answer using only the context below.\"\n2. **The context, clearly separated and labelled.** Each chunk sits inside tags with an ID and source, like `[doc-3 | Leave Policy 2025, p.4]`. The labels let the model cite. The separation tells it this is data, not instructions.\n3. **What to do if the answer is not there:** \"If the context does not contain the answer, say you don't know.\" Without this line, the model fills gaps from memory.\n4. **Citation format:** \"Put the chunk ID after every claim, like [doc-3].\"\n5. **The question** - usually at the end, after the context, so it is fresh when the model starts writing.\n\n**Generation settings:**\n- **Low temperature (0 to 0.3).** We want facts copied faithfully, not creativity. Higher temperature means more variety - and more invented details. (Some reasoning models fix or ignore temperature; then the instructions and the output checks do this job.)\n- **Max output tokens** set to what the answer needs. It controls cost and rambling.\n- **Structured output** (JSON with answer + citations) when code will read or check the answer.\n- **Stable instructions first**, so the provider's prompt caching can reuse them across requests.\n\nThink of it as briefing a new analyst: \"Here are the files. Use only these. Tell me where each fact came from. If it is not in the files, say so.\"",
       "points": [
         "RAG prompt = instructions + labelled, separated context + question.",
         "Always include: answer only from context, what to do when the answer is missing, how to cite.",
@@ -660,7 +738,7 @@ window.IR.q["05-rag"] = {
         "ingestion"
       ],
       "why": "Metadata decides what you can filter, cite and secure later. Most of it cannot be backfilled cheaply.",
-      "simple": "Every field should earn its place by enabling something specific downstream.\n\nSource identifier and URI - so you can cite and so the user can open the original. Without it your answer is unverifiable and nobody in a regulated setting will sign off on it.\n\nPage or section and position - so a citation points at the exact place rather than a 200-page document.\n\nDocument date and ingestion timestamp - so you can prefer recent policy over superseded policy, and so you can find what a stale reindex missed.\n\nAccess control list or tenant identifier - so retrieval can filter by permission. This one is load-bearing: without it you cannot enforce document permissions at query time, and retrofitting it means reingesting the corpus.\n\nDocument type and department - the filters users actually want. 'Only search HR policies.'\n\nContent hash - so re-ingestion is idempotent. If the hash is unchanged, skip the chunk and do not pay to re-embed it.\n\nVersion or supersedes - so a replaced document can be excluded rather than competing with its own replacement.\n\nThe rule that matters: attach anything you might filter on, because adding a field later means reprocessing everything. Storage is cheap and reingestion is not. But be deliberate about high-cardinality fields, since some vector stores build an index per filterable field and it is not free.",
+      "simple": "Every field should earn its place by enabling something specific downstream.\n\nSource identifier and URI - so you can cite and so the user can open the original. Without it your answer is unverifiable and nobody in a regulated setting will sign off on it.\n\nPage or section and position - so a citation points at the exact place rather than a 200-page document.\n\nDocument date and ingestion timestamp - so you can prefer recent policy over superseded policy, and so you can find what a stale reindex missed.\n\nAccess control list or tenant identifier - so retrieval can filter by permission. This one is load-bearing: without it you cannot enforce document permissions at query time, and retrofitting it means reingesting the corpus.\n\nDocument type and department - the filters users actually want. 'Only search HR policies.'\n\nContent hash - a fingerprint of the text - so re-ingestion can skip work. If the hash is unchanged, skip the chunk and do not pay to re-embed it.\n\nVersion or supersedes - so a replaced document can be excluded rather than competing with its own replacement.\n\nThe rule that matters: attach anything you might filter on, because adding a field later means reprocessing everything. Storage is cheap and reingestion is not. But be deliberate about fields with a huge number of distinct values, such as a unique user ID, since some vector stores build an index per filterable field and it is not free.",
       "points": [
         "Source and URI for citation; page and position for precision.",
         "Dates for recency and for finding stale entries.",
@@ -699,6 +777,37 @@ window.IR.q["05-rag"] = {
       "numbers": "3–5 chunks to the model with a reranker, 5–10 without. Retrieve 20–50 candidates before reranking.",
       "wrong": "'k=5 because that is the default.' Same problem as chunk size - it is a default standing in for a measurement you never took.",
       "follow": "For a question needing facts from four documents, does your k still work?"
+    },
+    {
+      "id": "rag-58",
+      "q": "Why do some embedding models want a different prefix for queries and for documents?",
+      "round": [
+        "tech1",
+        "tech2"
+      ],
+      "level": "5-10",
+      "priority": "medium",
+      "tags": [
+        "rag",
+        "embeddings",
+        "retrieval",
+        "debugging"
+      ],
+      "why": "A silent, common retrieval bug. Whether you read the embedding model's instructions or just called encode() on everything.",
+      "simple": "**Because a question and the passage that answers it look very different, and many retrieval models were trained to embed the two sides differently.**\n\nA user types \"notice period in probation?\" - five words. The answer is a 300-word policy paragraph. This is called asymmetric search: short question, long answer. Many embedding models were trained on exactly these pairs, with a label telling the model which side is which.\n\nSo they expect that label when you use them. E5 models want `query: ` or `passage: ` in front of the text. Nomic wants `search_query: ` or `search_document: `. BGE suggests an instruction before short queries. Hosted APIs use a parameter instead: `input_type` for Cohere and Voyage, `task_type` for Gemini. Some models, like OpenAI's text-embedding-3, need nothing.\n\nThe bug: someone embeds queries and documents the same way, or forgets the prefix on one side. Nothing errors. Recall just drops, and the team blames chunking.\n\nThe opposite case exists too. In symmetric search - finding duplicate tickets, or matching a question to a question in an FAQ - both sides are the same kind of text, so you use the same setting on both.\n\nThe habit: read the model card, write one `embed_query` and one `embed_document` function, use them everywhere, and add a test that checks the right prefix is applied. Re-run the retrieval eval whenever you change the embedding model.",
+      "points": [
+        "Asymmetric search = short query vs long passage; many models were trained with a marker for each side.",
+        "Prefix models: E5 (`query:` / `passage:`), Nomic (`search_query:` / `search_document:`), BGE (query instruction).",
+        "API models: Cohere and Voyage (`input_type`), Gemini (`task_type`). OpenAI text-embedding-3 needs none.",
+        "A wrong or missing prefix fails silently - recall drops, nothing errors.",
+        "Symmetric tasks (duplicate detection, FAQ question matching) use the same setting on both sides.",
+        "Wrap it once: `embed_query` and `embed_document`, used everywhere and covered by a test."
+      ],
+      "say": "Retrieval is usually asymmetric: a short question against a long passage. Many embedding models were trained with a marker for each side - E5 wants query and passage prefixes, Cohere and Voyage take an input type, Gemini a task type - and they expect it at use time. Forgetting it does not raise an error; recall just drops quietly. So I wrap embedding in separate query and document functions and check them with the retrieval eval.",
+      "numbers": "No universal figure - the size of the drop depends on the model and the corpus. Measure it once with your retrieval eval, with and without the prefix, so you know what the bug would cost you.",
+      "wrong": "\"An embedding is an embedding - I call the same encode function on everything.\" For many retrieval models that quietly lowers recall, and it tells the panel you have not read a model card.",
+      "follow": "You switched from OpenAI embeddings to an E5 model and recall dropped. What do you check?",
+      "followAnswer": "First the prefixes: do queries get `query: ` and documents `passage: `, on both the indexing and the search path? Then that the whole index was re-embedded with the new model, not mixed with old vectors. Then the distance metric and normalisation the model expects, and its input limit, since E5 models truncate at 512 tokens. Only then do I conclude the model is worse for our data."
     },
     {
       "id": "rag-47",
@@ -804,7 +913,7 @@ window.IR.q["05-rag"] = {
         "Keep the page number and bounding box so citations can point at the exact place."
       ],
       "say": "Enterprise PDFs need their own pipeline. I OCR scanned pages, extract tables as whole units and index a short summary alongside the raw table, and caption diagrams with a vision model. Every chunk keeps its page number so a citation can point to the exact place. I validate ingestion quality first, because if OCR corrupted a figure, no retrieval tuning will recover the correct answer.",
-      "numbers": "On a real scanned corpus, expect 5–15% of pages to need OCR review. Track that number - it becomes your data-quality SLA.",
+      "numbers": "Do not assume a fixed share. Pilot a representative sample, measure what fraction of pages need OCR review, and track that number - it becomes your data-quality SLA.",
       "wrong": "\"PyPDF handles it.\" It handles text-layer PDFs only. Say this about a scanned insurance corpus and the next question will be how you handled the image-only pages.",
       "follow": "How do you keep the pipeline from re-processing the whole corpus on every update?"
     },
@@ -888,6 +997,68 @@ window.IR.q["05-rag"] = {
       "followAnswer": "First, did something change in the pipeline - a new deployment, a new embedding model, or a failed or partial ingestion job? A broken index run is the most common cause. Then I check whether the rise is across all queries or in one topic. One topic usually means users are asking about something the corpus does not cover - a content gap, not a bug."
     },
     {
+      "id": "rag-54",
+      "q": "Your \"I don't know\" rate doubled overnight. What do you check first?",
+      "round": [
+        "tech2",
+        "manager"
+      ],
+      "level": "5-10",
+      "priority": "medium",
+      "tags": [
+        "rag",
+        "monitoring",
+        "observability",
+        "debugging",
+        "production"
+      ],
+      "why": "A real on-call scenario. It tests whether your monitoring points you to the broken stage, or whether you start guessing.",
+      "simple": "**Short version: a sudden jump almost always means retrieval stopped finding things - not that the model got shy. Check what changed in the pipeline overnight.**\n\nWhen the model says \"I don't know\", it usually means the retrieved chunks did not contain the answer, or they scored below your relevance threshold. So a jump overnight points at the **librarian** (retrieval), not the **writer** (the LLM).\n\n**Check in this order - fastest and most likely first:**\n\n**1. Did the index change?** An ingestion job ran overnight and failed halfway, deleted documents, or indexed empty text from broken PDFs. Check the document count and the last ingestion log.\n\n**2. Did retrieval scores drop?** Compare the top similarity score per query, yesterday against today. If scores fell across the board, suspect the embeddings: someone changed the embedding model or its version for queries but not for the stored documents. Vectors from two different models do not match.\n\n**3. Did a filter break?** A permission or metadata filter (department, date, language) that now excludes almost everything, so retrieval returns few or no chunks.\n\n**4. Did the questions change?** A product launch or a news event means users are asking about something that genuinely is not in the documents yet. Here the system is working correctly - the fix is new content.\n\n**5. Did the prompt or threshold change?** Someone raised the relevance threshold or edited the refusal instruction.\n\n**How the traces help:** open 20 of today's \"I don't know\" answers and look at the chunks retrieved and their scores. Within minutes you will see which of these it is.\n\n**The opposite is also a warning:** if the \"I don't know\" rate suddenly **drops**, the model may have started guessing instead of declining.",
+      "points": [
+        "A jump in refusals usually points to retrieval, not the LLM.",
+        "Check the index first: failed or partial ingestion, empty text, deleted documents.",
+        "Compare top retrieval scores yesterday and today - a drop across the board suggests an embedding-model mismatch.",
+        "Check filters: a broken permission or metadata filter returns nothing.",
+        "Check traffic: new topics not yet in the corpus - then the system is right to refuse.",
+        "Open 20 refusal traces and read the chunks and scores.",
+        "A sudden drop in refusals is also an alarm - it can mean the model is guessing."
+      ],
+      "say": "A sudden jump usually means retrieval stopped finding content, not that the model changed. I check what changed overnight: an ingestion run that failed or indexed empty text, a drop in top retrieval scores that suggests an embedding-model mismatch, a metadata or permission filter excluding everything, or new user topics not yet in the corpus. I open twenty refusal traces and read the chunks and scores, which usually shows the cause in minutes.",
+      "numbers": "Alert when the refusal rate moves more than roughly 20–30% from its normal daily level, and chart the document count per index beside it - a sudden fall in document count explains many refusal spikes on its own.",
+      "wrong": "\"The model is being too cautious, so I'll loosen the prompt.\" That makes the model answer from chunks that do not contain the answer - you trade honest refusals for confident hallucinations.",
+      "follow": "It turns out the embedding model version changed for queries only. How do you stop that happening again?"
+    },
+    {
+      "id": "rag-55",
+      "q": "A user reports one wrong answer in production. Walk me through tracing it to the root cause.",
+      "round": [
+        "tech2",
+        "manager"
+      ],
+      "level": "5-10",
+      "priority": "medium",
+      "tags": [
+        "rag",
+        "observability",
+        "tracing",
+        "debugging",
+        "production"
+      ],
+      "why": "Whether you can go from a single complaint to a root cause with evidence - and make sure it never comes back.",
+      "simple": "**Short version: find the trace, walk it stage by stage until you find where the right information got lost, fix that stage, and turn the case into a permanent test.**\n\n**Step 1 - Find the exact request.** Use the trace ID, or the user and the timestamp, to open the trace. Do not try to reproduce it by asking the same question again - the answer may come out differently today, and the documents may have changed.\n\n**Step 2 - Walk the trace in order, asking one question at each stage:**\n- **Query** - what did the system actually search for? Did a query-rewrite step change the meaning? (\"Leave policy for contractors\" rewritten to just \"leave policy\".)\n- **Filters** - were the right permission, date or product filters applied?\n- **Retrieval** - is the correct chunk in the results at all? At what rank and score?\n- **Reranking and prompt** - did the right chunk survive into the final prompt, or was it cut?\n- **Generation** - if the right chunk was in the prompt, did the model ignore it, mix it up with another chunk, or use an outdated version?\n- **Source document** - is the document itself wrong, outdated or badly parsed (a table turned into garbage text)?\n\nThe first stage where the right information goes missing is your root cause.\n\n**Step 3 - Fix that one stage** - not the prompt, by reflex.\n\n**Step 4 - Protect the fix.** Add this question and its correct answer to the eval set, so a later change cannot silently bring the bug back. Then check whether similar queries have the same problem - one complaint is often the visible tip of a pattern.\n\nIt is like tracking a lost parcel: you follow the scan history until you find the depot where it stopped being scanned.",
+      "points": [
+        "Open the trace by ID - do not rely on re-asking the question.",
+        "Walk the stages in order: query rewrite, filters, retrieval rank and score, what reached the prompt, generation, source document.",
+        "The first stage where the right information disappears is the root cause.",
+        "Fix that stage, not the prompt by reflex.",
+        "Add the case to the eval set and look for similar failing queries."
+      ],
+      "say": "I open the trace for that request rather than re-asking, because the output may differ today. Then I walk it stage by stage: the rewritten query, the filters, whether the right chunk was retrieved and at what rank, whether it reached the final prompt, and what the model did with it. The first stage where the right information disappears is the root cause. I fix that stage and add the case to the eval set.",
+      "numbers": "With a full trace - query, filters, chunk IDs and scores, final prompt, output - most single-answer investigations take minutes rather than hours. Keep 100% of traces that received a thumbs-down.",
+      "wrong": "\"I asked the same question and got a correct answer, so it was a one-off.\" Output varies between runs and the index changes daily - a correct answer today proves nothing about the one that failed.",
+      "follow": "The trace shows the right chunk was retrieved at rank 1 and the model still answered wrongly. What next?"
+    },
+    {
       "id": "rag-50",
       "q": "Does the choice of LLM matter in RAG? Reasoning model or a normal one?",
       "round": [
@@ -902,7 +1073,7 @@ window.IR.q["05-rag"] = {
         "llm-choice"
       ],
       "why": "Whether you treat the generator as a real component with its own failure modes, not an afterthought.",
-      "simple": "Many people think RAG quality is only about retrieval. But the generator (the LLM) still has to read 5 chunks, pick the right facts, ignore the wrong ones, and write an answer that sticks to the text.\n\n**What a weak generator does:** it ignores the context and answers from memory, misses the fact hidden in chunk 4, copies a wrong chunk without noticing a contradiction, or breaks the citation format. So even with perfect retrieval, the answer can be wrong.\n\n**What to look for in a RAG generator:** it follows \"answer only from the context\", reads long context well, cites correctly, and is willing to say \"the documents don't answer this\".\n\n**Reasoning vs normal models.** A reasoning model (for example OpenAI's o-series, DeepSeek-R1, or Claude with extended thinking) thinks step by step before answering. That helps when the answer combines facts: \"Compare the refund rules in these two policies and tell me which one applies to a 45-day-old order.\" But it is slower and costs more, and for a simple lookup like \"What is the refund window?\" it adds seconds without improving anything.\n\nSo a common production pattern is **routing**: a fast normal model for simple lookups, and a reasoning model only for multi-step or comparison questions. And we choose models using our own eval set, not a public leaderboard.",
+      "simple": "Many people think RAG quality is only about retrieval. But the generator (the LLM) still has to read 5 chunks, pick the right facts, ignore the wrong ones, and write an answer that sticks to the text.\n\n**What a weak generator does:** it ignores the context and answers from memory, misses the fact hidden in chunk 4, copies a wrong chunk without noticing a contradiction, or breaks the citation format. So even with perfect retrieval, the answer can be wrong.\n\n**What to look for in a RAG generator:** it follows \"answer only from the context\", reads long context well, cites correctly, and is willing to say \"the documents don't answer this\".\n\n**Reasoning vs normal models.** A reasoning model thinks step by step before answering. Many current model families let you switch this thinking on or off, or set how much to use (OpenAI's GPT-5 family, Claude with extended thinking, Gemini's thinking models); some, like DeepSeek-R1, always reason. That helps when the answer combines facts: \"Compare the refund rules in these two policies and tell me which one applies to a 45-day-old order.\" But it is slower and costs more, and for a simple lookup like \"What is the refund window?\" it adds seconds without improving anything.\n\nSo a common production pattern is **routing**: a fast model or low reasoning setting for simple lookups, and more reasoning only for multi-step or comparison questions. And we choose models using our own eval set, not a public leaderboard.",
       "points": [
         "A weak generator ignores context, misses buried facts and breaks citations - even with perfect retrieval.",
         "Choose on faithfulness, long-context reading, citation accuracy and willingness to abstain.",
@@ -1018,7 +1189,7 @@ window.IR.q["05-rag"] = {
         "operations"
       ],
       "why": "Whether you have operated a RAG system, not just built one.",
-      "simple": "You do not re-embed the whole corpus every night. That is slow and expensive and it will eventually be the reason your bill gets a meeting.\n\nInstead you make ingestion incremental. Every source document gets a content hash. On each run you compare hashes, and only changed documents get re-chunked and re-embedded. Deleted documents get their chunks removed - this is the step people skip, and it is why stale answers keep appearing after a policy is withdrawn.\n\nThe other half is versioning. Chunks, embeddings and the embedding model version travel together. If you change embedding models, you cannot mix old and new vectors in one index - the geometry is different. You build a new index alongside and switch over once it is validated.",
+      "simple": "You do not re-embed the whole corpus every night. That is slow and expensive and it will eventually be the reason your bill gets a meeting.\n\nInstead you make ingestion incremental. Every source document gets a content hash - a short fingerprint that changes whenever the text changes. On each run you compare hashes, and only changed documents get re-chunked and re-embedded. Deleted documents get their chunks removed - this is the step people skip, and it is why stale answers keep appearing after a policy is withdrawn.\n\nThe other half is versioning. Chunks, embeddings and the embedding model version travel together. If you change embedding models, you cannot mix old and new vectors in one index - vectors from two different models are not comparable. You build a new index alongside and switch over once it is validated.",
       "points": [
         "Content hash per document; re-embed only what changed.",
         "Handle deletes explicitly, or stale chunks answer forever.",
@@ -1054,7 +1225,7 @@ window.IR.q["05-rag"] = {
         "State the effective date in the answer text."
       ],
       "say": "Every chunk carries effective-from, effective-to and a current-or-superseded status, and I filter to current by default rather than hoping the newer version ranks higher. I link superseded documents to their replacement so I can answer what-changed questions. Crucially I do not delete history, because audits and disputes need as-of-date answers, so time is a query parameter. And I put the effective date in the answer so a reader can catch a version error.",
-      "numbers": "Retention is usually driven by regulation - commonly seven years or more in Indian BFSI. Design for as-of-date queries from the start.",
+      "numbers": "Retention is set by regulation and record type - in Indian BFSI it is commonly five to ten years, depending on the regulator and the record. Confirm with compliance, and design for as-of-date queries from the start.",
       "wrong": "Deleting the old version on upload. It solves retrieval and breaks audit, and in a regulated setting that is the more serious failure.",
       "follow": "An auditor asks what the policy was in March 2024. Can your system answer?"
     },
@@ -1129,7 +1300,7 @@ window.IR.q["05-rag"] = {
         "system-design"
       ],
       "why": "Whether you start from requirements or from a list of product names.",
-      "simple": "Before any technology, I ask for the numbers. How many queries per second at peak. What latency is acceptable. How often documents change. How many users and how many permission groups. What the budget per query is. Those five answers determine the design, and giving them back to the interviewer is half of what they are marking.\n\nAt fifty million documents the shape is usually: distributed vector store with sharding, an approximate index like HNSW or IVF-PQ where memory matters, hard metadata pre-filters to shrink the search space before vector comparison, a two-stage retrieve-then-rerank, aggressive caching of both embeddings and frequent answers, and an ingestion pipeline that is a separate service with its own queue and its own scaling.\n\nAnd the operational half: monitoring on recall, latency and cost per query, plus a rollback path when a bad ingestion run poisons the index.",
+      "simple": "**Short version: ask for the numbers first, then split the index across machines, filter before you search, and retrieve in two stages.**\n\nBefore naming any technology, I ask five questions. How many queries per second at peak? What response time is acceptable? How often do documents change? How many users and permission groups? What can we spend per query? The answers shape the design, and asking them is half of what the interviewer is marking.\n\nAt fifty million documents the design usually looks like this.\n\n**Split the index** across machines (sharding), because it will not fit on one. Use an approximate search index such as HNSW, which finds close matches quickly without comparing every vector. If memory is the limit, compress the vectors (quantisation, for example IVF-PQ) or use a disk-based index.\n\n**Filter first.** Apply hard filters - tenant, date, access group - before the vector search, so you search a small slice, not everything.\n\n**Two stages.** A cheap search returns about a hundred candidates; a reranker picks the best five.\n\n**Cache** frequent queries and answers, with the user's permissions in the cache key.\n\n**Ingestion as its own service**, with its own queue and scaling, so a big upload never slows down search.\n\nThen the operational half: monitor recall, latency and cost per query, and keep index versions so a bad ingestion run can be rolled back instead of fixed live.",
       "points": [
         "Requirements first: QPS, latency budget, freshness, permissions, cost per query.",
         "Shard the index; use HNSW for speed, IVF-PQ when memory is the constraint.",
@@ -1247,7 +1418,7 @@ window.IR.q["05-rag"] = {
         "scale",
         "production"
       ],
-      "why": "The pilot-to-production gap is where most Indian enterprise GenAI projects actually die.",
+      "why": "The pilot-to-production gap is where many enterprise GenAI projects, in India and elsewhere, actually stall.",
       "simple": "**Short version: the pilot had friendly users, a clean corpus and low traffic - production has none of those.**\n\nPilots succeed under conditions that do not survive contact with real users. Four things change at once.\n\nQuery diversity. The pilot had ten friendly testers asking questions the team anticipated. A hundred real users ask things nobody designed for - vague, misspelled, multi-part, in mixed languages, about documents outside the corpus. Retrieval quality falls because the query distribution shifted, not because anything technically broke.\n\nCorpus growth. The pilot ran on a curated set. Production has everything: duplicates, drafts, superseded versions, scanned files, irrelevant departments. More documents means more ways to retrieve the wrong one, and precision falls even with recall unchanged.\n\nConcurrency. Rate limits, connection pool exhaustion, and index memory pressure all appear together. p95 latency degrades sharply while p50 still looks fine, which is why the dashboard looks healthy while users complain.\n\nTrust. Ten testers forgive a wrong answer. A hundred users tell each other, and one confident wrong answer in a visible case can end adoption regardless of your accuracy numbers.\n\nWhat I would do: instrument first - log queries, retrieved chunks, scores and feedback, because you cannot fix what you cannot see. Then cluster the failing queries; there are usually two or three dominant patterns rather than a hundred unique problems. Build the eval set from real logged queries rather than the synthetic ones. Add refusal so the system stops answering confidently outside its corpus. Then fix the top cluster.\n\nThe preventable version of this is running the pilot on the full corpus with real users from the start, rather than a curated set with colleagues.",
       "points": [
         "Query distribution shifts - real users ask what nobody designed for.",
@@ -1329,7 +1500,7 @@ window.IR.q["05-rag"] = {
         "diversity"
       ],
       "why": "Extremely common in enterprises - the same policy exists in six near-identical copies, and they crowd out everything else.",
-      "simple": "Real corpora are full of near-duplicates: the same policy attached to five emails, a template reused across forty contracts, a document and its lightly-edited revision. Retrieve top 5 and you get the same paragraph five times. Recall looks fine and the model sees one fact repeated instead of five useful ones.\n\nFix it at two points.\n\nAt ingestion, which is where you should prefer to solve it. An exact content hash catches identical chunks for free. Near-duplicates need similarity comparison - MinHash or SimHash for scale, or cosine above a high threshold within the embedding space. Keep one canonical copy and record the others as alternate sources, so citations can still point at the copy the user has access to. Cheaper to store, cheaper to embed, cheaper to search.\n\nAt query time, for what slips through. Maximal marginal relevance reranks for relevance and diversity together, penalising a candidate that closely resembles something already selected. A lambda around 0.5 to 0.7 keeps relevance dominant while breaking up clusters. Or simply drop candidates above a similarity threshold to an already-chosen chunk.\n\nThe judgement call worth voicing: deduplicate carefully. Two chunks can be textually near-identical and differ in one number that is the entire answer - a limit that changed between regional variants of a policy. Dedup on content plus the metadata that distinguishes them, and set the threshold high.\n\nWatch for it by monitoring the mean pairwise similarity of retrieved sets. A high value means you are spending your k on repetition.",
+      "simple": "**Short version: remove duplicates at ingestion, and add a diversity step at query time for the ones that slip through.**\n\nReal corpora are full of near-copies: the same policy attached to five emails, a template reused in forty contracts, a document and its lightly edited revision. Ask for the top 5 and you get the same paragraph five times. The model sees one fact repeated instead of five useful ones.\n\n**At ingestion - the better place.** A content hash, a fingerprint of the exact text, catches identical chunks for free. For near-copies you compare similarity: MinHash is a fast way to spot texts that share most of their words, or you compare embeddings with a high cosine threshold. Keep one main copy and record the others as alternate sources, so citations can still point at a copy the user is allowed to see.\n\n**At query time.** Maximal marginal relevance (MMR) picks results that are relevant but not too similar to the ones already picked. A setting (lambda) of about 0.5 to 0.7 keeps relevance in charge while breaking up clusters.\n\nThe senior caution: deduplicate carefully. Two chunks can be almost identical and differ in one number that is the whole answer - a limit that changed between the India and US versions of a policy. Compare the content plus the metadata that tells versions apart, and set thresholds high.\n\nTo spot the problem in production, watch how similar the retrieved chunks are to each other.",
       "points": [
         "Near-duplicates waste k and starve the answer of other facts.",
         "Content hash at ingestion is free; MinHash or cosine for near-dupes.",
@@ -1418,7 +1589,7 @@ window.IR.q["05-rag"] = {
         "Hybrid search and transliteration handling matter more.",
         "Eval set must cover both languages and cross-lingual queries."
       ],
-      "say": "I would pick a multilingual embedding model and explicitly test cross-lingual alignment, so a Hindi query retrieves relevant English documents. Tokenisation is the big cost change - Devanagari usually needs more tokens per word - often 1.5 to 3 times, depending on the tokeniser - so chunk sizes and the budget both shift. Sentence splitting needs to handle the danda, hybrid search matters more because of transliteration, and the eval set has to cover both languages and be reviewed by a Hindi reader.",
+      "say": "I would pick a multilingual embedding model and explicitly test cross-lingual alignment, so a Hindi query retrieves relevant English documents. Tokenisation is the big cost change: Devanagari often needs 1.5 to 3 times more tokens, depending on the tokeniser, so chunk sizes and the budget both shift. Sentence splitting needs to handle the danda, hybrid search matters more because of transliteration, and the eval set has to cover both languages and be reviewed by a Hindi reader.",
       "numbers": "Hindi commonly costs about 1.5–3× the tokens of equivalent English, depending on the tokeniser - measure it on a sample of your own corpus. Cost estimates built on English benchmarks will be badly wrong for this corpus.",
       "wrong": "'Use a multilingual embedding model' and stopping. It ignores the token economics, the splitting problem and the evaluation gap, which are where the project actually gets hard.",
       "follow": "A user types a Hindi question in Latin script. Does retrieval work?"
@@ -1437,7 +1608,7 @@ window.IR.q["05-rag"] = {
         "enterprise"
       ],
       "why": "Enterprise reality in India. The interesting part is permissions and incremental sync, not the connectors.",
-      "simple": "The connectors themselves are the easy part - every platform has an API. The hard parts are the four things underneath.\n\nPermissions. Each system has its own model: SharePoint groups, Confluence space permissions, filesystem ACLs. You must capture the effective permission per document at ingestion and store it as chunk metadata, then filter every query by the user's identity. This is the requirement that most often gets deferred and most often blocks go-live, because retrofitting it means reingesting everything.\n\nIncremental sync. A full reindex nightly does not scale past a modest corpus. Use each platform's change feed - SharePoint delta queries, Confluence's updated-since - plus a content hash so unchanged documents are skipped. Handle deletions explicitly, or removed documents keep being cited.\n\nNormalisation. A Confluence page, a Word document and a PDF need to arrive as one internal representation with consistent metadata, so the rest of the pipeline does not branch per source.\n\nRate limits and failure isolation. These APIs throttle aggressively. One slow source must not block the others, and one failed document must not abort the run - dead-letter it and continue.\n\nArchitecturally: one scheduler, per-source workers, a normalised queue into a shared chunk-embed-index pipeline. Each source tracks its own cursor so it can resume.\n\nThe thing to say out loud is that permissions and deletion are what turn a two-week prototype into a two-month project. Naming that upfront reads as experience.",
+      "simple": "The connectors themselves are the easy part - every platform has an API. The hard parts are the four things underneath.\n\nPermissions. Each system has its own model: SharePoint groups, Confluence space permissions, filesystem ACLs. You must capture the effective permission per document at ingestion and store it as chunk metadata, then filter every query by the user's identity. This is the requirement that most often gets deferred and most often blocks go-live, because retrofitting it means reingesting everything.\n\nIncremental sync. A full reindex nightly does not scale past a modest corpus. Use each platform's change feed (an API that lists what changed since your last sync) - SharePoint delta queries, Confluence's updated-since - plus a content hash so unchanged documents are skipped. Handle deletions explicitly, or removed documents keep being cited.\n\nNormalisation. A Confluence page, a Word document and a PDF need to arrive as one internal representation with consistent metadata, so the rest of the pipeline does not branch per source.\n\nRate limits and failure isolation. These APIs throttle aggressively. One slow source must not block the others, and one failed document must not abort the run - park it in a dead-letter queue for review and continue.\n\nArchitecturally: one scheduler, per-source workers, a normalised queue into a shared chunk-embed-index pipeline. Each source tracks its own cursor so it can resume.\n\nThe thing to say out loud is that permissions and deletion are what turn a two-week prototype into a two-month project. Naming that upfront reads as experience.",
       "points": [
         "Capture effective permissions per document at ingestion - cannot be retrofitted.",
         "Incremental sync via change feeds plus content hashing.",
@@ -1467,7 +1638,7 @@ window.IR.q["05-rag"] = {
         "architecture"
       ],
       "why": "The most common real enterprise brief, and the answer reveals immediately whether you have ingested anything beyond clean PDFs.",
-      "simple": "I use a router by file type, format-specific parsers behind it, and one normalised document format after parsing. Every parser should emit the same core fields: text or structured content, source id, section path, page or sheet reference, permissions and useful metadata. Downstream chunking should not need to know whether the source was PDF, Word or Excel.\n\nEach format has a different failure mode. PDFs may need OCR and reading-order recovery. Word documents have useful heading structure but may contain tracked changes or comments that should be handled deliberately. Excel and CSV need a decision: if the user will aggregate numbers, load the table into a query engine or database; if rows are mainly descriptive text, they can become retrieval documents. Images need OCR or vision, with a link back to the original.\n\nOperationally, processing runs from a queue, is idempotent, records parser/version metadata, and sends failed files to a dead-letter path instead of silently dropping them. I also track parse quality by format so an OCR or parser regression is visible before users find it.",
+      "simple": "I use a router by file type, format-specific parsers behind it, and one normalised document format after parsing. Every parser should emit the same core fields: text or structured content, source id, section path, page or sheet reference, permissions and useful metadata. Downstream chunking should not need to know whether the source was PDF, Word or Excel.\n\nEach format has a different failure mode. PDFs may need OCR and reading-order recovery. Word documents have useful heading structure but may contain tracked changes or comments that should be handled deliberately. Excel and CSV need a decision: if the user will aggregate numbers, load the table into a query engine or database; if rows are mainly descriptive text, they can become retrieval documents. Images need OCR or vision, with a link back to the original.\n\nOperationally, processing runs from a queue, is idempotent (running it twice creates no duplicates), records parser/version metadata, and sends failed files to a dead-letter queue - a holding area for review - instead of silently dropping them. I also track parse quality by format so an OCR or parser regression is visible before users find it.",
       "points": [
         "Router by file type, format-specific parsers, one normalised internal document.",
         "The normalised contract is the design: text, structure path, source id, location, permissions.",
@@ -1499,7 +1670,7 @@ window.IR.q["05-rag"] = {
         "cost"
       ],
       "why": "Tests whether you have run ingestion as an operational process rather than a notebook cell.",
-      "simple": "First I check whether the PDF is truly image-only. Some scanned-looking PDFs contain a usable text layer, and detecting that can avoid most of the OCR work.\n\nIf it is really scanned, I treat it as a background batch job. I process pages or page ranges independently so I can show progress, retry failures and resume after a worker restart instead of starting the whole 800-page file again.\n\nFor each page I keep the OCR text, layout information when available, page number and a quality signal. Low-quality pages are retried with a better OCR or vision path, or sent for review. I do not let unreadable text enter the index just because the OCR call technically succeeded.\n\nThen I reconstruct useful structure such as headings and sections, chunk the cleaned text, attach page-level provenance, and write results incrementally. The job is idempotent on a content hash so a retry cannot duplicate chunks. The last step is a small quality check on representative pages and queries before I declare the document searchable.",
+      "simple": "First I check whether the PDF is truly image-only. Some scanned-looking PDFs contain a usable text layer, and detecting that can avoid most of the OCR work.\n\nIf it is really scanned, I treat it as a background batch job. I process pages or page ranges independently so I can show progress, retry failures and resume after a worker restart instead of starting the whole 800-page file again.\n\nFor each page I keep the OCR text, layout information when available, page number and a quality signal. Low-quality pages are retried with a better OCR or vision path, or sent for review. I do not let unreadable text enter the index just because the OCR call technically succeeded.\n\nThen I reconstruct useful structure such as headings and sections, chunk the cleaned text, attach page-level provenance, and write results incrementally. The job is keyed on a content hash (a fingerprint of the file), so a retry cannot create duplicate chunks. The last step is a small quality check on representative pages and queries before I declare the document searchable.",
       "points": [
         "Check whether it is genuinely scanned first - a partial text layer saves the whole OCR cost.",
         "Stream or split by page range; never load 800 pages into memory at once.",
@@ -1556,7 +1727,7 @@ window.IR.q["05-rag"] = {
         "vector-db"
       ],
       "why": "A realistic project. The interesting part is doing it without a quality regression or downtime.",
-      "simple": "**Short version: measure the old system first, copy the vectors across with matching settings, run both side by side, and switch only when the numbers match.**\n\nThe motivation is usually cost, data residency, or wanting one database instead of two. Say which, because it shapes the plan.\n\nThe sequence I would follow.\n\nBaseline first. Run your retrieval eval against the current system and record recall@k and latency. Without this you cannot tell whether the migration degraded anything, and 'it feels the same' is not a migration sign-off.\n\nSet up pgvector with a matching index. HNSW with equivalent parameters - m and ef_construction - and the same distance metric. A silent metric mismatch between cosine and L2 changes your ranking entirely.\n\nBackfill. Export vectors with their ids and metadata and bulk-load them. Do not re-embed if you can avoid it: re-embedding is expensive and risks a different model version producing slightly different vectors. Build the index after loading, not during, which is substantially faster.\n\nDual-write. Point ingestion at both stores so they stay in sync while you validate. This is what lets you take your time.\n\nShadow-read. Send production queries to both, compare result sets and latency, and log the differences. Some divergence is expected because these are approximate indexes; large divergence means a configuration mismatch.\n\nRe-run the eval against pgvector and compare to baseline. Tune ef_search until recall matches.\n\nCut over behind a feature flag with a percentage rollout, keeping dual-write until you are confident. Then stop dual-write and decommission.\n\nThe trade to state honestly: pgvector is cheaper and operationally simpler if you already run Postgres, but a dedicated store generally scales further. Below roughly a few million vectors that gap rarely matters.",
+      "simple": "**Short version: measure the old system first, copy the vectors across with matching settings, run both side by side, and switch only when the numbers match.**\n\nFirst say why you are moving - usually cost, keeping data in your own region, or wanting one database instead of two. The reason shapes the plan.\n\nThen five steps.\n\n**1. Baseline.** Run your retrieval eval on Pinecone and record recall@k and latency. Without this you cannot prove the migration did not make things worse.\n\n**2. Match the settings.** Use the same distance metric (cosine, dot product or Euclidean) and a comparable HNSW index. A metric mismatch quietly changes every ranking.\n\n**3. Copy, do not re-embed.** Export vectors with their IDs and metadata and bulk-load them. Re-embedding costs money and may produce slightly different vectors. Build the index after loading - it is much faster.\n\n**4. Run both.** Write new documents to both stores (dual-write), and send real queries to both in the background (a shadow read) to compare results and latency. Small differences are normal, because both searches are approximate. Big differences mean a setting is wrong.\n\n**5. Switch gradually.** Re-run the eval, tune pgvector's `hnsw.ef_search` (how widely it searches at query time) until recall matches, then move traffic over behind a feature flag.\n\nThe honest trade-off: pgvector is cheaper and simpler if you already run Postgres; a dedicated store usually scales further. Below a few million vectors that gap rarely matters.",
       "points": [
         "Baseline retrieval metrics before touching anything.",
         "Match the distance metric and index parameters exactly.",
@@ -1565,7 +1736,7 @@ window.IR.q["05-rag"] = {
         "Roll out behind a flag; keep dual-write until confident."
       ],
       "say": "I baseline recall@k and latency first, so I can prove the migration did not regress. Then set up pgvector with a matching distance metric and HNSW parameters, bulk-load exported vectors rather than re-embedding, and build the index after loading. I dual-write to keep both in sync, shadow-read production queries to compare results, re-run the eval and tune ef_search until recall matches, then cut over behind a feature flag.",
-      "numbers": "Build the index after bulk loading, not per row. Tune ef_search until recall matches baseline - that is the knob that trades recall against latency.",
+      "numbers": "Build the index after bulk loading, not per row. Tune `hnsw.ef_search` until recall matches baseline - it trades recall against latency. pgvector's HNSW index supports up to 2,000 dimensions for `vector` (4,000 with `halfvec`), so check your embedding size first.",
       "wrong": "Exporting, importing and switching over in one step. Any recall regression from a mismatched metric or index parameter reaches users before you notice.",
       "follow": "Post-migration recall dropped 4 points. What do you check first?"
     },

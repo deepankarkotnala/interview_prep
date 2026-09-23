@@ -33,9 +33,37 @@
       .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
       .replace(/\n/g, "<br>");
   }
+  /* Lines indented by two or more spaces are a small aligned illustration -
+     a latency budget, a shape table, a prompt layout. Rendered as prose, the
+     browser collapses the spaces and the columns fall apart, so each indented
+     run becomes a <pre> in place, dedented to its shallowest line. */
+  var INDENTED = /^ {2,}\S/;
   function paras(s) {
     return String(s || "").split(/\n\n+/).map(function (p) {
-      return "<p>" + fmt(p.trim()) + "</p>";
+      p = p.replace(/^\n+|\s+$/g, "");
+      var lines = p.split("\n");
+      if (!lines.some(function (l) { return INDENTED.test(l); })) {
+        return "<p>" + fmt(p.trim()) + "</p>";
+      }
+      var out = "", buf = [], mode = null;
+      function flush() {
+        if (!buf.length) return;
+        if (mode === "pre") {
+          var ind = Math.min.apply(null, buf.map(function (l) { return l.match(/^ */)[0].length; }));
+          out += '<pre class="q-code q-inline-pre"><code>' +
+            esc(buf.map(function (l) { return l.slice(ind); }).join("\n")) + "</code></pre>";
+        } else {
+          out += "<p>" + fmt(buf.join("\n").trim()) + "</p>";
+        }
+        buf = [];
+      }
+      lines.forEach(function (l) {
+        var m = INDENTED.test(l) ? "pre" : "p";
+        if (m !== mode) { flush(); mode = m; }
+        buf.push(l);
+      });
+      flush();
+      return out;
     }).join("");
   }
   function store(key, fallback) {

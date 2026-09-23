@@ -4,7 +4,7 @@ window.IR = window.IR || {};
 window.IR.q = window.IR.q || {};
 
 window.IR.q["06-advanced-rag"] = {
-  "lede": "These techniques appear by name in job descriptions, which means you will be asked about them. The trap is enthusiasm: every one of them adds latency, cost or complexity, and a senior answer names that cost before the benefit. Knowing when not to add something is the differentiator here. Read the RAG topic first; the questions here are ordered High, then Medium, then Low priority.",
+  "lede": "These techniques appear by name in job descriptions, which means you will be asked about them. The trap is enthusiasm: every one of them adds latency, cost or complexity, and a senior answer names that cost before the benefit. Knowing when not to add something is the differentiator here. Read the RAG topic first. New to advanced RAG? The questions are ordered for a first read: High priority first, from query rewriting and reranking through multi-hop, agentic RAG, self-checking loops and GraphRAG to which technique to add first, then Medium, then Low.",
   "grounding": "public JDs naming advanced RAG techniques + their measured costs",
   "evening": [
     "ar-01",
@@ -41,7 +41,8 @@ window.IR.q["06-advanced-rag"] = {
       "say": "Users write \"is that covered\", which retrieves nothing, so a model call before retrieval rewrites it into something searchable - resolving references, expanding phrasings, or splitting a compound question. The cost is a call in front of every query. So I always resolve references in multi-turn chat, because that failure is guaranteed, and I gate expansion on a weak first-pass retrieval score. And I use a small model for it.",
       "numbers": "A small-model rewrite typically adds 100–300 ms. Gating on first-pass score means paying it on a minority of queries rather than all of them.",
       "wrong": "\"I always rewrite the query, it improves retrieval.\" Sometimes it degrades it - a rewrite can drop the exact identifier that was the only thing worth matching.",
-      "follow": "The rewrite dropped the part number the user typed. How do you prevent that?"
+      "follow": "The rewrite dropped the part number the user typed. How do you prevent that?",
+      "followAnswer": "Two guards. I tell the rewriter to copy identifiers, codes and names exactly, and I check it in code: pull anything that looks like an ID out of the original query, and if the rewrite lost it, add it back or fall back to the original. I also keep BM25 running on the user's original text, so exact matches still work even when a rewrite is poor."
     },
     {
       "id": "ar-02",
@@ -68,35 +69,8 @@ window.IR.q["06-advanced-rag"] = {
       "say": "HyDE generates a hypothetical answer to the question and embeds that instead of the question, because an answer looks more like a document than a question does, so it lands closer in embedding space. It helps on short questions against long prose. The cost is a full generation before every retrieval, and invented specifics can misdirect the search. I would try hybrid search and a reranker first - cheaper, and often better.",
       "numbers": "HyDE adds a full generation to the critical path - commonly 500 ms to several seconds. That is often the entire latency budget.",
       "wrong": "Presenting it as a standard part of a modern pipeline. It is situational, and the follow-up asks what it costs per query and how it misfires on identifiers - a default-on answer has no reply to either.",
-      "follow": "What would you try before reaching for HyDE?"
-    },
-    {
-      "id": "ar-03",
-      "q": "A reranker only reorders what retrieval found. What can it fix, what can't it, and how many candidates should it see?",
-      "round": [
-        "tech1",
-        "tech2"
-      ],
-      "level": "5-10",
-      "priority": "high",
-      "tags": [
-        "advanced-rag",
-        "reranking",
-        "cross-encoder"
-      ],
-      "why": "The mechanism is covered in the RAG reranking card and the bi-encoder / cross-encoder card here; this checks whether you know its limits and how to size it.",
-      "simple": "**Short version: a reranker fixes the order, not the haul - it can only promote a chunk the first stage already retrieved.** (What a cross-encoder is, and whether reranking is worth its latency, are covered in the RAG topic's reranking card and the bi-encoder / cross-encoder / ColBERT card here.)\n\nA bi-encoder - your embedding model - encodes the question and each document separately, and compares the two vectors. Fast, because documents were encoded in advance, but the model never sees the question and the document together, so it cannot notice that this specific question is answered by this specific paragraph.\n\nA cross-encoder puts the question and one document into the model at the same time and outputs a relevance score. Because attention runs across both, it can catch exactly that. Much more accurate.\n\nThe cost is structural: nothing can be precomputed, because the score depends on the pair. So you cannot run it over two million documents - you run it over the fifty the first stage returned.\n\nThat is the whole design. Cheap approximate recall first, expensive precise ordering second. And the number that matters is how many you rerank. Pick it by measuring first-stage recall at 20, 50 and 100, and rerank the smallest N where recall has flattened, because latency scales with N and returns diminish beyond it. Fifty is a common default. If recall@100 is still low, no reranker helps - fix retrieval instead.",
-      "points": [
-        "Bi-encoder: separate encodings, precomputable, fast, less precise.",
-        "Cross-encoder: joint encoding of the pair, precise, nothing precomputable.",
-        "Therefore two stages - recall cheaply, then reorder precisely.",
-        "Size N from first-stage recall@20/50/100 - rerank where recall flattens. Latency scales with N.",
-        "It fixes ranking, not recall. If the right chunk was not in the fifty, it cannot help."
-      ],
-      "say": "A reranker is a cross-encoder that reads the question and each candidate together, so it orders far better than the embedding model - but it only reorders what the first stage returned. It fixes ranking, not recall: if the right chunk is not among the candidates, it cannot help. I size the candidate list by measuring first-stage recall at 20, 50 and 100 and reranking where recall flattens, because latency grows with every candidate.",
-      "numbers": "Reranking 20–50 candidates typically adds about 50–300 ms, depending on model size, hosting and candidate count. Reranking 200 adds roughly proportionally more, usually for diminishing returns.",
-      "wrong": "\"A reranker will fix our accuracy,\" with no mention of recall. The follow-up gives a low recall@50 and asks whether it helps - and it cannot, because it only reorders what was retrieved.",
-      "follow": "Recall@50 is 0.7. Does a reranker help you?"
+      "follow": "What would you try before reaching for HyDE?",
+      "followAnswer": "Cheaper, more predictable fixes. Hybrid search, so exact terms match through BM25. A reranker on the top fifty. Contextual enrichment of chunks at ingestion. And if questions and documents look very different, HyPE - generating likely questions per chunk at index time - which moves the LLM cost off the query path. I try HyDE only if the eval still shows short questions missing long prose."
     },
     {
       "id": "ar-15",
@@ -125,6 +99,35 @@ window.IR.q["06-advanced-rag"] = {
       "wrong": "\"Use a cross-encoder for retrieval because it is more accurate.\" You cannot score 10 million documents with a cross-encoder on every query - it is a reranker, not a retriever.",
       "follow": "Why can't we pre-compute cross-encoder scores?",
       "followAnswer": "Because the score depends on the query and the document together, and we do not know the query in advance. A bi-encoder can pre-compute because each document vector does not depend on the query. With a cross-encoder, every new query creates new pairs, so the model has to run again for each candidate."
+    },
+    {
+      "id": "ar-03",
+      "q": "A reranker only reorders what retrieval found. What can it fix, what can't it, and how many candidates should it see?",
+      "round": [
+        "tech1",
+        "tech2"
+      ],
+      "level": "5-10",
+      "priority": "high",
+      "tags": [
+        "advanced-rag",
+        "reranking",
+        "cross-encoder"
+      ],
+      "why": "The mechanism is covered in the RAG reranking card and the bi-encoder / cross-encoder card here; this checks whether you know its limits and how to size it.",
+      "simple": "**Short version: a reranker fixes the order, not the haul. It can only promote a chunk the first stage already found.** (How a cross-encoder works is in the bi-encoder / cross-encoder / ColBERT card above.)\n\nA reranker reads the question and each candidate chunk together, so it judges relevance far better than the embedding model. But it only sees the candidates it is given. If the right chunk is not among them, no reranker can bring it back.\n\n**What it can fix:** the right chunk was retrieved but ranked low - eighth, say - so the model never used it. The reranker moves it to the top.\n\n**What it cannot fix:** the right chunk was never retrieved. Bad chunking, a missing document, an exact code that embeddings blur, or a question that needs two lookups. Those are recall problems, and they are fixed upstream.\n\n**How many candidates?** Latency grows with every candidate, because each one is a separate model pass. So measure first-stage recall at 20, 50 and 100, and rerank the smallest number where recall stops rising. Fifty is a common default. If recall@100 is still low, stop tuning the reranker and fix retrieval instead.",
+      "points": [
+        "Bi-encoder: separate encodings, precomputable, fast, less precise.",
+        "Cross-encoder: joint encoding of the pair, precise, nothing precomputable.",
+        "Therefore two stages - recall cheaply, then reorder precisely.",
+        "Size N from first-stage recall@20/50/100 - rerank where recall flattens. Latency scales with N.",
+        "It fixes ranking, not recall. If the right chunk was not in the fifty, it cannot help."
+      ],
+      "say": "A reranker is a cross-encoder that reads the question and each candidate together, so it orders far better than the embedding model - but it only reorders what the first stage returned. It fixes ranking, not recall: if the right chunk is not among the candidates, it cannot help. I size the candidate list by measuring first-stage recall at 20, 50 and 100 and reranking where recall flattens, because latency grows with every candidate.",
+      "numbers": "Reranking 20–50 candidates typically adds about 50–300 ms, depending on model size, hosting and candidate count. Reranking 200 adds roughly proportionally more, usually for diminishing returns.",
+      "wrong": "\"A reranker will fix our accuracy,\" with no mention of recall. The follow-up gives a low recall@50 and asks whether it helps - and it cannot, because it only reorders what was retrieved.",
+      "follow": "Recall@50 is 0.7. Does a reranker help you?",
+      "followAnswer": "Only for the 70% of questions where the right chunk is in the fifty - it can move that chunk to the top. For the other 30% it can do nothing, because it never sees the right chunk. So I check recall at 100 or 200 first. If it barely rises, the problem is retrieval itself - chunking, hybrid search, query rewriting or the embedding model - and I fix that first."
     },
     {
       "id": "ar-16",
@@ -179,7 +182,8 @@ window.IR.q["06-advanced-rag"] = {
       "say": "This one hides, because the chunks returned are individually relevant and the answer looks confident while resting on half the facts. When the second lookup depends on the first answer, I retrieve in steps - find the manager, extract their grade, then search the rule for that grade - capped at two or three hops. Parallel decomposition only suits independent parts. And if the facts always travel together, I join them at ingestion.",
       "numbers": "Cap iterative retrieval at two or three hops. Beyond that you are usually paying for a question the corpus cannot answer.",
       "wrong": "\"I would increase k so more documents are retrieved.\" It occasionally helps by luck and mostly adds noise and cost, because the second fact is not near the question in embedding space.",
-      "follow": "How do you detect multi-hop failures in production?"
+      "follow": "How do you detect multi-hop failures in production?",
+      "followAnswer": "Offline, I put labelled multi-hop questions in the eval set and check that every needed fact was retrieved, not just one. In production I trace each request and run a groundedness check: a claim in the answer that no retrieved chunk supports is the typical sign of a missing hop. I also review thumbs-down answers and tag the ones that needed a second lookup."
     },
     {
       "id": "ar-05",
@@ -208,7 +212,8 @@ window.IR.q["06-advanced-rag"] = {
       "say": "Agentic RAG lets the model decide whether to retrieve, which source to use, whether the results are good enough, and whether to search again. It earns its cost on multi-hop questions, multiple sources, and self-correction. It multiplies latency and spend, and it is non-deterministic, so I cap the loop at two or three retrievals and route simple questions straight down the cheap path, because most traffic is simple.",
       "numbers": "A three-step agentic path costs roughly three times the model calls of single-shot RAG. Route on question type, or that becomes your default cost.",
       "wrong": "\"We made our RAG agentic to improve quality.\" Without the cap, the routing and the cost comparison, the follow-up - which questions needed it, and at what cost - has no answer ready.",
-      "follow": "How do you decide which questions take the cheap path?"
+      "follow": "How do you decide which questions take the cheap path?",
+      "followAnswer": "A router in front. Usually a small, fast model or a trained classifier labels the question as a simple lookup, multi-step, or out of scope. Simple questions go straight to one retrieval and one answer. I also use a runtime signal: if the first retrieval scores well on the reranker, answer directly; if not, escalate to the agent loop. And I evaluate the router on its own labelled set."
     },
     {
       "id": "ar-17",
@@ -293,7 +298,8 @@ window.IR.q["06-advanced-rag"] = {
       "say": "GraphRAG extracts entities and relationships into a graph and retrieves over that, which answers relational questions no single chunk contains - which suppliers are affected by this regulation, through which contracts. The cost is a model pass over the whole corpus at ingestion, ongoing graph maintenance, and a second datastore. I would build it only where the questions are genuinely relational. For lookup questions, plain RAG with a reranker wins.",
       "numbers": "Full GraphRAG makes one or more model calls per chunk at ingestion, plus a summary call per community. On a large corpus that is a substantial one-time bill - price it before proposing it. Microsoft reports LazyGraphRAG's indexing cost as roughly that of plain vector RAG.",
       "wrong": "\"GraphRAG is more accurate than normal RAG.\" On relational questions, often. On lookup questions it is more expensive and no better, and that distinction is the answer.",
-      "follow": "Your documents change weekly. What does that do to the graph?"
+      "follow": "Your documents change weekly. What does that do to the graph?",
+      "followAnswer": "It turns into a maintenance job. Each changed document needs its entities and relationships re-extracted, merged into existing nodes through entity resolution, stale ones removed, and the affected community summaries regenerated. So I track which chunks fed which nodes, update incrementally, and schedule a fuller rebuild when drift builds up. If churn is high, LazyGraphRAG-style indexing or plain RAG is often the better choice."
     },
     {
       "id": "ar-09",
@@ -322,7 +328,8 @@ window.IR.q["06-advanced-rag"] = {
       "say": "I measure first, because the order depends on which half is failing. If recall is low, reranking cannot help - it only reorders what was found - so I fix chunking and add hybrid search. If recall is fine but ranking is poor, a reranker is the best value in this topic. If retrieval is fine and answers are wrong, it is a generation problem. Exotic techniques come last, because they cost most and help narrowest.",
       "numbers": "Track recall@k, answer accuracy, p95 latency and cost per query together. Any technique that moves one without a stated trade on the others has not been measured.",
       "wrong": "Listing every technique you know. The question is about prioritisation, and an unordered list answers a different one.",
-      "follow": "You added three techniques and quality is flat. What went wrong?"
+      "follow": "You added three techniques and quality is flat. What went wrong?",
+      "followAnswer": "Usually they were added without diagnosing which stage was failing, or all at once, so their effects cancelled out or hid each other - or the eval set does not contain the failing questions. I go back to the baseline, measure recall, ranking and faithfulness separately, then add one technique at a time on the same eval set, keeping only those that move their target metric within budget."
     },
     {
       "id": "ar-20",
@@ -407,6 +414,35 @@ window.IR.q["06-advanced-rag"] = {
       "follow": "Do you embed the enriched text or the original? Which one do you show the user?"
     },
     {
+      "id": "ar-23",
+      "q": "What is late chunking, and how is it different from contextual retrieval?",
+      "round": [
+        "tech2"
+      ],
+      "level": "5-10",
+      "priority": "medium",
+      "tags": [
+        "advanced-rag",
+        "chunking",
+        "embeddings",
+        "late-chunking"
+      ],
+      "why": "Whether you know the embedding-side fix for chunks that lose their context, and what it cannot do.",
+      "simple": "Both fix the same problem: a chunk cut out of a document loses its context. A chunk that says \"its population is 3.8 million\" does not say which city \"its\" means, so its embedding matches the wrong questions.\n\nContextual retrieval (the card above) fixes it with text. An LLM writes a short context line for each chunk, and that line is embedded and indexed with it. It costs an LLM call per chunk at ingestion, but it helps both vector search and BM25.\n\nLate chunking fixes it inside the embedding model, with no LLM call. Normally you chunk first and embed each chunk alone. Late chunking flips the order. You feed the whole document, or a large section, through a long-context embedding model once. Every token now has a vector that has \"seen\" the whole document. Only then do you cut at the chunk boundaries and average the token vectors inside each chunk. So the population chunk still carries the city named earlier.\n\nThe limits. You need an embedding model that exposes token-level outputs and has a long input window - Jina's models support it directly, most closed embedding APIs do not. Documents longer than the window still need splitting into large sections. And it only helps the dense side, not BM25.\n\nHosted models now package the same idea: Voyage's voyage-context-3 embeds chunks with document context for you.",
+      "points": [
+        "Problem: chunks lose references like \"it\", \"the plan\" or \"the city\" that were resolved earlier in the document.",
+        "Contextual retrieval: an LLM writes context text per chunk - costs calls, helps dense and BM25.",
+        "Late chunking: embed the whole document once, then pool token vectors per chunk - no LLM call.",
+        "Needs a long-context model with token-level outputs; helps dense retrieval only.",
+        "Measure both on your eval set; they can be combined."
+      ],
+      "say": "Both fix chunks that lose their document context. Contextual retrieval uses an LLM to write a context line for each chunk before indexing, which costs a call per chunk but helps both embeddings and BM25. Late chunking runs the whole document through a long-context embedding model first, then pools the token vectors inside each chunk, so every chunk embedding already knows its surroundings, with no LLM calls. It needs a model that exposes token outputs.",
+      "numbers": "Late chunking was introduced by Jina AI in 2024. It is bounded by the embedding model's input window - 8,192 tokens for jina-embeddings-v3, 32K for voyage-context-3. Reported gains are small on short documents and larger on long ones; measure on yours.",
+      "wrong": "\"Just use bigger chunks so they keep their context.\" Bigger chunks blur the embedding and hurt precise matches. The point of late chunking is small chunks that still know their context.",
+      "follow": "Which would you try first on a new corpus?",
+      "followAnswer": "The free one: prepend the document title and section heading to each chunk. If references still break, I try late chunking or a contextual embedding model, if our embedding choice supports it, because it adds no LLM calls. I use LLM-written contextual retrieval when BM25 also needs the context, or when the corpus is small enough that the one-time bill is fine."
+    },
+    {
       "id": "ar-18",
       "q": "What are hierarchical indexes like RAPTOR, and what is sentence-window retrieval?",
       "round": [
@@ -458,6 +494,37 @@ window.IR.q["06-advanced-rag"] = {
       "wrong": "\"The context window is big enough, so compression doesn't matter.\" You still pay for every token on every request, and more noise often lowers answer quality.",
       "follow": "Compression dropped a sentence and the answer became wrong. How would you catch this before users do?",
       "followAnswer": "Run the eval set twice - with and without compression - and compare correctness and faithfulness per question, not only the average. The questions that fail only with compression show what it is cutting. Conditions and exceptions are the usual victims, so I either compress less or protect sentences containing words like 'except', 'unless' and 'only'."
+    },
+    {
+      "id": "ar-24",
+      "q": "What is cache-augmented generation (CAG), and when would you use it instead of RAG?",
+      "round": [
+        "tech1",
+        "tech2"
+      ],
+      "level": "5-10",
+      "priority": "medium",
+      "tags": [
+        "advanced-rag",
+        "cag",
+        "long-context",
+        "caching",
+        "trade-off"
+      ],
+      "why": "A recent name-check. The panel wants the mechanism and the narrow conditions where it beats retrieval.",
+      "simple": "CAG skips retrieval. You load the whole knowledge base into the model's context once, keep the model's processed version of it cached, and reuse that cache for every question.\n\nThe cached thing is the KV cache - the keys and values the model computes internally for every input token. Computing it for a long document is the slow, expensive part. With CAG you do it once. Each new question is appended to the cached context, so there is no search step, no chunking and no retrieval miss. The idea was named in a December 2024 paper titled \"Don't Do RAG\". With a hosted API, the everyday version is provider prompt caching of a long, fixed prefix.\n\nIt fits a narrow case: the knowledge is small enough to fit comfortably in the context window, it rarely changes, and every user may see all of it. A product manual, an FAQ, one policy set.\n\nOutside that case it breaks. The corpus must fit the window. You still pay for all those tokens on every call - cached tokens are cheaper, not free. Any document change invalidates the cache. Accuracy can drop when the answer is buried in a very long context. And there is no per-user filtering, so permissions are out.\n\nA common middle path: cache the stable core, retrieve the rest. (The general long-context-versus-RAG debate is in the RAG topic.)",
+      "points": [
+        "Preload the knowledge base, cache the model's KV state (or use provider prompt caching), answer with no retrieval step.",
+        "Removes retrieval misses, chunking and index maintenance.",
+        "Fits: small, stable corpus every user may see - manuals, FAQs, one policy set.",
+        "Fails: corpus bigger than the window, frequent updates, per-user permissions, very long contexts that dilute accuracy.",
+        "Hybrid is common: cache the stable core, retrieve the long tail."
+      ],
+      "say": "Cache-augmented generation skips retrieval. I load the whole knowledge base into context once, cache the model's processed state - or use provider prompt caching - and answer every question against that cached prefix. There is no retrieval miss and no index to run. It fits a small, stable corpus that every user may see, like a product manual. It breaks when the corpus outgrows the window, changes often, or needs per-user permissions.",
+      "numbers": "Cached input tokens are billed at a fraction of the normal input price - roughly 10-50% depending on provider and model - and caches expire (Anthropic's default lifetime is 5 minutes, with a 1-hour option). A 100k-token prefix is still 100k tokens of context on every call.",
+      "wrong": "\"Context windows are big now, so CAG replaces RAG.\" It only holds for small, static, unpermissioned corpora, and the follow-ups on updates and access control have no answer.",
+      "follow": "The FAQ you cached changes twice a day. Does CAG still work?",
+      "followAnswer": "Yes, if the prompt is structured for it. Each change means rebuilding the cache once, which is cheap at twice a day. I put the stable instructions first and the FAQ after, version the FAQ, and warm the new cache when it is published. It stops working when changes are constant or different users need different content - then I retrieve instead."
     },
     {
       "id": "ar-13",
@@ -624,7 +691,7 @@ window.IR.q["06-advanced-rag"] = {
       "why": "Enterprise data is mostly tables, and both reflex answers - paste it, or embed every row - fail. The follow-up on exact totals shows whether you separate lookup from computation.",
       "simple": "I do not put a multi-gigabyte CSV into the model context, and I do not embed every row if the questions are about totals, counts, filters or comparisons. Vector retrieval returns similar rows; it cannot guarantee an exact aggregation over all matching rows.\n\nInstead, I load the data into a system that can query it accurately, such as DuckDB, a warehouse or a database. The model gets the schema, column descriptions and a small number of safe examples, then produces SQL. My application validates the query, executes it with read-only permissions and sensible limits, and sends only the small result back to the model for explanation.\n\nIf the rows are mostly free text, such as support tickets, then vector retrieval may be appropriate for that text field. The key question is whether the user is asking for semantic lookup or exact computation.\n\nIf I allow generated Python instead of SQL, it runs in a real sandbox with no unnecessary filesystem, network or credential access.",
       "points": [
-        "A 2 GB CSV is hundreds of millions of tokens - digits and delimiters tokenise poorly. Beyond size, it is the wrong tool: a model does not compute exact totals over raw rows.",
+        "A 2 GB CSV is hundreds of millions to around a billion tokens - digits and delimiters tokenise poorly. Beyond size, it is the wrong tool: a model does not compute exact totals over raw rows.",
         "Do not embed rows for aggregation questions - retrieval cannot count, and an approximate sum is worse than none.",
         "Load into DuckDB or SQLite; put schema and sample values in the prompt, never the data.",
         "The model writes the query, you execute it, only the result set goes back.",
