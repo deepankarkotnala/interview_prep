@@ -51,8 +51,8 @@ external URL, so the guarantee cannot quietly rot. (Pages in `topics/` do use
 | 02 Transformers and attention | 14 |
 | 03 Prompting and structured output | 11 |
 | 04 Embeddings and vector databases | 10 |
-| 05 RAG | 44 |
-| 06 Advanced RAG | 13 |
+| 05 RAG | 53 |
+| 06 Advanced RAG | 22 |
 | 07 Agents | 37 |
 | 08 LangChain | 9 |
 | 19 LangGraph | 10 |
@@ -66,7 +66,7 @@ external URL, so the guarantee cannot quietly rot. (Pages in `topics/` do use
 | 16 ML fundamentals | 36 |
 | 17 Python and the coding round | 31 |
 | 18 System design, project story, HR | 25 |
-| **Total** | **324** |
+| **Total** | **342** |
 
 Plus **5 employer tracks** in `data/tracks.js` - each naming its ten
 most-likely questions in priority order and one worked 40-minute scenario.

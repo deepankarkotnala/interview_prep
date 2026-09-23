@@ -75,6 +75,11 @@ IR.topics.forEach(function (t) {
       problems.push(where + ": unknown level \"" + c.level + "\"");
     }
 
+    /* Priority is optional, but a typo would silently drop the pill. */
+    if (c.priority !== undefined && ["high", "medium", "low"].indexOf(c.priority) < 0) {
+      problems.push(where + ": unknown priority \"" + c.priority + "\" (want high, medium or low)");
+    }
+
     /* A diagram is optional, but a broken one renders as a picture with a
        missing box or an arrow pointing at nothing - which is worse than no
        diagram, because the reader would take it to the whiteboard. So the

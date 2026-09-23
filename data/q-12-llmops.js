@@ -28,17 +28,17 @@ window.IR.q["12-llmops"] = {
         "operations"
       ],
       "why": "The framing question. It sets up everything else in the topic.",
-      "simple": "Four things, and they compound.\n\nIt is non-deterministic. The same input can produce a different output, so you cannot reproduce an incident by re-running it. Whatever the trace captured at the time is all you will ever have.\n\nThere is no pass or fail. A normal service returns correct or an error. This one returns something plausible that may be wrong, and wrong looks exactly like right until someone reads it.\n\nThe core dependency is someone else's model, which can be updated underneath you. Your code did not change and your behaviour did.\n\nAnd cost is variable per request. A normal endpoint costs roughly the same each time; here a long document or a long agent loop can cost a hundred times a short one, so cost is a runtime metric rather than a capacity plan.\n\nSo the operational stack has to add: full tracing rather than logging, quality metrics rather than only health metrics, version pinning, and cost per request on a dashboard.",
+      "simple": "Four things, and they compound.\n\nIt is non-deterministic. The same input can produce a different output, so re-running an incident rarely reproduces it - even temperature 0 is not guaranteed to be deterministic on a hosted model. Whatever the trace captured at the time is all you will ever have.\n\nThere is no pass or fail. A normal service returns correct or an error. This one returns something plausible that may be wrong, and wrong looks exactly like right until someone reads it.\n\nThe core dependency is someone else's model, which can be updated underneath you. Your code did not change and your behaviour did.\n\nAnd cost is variable per request. A normal endpoint costs roughly the same each time; here a long document or a long agent loop can cost a hundred times a short one, so cost is a runtime metric rather than a capacity plan.\n\nSo the operational stack has to add: full tracing rather than logging, quality metrics rather than only health metrics, version pinning, and cost per request on a dashboard.",
       "points": [
-        "Non-deterministic - you cannot reproduce by re-running. The trace is everything.",
+        "Non-deterministic - re-running rarely reproduces. The trace is everything.",
         "Failures are plausible rather than loud. Wrong looks like right.",
         "The model can change underneath you without any deploy.",
         "Cost varies per request by orders of magnitude.",
         "Therefore: tracing, quality metrics, pinned versions, cost dashboards."
       ],
-      "say": "Four things. It is non-deterministic, so I cannot reproduce an incident by re-running - the trace is all I get. Failures are plausible rather than loud, so wrong looks like right. The model can change underneath me with no deploy on my side. And cost varies per request by orders of magnitude. So the stack needs full tracing, quality metrics alongside health metrics, pinned versions, and cost per request.",
+      "say": "Four things. It is non-deterministic, so re-running rarely reproduces an incident - the trace is all I get. Failures are plausible rather than loud, so wrong looks like right. The model can change underneath me with no deploy on my side. And cost varies per request by orders of magnitude. So the stack needs full tracing, quality metrics alongside health metrics, pinned versions, and cost per request.",
       "numbers": "No number applies. What follows from it is that cost per request belongs on a dashboard, not in a capacity spreadsheet.",
-      "wrong": "\"It's the same, just with an API call in the middle.\" It is the answer of someone who has not been on call for one.",
+      "wrong": "\"It's the same, just with an API call in the middle.\" The follow-up - nothing was deployed and quality dropped - has no answer under that model, because it ignores provider-side changes and plausible-but-wrong failures.",
       "follow": "Nothing was deployed and quality dropped. Where do you start?"
     },
     {
@@ -109,7 +109,7 @@ window.IR.q["12-llmops"] = {
         "monitoring"
       ],
       "why": "Cost ownership is a senior expectation, and the answer must be operational, not theoretical.",
-      "simple": "Visibility first. Cost per request, per feature, per user or tenant, on a dashboard, updated daily. Almost every team that has a cost problem also has no breakdown, and the breakdown alone usually reveals that one feature is most of the bill.\n\nThen the controls. Hard limits: per-user and per-session token budgets enforced in the runtime, not in the prompt. Alerts on daily spend and on a spike in tokens per request, because a spike usually means a bug - a retry loop, a context that stopped being trimmed, an agent that stopped terminating.\n\nThen the reductions, in order of payoff: right-size the model per step, cache the stable prompt prefix with the provider, cut retrieved context, and route easy traffic to a cheap model.\n\nAnd the governance piece that gets attention at review time: cost per completed task, not cost per call. A cheaper model that needs three attempts is not cheaper, and that is the number that makes the argument for you.",
+      "simple": "Visibility first. Cost per request, per feature, per user or tenant, on a dashboard, updated daily. Almost every team that has a cost problem also has no breakdown, and the breakdown alone usually reveals that one feature is most of the bill.\n\nThen the controls. Hard limits: per-user and per-session token budgets enforced in the runtime, not in the prompt. Alerts on daily spend and on a spike in tokens per request, because a spike usually means a bug - a retry loop, a context that stopped being trimmed, an agent that stopped terminating.\n\nThen the reductions, in order of payoff: right-size the model per step, cache the stable prompt prefix with the provider, cut retrieved context, and route easy traffic to a cheap model.\n\nAnd the governance piece that gets attention at review time: cost per completed task, not cost per call. A cheaper model that needs three attempts is not cheaper, and that is the number that makes the argument for you.\n\n(Diagnosing a specific cost jump: cl-07. Routing and caching in depth: cl-06 and cl-03.)",
       "points": [
         "Cost per request, per feature, per tenant - on a dashboard, daily.",
         "Hard token budgets per user and per session, enforced in code.",
@@ -118,7 +118,7 @@ window.IR.q["12-llmops"] = {
         "Report cost per completed task, not per call."
       ],
       "say": "Visibility first - cost per request, per feature and per tenant on a daily dashboard, because teams with a cost problem usually have no breakdown, and the breakdown shows one feature is most of the bill. Then hard token budgets per session enforced in the runtime, and alerts on token-per-request spikes, because a spike is usually a bug. Then right-sizing, caching and context trimming. And I report cost per completed task.",
-      "numbers": "Alert on a 30% day-over-day move in tokens per request. That threshold catches retry loops and untrimmed contexts before the invoice does.",
+      "numbers": "A starting point: alert on a ~30% day-over-day move in tokens per request, tuned to your normal variance. That threshold catches retry loops and untrimmed contexts before the invoice does.",
       "wrong": "\"We monitor our monthly spend.\" Monthly is too late - a runaway agent loop can spend a month's budget in a weekend.",
       "follow": "Tokens per request doubled overnight. What are the three likeliest causes?"
     },
@@ -165,7 +165,7 @@ window.IR.q["12-llmops"] = {
         "architecture"
       ],
       "why": "Ordinary reliability engineering, which GenAI-focused candidates often forget applies here too.",
-      "simple": "Treat the provider as an unreliable dependency, because it is one.\n\nRetries with exponential backoff and jitter, and a cap - but only on the errors that deserve them. Retrying a rate limit is correct; retrying a content-policy refusal just burns money.\n\nA circuit breaker, so when the provider is down you fail fast rather than queueing thousands of requests that will time out and take your own service down with them.\n\nA fallback model, ideally with a different provider or region, which is why the provider abstraction matters. Know in advance whether the fallback is good enough, because switching under pressure to something you have never evaluated is how one incident becomes two.\n\nThen graceful degradation. For a chat feature, an honest \"the assistant is unavailable, here are the top matching documents\" is a far better outcome than a spinner. Retrieval usually still works when generation does not, and that is a real fallback product.\n\nAnd queue what can be queued. Not everything needs an answer inside a second.",
+      "simple": "Treat the provider as an unreliable dependency, because it is one.\n\nRetries with exponential backoff and jitter, and a cap - but only on the errors that deserve them. Retrying a rate limit is correct, ideally honouring the provider's Retry-After header; retrying a content-policy refusal just burns money.\n\nA circuit breaker, so when the provider is down you fail fast rather than queueing thousands of requests that will time out and take your own service down with them.\n\nA fallback model, ideally with a different provider or region, which is why the provider abstraction matters. Know in advance whether the fallback is good enough, because switching under pressure to something you have never evaluated is how one incident becomes two.\n\nThen graceful degradation. For a chat feature, an honest \"the assistant is unavailable, here are the top matching documents\" is a far better outcome than a spinner. Retrieval usually still works when generation does not, and that is a real fallback product.\n\nAnd queue what can be queued. Not everything needs an answer inside a second.",
       "points": [
         "Retry with backoff and jitter, capped, and only on retryable errors.",
         "Circuit breaker - fail fast rather than queueing into your own outage.",
@@ -209,7 +209,7 @@ window.IR.q["12-llmops"] = {
     },
     {
       "id": "ops-08",
-      "q": "How do you deploy a prompt change safely?",
+      "q": "A prompt change has passed review and CI. How do you roll it out to production safely?",
       "round": [
         "tech2"
       ],
@@ -220,8 +220,8 @@ window.IR.q["12-llmops"] = {
         "ci",
         "process"
       ],
-      "why": "Prompt changes cause most regressions and are the least controlled change in most teams.",
-      "simple": "Same discipline as a code change, plus one accommodation for the fact that quality is not binary.\n\nIn the pull request: the deterministic checks - does output parse, are required sections present, is length within bounds - plus the golden set run against both versions, posted as a comparison. The reviewer sees the effect, not just the diff. That is the single highest-value practice in this topic.\n\nOn merge: canary to a small share of traffic. Watch the quality proxies you can measure without labels - groundedness on a sample, refusal rate, parse failures, output length distribution, thumbs - plus latency and cost per request. Give it a full daily cycle, because traffic mix changes by hour.\n\nThen widen, with rollback ready and independent of a deploy.\n\nAnd the accommodation: a prompt change that improves the average can badly hurt one segment. So compare per segment, not just overall, before widening.",
+      "why": "pr-04 and ev-06 cover testing a prompt in the pull request. This is the release half - canary, what to watch without labels, per-segment comparison and rollback - where regressions the golden set missed show up.",
+      "simple": "Same discipline as a code change, plus one accommodation for the fact that quality is not binary.\n\nBefore merge it has already passed the deterministic checks and a golden-set comparison against main, posted on the pull request (pr-04, ev-06). Rollout is where the remaining risk lives, because the golden set is not your live traffic.\n\nOn merge: canary to a small share of traffic. Watch the quality proxies you can measure without labels - groundedness on a sample, refusal rate, parse failures, output length distribution, thumbs - plus latency and cost per request. Give it a full daily cycle, because traffic mix changes by hour.\n\nThen widen, with rollback ready and independent of a deploy.\n\nAnd the accommodation: a prompt change that improves the average can badly hurt one segment. So compare per segment, not just overall, before widening.",
       "points": [
         "PR: deterministic checks plus golden-set comparison against main, posted on the PR.",
         "Canary on a small traffic share for a full daily cycle.",
@@ -231,7 +231,7 @@ window.IR.q["12-llmops"] = {
       ],
       "say": "Like a code change, plus one accommodation. In the pull request, deterministic checks plus the golden set run against both versions and posted as a comparison, so the reviewer sees the effect rather than the diff. Then canary on a small share for a full daily cycle, watching refusal rate, parse failures, groundedness and cost. And I compare per segment, because a change that lifts the average can break one language or document type.",
       "numbers": "Canary 5–10%, hold for at least 24 hours. Shorter windows miss the shift in traffic mix between working hours and overnight.",
-      "wrong": "\"Prompts are config, so we can just push them.\" That is exactly why they cause most regressions - they bypass the review that code gets.",
+      "wrong": "\"Prompts are config, so we can just push them.\" Then a prompt change skips the review, canary and rollback that code gets - and prompt edits are a frequent source of regressions.",
       "follow": "The canary looks fine overall but one tenant is complaining. What now?"
     },
     {
@@ -250,20 +250,20 @@ window.IR.q["12-llmops"] = {
         "trade-off"
       ],
       "why": "A common practical setup, and the question checks whether you know why they are different rather than treating both as 'runs a model'.",
-      "simple": "Yes, and it is a normal setup, but say why rather than naming the tools.\n\nOllama is a developer runtime. One binary, pulls quantised models, runs on a laptop in minutes. It is built for one user at a time - requests are effectively serialised - which is exactly right for iteration and useless under real load.\n\nvLLM is a serving engine. The two features that matter are PagedAttention, which manages the KV cache in pages so memory is not fragmented and wasted, and continuous batching, which admits new requests into a running batch instead of waiting for the current one to finish. Together they keep the GPU busy and are the difference between a GPU at 30% utilisation and one at 85-90%.\n\nThe reason the pairing works is that both speak an OpenAI-compatible API, so moving from local to production is a base URL change and not a rewrite. That is the practical point worth making.\n\nThen the caveats that show you have actually done it. The model must be identical in both places - it is easy to develop against a 4-bit quantised local model and deploy an FP16 one, and then behaviour differs in ways that look like a code bug. Pin the version and the quantisation. Generation defaults differ between runtimes, so set them explicitly rather than inheriting. And you cannot load-test meaningfully against Ollama; throughput numbers must come from the vLLM setup.\n\nAnd the honest framing for most teams: this only matters if you are self-hosting at all, which is the cl-05 decision. If you use an API in production, Ollama locally is still useful for offline work and for cost-free iteration.",
+      "simple": "**Short version: yes. Ollama is for running a model on your own machine while you build; vLLM is for serving many users at once in production. Keep the model identical in both.**\n\nIt is a normal setup, but say why rather than naming the tools.\n\nOllama is a developer runtime. One binary, pulls quantised models, runs on a laptop in minutes. It can handle a few parallel requests (OLLAMA_NUM_PARALLEL), but it is not built for high-concurrency throughput - fine for iteration, the wrong tool under real load.\n\nvLLM is a serving engine. The two features that matter are PagedAttention, which manages the KV cache in pages so memory is not fragmented and wasted, and continuous batching, which admits new requests into a running batch instead of waiting for the current one to finish. Together they keep the GPU busy under concurrent load, which is where the throughput gain over naive serving comes from (cl-04 goes deeper). Prefix caching, chunked prefill and speculative decoding are worth knowing too; SGLang and TensorRT-LLM are the usual alternatives.\n\nThe reason the pairing works is that both speak an OpenAI-compatible API, so moving from local to production is a base URL change and not a rewrite. That is the practical point worth making.\n\nThen the caveats that show you have actually done it. The model must be identical in both places - it is easy to develop against a 4-bit quantised local model and deploy an FP16 one, and then behaviour differs in ways that look like a code bug. Pin the version and the quantisation. Generation defaults differ between runtimes, so set them explicitly rather than inheriting. And you cannot load-test meaningfully against Ollama; throughput numbers must come from the vLLM setup.\n\nAnd the honest framing for most teams: this only matters if you are self-hosting at all, which is the cl-05 decision. If you use an API in production, Ollama locally is still useful for offline work and for cost-free iteration.",
       "points": [
-        "Ollama: developer runtime, effectively one request at a time. Right for iteration.",
+        "Ollama: developer runtime with limited concurrency. Right for iteration, not production load.",
         "vLLM: serving engine. PagedAttention for KV-cache memory, continuous batching for throughput.",
         "Continuous batching admits new requests mid-batch - that is where the utilisation gain comes from.",
         "Both expose an OpenAI-compatible API, so promotion is a base URL change.",
         "Pin the same model and quantisation in both, or local and prod behave differently.",
         "Set generation parameters explicitly; runtime defaults differ.",
-        "Never load-test against Ollama - the throughput numbers are meaningless.",
+        "Do not load-test against Ollama - its throughput says nothing about the vLLM deployment.",
         "All of this presupposes you should self-host at all."
       ],
-      "say": "Yes, and the reason is that they solve different problems. Ollama is a developer runtime serving one request at a time, which is right for iteration. vLLM is a serving engine - PagedAttention stops KV-cache fragmentation and continuous batching admits new requests into a running batch, which is what keeps a GPU near ninety percent utilisation. Both are OpenAI-compatible, so promotion is a base URL change. I pin identical model and quantisation across both.",
-      "numbers": "Continuous batching plus PagedAttention commonly delivers an order-of-magnitude throughput gain over naive serving once you have ten or more concurrent users.",
-      "wrong": "Treating them as interchangeable, or proposing Ollama for production traffic. Serialised request handling under concurrency is a straightforward outage.",
+      "say": "Yes, and the reason is that they solve different problems. Ollama is a developer runtime with limited concurrency, which is right for iteration. vLLM is a serving engine - PagedAttention stops KV-cache fragmentation and continuous batching admits new requests into a running batch, which is what keeps the GPU busy under load. Both are OpenAI-compatible, so promotion is a base URL change. I pin identical model and quantisation across both.",
+      "numbers": "Continuous batching plus PagedAttention can give several-fold or larger throughput gains over naive serving under concurrent load. The size depends on model, prompt and output lengths, and GPU - benchmark your own traffic shape.",
+      "wrong": "Treating them as interchangeable, or proposing Ollama for production traffic. The follow-up about concurrency and throughput exposes that it was not designed for that load.",
       "follow": "Your vLLM box handles 50 concurrent users and falls over at 200. What do you look at first?"
     },
     {

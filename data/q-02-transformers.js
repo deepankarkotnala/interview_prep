@@ -31,7 +31,7 @@ window.IR.q["02-transformers"] = {
         "Multi-head means several attentions run in parallel, each learning different relationships."
       ],
       say: "For each token the model produces a query, a key and a value. Every token's query is scored against every other token's key, and where they match strongly that token gets more weight. The output at each position is a weighted mixture of the values. Multiple heads run in parallel so different heads learn different kinds of relationship. Because every token attends to every token, cost grows with the square of the sequence length.",
-      numbers: "Attention is O(n²) in sequence length. Doubling the input roughly quadruples the attention compute - which is why long context is expensive rather than merely large.",
+      numbers: "Attention is O(n²) in sequence length. Doubling the input roughly quadruples the attention-score compute. At short lengths the linear feed-forward layers still dominate total cost; the quadratic term takes over as context grows long - which is why long context is expensive rather than merely large.",
       wrong: "\"It lets the model focus on important words.\" A description of the effect with none of the mechanism. The interviewer is asking for query, key and value.",
       follow: "So what happens to cost when I double the context length?",},
 
@@ -46,7 +46,7 @@ window.IR.q["02-transformers"] = {
         "Attention has no sense of order. Every token is compared with every other token, and nothing in that operation knows which came first. \"The bank denied the claim\" and \"the claim denied the bank\" would look identical to the mechanism.\n\n" +
         "So position has to be injected. The original transformer added fixed sine and cosine patterns to the token embeddings. Later models learned position embeddings instead.\n\n" +
         "What is used now, and worth naming because it dates your knowledge correctly, is rotary position embedding, RoPE. Instead of adding position to the embedding, it rotates the query and key vectors by an angle that depends on the position. The effect is that the attention score between two tokens naturally depends on how far apart they are, rather than on their absolute positions.\n\n" +
-        "That relative property is why RoPE extends to longer contexts better, and why context-extension techniques usually work by scaling its frequencies.",
+        "That relative property is why RoPE extends to longer contexts better, and why context-extension techniques usually work by scaling its frequencies. (For why RoPE beat learned and sinusoidal encodings, see tf-14.)",
       points: [
         "Attention is order-blind. Position must be supplied separately.",
         "Original: fixed sinusoidal patterns added to embeddings.",
@@ -68,19 +68,19 @@ window.IR.q["02-transformers"] = {
       why: "The single most operationally useful thing in this topic. It explains your concurrency limit.",
       simple:
         "Generation is one token at a time, and each new token attends to every previous token. Without help, generating token 500 would mean recomputing keys and values for all 499 before it - and then doing it again for token 501.\n\n" +
-        "The KV cache stores those keys and values once, so each new token only computes its own and reads the rest. It turns a quadratic amount of repeated work into a linear amount.\n\n" +
+        "The KV cache stores those keys and values once, so each new token only computes its own and reads the rest. Per new token, that replaces recomputing keys and values for the whole prefix with computing them for just one token.\n\n" +
         "The cost is memory, and this is the part that matters in production. The cache grows with sequence length, with batch size, and with the number of layers, and it lives on the GPU alongside the weights. Long conversations at high concurrency fill it fast.\n\n" +
         "So the practical consequence: on a serving GPU you usually run out of KV cache memory before you run out of compute. That is why your concurrency limit is what it is, and why techniques like paged attention exist - they manage this memory in blocks instead of reserving a contiguous worst-case slab per request.",
       points: [
         "Stores keys and values for previous tokens so they are computed once.",
-        "Turns repeated quadratic work into linear work during decode.",
+        "Each decode step computes K and V for one new token instead of the whole prefix.",
         "Memory grows with sequence length × batch size × layers.",
         "It usually binds before compute does - that is your concurrency ceiling.",
         "Paged attention allocates it in blocks instead of a worst-case contiguous reservation.",
         "It is also why a long system prompt costs memory on every concurrent request."
       ],
-      say: "Each generated token attends to all previous tokens, so without caching we would recompute their keys and values every step. The KV cache stores them once, turning repeated quadratic work into linear. The cost is GPU memory that grows with sequence length, batch size and layers. In serving you normally exhaust KV cache memory before compute, which is what sets your concurrency limit - and why paged attention exists.",
-      numbers: "KV cache size ≈ 2 × layers × heads × head_dim × sequence_length × batch × bytes_per_value. Quantising the cache to int8 roughly halves it against fp16.",
+      say: "Each generated token attends to all previous tokens, so without caching we would recompute their keys and values every step. The KV cache stores them once, so each step computes only the new token's. The cost is GPU memory that grows with sequence length, batch size and layers. In serving you normally exhaust KV cache memory before compute, which is what sets your concurrency limit - and why paged attention exists.",
+      numbers: "KV cache size ≈ 2 × layers × kv_heads × head_dim × sequence_length × batch × bytes_per_value. Quantising the cache to int8 roughly halves it against fp16.",
       wrong: "\"It caches the previous responses.\" That is a response cache, an entirely different thing at a different layer. This confusion is common and very visible.",
       follow: "You need more concurrent users on the same GPU. What do you change?",},
 
@@ -96,17 +96,17 @@ window.IR.q["02-transformers"] = {
         "An encoder lets every token see every other token, both directions. That gives a rich representation of a complete input, which is why encoder models like BERT are the basis of embedding and classification models - you have the whole text already and you want to understand it.\n\n" +
         "A decoder is causal: each token can only see tokens before it. That restriction is what makes generation possible, because the model must not see the future it is about to predict. Nearly every model you call through a chat API is decoder-only.\n\n" +
         "Encoder-decoder has both - an encoder that reads the input fully, and a decoder that generates while attending to it. T5 is the familiar one, and translation is the classic use.\n\n" +
-        "The practical payoff: this is why your embedding model and your generation model are different architectures, and why you cannot use a chat model's hidden states as embeddings and expect encoder-quality results.",
+        "The practical payoff: this is why your embedding model and your generation model are different architectures, and why raw hidden states from a chat model make poor embeddings. The 2026 caveat: many top embedding and reranking models are now decoder LLMs fine-tuned with contrastive training (Qwen3-Embedding is one example) - the training objective matters as much as the architecture.",
       points: [
         "Encoder - bidirectional. Understanding: embeddings, classification, reranking.",
         "Decoder - causal, sees only the past. Generation.",
         "Encoder-decoder - reads fully, then generates. Translation, summarisation.",
         "Chat APIs are decoder-only, essentially without exception.",
-        "Cross-encoder rerankers are encoders - that is why they read the pair jointly."
+        "Cross-encoder rerankers read query and document jointly; classic ones are BERT-style encoders, newer ones are often fine-tuned decoders."
       ],
-      say: "The difference is what each token can see. An encoder is bidirectional, so every token sees the whole input - that is what embedding, classification and reranking models are built on. A decoder is causal, seeing only previous tokens, which is what makes generation possible, and it is what every chat API model is. Encoder-decoder reads fully then generates. It is why embedding and generation models are different architectures.",
+      say: "The difference is what each token can see. An encoder is bidirectional, so every token sees the whole input - that is what classic embedding, classification and reranking models are built on. A decoder is causal, seeing only previous tokens, which is what makes generation possible, and it is what every chat API model is. Encoder-decoder reads fully then generates. It is why embedding and generation models are traditionally different architectures.",
       numbers: "No number applies. The architectural distinction is the answer.",
-      wrong: "\"Decoder-only models are just newer and better.\" They are better at generation. Encoders still win at embedding and reranking, which is why both are in your RAG pipeline.",
+      wrong: "\"Decoder-only models are just newer and better.\" They are better at generation. For embedding and reranking, BERT-style encoders remain strong and cheap, and decoder-based embedders only work well after contrastive fine-tuning - so the training objective, not recency, decides.",
       follow: "So which architecture is your reranker, and why?",},
 
     {
@@ -120,7 +120,7 @@ window.IR.q["02-transformers"] = {
         "Because two different things are happening, with different bottlenecks.\n\n" +
         "Getting the first token out means processing the entire input - prefill. All input tokens go through the model, and they can be processed in parallel because they are all already known. That is compute-heavy work, and it scales with how much input you sent. A long retrieved context makes the first token slow.\n\n" +
         "After that, each further token is decode. One token at a time, each depending on the last, so nothing can be parallelised within a single request. Here the bottleneck is not compute but memory bandwidth - the GPU spends most of its time moving weights and cache around rather than doing arithmetic.\n\n" +
-        "The operational consequence is that long input and long output are separate problems. If time to first token is bad, cut the prompt: fewer chunks, tighter context. If total time is bad, cut the output length or stream so the user starts reading immediately.",
+        "The operational consequence is that long input and long output are separate problems. If time to first token is bad, cut the prompt: fewer chunks, tighter context. If total time is bad, cut the output length or stream so the user starts reading immediately.\n\nThe underlying prefill/decode split is covered in llm-14; this card is the latency-debugging version.",
       points: [
         "Prefill - whole input in parallel, compute-bound, sets time to first token.",
         "Decode - one token at a time, memory-bandwidth-bound, sets tokens per second.",
@@ -129,7 +129,7 @@ window.IR.q["02-transformers"] = {
         "Prompt caching cuts prefill directly, which is why it improves first-token latency."
       ],
       say: "Two phases with different bottlenecks. Prefill processes the entire input in parallel - compute-bound, and it sets time to first token, so a long retrieved context makes the first token slow. Decode then produces one token at a time, each depending on the last, and is memory-bandwidth-bound, setting tokens per second. So long input and long output are separate problems: trim the prompt for one, stream or shorten output for the other.",
-      numbers: "Time to first token is the one users feel. Under about 1 second reads as responsive; past 3 seconds people assume it failed, regardless of total time.",
+      numbers: "Time to first token is the one users feel. As a rough rule of thumb, around a second feels responsive and several seconds of blank screen feels broken - set the real target from your own users and product.",
       wrong: "\"The model warms up.\" There is no warm-up in the request. The two-phase explanation is the actual mechanism, and it points to different fixes.",
       follow: "Your p95 time to first token is 4 seconds. What do you look at?",},
 
@@ -142,8 +142,8 @@ window.IR.q["02-transformers"] = {
       why: "Currency. Several current frontier and open models are MoE, and it explains their odd cost profile.",
       simple:
         "In a normal model, every token passes through every parameter. Bigger model, more compute per token, linearly.\n\n" +
-        "A mixture-of-experts model replaces the feed-forward part of each layer with many parallel copies, called experts, plus a small router that picks a couple of them per token. So a model might hold a very large total parameter count but only activate a small fraction for any given token.\n\n" +
-        "The result is the trade that makes MoE attractive: the quality that comes with a large parameter count, at the compute cost of a much smaller one.\n\n" +
+        "A mixture-of-experts model replaces the feed-forward part of each layer with many parallel copies, called experts, plus a small router that picks a few of them per token (commonly 2 to 8). So a model might hold a very large total parameter count but only activate a small fraction for any given token.\n\n" +
+        "The result is the trade that makes MoE attractive: quality well above a dense model of the same active size, at roughly that smaller model's compute per token.\n\n" +
         "The catch, and the thing worth saying because it is the operational half: all the experts still have to be in memory, because the router might pick any of them. So you get cheap compute and expensive memory. For self-hosting that changes your hardware sizing completely - you size for total parameters, not active ones.",
       points: [
         "Many parallel expert blocks; a router activates only a few per token.",
@@ -153,8 +153,8 @@ window.IR.q["02-transformers"] = {
         "Self-hosting: size hardware on total parameters, not active ones.",
         "Routing can be uneven, which makes serving throughput less predictable."
       ],
-      say: "Instead of every token passing through every parameter, the feed-forward block becomes many parallel experts with a small router that picks a couple per token. So the model has a large total parameter count but only activates a fraction per token, giving large-model quality at small-model compute. The catch is memory - every expert must be resident because the router might pick any. Cheap compute, expensive memory.",
-      numbers: "MoE models commonly activate well under a quarter of total parameters per token. Size self-hosted hardware on total parameters; the active count only tells you about compute.",
+      say: "Instead of every token passing through every parameter, the feed-forward block becomes many parallel experts with a small router that picks a few per token. So the model has a large total parameter count but only activates a fraction per token, giving much of a large model's quality at small-model compute. The catch is memory - every expert must be resident because the router might pick any. Cheap compute, expensive memory.",
+      numbers: "The active fraction varies widely - DeepSeek-V3 activates about 37B of 671B parameters per token, Mixtral 8x7B about 13B of 47B. Size self-hosted hardware on total parameters; the active count only tells you about compute.",
       wrong: "\"It picks the best expert for the topic.\" Routing is learned and per-token, not semantic - there is no medical expert and legal expert. That framing invites a correction.",
       follow: "How does that change your hardware choice if you self-host?",},
 
@@ -169,19 +169,19 @@ window.IR.q["02-transformers"] = {
         "Several things together, and no single trick.\n\n" +
         "The attention computation itself is made memory-efficient rather than algorithmically cheaper - FlashAttention reorganises the work so the full attention matrix is never written to memory. Same maths, far less memory traffic, much faster in practice.\n\n" +
         "Attention patterns get sparser: some layers attend only to a local window, some keep a few global tokens, so not every layer pays the full quadratic price.\n\n" +
-        "The KV cache is shrunk architecturally. Grouped-query attention shares key and value heads across several query heads, cutting cache size several-fold, and it is in most current models.\n\n" +
+        "The KV cache is shrunk architecturally. Grouped-query attention shares key and value heads across several query heads, cutting cache size several-fold, and it is in most current models (DeepSeek's multi-head latent attention compresses the cache further).\n\n" +
         "Position handling is extended by scaling RoPE frequencies so the model generalises past its training length.\n\n" +
-        "Then the honest caveat, which is the part that scores: supporting a long context is not the same as using it well. Accuracy on a fact buried mid-context is measurably worse than at the ends, so a large window is a capability, not a strategy.",
+        "Then the honest caveat, which is the part that scores: supporting a long context is not the same as using it well. On many models accuracy can drop for a fact buried mid-context compared with one near the ends, so a large window is a capability, not a strategy.",
       points: [
         "FlashAttention - same maths, never materialises the attention matrix. Memory-efficient.",
         "Sparse and windowed attention - not every layer pays full cost.",
         "Grouped-query attention - shares KV heads, shrinking the cache several-fold.",
         "RoPE scaling extends usable position range beyond training length.",
-        "Supporting long context ≠ using it well. Mid-context recall degrades.",
+        "Supporting long context ≠ using it well. Mid-context recall can degrade.",
         "You still pay per token, so a large window is not a cheap window."
       ],
-      say: "Several things together. FlashAttention keeps the same maths but never materialises the attention matrix, so it is memory-efficient rather than cheaper. Some layers use windowed or sparse attention. Grouped-query attention shares key and value heads, shrinking the cache. And RoPE scaling extends the position range. But supporting long context is not the same as using it well - mid-context recall measurably degrades, and you still pay per token.",
-      numbers: "Grouped-query attention cuts KV cache by the query-to-KV head ratio - commonly 4× to 8×. That is the main reason long context became servable.",
+      say: "Several things together. FlashAttention keeps the same maths but never materialises the attention matrix, so it is memory-efficient rather than cheaper. Some layers use windowed or sparse attention. Grouped-query attention shares key and value heads, shrinking the cache. And RoPE scaling extends the position range. But supporting long context is not the same as using it well - mid-context recall can degrade, and you still pay per token.",
+      numbers: "Grouped-query attention cuts KV cache by the query-to-KV head ratio - commonly 4× to 8×. That is one of the main reasons long context became servable.",
       wrong: "\"They use sparse attention.\" One of four mechanisms, and stopping there misses grouped-query attention, which did more for serving cost than sparsity did.",
       follow: "Given that, would you use a 200k context or retrieval?",},
 
@@ -195,8 +195,8 @@ window.IR.q["02-transformers"] = {
       simple:
         "Not for most of the work, and yes for the parts where it matters - and being specific about which is which is the whole answer.\n\n" +
         "You can build a working RAG system, an agent and an evaluation harness without ever thinking about query and key vectors. Most of the job is retrieval quality, prompt discipline, evaluation and operations.\n\n" +
-            "Where it does matter: when you are explaining why long context costs what it does, when you are sizing a GPU for self-hosting, when you are debugging why the first token is slow, when you are choosing between grouped-query models for serving cost, or when you are deciding whether a fine-tune can plausibly fix a problem.\n\n" +
-        "So the position I would state: I know the mechanism well enough to reason about cost, latency and memory, because those decisions come to me. I do not need to implement attention from scratch, and I have not.\n\n" +
+            "Where it does matter: when you are explaining why long context costs what it does, when you are sizing a GPU for self-hosting, when you are debugging why the first token is slow, when you are comparing models' attention designs for serving cost, or when you are deciding whether a fine-tune can plausibly fix a problem.\n\n" +
+        "So the position I would state: I know the mechanism well enough to reason about cost, latency and memory, because those decisions come to me. I do not need to implement attention from scratch to make those calls.\n\n" +
         "That answer is credible. Claiming deep expertise you cannot defend under one follow-up is worse than saying where your depth ends.",
       points: [
         "Most application work does not require it.",
@@ -205,9 +205,9 @@ window.IR.q["02-transformers"] = {
         "Say where your depth ends. It is more credible than overclaiming.",
         "Overclaiming here is easily exposed - the follow-ups in this topic are precise."
       ],
-      say: "Not for most of it. A working RAG system, an agent and an evaluation harness need retrieval quality, prompt discipline and operations, not attention internals. It matters when I am sizing a GPU, debugging first-token latency, comparing serving costs or judging whether a fine-tune can fix something. So I know the mechanism well enough to reason about memory, cost and latency, and I have not implemented attention from scratch.",
+      say: "Not for most of it. A working RAG system, an agent and an evaluation harness need retrieval quality, prompt discipline and operations, not attention internals. It matters when I am sizing a GPU, debugging first-token latency, comparing serving costs or judging whether a fine-tune can fix something. So I know the mechanism well enough to reason about memory, cost and latency, without needing to implement attention from scratch.",
       numbers: "No number applies. Calibration is what is being marked.",
-      wrong: "Either extreme. \"It's essential\" invites a follow-up you may not survive; \"it's irrelevant\" says you cannot reason about serving cost.",
+      wrong: "Either extreme. \"It's essential\" invites precise follow-ups on shapes and memory; \"it's irrelevant\" says you cannot reason about serving cost.",
       follow: "Fine - then explain why our inference bill jumped when we increased retrieved chunks.",}
 ,
 
@@ -219,7 +219,7 @@ window.IR.q["02-transformers"] = {
       tags: ["attention", "transformers", "whiteboard"],
       why: "The whiteboard question. Tracking dimensions end to end proves you understand the mechanism rather than the metaphor.",
       simple:
-        "Take a batch of 1, a sequence of 10 tokens, and a model dimension of 512, with 8 heads so each head works in 64 dimensions.\n\n" +
+        "**Short version: track the shapes - (10, 64) queries, keys and values in, a (10, 10) attention pattern in the middle, (10, 64) out.**\n\nTake a batch of 1, a sequence of 10 tokens, and a model dimension of 512, with 8 heads so each head works in 64 dimensions.\n\n" +
         "    x            (10, 512)     input embeddings\n" +
         "    W_q, W_k, W_v (512, 64)    per-head projections\n\n" +
         "    Q = x @ W_q  (10, 64)\n" +
@@ -271,7 +271,7 @@ window.IR.q["02-transformers"] = {
       tags: ["attention", "theory", "training"],
       why: "A small detail with a real reason. It separates people who read the paper from people who read a blog summary.",
       simple:
-        "Without the scaling, training does not work well at larger head dimensions. Here is why.\n\n" +
+        "**Short version: without the scaling, attention scores grow as the vectors get longer, softmax becomes all-or-nothing, and training stops learning.**\n\nWithout the scaling, training does not work well at larger head dimensions. Here is why.\n\n" +
         "The dot product of two vectors is a sum of d_k products. If the components are roughly independent with unit variance, the variance of that sum grows with d_k - so the dot products get larger in magnitude as the head dimension grows. At d_k = 64 the scores have a standard deviation around 8; at 512 it is around 22.\n\n" +
         "Now feed large-magnitude values into softmax. Softmax exponentiates, so a gap of 20 between the largest score and the rest means the largest gets essentially all the probability. The distribution saturates into a near one-hot vector.\n\n" +
         "That is a problem for training, not just for behaviour. The gradient of softmax in a saturated region is nearly zero, so no learning signal flows back. Attention weights get stuck early and cannot adjust.\n\n" +
@@ -298,14 +298,14 @@ window.IR.q["02-transformers"] = {
       tags: ["attention", "kv-cache", "serving"],
       why: "A concrete architecture evolution driven entirely by a serving constraint. It ties theory to production cost.",
       simple:
-        "All three are the same attention mechanism differing in how many key and value heads exist relative to query heads.\n\n" +
+        "**Short version: all three are the same attention; they differ in how many key/value heads are shared, which sets KV cache size. GQA is the quality-versus-memory compromise most models now use.**\n\nAll three are the same attention mechanism differing in how many key and value heads exist relative to query heads.\n\n" +
         "Multi-head attention gives every query head its own K and V. Maximum expressiveness. But the KV cache stores K and V for every head, every layer, every token - and at long context that cache dominates memory, often exceeding the model weights themselves.\n\n" +
         "Multi-query attention goes to the other extreme: all query heads share a single K and V head. The KV cache shrinks by the head count - a 32-head model sees roughly a 32× reduction. Enormous saving, but quality degrades measurably and training can become unstable.\n\n" +
         "Grouped-query attention is the compromise that won. Query heads are split into groups, and each group shares one K and V head. With 32 query heads and 8 groups you get a 4× cache reduction at close to MHA quality.\n\n" +
         "    MHA:  32 query heads, 32 KV heads   full cache\n" +
         "    GQA:  32 query heads,  8 KV heads   4x smaller cache\n" +
         "    MQA:  32 query heads,  1 KV head    32x smaller, quality cost\n\n" +
-        "Why this matters commercially: KV cache size directly determines how many concurrent requests fit on a GPU. Shrink the cache 4× and you serve roughly 4× the concurrent users on the same hardware. That is a direct cost-per-request reduction, which is why essentially every recent open model uses GQA.\n\n" +
+        "Why this matters commercially: KV cache size directly determines how many concurrent requests fit on a GPU. Shrink the cache 4× and, when KV memory is the binding limit, you can serve up to roughly 4× the concurrent users on the same hardware. That is a direct cost-per-request reduction, which is why most recent open models use GQA or a further cache-saving variant such as DeepSeek's multi-head latent attention.\n\n" +
         "The general lesson worth stating: this architecture change was driven by inference economics, not by a modelling insight. Serving constraints now shape model design.",
       points: [
         "MHA: one KV head per query head - largest cache.",
@@ -315,7 +315,7 @@ window.IR.q["02-transformers"] = {
         "Driven by inference economics, not modelling insight."
       ],
       say: "They differ in how many key-value heads exist per query head. MHA gives each query head its own, which maximises the KV cache. MQA shares one across all of them, shrinking the cache by the head count but costing quality. GQA groups query heads to share KV heads - typically 32 query heads over 8 groups for a 4× reduction at close to MHA quality. It matters because cache size sets how many concurrent requests fit on a GPU.",
-      numbers: "32 query heads with 8 KV groups is a common configuration - roughly 4× cache reduction, so roughly 4× the concurrent requests on the same hardware.",
+      numbers: "32 query heads with 8 KV groups is a common configuration - roughly 4× cache reduction, so up to roughly 4× the concurrent requests on the same hardware when KV memory is the limit.",
       wrong: "Describing them as three equally valid options. GQA won for a specific reason, and not knowing that reason is the gap the question probes.",
       follow: "Your KV cache is still the bottleneck after GQA. What else can you do?",},
 
@@ -325,17 +325,17 @@ window.IR.q["02-transformers"] = {
       round: ["tech2"],
       level: "5-10",
       tags: ["kv-cache", "serving", "capacity"],
-      why: "A capacity-planning question. Candidates who can compute this have actually deployed something.",
+      why: "A capacity-planning question. Being able to compute this live is what turns a GPU-sizing conversation from a guess into a plan.",
       simple:
-        "The formula, and it is worth memorising:\n\n" +
+        "**Short version: KV cache memory = 2 × layers × KV heads × head size × tokens × bytes - and at real context lengths and concurrency it is often bigger than the model weights.**\n\nThe formula, and it is worth memorising:\n\n" +
         "    2 x layers x kv_heads x d_head x seq_len x bytes_per_value\n\n" +
         "The 2 is for K and V. Everything else is per token, per sequence.\n\n" +
-        "Work an example. A 7B-class model: 32 layers, 32 KV heads, d_head 128, FP16 so 2 bytes.\n\n" +
+        "Work an example. A 7B-class model with full multi-head attention (Llama-2-7B's shape): 32 layers, 32 KV heads, d_head 128, FP16 so 2 bytes.\n\n" +
         "    per token = 2 x 32 x 32 x 128 x 2 bytes\n" +
         "              = 524,288 bytes  ~ 0.5 MB per token\n\n" +
         "So a single 8,000-token conversation needs about 4 GB of KV cache. Ten concurrent users at that length is 40 GB - more than the model weights, which are about 14 GB at FP16.\n\n" +
         "That is the punchline: at realistic context lengths and concurrency, the KV cache dominates memory, not the weights. Teams size a GPU for the model and are then surprised they can only serve a handful of users.\n\n" +
-        "With GQA at 8 KV heads instead of 32, the same calculation gives about 0.125 MB per token - 1 GB for that conversation instead of 4. Four times the concurrent users on identical hardware, which is exactly why GQA exists.\n\n" +
+        "With GQA at 8 KV heads instead of 32, the same calculation gives about 0.125 MB per token - 1 GB for that conversation instead of 4. Up to four times the concurrent users on identical hardware, which is exactly why GQA exists.\n\n" +
         "The levers this exposes: GQA or MQA to cut heads, KV cache quantisation to cut bytes per value, shorter contexts, and PagedAttention to stop wasting memory on fragmentation - vLLM's core contribution is allocating cache in pages so you do not reserve worst-case contiguous blocks per request.\n\n" +
         "Being able to run this calculation live is what separates a capacity plan from a guess.",
       points: [
@@ -345,7 +345,7 @@ window.IR.q["02-transformers"] = {
         "At real concurrency the cache exceeds the weights.",
         "Levers: GQA, cache quantisation, shorter context, PagedAttention."
       ],
-      say: "It is two times layers times KV heads times head dimension times sequence length times bytes per value. For a 7B model with 32 layers, 32 KV heads and 128 head dimension at FP16, that is about half a megabyte per token - so an 8,000-token conversation is around 4 GB, and ten concurrent users exceed the model weights. That is why GQA matters: dropping to 8 KV heads cuts it fourfold and quadruples concurrency.",
+      say: "It is two times layers times KV heads times head dimension times sequence length times bytes per value. For a 7B model with 32 layers, 32 KV heads and 128 head dimension at FP16, that is about half a megabyte per token - so an 8,000-token conversation is around 4 GB, and ten concurrent users exceed the model weights. That is why GQA matters: dropping to 8 KV heads cuts it fourfold and can roughly quadruple concurrency.",
       numbers: "Roughly 0.5 MB per token for a 7B model at FP16 with MHA; about 0.125 MB with 8-group GQA. Model weights are ~2 bytes per parameter.",
       wrong: "Sizing a GPU by model weights alone. It is the most common capacity-planning error and it shows up as far lower concurrency than expected.",
       follow: "You have an 80 GB GPU and a 7B model. How many 8k-context users can you serve?",},
@@ -358,12 +358,12 @@ window.IR.q["02-transformers"] = {
       tags: ["attention", "optimisation", "serving"],
       why: "Commonly named and rarely understood. The key insight is that it is exact, not approximate.",
       simple:
-        "Standard attention materialises the full sequence-by-sequence score matrix in GPU memory. At 8,000 tokens that is 64 million values per head per layer - written to memory, read back for softmax, written again, read again for the multiply by V.\n\n" +
+        "**Short version: FlashAttention computes exactly the same attention, but in small tiles that stay in fast on-chip memory, so the huge score matrix never has to be stored.**\n\nStandard attention materialises the full sequence-by-sequence score matrix in GPU memory. At 8,000 tokens that is 64 million values per head per layer - written to memory, read back for softmax, written again, read again for the multiply by V.\n\n" +
         "The problem is that GPUs are far faster at arithmetic than at moving data. So attention was bottlenecked on memory bandwidth, not on compute, and the big matrix was mostly being shuffled between fast on-chip SRAM and slower HBM.\n\n" +
         "FlashAttention avoids materialising it. It tiles the computation, loading blocks of Q, K and V into on-chip memory and computing attention block by block, using an online softmax that maintains running maximum and sum statistics so it can produce the correct normalised result without ever holding the full matrix.\n\n" +
-        "The critical point, and the one that gets missed: the output is mathematically identical to standard attention. It is not an approximation like sparse or linear attention. Same numbers, fewer memory round trips.\n\n" +
+        "The critical point, and the one that gets missed: the output is mathematically identical to standard attention (up to floating-point rounding). It is not an approximation like sparse or linear attention. Same numbers, fewer memory round trips.\n\n" +
         "The gains are substantial - several times faster and, more importantly, memory that scales linearly with sequence length rather than quadratically. That linear memory scaling is what made long contexts practical. The compute is still quadratic; only the memory is not.\n\n" +
-        "Why you should care as an application engineer: it is the reason long-context models are affordable, and it is enabled by default in modern serving stacks. If you self-host and it is not enabled, you are leaving a large multiple of throughput on the table.\n\n" +
+        "Why you should care as an application engineer: it is the reason long-context models are affordable, and it is enabled by default in modern serving stacks. If you self-host and it is not enabled, you are usually leaving significant throughput and usable context length on the table.\n\n" +
         "It is a good example of a broader truth - many deep learning speedups come from respecting the memory hierarchy, not from cleverer mathematics.",
       points: [
         "Standard attention materialises the full (seq, seq) matrix.",
@@ -385,8 +385,8 @@ window.IR.q["02-transformers"] = {
       tags: ["positional-encoding", "long-context", "transformers"],
       why: "Explains how context-length extension is even possible, which is a live production concern.",
       simple:
-        "Attention is permutation-invariant - it computes the same thing regardless of token order - so position has to be injected somehow. Three approaches were tried.\n\n" +
-        "Sinusoidal encoding adds fixed sine and cosine patterns to the input embeddings. No parameters and it extrapolates in principle, but position is added once at the input and gets diluted through the layers.\n\n" +
+        "**Short version: RoPE builds position into the attention score itself, as relative distance, which is what lets models be stretched to longer contexts cheaply.**\n\nAttention is permutation-invariant - it computes the same thing regardless of token order - so position has to be injected somehow. Three approaches were tried.\n\n" +
+        "Sinusoidal encoding adds fixed sine and cosine patterns to the input embeddings. No parameters and it can extrapolate in principle, but in practice it generalises poorly past the trained length, and position enters only once, at the input.\n\n" +
         "Learned absolute encoding trains a vector per position. Works well up to the trained length and then stops dead - position 5,000 has no embedding if you trained to 4,096, so extending context requires retraining.\n\n" +
         "RoPE, rotary position embedding, does something different. Instead of adding position to the embedding, it rotates the Q and K vectors by an angle proportional to their position, applied at every attention layer.\n\n" +
         "The elegance is what that rotation does to the dot product. When you take Q at position m against K at position n, the rotations combine so the result depends only on the difference m minus n. Position becomes relative for free, out of the geometry, with no extra parameters and no separate relative-position table.\n\n" +
@@ -399,7 +399,7 @@ window.IR.q["02-transformers"] = {
         "The dot product then depends only on relative distance.",
         "Continuous rotation allows interpolation - cheap context extension."
       ],
-      say: "Attention is permutation-invariant so position has to be injected. Learned absolute embeddings stop working past the trained length, and sinusoidal encoding is added once at the input and dilutes through the layers. RoPE rotates Q and K by an angle proportional to position at every layer, and the rotations combine so the dot product depends only on relative distance. Because it is continuous you can interpolate, which is what makes cheap context extension possible.",
+      say: "Attention is permutation-invariant so position has to be injected. Learned absolute embeddings stop working past the trained length, and sinusoidal encoding is added once at the input and extrapolates poorly in practice. RoPE rotates Q and K by an angle proportional to position at every layer, and the rotations combine so the dot product depends only on relative distance. Because it is continuous you can interpolate, which is what makes cheap context extension possible.",
       numbers: "Position interpolation and YaRN scale RoPE angles to extend a 4k-trained model to 32k or beyond with a short fine-tune rather than a retrain.",
       wrong: "'RoPE is just better positional encoding.' The follow-up is why, and relative-distance-from-rotation plus interpolability is the answer.",
       follow: "How would you extend a model trained at 8k to handle 64k?",}

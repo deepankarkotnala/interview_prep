@@ -591,6 +591,13 @@
   }
 
   /* ---------- card rendering ---------- */
+  var PRIORITY = {
+    high:   { label: "High",   hint: "High priority - asked in most interviews. Learn this first." },
+    medium: { label: "Medium", hint: "Medium priority - common follow-up or deeper question." },
+    low:    { label: "Low",    hint: "Low priority - niche or role-specific. Read once you have the rest." }
+  };
+  IR.priority = PRIORITY;
+
   function renderCard(c, i, opts) {
     opts = opts || {};
     var d = el("details", "q-card");
@@ -603,6 +610,17 @@
     var no = el("span", "q-no", num);
     var titleWrap = el("div", "q-title");
     titleWrap.innerHTML = fmt(c.q);
+    /* Priority sits in the card's top-right corner. It floats inside the
+       title so a long question wraps around it instead of losing width to a
+       fixed column - which matters most on a phone. */
+    var prio = PRIORITY[c.priority];
+    if (prio) {
+      var pill = el("span", "q-prio is-" + c.priority,
+        '<span class="q-prio-dot" aria-hidden="true"></span>' + prio.label +
+        '<span class="q-prio-word"> priority</span>');
+      pill.title = prio.hint;
+      titleWrap.insertBefore(pill, titleWrap.firstChild);
+    }
 
     var meta = el("div", "q-meta");
     if (opts.showTopic && c._topic) {
@@ -615,7 +633,7 @@
       meta.innerHTML += '<span class="is-level">' + esc(c.level) + ' yrs</span>';
     }
     (c.tags || []).forEach(function (t) {
-      meta.innerHTML += '<span>#' + esc(t) + '</span>';
+      meta.innerHTML += '<span class="is-tag">#' + esc(t) + '</span>';
     });
     titleWrap.appendChild(meta);
 
@@ -733,12 +751,25 @@
       return '<option value="' + r + '">' + r + '</option>';
     }).join("");
 
+    /* A priority filter only appears on lists whose cards carry a priority. */
+    var prioSel = null;
+    if (cards.some(function (c) { return PRIORITY[c.priority]; })) {
+      prioSel = el("select", "round-select");
+      prioSel.setAttribute("aria-label", "Filter by priority");
+      prioSel.style.cssText = roundSel.style.cssText;
+      prioSel.innerHTML = '<option value="">All priorities</option>' +
+        ["high", "medium", "low"].map(function (p) {
+          return '<option value="' + p + '">' + PRIORITY[p].label + ' priority</option>';
+        }).join("");
+    }
+
     var count = el("span", "result-count", cards.length + " questions");
     count.style.fontSize = "0.75rem";
     count.style.color = "var(--text-muted)";
 
     bar.appendChild(searchWrap);
     bar.appendChild(roundSel);
+    if (prioSel) bar.appendChild(prioSel);
     bar.appendChild(count);
 
     var list = el("div", "q-list");
@@ -764,7 +795,8 @@
         if (!cardEl) return;
         var matchQ = !q || (c.q + " " + (c.why || "") + " " + (c.simple || "") + " " + (c.say || "")).toLowerCase().indexOf(q) >= 0;
         var matchR = !r || (c.round || []).indexOf(r) >= 0;
-        var ok = matchQ && matchR;
+        var matchP = !prioSel || !prioSel.value || c.priority === prioSel.value;
+        var ok = matchQ && matchR && matchP;
         cardEl.hidden = !ok;
         if (ok) shown++;
       });
@@ -774,6 +806,7 @@
 
     filterInput.addEventListener("input", filter);
     roundSel.addEventListener("change", filter);
+    if (prioSel) prioSel.addEventListener("change", filter);
   }
 
   /* ---------- CampusX comparison modal & trigger ---------- */
@@ -1131,7 +1164,10 @@
       var full = "";
       if (h.classList && h.classList.contains("q-card")) {
         var titleEl = h.querySelector(".q-title");
-        full = titleEl ? titleEl.childNodes[0].textContent.trim() : h.textContent.trim();
+        /* The question text only - not the priority pill or the meta chips. */
+        full = titleEl ? [].filter.call(titleEl.childNodes, function (n) {
+          return !(n.classList && (n.classList.contains("q-prio") || n.classList.contains("q-meta")));
+        }).map(function (n) { return n.textContent; }).join("").trim() : h.textContent.trim();
       } else {
         full = h.textContent.trim();
       }

@@ -38,8 +38,8 @@ window.IR.q["11-evaluation"] = {
         "Offline catches breakage; online proves value. Neither replaces the other."
       ],
       "say": "Two layers. Offline is a golden set of cases with known good answers that runs on every change - it is the only fair way to compare two versions, because both see the same inputs. Online is real user behaviour: thumbs, rephrase rate, citation clicks, escalation to a human, and the business metric underneath. Offline tells me whether I broke something. Online tells me whether it mattered.",
-      "numbers": "Start with 100 golden cases minimum. Below about 50 the noise between runs is larger than the effect you are trying to measure.",
-      "wrong": "\"We test it manually before release.\" Honest and disqualifying for a senior role. It means every release is a judgement call nobody can defend.",
+      "numbers": "A common starting point is around 100 golden cases. With only a few dozen, run-to-run noise can be as large as the change you are trying to measure, so report variance as well as the average.",
+      "wrong": "\"We test it manually before release.\" Honest, but the follow-up is how you compare two versions or prove a change broke nothing - and manual spot checks cannot answer either.",
       "follow": "Where does that golden set come from?"
     },
     {
@@ -84,11 +84,11 @@ window.IR.q["11-evaluation"] = {
         "bias"
       ],
       "why": "Everyone uses judges now. The senior signal is knowing where they lie to you.",
-      "simple": "You use a model to score another model's output - is this answer supported by the context, is it relevant, is it complete. It scales in a way human review never will, and for open-ended text there is often no other option.\n\nBut judges have known biases, and naming them is what separates a good answer here. They prefer longer answers. They prefer their own family's writing style. They are sensitive to option order in comparisons. They cluster scores in the middle of a numeric scale and avoid the extremes. And they are inconsistent - the same input can get different scores on different runs.\n\nSo you calibrate. Have humans label a couple of hundred examples, run the judge on the same ones, and measure agreement. If the judge agrees with your experts, you can use it at scale, and you re-check that agreement periodically. If it does not, fix the rubric before you trust a single number it produces.\n\nThe design rules that help: binary or three-point scales rather than one-to-ten, an explicit rubric with examples, ask for the reason before the score, and randomise order in pairwise comparisons.",
+      "simple": "You use a model to score another model's output - is this answer supported by the context, is it relevant, is it complete. It scales in a way human review never will, and for open-ended text there is often no other option.\n\nBut judges have known biases, and naming them is what separates a good answer here. They prefer longer answers. They prefer their own family's writing style. They are sensitive to option order in comparisons. They cluster scores in the middle of a numeric scale and avoid the extremes. And they are inconsistent - the same input can get different scores on different runs.\n\nSo you calibrate. Have humans label a couple of hundred examples, run the judge on the same ones, and measure agreement - raw agreement plus a chance-corrected measure such as Cohen's kappa. If the judge agrees with your experts, you can use it at scale, and you re-check that agreement periodically. If it does not, fix the rubric before you trust a single number it produces.\n\nThe design rules that help: binary or three-point scales rather than one-to-ten, an explicit rubric with examples, ask for the reason before the score, and randomise order in pairwise comparisons.",
       "points": [
         "Biases: length, self-preference, position, middle-clustering, run-to-run variance.",
         "Calibrate against 100–200 human labels and measure agreement.",
-        "Binary or three-point scales. One-to-ten is noise.",
+        "Binary or three-point scales. Wide one-to-ten scales are usually noisy.",
         "Rubric with concrete examples of each level.",
         "Reason first, score second - it improves consistency.",
         "Randomise order in pairwise comparisons.",
@@ -96,12 +96,12 @@ window.IR.q["11-evaluation"] = {
       ],
       "say": "A model scores another model's output. It scales where human review cannot, but it has known biases - it prefers longer answers, prefers its own style, is sensitive to option order, and clusters scores mid-scale. So I calibrate against a couple of hundred human labels and measure agreement before trusting it. I use binary or three-point scales with an explicit rubric, ask for the reason before the score, and randomise pairwise order.",
       "numbers": "Calibrate on 100–200 human-labelled examples. Recheck agreement quarterly, and after any judge-model version change.",
-      "wrong": "\"We use GPT to score the outputs, it gives about 0.9.\" A number with no calibration behind it. The follow-up - how do you know the judge is right - usually ends this line of answer.",
+      "wrong": "\"We use GPT to score the outputs, it gives about 0.9.\" A number with no calibration behind it. The obvious follow-up - how do you know the judge is right - needs agreement with human labels to answer.",
       "follow": "Your judge scores 0.9 and users are complaining. What is happening?"
     },
     {
       "id": "ev-04",
-      "q": "Which metrics do you actually use for RAG?",
+      "q": "Which RAG metrics are deterministic, which need an LLM judge, and which do you lead with?",
       "round": [
         "tech1",
         "tech2"
@@ -112,18 +112,20 @@ window.IR.q["11-evaluation"] = {
         "rag",
         "metrics"
       ],
-      "why": "Concrete metric knowledge, and whether you separate the two halves of the pipeline.",
-      "simple": "Measure retrieval and generation separately, because they fail differently and a single end-to-end score hides which one broke.\n\nRetrieval needs a labelled set - questions with the chunk that answers them. Then recall@k, how often the right chunk is in the top k, and MRR, which rewards it ranking high. These are objective, they cost nothing, and they should run on every commit.\n\nGeneration is judged, usually with the RAGAS four. Faithfulness: is every claim supported by the retrieved context. Answer relevance: does it address the question asked. Context precision: is the retrieved context mostly useful rather than padding. Context recall: did retrieval get everything needed.\n\nFaithfulness is the one to lead with, because it is the closest proxy to hallucination and it is the one a regulated employer will ask about by name.\n\nThen end-to-end task success on the golden set, which is the only number a business stakeholder cares about.",
+      "why": "rag-07 covers the full RAG evaluation design. This checks the next layer: sorting metrics by which half of the pipeline they test and how they are scored, and knowing which can run on every commit.",
+      "simple": "**Short version: sort RAG metrics two ways - which half they test (retrieval or generation) and who scores them (code or an LLM judge). The full evaluation design is in rag-07.**\n\nRetrieval, scored by code: with a labelled set of questions and the chunks that answer them, recall@k (is the right chunk in the top k), MRR (is it near the top) and hit rate are objective, need no model calls, and can run on every commit.\n\nRetrieval, scored by a judge: RAGAS context precision (is the retrieved context mostly relevant and ranked near the top) and context recall (did retrieval bring back everything the answer needs). They are still retrieval metrics - they just use an LLM instead of chunk labels, so they cost money and need calibration.\n\nGeneration, scored by a judge: faithfulness (is every claim supported by the retrieved context) and answer relevance (does it address the question asked). Faithfulness is the one to lead with, because it is the closest proxy to hallucination and the one a regulated employer will ask about by name.\n\nAny judged metric is only as good as the judge, so check it against human labels before trusting the number.\n\nThen end-to-end task success on the golden set - the number a business stakeholder understands - with cost and p95 latency alongside.",
       "points": [
-        "Retrieval: recall@k, MRR, hit rate - objective, cheap, run in CI.",
-        "Generation: faithfulness, answer relevance, context precision, context recall.",
+        "Retrieval, code-scored: recall@k, MRR, hit rate - objective, cheap, run in CI.",
+        "Retrieval, judge-scored: RAGAS context precision and context recall.",
+        "Generation, judge-scored: faithfulness and answer relevance.",
         "Faithfulness is the hallucination proxy. Lead with it.",
+        "Calibrate every judged metric against human labels before trusting it.",
         "End-to-end task success is the number a stakeholder understands.",
         "Track cost and p95 latency alongside - a quality win that doubles cost is not a win."
       ],
-      "say": "Separately, because they fail differently. Retrieval gets a labelled set with recall at k and MRR - objective and cheap enough to run on every commit. Generation gets the RAGAS four: faithfulness, answer relevance, context precision and context recall. Faithfulness is the one I lead with, because it is the closest proxy for hallucination. Then end-to-end task success, plus cost and p95 alongside.",
+      "say": "I sort them two ways: which half of the pipeline they test, and whether code or a judge scores them. Retrieval gets recall at k and MRR from a labelled set - cheap enough for every commit - plus RAGAS context precision and recall, which are judged retrieval metrics. Generation gets faithfulness and answer relevance. I lead with faithfulness as the hallucination proxy, calibrate the judge against human labels, and report end-to-end task success with cost and p95.",
       "numbers": "Useful bar: recall@10 above 0.90 before touching the prompt, and faithfulness above 0.90 before launch. Set your own thresholds from your own data.",
-      "wrong": "Naming BLEU or ROUGE. They compare word overlap with a reference answer, which is close to meaningless for open-ended generation, and it dates the candidate.",
+      "wrong": "Naming BLEU or ROUGE. They compare word overlap with a reference answer, which says little about groundedness in open-ended generation - the follow-up about where the reference answers come from exposes that (see ev-11).",
       "follow": "Faithfulness is 0.95 but users say the answers are useless. Explain."
     },
     {
@@ -148,8 +150,8 @@ window.IR.q["11-evaluation"] = {
         "Report win rate against the current production version."
       ],
       "say": "I stop scoring correctness and score properties instead. For a summary: does it contain a claim absent from the source, does it cover the key points, is it within length, is the tone right. Some of those code can check, the rest a judge with a rubric can. For comparing versions I use pairwise - which of these two is better, with order randomised - because win rate is far more reliable than averaged absolute scores.",
-      "numbers": "Pairwise win rate against the current production version is the cleanest release signal. Below roughly 55% the change is not worth shipping.",
-      "wrong": "\"Subjective tasks cannot really be evaluated.\" They can be decomposed, and saying otherwise means half of GenAI work is unmeasurable to you.",
+      "numbers": "Pairwise win rate against the current production version is the cleanest release signal. Decide the bar before the test and check the win rate is distinguishable from 50% at your sample size - a tie can still be worth shipping if the new version is cheaper or faster.",
+      "wrong": "\"Subjective tasks cannot really be evaluated.\" The follow-up is how you would compare two summary prompts, and decomposing into checkable properties plus pairwise comparison is the answer it is looking for.",
       "follow": "How do you stop the judge just preferring the longer summary?"
     },
     {
@@ -194,7 +196,7 @@ window.IR.q["11-evaluation"] = {
         "llmops"
       ],
       "why": "Whether you have operated one, where you have no labels and no reproducibility.",
-      "simple": "Four groups, and candidates usually only mention the first.\n\nSystem health: error rate, p50 and p95 latency, timeouts, provider rate limits and retries. Ordinary and necessary.\n\nCost: tokens per request, cost per request, cost per resolved task, split by feature. This one gets attention faster than any other dashboard you build, because it is the one finance asks about.\n\nQuality proxies, since you have no labels in production: groundedness on a sample, citation validity, refusal rate, retrieval score distribution, output length distribution, and parse-failure rate. Each is a leading indicator. A sudden drop in refusal rate usually means the model started inventing.\n\nUser behaviour: thumbs, rephrase rate, session abandonment, escalation to a human, and the business metric.\n\nThen alert on the deltas, not the absolutes. You will not know the right absolute value, but you will notice when it moves ten percent overnight.",
+      "simple": "Four groups, and candidates usually only mention the first. (This is the whole-system dashboard; for telling a retrieval failure from a generation failure in RAG, see rag-49.)\n\nSystem health: error rate, p50 and p95 latency, timeouts, provider rate limits and retries. Ordinary and necessary.\n\nCost: tokens per request, cost per request, cost per resolved task, split by feature. This one gets attention faster than any other dashboard you build, because it is the one finance asks about.\n\nQuality proxies, since you have no labels in production: groundedness on a sample, citation validity, refusal rate, retrieval score distribution, output length distribution, and parse-failure rate. Each is a leading indicator. A sudden drop in refusal rate can mean the model started inventing instead of declining.\n\nUser behaviour: thumbs, rephrase rate, session abandonment, escalation to a human, and the business metric.\n\nThen alert on the deltas, not the absolutes. You will not know the right absolute value, but you will notice when it moves ten percent overnight.",
       "points": [
         "Health: errors, p50 and p95, timeouts, rate limits, retries.",
         "Cost: tokens and cost per request and per resolved task, split by feature.",
@@ -203,7 +205,7 @@ window.IR.q["11-evaluation"] = {
         "Alert on change, not on absolute thresholds you had to guess."
       ],
       "say": "Four groups. System health - errors, p95, timeouts, rate limits. Cost - tokens and cost per request and per resolved task, split by feature. Quality proxies, since there are no labels in production - sampled groundedness, citation validity, refusal rate, retrieval score distribution and parse failures. And user behaviour - thumbs, rephrase rate, escalation. I alert on the deltas, because I cannot know the right absolute value in advance.",
-      "numbers": "Sample 1–5% of traffic for automated quality checks. Alert on a 10–20% shift in any quality proxy day over day.",
+      "numbers": "Sample 1–5% of traffic for automated quality checks. As a starting point, alert on a 10–20% day-over-day shift in any quality proxy, then tune to your traffic's normal variance.",
       "wrong": "\"Latency, errors and uptime.\" That monitors the service, not the model. A GenAI system can be perfectly healthy and completely wrong.",
       "follow": "Refusal rate dropped 30% overnight. Walk me through your investigation."
     },
@@ -287,7 +289,7 @@ window.IR.q["11-evaluation"] = {
       ],
       "say": "Usually the eval set does not match real traffic, because it was written by engineers rather than sampled from users. Or I am measuring the wrong property - faithfulness stays high when the answer just repeats the context without answering. Or we overfitted by tuning against the same set. Or the complaint is latency, not correctness. I take fifty real complaints, run them through the pipeline, and find where the score and reality disagree.",
       "numbers": "Always slice quality metrics by language, document type and user segment. A 0.9 average routinely hides a 0.6 segment, and that segment is the one complaining.",
-      "wrong": "\"The users do not understand what the system can do.\" It may even be partly true, and it is the wrong instinct in this round. It ends the diagnostic conversation.",
+      "wrong": "\"The users do not understand what the system can do.\" It may even be partly true, but the interviewer wants a diagnosis of your measurement, and this answer skips it.",
       "follow": "How would you stop your eval set drifting away from production again?"
     },
     {
@@ -305,7 +307,7 @@ window.IR.q["11-evaluation"] = {
         "judgement"
       ],
       "why": "Asked by name in almost every evaluation round. The mark is not the definition - it is knowing they mostly do not apply to what you build.",
-      "simple": "Know the definitions, then know why you rarely reach for them.\n\nBLEU is precision over n-grams against a reference, built for machine translation. ROUGE is the recall counterpart, built for summarisation - ROUGE-L uses longest common subsequence rather than fixed n-grams. Both compare surface word overlap. BERTScore replaces exact matching with embedding similarity, so a paraphrase scores well where BLEU would score zero.\n\nNow the part that scores. All three need a reference answer, and most GenAI features do not have one. A support reply, a summary, an extracted field, an agent trajectory - there is no single correct string, so a metric that measures distance from one reference is measuring the wrong thing. Worse, on RAG they are actively misleading: an answer can overlap heavily with the reference and still be ungrounded, and a correct answer phrased differently scores badly. High ROUGE with a hallucinated number is entirely possible.\n\nWhere they genuinely fit: translation, and summarisation where you have real reference summaries and want a cheap regression signal in CI. They are fast and deterministic, which is worth something when you run them on every commit.\n\nWhat I actually use instead: for RAG, faithfulness and context precision and recall. For subjective output, a rubric with an LLM judge, validated against human labels. For extraction, exact field accuracy, which is the one place a hard metric works cleanly. The senior answer names the metric, then says why the task decides it.",
+      "simple": "Know the definitions, then know why you rarely reach for them.\n\nBLEU is precision over n-grams against a reference, built for machine translation. ROUGE is the recall counterpart, built for summarisation - ROUGE-L uses longest common subsequence rather than fixed n-grams. Both compare surface word overlap. BERTScore replaces exact matching with embedding similarity, so a paraphrase scores well where BLEU would score zero.\n\nNow the part that scores. All three need a reference answer, and most GenAI features do not have one. A support reply, a summary, an agent trajectory - there is no single correct string, so a metric that measures distance from one reference is measuring the wrong thing. Worse, on RAG they are actively misleading: an answer can overlap heavily with the reference and still be ungrounded, and a correct answer phrased differently scores badly. High ROUGE with a hallucinated number is entirely possible.\n\nWhere they genuinely fit: translation, and summarisation where you have real reference summaries and want a cheap regression signal in CI. They are fast and deterministic, which is worth something when you run them on every commit.\n\nWhat I actually use instead: for RAG, faithfulness and context precision and recall. For subjective output, a rubric with an LLM judge, validated against human labels. For extraction, exact field accuracy, which is the one place a hard metric works cleanly. The senior answer names the metric, then says why the task decides it.",
       "points": [
         "BLEU: n-gram precision, built for translation. ROUGE: recall, built for summarisation. BERTScore: embedding similarity, so paraphrase survives.",
         "All three need a reference answer. Most GenAI tasks have no single correct output.",
@@ -317,7 +319,7 @@ window.IR.q["11-evaluation"] = {
       ],
       "say": "BLEU is n-gram precision for translation, ROUGE is the recall counterpart for summarisation, and BERTScore swaps exact matching for embedding similarity so paraphrases survive. But all three need a reference answer, and most of what we build has no single correct output. On RAG they actively mislead, because an answer can overlap the reference and still be ungrounded. I use faithfulness and context metrics instead, and a validated rubric judge for subjective work.",
       "numbers": "If you do use ROUGE in CI, treat it as a regression tripwire rather than a quality score - watch for sudden drops, do not chase the absolute number.",
-      "wrong": "Listing all three confidently as your RAG evaluation plan. It signals textbook knowledge with no production experience, and the follow-up about reference answers ends the conversation.",
+      "wrong": "Listing all three confidently as your RAG evaluation plan. The follow-up - where do the reference answers come from, and what does word overlap say about grounding - exposes that they do not fit the task.",
       "follow": "You have no reference answers and no budget for human labelling. What is your first metric?"
     },
     {
@@ -335,7 +337,7 @@ window.IR.q["11-evaluation"] = {
         "process"
       ],
       "why": "Increasingly a named requirement in enterprise and BFSI JDs, and most candidates conflate it with ordinary testing.",
-      "simple": "The distinction to open with: testing checks that the system does what it should. Red teaming checks what it does when someone actively tries to make it misbehave. Different mindset, different people, different success criterion - a red team that finds nothing has failed, not passed.\n\nStructure it by attack class rather than improvising. Prompt injection, direct and indirect - the indirect case matters most for RAG, where the malicious instruction sits inside an ingested document rather than in the user's message. Jailbreaks: role-play framing, hypothetical framing, encoding tricks, slow escalation across turns. Data extraction: attempts to make it reveal the system prompt, other tenants' data, or training data. Harmful output for your domain specifically - a bank cares about unauthorised financial advice, a health product about diagnosis. And for agents, the highest-stakes class: can you talk it into a destructive tool call?\n\nRun it as a campaign, not a checklist. Mix automated adversarial generation for volume with human creativity for the attacks nobody scripted, and include people from outside the build team, because authors are blind to their own assumptions. Time-box it and log every attempt with its outcome.\n\nThen the part that makes it engineering rather than theatre: every successful attack becomes a permanent regression test. The red team runs before launch; that suite runs on every deploy forever. Without that, you have an anecdote instead of a control.\n\nAnd decide the launch criteria in advance - which severities block, which get accepted with mitigation - otherwise the findings get argued away under shipping pressure.",
+      "simple": "The distinction to open with: testing checks that the system does what it should. Red teaming checks what it does when someone actively tries to make it misbehave. Different mindset, different people, different success criterion - a red team that finds nothing has failed, not passed.\n\nStructure it by attack class rather than improvising. Prompt injection, direct and indirect - the indirect case matters most for RAG, where the malicious instruction sits inside an ingested document rather than in the user's message. Jailbreaks: role-play framing, hypothetical framing, encoding tricks, slow escalation across turns. Data extraction: attempts to make it reveal the system prompt, other tenants' data, or training data. Harmful output for your domain specifically - a bank cares about unauthorised financial advice, a health product about diagnosis. And for agents, the highest-stakes class: can you talk it into a destructive tool call?\n\nRun it as a campaign, not a checklist. Mix automated adversarial generation for volume (open-source tools such as PyRIT, garak or promptfoo) with human creativity for the attacks nobody scripted, and include people from outside the build team, because authors are blind to their own assumptions. Time-box it and log every attempt with its outcome.\n\nThen the part that makes it engineering rather than theatre: every successful attack becomes a permanent regression test. The red team runs before launch; that suite runs on every deploy forever. Without that, you have an anecdote instead of a control.\n\nAnd decide the launch criteria in advance - which severities block, which get accepted with mitigation - otherwise the findings get argued away under shipping pressure.",
       "points": [
         "Testing checks intended behaviour; red teaming checks adversarial behaviour.",
         "A red team that finds nothing has failed.",
@@ -346,13 +348,13 @@ window.IR.q["11-evaluation"] = {
         "Agree severity thresholds that block launch before you start, not after."
       ],
       "say": "Testing checks the system does what it should; red teaming checks what it does when someone tries to break it, so a red team that finds nothing has failed. I structure it by attack class - direct and indirect injection, jailbreaks, data extraction, domain-specific harm, and destructive tool calls for agents. I mix automated generation with human creativity and outsiders, and every successful attack becomes a permanent regression test.",
-      "numbers": "Indirect injection through an ingested document is the one to demonstrate. If your corpus accepts user-uploaded files, that is a live path from an attacker to your system prompt.",
+      "numbers": "Indirect injection through an ingested document is the one to demonstrate. If your corpus accepts user-uploaded files, that is a live path from an attacker into your model's instructions.",
       "wrong": "Describing it as running the guardrail test suite again. That is testing your known controls, which is the opposite of looking for the unknown ones.",
       "follow": "Red teaming found a jailbreak you cannot fully fix. Do you launch?"
     },
     {
       "id": "ev-13",
-      "q": "How do you evaluate an AI agent, not just its final answer?",
+      "q": "How do you grade an agent on the state it leaves behind, not what it says it did?",
       "round": [
         "tech1",
         "tech2",
@@ -366,8 +368,8 @@ window.IR.q["11-evaluation"] = {
         "tools",
         "regression"
       ],
-      "why": "Agents act across many turns and change external state. A final-text-only evaluation can say success even when the tool calls were unsafe, wasteful or wrong.",
-      "simple": "For an agent, I grade more than the last message. I define a task with a clear success condition, run the agent in a controlled environment, record the full trace, and verify the final state of the world.\n\nThe final outcome is usually the most important check. If a booking agent says a flight was booked, I check the reservation system rather than trusting the sentence. Then I look at the trajectory when it matters: which tools it called, whether the arguments were valid, whether it respected required steps, how many turns it took, and how much it cost.\n\nI combine graders. Deterministic checks are best for things code can verify, an LLM rubric is useful for open-ended quality, and human review is used to calibrate subjective graders and inspect important failures.\n\nBecause agent runs vary, I run multiple trials on important cases. New difficult cases measure capability; once a case is solved reliably, it becomes part of the regression suite so later changes cannot silently break it.",
+      "why": "ag-09 and ag-31 cover agent metrics and trajectory scoring. This is the harness question: a controlled environment, verifying the real end state, and mixing graders - because final-text scoring can say success when the tool calls were unsafe, wasteful or wrong.",
+      "simple": "For an agent, I grade more than the last message. I define a task with a clear success condition, run the agent in a controlled environment, record the full trace, and verify the final state of the world.\n\nThe final outcome is usually the most important check. If a booking agent says a flight was booked, I check the reservation system rather than trusting the sentence. Then I look at the trajectory when it matters: which tools it called, whether the arguments were valid, whether it respected required steps, how many turns it took, and how much it cost.\n\nI combine graders. Deterministic checks are best for things code can verify, an LLM rubric is useful for open-ended quality, and human review is used to calibrate subjective graders and inspect important failures.\n\nBecause agent runs vary, I run multiple trials on important cases. New difficult cases measure capability; once a case is solved reliably, it becomes part of the regression suite so later changes cannot silently break it.\n\n(Metric definitions for tool selection and trajectory scoring: ag-09 and ag-31.)",
       "points": [
         "Grade the environment outcome, not only what the agent claims in its final message.",
         "Keep the full trace or trajectory: model turns, tool calls, arguments, intermediate results and state changes.",

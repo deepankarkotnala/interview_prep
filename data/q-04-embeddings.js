@@ -30,7 +30,7 @@ window.IR.q["04-embeddings"] = {
         "Domain jargon is where general-purpose models have the weakest map."
       ],
       say: "An embedding is a list of numbers that represents meaning, produced by a model trained so that similar texts land near each other. That is what lets me search by meaning rather than keywords - I embed documents in advance, embed the question at query time, and find the nearest ones. The catch is that a general-purpose model has a weak map of internal jargon, which is where retrieval quietly fails.",
-      numbers: "Common dimensions: 384 for small models, 768–1536 for general-purpose, 3072 at the large end. Dimension drives both storage and search cost.",
+      numbers: "Common dimensions: 384 for small models, 768–1,536 for general-purpose, 3,072–4,096 at the large end. Many current models are Matryoshka-trained, so you can keep a shorter prefix (say 256 or 512) and trade a little quality for cost. Dimension drives both storage and search cost.",
       wrong: "\"It converts text to numbers so the computer can process it.\" True of any encoding, including ASCII. The point is that distance means similarity.",
       follow: "Two different embedding models - how do you decide which is better for us?",},
 
@@ -42,18 +42,18 @@ window.IR.q["04-embeddings"] = {
       tags: ["embeddings", "similarity", "vector-search"],
       why: "A quick factual check with a wrong answer that has real consequences.",
       simple:
-        "The correct answer is: whichever the embedding model was trained with. This is not a preference, it is a compatibility requirement, and picking a different one silently degrades your ranking.\n\n" +
+        "The correct answer is: whichever the embedding model was trained with. This is a compatibility requirement, not a preference - for a model trained with raw dot product (some retrieval models are), switching to cosine or Euclidean changes the ranking and silently degrades it.\n\n" +
         "The differences: cosine compares direction only and ignores length. Dot product uses both direction and magnitude. Euclidean is straight-line distance.\n\n" +
-        "One useful fact for a follow-up: if vectors are normalised to unit length, cosine and dot product rank identically, and dot product is cheaper to compute. Most modern embedding models output normalised vectors, which is why most systems use dot product or cosine interchangeably without noticing.\n\n" +
+        "One useful fact for a follow-up: if vectors are normalised to unit length, all three give the same ranking - cosine equals dot product, and squared Euclidean distance is just 2 − 2 × cosine. Dot product is then the cheapest to compute. Many popular models output normalised vectors (or tell you to normalise), which is why most systems use dot product or cosine interchangeably without noticing - but check the model card rather than assuming.\n\n" +
         "So the answer that scores is: check the model card, match the index metric to it, then verify ranking quality on real queries rather than trusting the setting.",
       points: [
         "Match the metric the model was trained with. Check the model card.",
         "Cosine - direction only. Dot product - direction and magnitude. Euclidean - straight-line distance.",
-        "For normalised vectors, cosine and dot product produce the same ranking.",
-        "Most modern models output normalised vectors.",
+        "For normalised vectors, cosine, dot product and Euclidean all produce the same ranking.",
+        "Many popular models output normalised vectors - check, do not assume.",
         "Verify with a labelled retrieval set. The setting is not the proof."
       ],
-      say: "Whichever the model was trained with - it is a compatibility requirement, not a preference, and mismatching it degrades ranking silently. Cosine compares direction, dot product includes magnitude, Euclidean is straight-line distance. If the vectors are normalised, which most modern models output, cosine and dot product rank identically and dot product is cheaper. Then I verify on a labelled set rather than trusting the config.",
+      say: "Whichever the model was trained with - it is a compatibility requirement, not a preference, and mismatching it degrades ranking silently. Cosine compares direction, dot product includes magnitude, Euclidean is straight-line distance. If the vectors are normalised, which many models output, all three rank identically and dot product is cheapest. Then I verify on a labelled set rather than trusting the config.",
       numbers: "No number applies. It is a compatibility choice, verified empirically.",
       wrong: "\"Cosine is standard so I use cosine.\" Right most of the time by accident, which is not the same as knowing why.",
       follow: "What changes if the vectors are not normalised?",},
@@ -67,7 +67,7 @@ window.IR.q["04-embeddings"] = {
       why: "Whether you evaluate on your own data or pick from a leaderboard.",
       simple:
         "Not from the public leaderboard. Those benchmarks are general-purpose, and your corpus is not - a model that ranks well on general retrieval can be poor on insurance policy language or telecom part numbers.\n\n" +
-        "The process: build a small labelled set from your own corpus, a hundred or so questions with the chunk that answers each, ideally written by someone who knows the domain. Shortlist models on the hard constraints first - can it run in our tenant, is there a self-hosting requirement, does it support the languages we serve, what is the maximum input length. Then run each candidate on the labelled set and compare recall@10.\n\n" +
+        "The process: build a small labelled set from your own corpus, a hundred or so questions with the chunk that answers each, ideally written by someone who knows the domain. Shortlist models on the hard constraints first - can it run in our tenant, is there a self-hosting requirement, does it support the languages we serve (Hindi, Tamil or code-mixed Hinglish, if that is our traffic), what is the maximum input length. Then run each candidate on the labelled set and compare recall@10.\n\n" +
         "Then the operational factors that decide it in practice: dimension, because that drives storage and search cost; latency, because you embed on every query; and cost per million tokens at your ingestion volume.\n\n" +
         "And remember the switching cost. Changing model later means re-embedding the entire corpus, so this decision is stickier than most.",
       points: [
@@ -78,7 +78,7 @@ window.IR.q["04-embeddings"] = {
         "Switching later means re-embedding everything. Decide deliberately."
       ],
       say: "Not from a leaderboard, because those are general-purpose and my corpus is not. I build about a hundred labelled question-to-chunk pairs from our own data, shortlist on hard constraints like tenancy and language support, then compare recall at ten. After that, dimension, query latency and ingestion cost decide it. And I treat it as sticky, because changing later means re-embedding the whole corpus.",
-      numbers: "100 labelled pairs is usually enough to separate candidates. Re-embedding a large corpus is a real cost - price it before you treat the choice as reversible.",
+      numbers: "Around 100 labelled pairs is usually enough to separate candidates with a clear gap; close calls need a few hundred. Re-embedding a large corpus is a real cost - price it before you treat the choice as reversible.",
       wrong: "\"We use the top model on MTEB.\" It says you did not test on your own data, which is the actual skill being probed.",
       follow: "Would you ever fine-tune the embedding model instead?",},
 
@@ -100,11 +100,11 @@ window.IR.q["04-embeddings"] = {
         "efConstruction - build-time quality. Higher is slower to build, better graph.",
         "efSearch - query-time breadth. Higher recall, slower queries, no rebuild needed.",
         "Approximate by design. You choose the recall you pay for.",
-        "HNSW is memory-hungry. That is the reason IVF-PQ exists."
+        "HNSW is memory-hungry - one reason teams turn to quantisation, IVF-PQ or disk-based indexes such as DiskANN."
       ],
       say: "HNSW is a layered proximity graph. Search starts in sparse top layers to jump near the right region, then descends into denser layers to refine. M sets connections per node, trading memory for recall. efConstruction sets build quality. efSearch is the query-time knob - more exploration means better recall and slower queries, and it is tunable without a rebuild, which is the lever I reach for first.",
-      numbers: "Common starting points: M around 16, efConstruction around 200, efSearch tuned from 50 upward against your recall target.",
-      wrong: "\"It's approximate nearest neighbour search.\" Correct and content-free. The interviewer wants the mechanism and the parameter trade-off.",
+      numbers: "Common starting points: M around 16, efConstruction around 200, efSearch tuned from 50 upward against your recall target. Keep efSearch at least as large as k - in some engines, pgvector included, it caps how many results come back.",
+      wrong: "\"It's approximate nearest neighbour search.\" Correct, but it only names the category. The follow-up asks for the mechanism and what each parameter costs, and the label alone cannot answer that.",
       follow: "The index no longer fits in memory. What are your options?",},
 
     {
@@ -117,21 +117,21 @@ window.IR.q["04-embeddings"] = {
       simple:
         "Four levers, and the good answer names the cost of each.\n\n" +
         "Quantisation: store vectors in fewer bits. Scalar quantisation to int8 cuts memory roughly fourfold with a small recall loss. Binary quantisation is far more aggressive and usually needs a rescoring pass over full-precision vectors to recover quality.\n\n" +
-        "Dimension reduction: some models support shortened embeddings, and some support Matryoshka-style truncation where you can cut dimensions with graceful degradation. Cheaper than it sounds, but it must be measured.\n\n" +
-        "A different index type: IVF-PQ clusters vectors and compresses them, using far less memory than HNSW at the cost of recall and tuning complexity.\n\n" +
+        "Dimension reduction: many current models are Matryoshka-trained (OpenAI's text-embedding-3 models take a dimensions parameter, for example), so you can keep a shorter prefix of each vector with graceful degradation. Cheaper than it sounds, but it must be measured.\n\n" +
+        "A different index type: IVF-PQ clusters vectors and compresses them, using far less memory than HNSW at the cost of recall and tuning complexity. Disk-based indexes (DiskANN-style, or an engine's on-disk mode) keep compressed vectors in RAM and full vectors on SSD - a little more latency, far less memory.\n\n" +
         "Sharding: split across machines and query in parallel. It solves memory and adds operational cost and network latency.\n\n" +
-        "Then say what you would actually do: quantise first because it is the cheapest change, measure recall, and shard only when a single machine genuinely cannot hold a shard.",
+        "Then say what you would actually do: quantise first because it is the cheapest change, measure recall, and shard only when one well-sized machine genuinely cannot hold the index. (The byte-level arithmetic for int8 and binary is worked through in the quantization card in Advanced RAG.)",
       points: [
         "int8 scalar quantisation - roughly 4× smaller, small recall loss. Try first.",
         "Binary quantisation - much smaller, needs rescoring against full vectors.",
         "Matryoshka-style truncation - fewer dimensions, graceful degradation, must be measured.",
-        "IVF-PQ instead of HNSW - much less memory, more tuning, lower recall.",
+        "IVF-PQ or a disk-based index instead of in-memory HNSW - much less memory, more tuning or latency, some recall loss.",
         "Sharding - solves memory, adds ops complexity and network latency.",
         "Always re-measure recall@k after any of these. They are all quality trades."
       ],
-      say: "Quantisation first, because it is the cheapest change - int8 cuts memory around fourfold for a small recall loss, and binary goes further if I add a rescoring pass over full-precision vectors. Then dimension truncation if the model supports it, or IVF-PQ instead of HNSW, which uses far less memory for more tuning and less recall. Sharding last. And I re-measure recall after each, because all of these are quality trades.",
-      numbers: "float32 → int8 is about 4× smaller. 200M vectors at 1024 dimensions is roughly 800 GB in float32, about 200 GB in int8.",
-      wrong: "\"Add more RAM.\" Valid once, and it is not an engineering answer. The panel is asking what you do when that stops being affordable.",
+      say: "Quantisation first, because it is the cheapest change - int8 cuts memory around fourfold for a small recall loss, and binary goes further if I add a rescoring pass over full-precision vectors. Then dimension truncation if the model supports it, or IVF-PQ or a disk-based index instead of in-memory HNSW, trading tuning, latency or some recall for memory. Sharding last. And I re-measure recall after each, because all of these are quality trades.",
+      numbers: "float32 → int8 is about 4× smaller. 200M vectors at 1024 dimensions is roughly 800 GB in float32, about 200 GB in int8 - plus the HNSW graph links, roughly another 25–30 GB at M = 16.",
+      wrong: "\"Add more RAM.\" Valid once, but it grows with the corpus. The follow-up asks what you do when that stops being affordable, and the answer needs the levers and their recall cost.",
       follow: "You quantised and recall dropped 4 points. What next?",},
 
     {
@@ -142,20 +142,20 @@ window.IR.q["04-embeddings"] = {
       tags: ["embeddings", "filtering", "performance", "access-control"],
       why: "A subtle mechanism with a large production impact, and few candidates have hit it.",
       simple:
-        "You almost always need filters - this tenant, this date range, this access group. How the database applies them decides both correctness and speed.\n\n" +
+        "**Short version: a filter applied at the wrong moment either loses results or slows search down - know which your engine does, and test recall with the filter on.**\n\nYou almost always need filters - this tenant, this date range, this access group. How the database applies them decides both correctness and speed.\n\n" +
         "Post-filtering searches the vectors first, then throws away results that fail the filter. Fast, but if the filter is selective you can search the top hundred and have three left, so recall collapses. This is the failure people report as \"the vector database returns nothing\".\n\n" +
-        "Pre-filtering restricts the candidate set before searching. Correct, but a naive implementation degrades to a scan, because a graph index cannot navigate a subset it was not built for.\n\n" +
-        "Good engines do filtered search - applying the filter during graph traversal. It is the right behaviour and it is worth knowing whether your engine does it, because the answer changes your design.\n\n" +
-        "The operational answer: for access control never post-filter, because a permissions filter must be exact. For very selective filters, consider partitioning - a separate collection per tenant is often faster and safer than one collection with a tenant filter.",
+        "Pre-filtering restricts the candidate set before searching. Correct, but a naive implementation struggles: the graph was built over everything, and the matching subset can be poorly connected inside it. For a very selective filter, a brute-force scan over the few matching vectors is actually fine and exact - the painful zone is filters that match a middling fraction.\n\n" +
+        "Good engines do filtered search - applying the filter during graph traversal, and switching to brute force when the filter is very selective (Qdrant's filterable HNSW, Weaviate's ACORN and pgvector 0.8+ iterative index scans are examples). Know which behaviour your engine has, because it changes your design.\n\n" +
+        "The operational answer: for access control, the filter is enforced server-side before any chunk reaches the model, ideally as a pre-filter or filtered search. A post-filter is not a leak in itself - it still drops restricted chunks - but it can leave you with far fewer than k results. For tenant isolation, consider partitioning - namespaces, partition keys or tenant-aware indexes, or a collection per tenant when tenants are few and large (thousands of collections carry their own overhead).",
       points: [
         "Post-filter - fast, recall collapses on selective filters.",
-        "Pre-filter - correct, can degrade toward a scan.",
+        "Pre-filter - correct; naive versions get slow or lose recall on mid-selectivity filters.",
         "Filtered graph traversal is the good behaviour. Check whether your engine does it.",
-        "Access control must never rely on post-filtering.",
-        "Very selective filters: partition into separate collections instead.",
+        "Access control: enforced server-side before the model, ideally pre-filter. Post-filter is not a leak, but returns fewer than k.",
+        "Tenant isolation: partition (namespaces, partition keys, per-tenant collections) rather than one big filter.",
         "Test recall *with* filters applied. Unfiltered recall is not representative."
       ],
-      say: "It depends on whether the engine post-filters or pre-filters. Post-filtering searches then discards, so a selective filter can leave three results out of a hundred and recall collapses. Pre-filtering is correct but can degrade toward a scan. Good engines filter during graph traversal. For access control I never post-filter, and for very selective filters I partition into separate collections instead of filtering one big one.",
+      say: "It depends on when the engine applies the filter. Post-filtering searches then discards, so a selective filter can leave three results out of a hundred. Naive pre-filtering is correct but can get slow. Good engines filter during graph traversal. For access control I enforce the filter server-side before anything reaches the model, ideally as a pre-filter, and for tenant isolation I partition rather than filtering one huge collection.",
       numbers: "Always measure recall with filters applied. A system at 0.95 unfiltered can sit far lower once a selective tenant filter is added.",
       wrong: "\"I just add a filter to the query.\" It works until the filter is selective, and then it fails in a way that looks like a retrieval-quality problem.",
       follow: "You have 400 tenants. One collection with a filter, or 400 collections?",},
@@ -170,41 +170,41 @@ window.IR.q["04-embeddings"] = {
       simple:
         "Start from what you already run, because the operational cost of a new datastore is usually underestimated.\n\n" +
         "pgvector is compelling when your corpus and traffic fit comfortably in Postgres, when you need joins between vectors and relational data - filtering by customer, joining to entitlements - and when the team already operates Postgres well. One backup story, one access-control story, one set of on-call knowledge. Transactional consistency between your documents and your vectors is a genuine advantage people forget to mention.\n\n" +
-        "A dedicated engine earns its place at large scale, when you need horizontal sharding, advanced filtered search, hybrid search built in, or features like multi-vector and quantisation that would otherwise be your problem.\n\n" +
+        "A dedicated engine earns its place at large scale, when you need horizontal sharding, advanced filtered search, hybrid search built in, or features like multi-vector search and managed quantisation with rescoring. The gap has narrowed: pgvector now has HNSW, halfvec and binary vectors, and iterative scans for filtered queries, and extensions such as pgvectorscale and ParadeDB push it further.\n\n" +
         "The answer that scores: name the numbers at which you would switch, rather than declaring one better. Corpus size, QPS, p95 latency and filter selectivity are the four that decide it.",
       points: [
         "pgvector: relational joins, one backup and access story, transactional consistency.",
-        "Dedicated: horizontal scale, filtered search quality, hybrid built in, quantisation.",
+        "Dedicated: horizontal scale, filtered search quality, hybrid built in, managed quantisation and multi-vector.",
         "Decide on corpus size, QPS, p95 latency and filter selectivity.",
         "Adding a datastore adds on-call, backup and access-control surface. Price that in.",
         "State the migration trigger in advance, so the switch is a decision rather than a fire."
       ],
       say: "I start from what we already operate, because a new datastore costs more than people expect. pgvector wins when the corpus fits Postgres, we need joins between vectors and relational data, and we want one backup and access story with transactional consistency. A dedicated engine wins at horizontal scale, or when we need filtered and hybrid search built in. I decide on corpus size, QPS, p95 and filter selectivity, and I name the migration trigger up front.",
-      numbers: "pgvector is comfortable into the low millions of vectors on adequate hardware. Past that, measure p95 with your real filters before committing either way.",
+      numbers: "pgvector with HNSW is commonly run at single-digit to tens of millions of vectors on one well-sized node, especially with halfvec; the limit is usually the index fitting in memory and filtered-query p95. Measure p95 with your real filters before committing either way.",
       wrong: "\"Dedicated vector databases are faster, so we use one.\" Faster at what, under which filters, at what operational cost. This answer invites all three follow-ups.",
       follow: "What measurement would trigger the migration?",},
 
     {
       id: "em-08",
-      q: "How do you evaluate retrieval quality?",
+      q: "How do you evaluate retrieval at the embedding and index layer - and what are the two kinds of 'recall'?",
       round: ["tech1", "tech2"],
       level: "5-10",
       tags: ["embeddings", "evaluation", "metrics"],
-      why: "The objective half of RAG evaluation, and the cheapest thing a team can do that most do not.",
+      why: "The RAG topic owns the metric definitions; this is the embeddings-layer version - telling 'the index missed the nearest vectors' apart from 'the nearest vectors were the wrong chunks'.",
       simple:
-        "You need a labelled set: questions paired with the chunk that actually answers them. Building it is the work - a domain expert, real questions from production, and every reported failure added to the set.\n\n" +
+        "**Short version: measure two things separately - does the index return the true nearest vectors (ANN recall), and are those vectors the right chunks (relevance recall@k)?** The metric definitions, with a worked example, are in the RAG topic's Precision@k / Recall@k / MRR / nDCG card.\n\nYou need a labelled set: questions paired with the chunk that actually answers them. Building it is the work - a domain expert, real questions from production, and every reported failure added to the set.\n\n" +
         "Then two metrics do most of the job. Recall@k: how often the correct chunk appears in the top k. This is the one that matters for RAG, because the generator only sees the top k. And MRR, which rewards the correct chunk ranking high rather than merely appearing.\n\n" +
         "The advantage of this layer is that it needs no model calls at all. It is fast, free and objective, so it can run on every commit - which means a change that breaks retrieval is caught in CI rather than in production.\n\n" +
-        "Then slice the results. An average of 0.92 routinely hides a document type or a language sitting at 0.6, and that segment is where the complaints come from.",
+        "ANN recall is the second, index-level check. Run the same queries through exact brute-force search and through your HNSW or IVF index, and measure what fraction of the true top 10 the index returned. If that is low, tune efSearch or the index before blaming the embedding model; if it is high but relevance recall is low, the embedding model or chunking is the problem.\n\nThen slice the results. An average of 0.92 routinely hides a document type or a language sitting at 0.6, and that segment is where the complaints come from.",
       points: [
         "Labelled set: question → the chunk that answers it. Built with a domain expert.",
-        "Recall@k is the metric that matters for RAG. MRR rewards ranking.",
+        "Relevance recall@k is the metric that matters for RAG; MRR rewards ranking. ANN recall (index vs exact search) isolates index tuning.",
         "No model calls needed - run it on every commit.",
         "Slice by document type, language and tenant. Averages hide failing segments.",
         "Add every production failure to the set. That is how it stays honest."
       ],
-      say: "A labelled set of questions paired with the chunk that answers them, built with a domain expert and grown from real production failures. Then recall at k, because the generator only sees the top k, plus MRR to reward ranking. This layer needs no model calls, so it runs on every commit and catches breakage in CI. And I slice by document type and language, because an average hides the segment that is actually failing.",
-      numbers: "Useful bar: recall@10 above 0.90 before tuning the prompt. 100+ labelled pairs, or run-to-run noise exceeds the effect you are measuring.",
+      say: "Two checks. Relevance: a labelled set of questions paired with the chunk that answers them, grown from production failures, scored with recall at k and MRR. Index: ANN recall - run the same queries through exact search and through the index, and see what fraction of the true top ten came back. That tells me whether to tune efSearch or blame the embedding model. Neither needs model calls, so both run on every commit, sliced by document type and language.",
+      numbers: "Useful bar: recall@10 above 0.90 before tuning the prompt. 100+ labelled pairs, or run-to-run noise exceeds the effect you are measuring. ANN recall@10 against exact search of 0.95–0.99 is a common index-tuning target.",
       wrong: "\"We check whether the answers look right.\" That measures the whole pipeline at once, so a retrieval regression and a prompt regression are indistinguishable.",
       follow: "Recall@10 is 0.95 but recall@3 is 0.6. What does that tell you?",},
 
@@ -216,20 +216,20 @@ window.IR.q["04-embeddings"] = {
       tags: ["embeddings", "fine-tuning", "advanced"],
       why: "A depth question. The senior answer is mostly about when not to.",
       simple:
-        "Rarely, and only after the cheaper options are exhausted, because fine-tuning an embedding model means re-embedding the whole corpus every time you retrain and owning a model artefact forever.\n\n" +
+        "Rarely, and only after the cheaper options are exhausted, because fine-tuning an embedding model usually means re-embedding the whole corpus every time you retrain, and owning a model artefact from then on.\n\n" +
         "The case where it genuinely pays: your domain language is far from general web text and retrieval keeps failing on it. Medical coding, legal citation formats, internal product taxonomies where the same word means something specific to your company. In those cases a general model's map of meaning is simply wrong in your neighbourhood.\n\n" +
-        "What you need is training data in the form of pairs - a query and the document that should match it. Production query logs plus click or thumbs-up signals are the usual source, which is why this comes later in a product's life: you need traffic before you have the data.\n\n" +
+        "What you need is training data in the form of pairs - a query and the document that should match it - ideally with hard negatives (documents that look right but are not). Production query logs plus click or thumbs-up signals are the best source; questions generated by an LLM from your own chunks are the common way to start before you have traffic, though they need spot-checking.\n\n" +
         "And what to try first: hybrid search, reranking, better chunking and query rewriting. All four are cheaper, reversible and often solve the same problem.",
       points: [
         "Try hybrid search, reranking, chunking and query rewriting first. All reversible.",
         "Fine-tune when domain language is genuinely far from general text.",
-        "Needs query-document pairs, usually mined from production logs and feedback.",
-        "Every retrain means re-embedding the whole corpus.",
+        "Needs query-document pairs plus hard negatives - from production logs and feedback, or LLM-generated from your chunks to start.",
+        "Every retrain means re-embedding the whole corpus - unless you train only a query-side adapter.",
         "You now own a model artefact - versioning, hosting, drift, all yours.",
         "A reranker is often the better place to spend the same effort."
       ],
       say: "Rarely, and only after hybrid search, reranking, better chunking and query rewriting have failed, because those are cheaper and reversible. It pays when domain language is genuinely far from general text - medical coding, internal taxonomies - where a general model's map is wrong in our neighbourhood. It needs query-document pairs mined from production logs, and every retrain means re-embedding the whole corpus. Often a reranker is the better spend.",
-      numbers: "Thousands of query-document pairs is a realistic starting point. Below that, the effort is usually better spent on a reranker.",
+      numbers: "A few thousand query-document pairs is a realistic starting point. With far fewer, the effort is usually better spent on a reranker.",
       wrong: "\"We fine-tuned embeddings to improve accuracy.\" Without the alternatives tried and the re-embedding cost named, it reads as reaching for the most expensive option first.",
       follow: "How would you get those query-document pairs without a labelling team?",},
 

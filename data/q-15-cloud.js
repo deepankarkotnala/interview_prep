@@ -27,18 +27,18 @@ window.IR.q["15-cloud"] = {
         "enterprise"
       ],
       "why": "A common enterprise platform question. The useful answer is identity, networking, governance and regional availability, not a feature list.",
-      "simple": "Roughly the same models, a very different operating environment - and the environment is the reason enterprises choose it.\n\nYou get a resource in your own subscription, inside your tenant, with your networking. That means private endpoints so traffic never crosses the public internet, Entra ID for authentication instead of a shared API key, role-based access control, and everything landing in your existing subscription billing and policy framework. For a bank or a payer, that list is the entire reason the project is approvable.\n\nWhat changes practically: you deploy a named model deployment in a chosen region and call that deployment, rather than calling a global model name. Quota is per deployment and per region, and it is a real constraint you plan around rather than discover.\n\nAnd the two things that surprise teams. Model availability differs by region - the model you want may not exist in the required region, and that shapes the design. And new models arrive later than on the direct API, so a plan that depends on something released last week may not be executable yet.",
+      "simple": "Roughly the same OpenAI models, a very different operating environment - and the environment is the reason enterprises choose it. (Azure OpenAI now sits inside Microsoft Foundry, renamed from Azure AI Foundry in 2026; both names still appear in docs and JDs.)\n\nYou get a resource in your own subscription, inside your tenant, with your networking. That means private endpoints so traffic never crosses the public internet, Entra ID for authentication instead of a shared API key, role-based access control, and everything landing in your existing subscription billing and policy framework. For a bank or a payer, that list is the entire reason the project is approvable.\n\nWhat changes practically: you create a named model deployment and call that deployment, rather than a global model name. The deployment type matters: Global types may process data in any Azure region, Data Zone types keep processing inside a zone such as the US, EU or APAC, and Regional types stay in the resource's region. Quota depends on subscription, model, region and deployment type, and it is a real constraint you plan around rather than discover.\n\nAnd the two things that surprise teams. Model availability differs by region - the model you want may not exist in the required region, and that shapes the design. And new models can arrive later, or first only in Global deployments, so a plan that depends on something released last week may not be executable in your required region yet.",
       "points": [
         "Your subscription, your tenant, private endpoints, Entra ID, RBAC.",
-        "Named deployments in a chosen region, not a global model name.",
-        "Quota is per deployment per region - plan it, do not discover it.",
+        "Named deployments with a type - Global, Data Zone or Regional - which decides where data is processed.",
+        "Quota depends on subscription, model, region and deployment type - plan it, do not discover it.",
         "Model availability varies by region. Check the required region early.",
-        "New models arrive later than on the direct API.",
+        "New models can arrive later, or only in Global deployments first.",
         "Content filtering is on by default and is configurable - know its behaviour."
       ],
-      "say": "Same models, different operating environment - and that is why enterprises pick it. The resource sits in my subscription and tenant, with private endpoints so traffic never crosses the public internet, Entra ID instead of a shared key, and RBAC. Practically, I call a named deployment in a chosen region and quota is per deployment. The surprises are that model availability differs by region and new models arrive later.",
-      "numbers": "No number applies. Regional model availability and per-deployment quota are the two constraints to check before designing.",
-      "wrong": "\"It's the same thing with a different URL.\" It says you have used a personal key and never gone through an enterprise deployment, which is the actual experience being probed.",
+      "say": "Same models, different operating environment - and that is why enterprises pick it. The resource sits in my subscription and tenant, with private endpoints so traffic never crosses the public internet, Entra ID instead of a shared key, and RBAC. Practically, I call a named deployment, and its type - Global, Data Zone or Regional - decides where data is processed. The surprises are regional model availability and quota, and new models reaching my region later.",
+      "numbers": "No number applies. Regional model availability, deployment type and quota are the constraints to check before designing.",
+      "wrong": "\"It's the same thing with a different URL.\" The follow-up - where is the data processed and how does the app authenticate - exposes that the enterprise deployment details are the experience being probed.",
       "follow": "The model you need is not in the required region. What do you do?"
     },
     {
@@ -55,16 +55,16 @@ window.IR.q["15-cloud"] = {
         "trade-off"
       ],
       "why": "A judgement question. The wrong instinct is to compare features when the answer is usually organisational.",
-      "simple": "In practice this is rarely a free choice, and saying so is the mature answer. You go where the data already is, where the enterprise agreement is, and where your security team has already done the work. Moving a regulated data estate to a second cloud to get a slightly better model is a project nobody funds.\n\nWhere they genuinely differ: model choice. Bedrock offers several vendors' models behind one API, which is useful when you want optionality without a second integration. Azure is deepest if you are a Microsoft shop, and the identity and networking integration is the real draw. Vertex is the natural fit if your data is in BigQuery and you are already on Google Cloud.\n\nThen check the same four things everywhere, because they decide feasibility: which models exist in your required region, what the quota and rate limits are, whether the retention and training terms satisfy your legal team, and whether private networking is supported.\n\nAnd keep provider access behind an interface, so this decision is not permanent.",
+      "simple": "In practice this is rarely a free choice, and saying so is the mature answer. You go where the data already is, where the enterprise agreement is, and where your security team has already done the work. Moving a regulated data estate to a second cloud to get a slightly better model is a project nobody funds.\n\nWhere they differ is narrower than it used to be. All three now offer multi-vendor catalogues - Claude, for example, is on Bedrock, Microsoft Foundry and Google Cloud - so model choice rarely decides it alone. Bedrock has the longest-standing multi-vendor API on AWS. Azure (Microsoft Foundry) has the deepest OpenAI integration, and for a Microsoft shop the identity and networking integration is the real draw. Google's platform - renamed in 2026 from Vertex AI to Gemini Enterprise Agent Platform, with the same APIs - is the natural fit if your data is in BigQuery.\n\nThen check the same four things everywhere, because they decide feasibility: which models exist in your required region (and whether the in-region option, not just a global one, offers them), what the quota and rate limits are, whether the retention and training terms satisfy your legal team, and whether private networking is supported.\n\nAnd keep provider access behind an interface, so this decision is not permanent.",
       "points": [
         "Usually decided by where the data, the agreement and the security review already are.",
-        "Bedrock - multiple vendors behind one API; optionality without a second integration.",
-        "Azure - deepest identity and network integration for Microsoft estates.",
-        "Vertex - natural fit alongside BigQuery and Google Cloud data.",
+        "All three now have multi-vendor catalogues; model choice rarely decides it alone.",
+        "Azure (Microsoft Foundry) - deepest OpenAI and Microsoft identity/network integration.",
+        "Google (Gemini Enterprise Agent Platform, formerly Vertex AI) - natural fit alongside BigQuery.",
         "Check everywhere: regional model availability, quota, retention terms, private networking.",
         "Abstract the provider so the decision stays reversible."
       ],
-      "say": "Usually it is not a free choice - you go where the data, the enterprise agreement and the completed security review already are, because moving a regulated data estate to get a slightly better model is not a fundable project. Where they differ: Bedrock gives multiple vendors behind one API, Azure has the deepest identity and network integration, Vertex fits a BigQuery estate. Then I check regional availability, quota, retention terms and private networking.",
+      "say": "Usually it is not a free choice - you go where the data, the enterprise agreement and the completed security review already are, because moving a regulated data estate to get a slightly better model is not a fundable project. All three now offer multi-vendor catalogues, so the difference is integration: Azure for Microsoft identity and OpenAI models, Google's platform, formerly Vertex, for BigQuery, Bedrock on AWS. Then I check regional availability, quota, retention terms and private networking.",
       "numbers": "No number applies. Regional model availability is the constraint that most often changes a design.",
       "wrong": "Comparing them on benchmark scores. The models are largely shared or comparable; the differences that decide it are organisational and operational.",
       "follow": "Your company is on AWS but the best model for this is only on Azure. Argue it."
@@ -128,7 +128,7 @@ window.IR.q["15-cloud"] = {
     },
     {
       "id": "cd-05",
-      "q": "What does CI/CD look like for a GenAI application?",
+      "q": "Beyond the app and the prompt, what does a GenAI CI/CD pipeline have to build, gate and roll back?",
       "round": [
         "tech2"
       ],
@@ -139,8 +139,8 @@ window.IR.q["15-cloud"] = {
         "llmops",
         "deployment"
       ],
-      "why": "It exposes whether prompts and indexes are treated as deployable artefacts or as things people change by hand.",
-      "simple": "Ordinary application CI/CD, plus three artefacts most pipelines do not have.\n\nThe prompt is one. In version control, reviewed, and tested on the pull request - deterministic checks plus a golden-set comparison against main, posted so the reviewer sees the effect rather than the diff.\n\nThe index is the second, and it is the one people miss. A change to chunking or the embedding model is a deployment: it needs a build, a validation step against the labelled retrieval set, and a cutover, not an in-place mutation of the live index. Build the new index alongside, validate, switch, keep the old one for rollback.\n\nThe evaluation gate is the third. Before release, run the full golden set and block if quality falls below the current production score. That gate is what makes the rest meaningful.\n\nThen deploy behind a flag, canary on a small share of traffic for a full daily cycle, watch the quality proxies and cost, and widen. With rollback for the model version, the prompt and the index independently - because they fail independently.",
+      "why": "ev-06 covers eval tiers in CI and ops-08 prompt rollout. This checks the artefacts ordinary pipelines lack - especially the index and the model deployment - and whether you treat them as versioned, deployable things rather than things people change by hand.",
+      "simple": "Ordinary application CI/CD, plus three artefacts most pipelines do not have.\n\nThe prompt is one - versioned, reviewed and compared against main on the pull request (details in ev-06 and ops-08).\n\nThe index is the second, and it is the one people miss. A change to chunking or the embedding model is a deployment: it needs a build, a validation step against the labelled retrieval set, and a cutover, not an in-place mutation of the live index. Build the new index alongside, validate, switch, keep the old one for rollback.\n\nThe evaluation gate is the third. Before release, run the full golden set and block if quality falls below the current production score. That gate is what makes the rest meaningful.\n\nThen deploy behind a flag, canary on a small share of traffic for a full daily cycle, watch the quality proxies and cost, and widen. With rollback for the model version, the prompt and the index independently - because they fail independently.",
       "points": [
         "Prompts in version control, tested and compared on every PR.",
         "The index is a deployable artefact: build alongside, validate, cut over, keep the old.",
@@ -151,12 +151,12 @@ window.IR.q["15-cloud"] = {
       ],
       "say": "Ordinary CI/CD plus three artefacts most pipelines lack. Prompts in version control, tested and compared against main on every pull request. The index as a deployable artefact - built alongside, validated against the labelled retrieval set, cut over, old one kept for rollback, never mutated in place. And an evaluation gate that blocks release on a quality drop. Then canary for a full daily cycle, with independent rollback for each artefact.",
       "numbers": "Canary on 5–10% of traffic for at least 24 hours. A shorter window misses the change in traffic mix between working hours and overnight.",
-      "wrong": "\"We deploy the app; the prompts are configuration.\" That is how prompt regressions reach production untested, and prompts cause most regressions.",
+      "wrong": "\"We deploy the app; the prompts are configuration.\" That is how prompt regressions reach production untested, and prompt edits are a frequent source of regressions.",
       "follow": "The index rebuild succeeded but recall dropped. What does your pipeline do?"
     },
     {
       "id": "cd-06",
-      "q": "How would you design for a regulated customer with regional data-residency rules?",
+      "q": "Which concrete Azure, AWS and Google Cloud settings keep an LLM workload inside a residency boundary?",
       "round": [
         "tech2",
         "manager"
@@ -168,18 +168,19 @@ window.IR.q["15-cloud"] = {
         "residency",
         "compliance"
       ],
-      "why": "Enterprise AI work across regions requires turning privacy, sector and contract constraints into deployable cloud architecture.",
-      "simple": "I start with the approved rule, not with a cloud product: which data is sensitive, which geography it may be processed or stored in, which sector rules or contracts add constraints, and who signs off.\n\nThen I keep the whole data path inside the approved boundary where required: model endpoint or self-hosted inference, object storage, vector database, caches, traces, evaluation data and backups. I check model availability early because the desired model may not exist in that region and that can change the architecture.\n\nAccess is private and identity-based: private networking where required, managed identities or short-lived credentials, least privilege, per-user/tenant authorisation and audit logs. Provider retention settings are explicit rather than assumed.\n\nI also design deletion, retention and disaster recovery. If the source record is deleted but the prompt still exists in a trace or index, the engineering workflow is incomplete. If failover copies data to a disallowed region, the compliance design fails exactly when the system is under stress.\n\nThe concrete technologies differ by Azure, AWS or GCP; the control objectives are the same.",
+      "why": "gr-06 covers residency principles. This is the implementation check: the deployment types, inference profiles, endpoints and org policies that decide where a prompt is actually processed - and the high-throughput defaults that quietly route it elsewhere.",
+      "simple": "**Short version: on every cloud the model call has a setting that decides where your prompt is processed, and the high-throughput option is often \"anywhere\". Choose the in-boundary option explicitly, then block the others with policy.** The principles are in gr-06; this is where they meet the console.\n\nAzure (Microsoft Foundry): the deployment type decides processing location. Global deployments may process in any Azure region; Data Zone deployments stay within a zone such as the US, EU or APAC; Regional deployments stay in the resource's region. Azure Policy can restrict allowed locations and which deployment types teams may create.\n\nAWS Bedrock: cross-Region inference profiles spread requests across regions for capacity. Geographic profiles stay within a geography such as the US or EU, global profiles can route worldwide, and calling the model in-Region keeps processing local. Service control policies and IAM conditions can deny the profiles and regions you have not approved.\n\nGoogle Cloud (Gemini Enterprise Agent Platform, formerly Vertex AI): regional endpoints versus the global endpoint make the same trade, and an organisation policy on resource locations constrains where resources can be created.\n\nThen the rest of the path: vector store, object storage, caches, traces and backups pinned to the same boundary, private networking, managed identities, and a tested failover that cannot silently cross the line. The in-boundary option often offers fewer models or less capacity than the global one - check that first, because it can change the model choice.",
       "points": [
-        "Start with the approved data classification and residency requirement.",
-        "Keep model, index, traces, storage and backups inside the required boundary where needed.",
-        "Check regional model availability before committing to the architecture.",
-        "Use private networking, least privilege, user/tenant authorisation and audit logs.",
-        "Design retention, deletion and disaster recovery as part of the data flow."
+        "Azure: Global, Data Zone or Regional deployment type decides where prompts are processed.",
+        "AWS Bedrock: in-Region, geographic or global cross-Region inference - deny unapproved profiles with SCPs/IAM.",
+        "Google Cloud: regional vs global endpoints, plus an org policy on resource locations.",
+        "The high-throughput option is often the widest routing - choose explicitly.",
+        "Pin index, storage, caches, traces and backups to the same boundary; test failover.",
+        "Check model availability and quota in the in-boundary option before committing."
       ],
-      "say": "I start with the approved data classification and residency rule, then map every store and processor against it. The model, vector store, traces, caches, evaluation data and backups all count. I check regional model availability early because it may change the design, and I use the required private networking, short-lived identities, least privilege and audit logging. Retention, deletion and disaster recovery are explicit too, because a compliant primary region with a non-compliant backup or failover path is still a bad design.",
-      "numbers": "There is no universal residency architecture. The measurable requirement is that every data class has an approved location, retention period, access policy and tested recovery path.",
-      "wrong": "Naming a compliant cloud region without tracing where prompts, indexes, logs, backups and support access actually go.",
+      "say": "On every cloud the model call has a routing setting, and the high-throughput option is often the widest. On Azure it is the deployment type - Global, Data Zone or Regional. On Bedrock it is in-Region versus geographic or global cross-Region inference, with SCPs denying what is not approved. On Google Cloud, regional versus global endpoints plus a location org policy. Then I pin the index, caches, traces and backups to the same boundary and test failover.",
+      "numbers": "No number applies. Record the approved processing and storage location per data class, and verify it against the deployment type or inference profile actually in use - not just the region the resource was created in.",
+      "wrong": "Saying the resource is in the local region and stopping. A Global deployment or a global inference profile can process the prompt elsewhere even when the resource itself sits in the right region.",
       "follow": "A managed model is not available in the required region. How do you compare another model, self-hosting, or a formally approved exception?"
     },
     {
@@ -197,18 +198,18 @@ window.IR.q["15-cloud"] = {
         "cost"
       ],
       "why": "Cold start is the classic scale-to-zero trap, and it is how people discover that GenAI infrastructure does not behave like a web service.",
-      "simple": "Cold start, and the reason it is so much worse for GenAI than for an ordinary service is that the model weights have to get onto the GPU before anything can happen. Pulling a multi-gigabyte container image, downloading weights from object storage, loading them into GPU memory, and warming the runtime - that is tens of seconds to minutes, not the hundreds of milliseconds a stateless web container takes.\n\nSo the honest first question is whether you should scale to zero at all. If traffic is steady, do not - keep a warm minimum of one replica and accept the cost, because a 40-second first request is a worse problem than an idle GPU. Scale-to-zero belongs to genuinely intermittent internal tools, not customer-facing paths.\n\nIf you do need it, attack each stage. Bake the weights into the image rather than downloading at startup, or mount them from a fast shared volume. Keep the image small - most GenAI images are enormous because someone installed a full CUDA toolchain they do not need at runtime. Use provisioned concurrency or a warm pool where the platform offers it. And add a health-check warmup that runs one dummy inference so the first real user is not the one paying to initialise the runtime.\n\nThere is also a cheaper architectural answer: keep a small always-warm model for the first response and let the large one scale from zero behind it. The user gets something immediately.\n\nAnd note the same problem appears with serverless functions calling an API - there it is the container, not the weights, so the fix is different and much easier.",
+      "simple": "Cold start, and the reason it is so much worse for GenAI than for an ordinary service is that the model weights have to get onto the GPU before anything can happen. Pulling a multi-gigabyte container image, downloading weights from object storage, loading them into GPU memory, and warming the runtime - that is tens of seconds to minutes, not the hundreds of milliseconds a stateless web container takes.\n\nSo the honest first question is whether you should scale to zero at all. If traffic is steady, do not - keep a warm minimum of one replica and accept the cost, because a 40-second first request is a worse problem than an idle GPU. Scale-to-zero belongs to genuinely intermittent internal tools, not customer-facing paths.\n\nIf you do need it, attack each stage. Pre-stage the weights rather than downloading them at startup: a fast shared volume, a node-local cache, or baked into the image (which makes images huge and pulls slower, so many teams prefer a volume or a streaming model loader). Keep the image small - most GenAI images are enormous because someone installed a full CUDA toolchain they do not need at runtime. Use provisioned concurrency or a warm pool where the platform offers it. And add a health-check warmup that runs one dummy inference so the first real user is not the one paying to initialise the runtime.\n\nThere is also a cheaper architectural answer: keep a small always-warm model for the first response and let the large one scale from zero behind it. The user gets something immediately.\n\nAnd note the same problem appears with serverless functions calling an API - there it is the container, not the weights, so the fix is different and much easier.",
       "points": [
         "GenAI cold start is dominated by getting weights onto the GPU, not by container boot.",
         "First question: should this scale to zero at all? For steady traffic, no.",
         "Warm minimum of one replica is usually cheaper than the user-facing cost of a 40-second wait.",
-        "Bake weights into the image or mount from a fast volume - do not download at startup.",
+        "Pre-stage weights (fast volume, node cache, or baked into the image) - avoid a cold download at startup.",
         "Shrink the image; runtime rarely needs the full build toolchain.",
         "Warm up with a dummy inference in the health check, before traffic arrives.",
         "Scale-to-zero suits intermittent internal tools, not customer-facing paths."
       ],
-      "say": "That is cold start, and for GenAI it is dominated by loading model weights onto the GPU rather than by container boot, so it is tens of seconds rather than milliseconds. My first question is whether this should scale to zero at all - for steady traffic a warm replica is cheaper than the user-facing cost. If it must, I bake weights into the image, shrink it, use provisioned concurrency, and warm up with a dummy inference in the health check.",
-      "numbers": "Loading a 13B model from object storage to GPU is commonly 30-90 seconds. Baking weights into the image and warming on health check typically brings the first real request under a couple of seconds.",
+      "say": "That is cold start, and for GenAI it is dominated by loading model weights onto the GPU rather than by container boot, so it is tens of seconds rather than milliseconds. My first question is whether this should scale to zero at all - for steady traffic a warm replica is cheaper than the user-facing cost. If it must, I pre-stage weights close to the GPU, shrink it, use provisioned concurrency, and warm up with a dummy inference in the health check.",
+      "numbers": "Loading a 13B model from object storage onto a GPU can take tens of seconds to a few minutes, depending on storage throughput and image size. Pre-loading and a warmup inference make the replica ready before it takes traffic, so the first real user does not pay that cost.",
       "wrong": "Treating it like a normal autoscaling problem and just raising the replica count. That spends money without addressing why any single replica takes 40 seconds to become useful.",
       "follow": "Traffic is spiky and unpredictable. How do you size the warm pool?"
     },
