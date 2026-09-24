@@ -209,7 +209,7 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 | 8 | The user asks something the corpus does not cover. What should happen? | 2-5 | tech1 | Refusal design. The most-skipped requirement in RAG demos. |
 | 9 | How do you handle multi-turn conversation in RAG? | 5-10 | tech2 | Query contextualisation - resolving "what about the second one?" |
 | 10 | How do you build the retrieval eval set when you have no labelled data? | 5-10 | tech2 | Synthetic question generation from chunks, then human spot-check. |
-| 11 | What is context precision against context recall? | 5-10 | tech2 | The two RAGAS metrics that actually diagnose. |
+| 11 | What is context precision vs context recall? | 5-10 | tech2 | The two RAGAS metrics that actually diagnose. |
 | 12 | How do you ingest from SharePoint, Confluence and a shared drive at once? | 5-10 | design | Connector reality. Enterprise India interviews love this. |
 | 13 | How do you handle document versioning where an old policy is superseded? | 5-10 | design | Recency and validity metadata. A real BFSI failure. |
 | 14 | Your corpus is 60% Hindi, 40% English. What changes in the pipeline? | 5-10 | design | Multilingual embedding, cross-lingual retrieval, tokeniser cost. |
@@ -265,7 +265,7 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 | 4 | How do you write a tool description that the model gets right? | 2-5 | tech1 | Practical, high-value card. Describe when to use it, not just what it does. |
 | 5 | What do you return to the model when a tool fails? | 5-10 | tech2 | Actionable error text against a stack trace. Recovery design. |
 | 6 | How do you handle parallel tool calls? | 5-10 | tech2 | Independence detection, concurrency, result ordering. |
-| 7 | What is planning against reactive execution in an agent? | 5-10 | tech2 | Plan-and-execute against ReAct. Trade-offs of each. |
+| 7 | What is planning vs reactive execution in an agent? | 5-10 | tech2 | Plan-and-execute vs ReAct. Trade-offs of each. |
 | 8 | How do you handle an agent that needs 40 steps? | 5-10 | design | Context management, sub-agents, compaction, checkpoints. |
 | 9 | What is context compaction and when does it lose something important? | 5-10 | tech2 | Summarise-and-continue and its risks. |
 | 10 | Short-term, long-term, episodic, semantic memory - make the distinction concrete. | 5-10 | tech2 | Deepens the existing memory card with a taxonomy that survives follow-ups. |
@@ -495,12 +495,12 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 | 2 | What is the ROC curve, and when is PR-AUC the better choice? | 2-5 | tech1 | Class imbalance changes the answer. |
 | 3 | How do you pick a classification threshold? | 2-5 | tech1 | Business cost matrix, not 0.5. |
 | 4 | Explain overfitting and every technique you would use against it. | 0-2 | screening | Regularisation, dropout, early stopping, more data, simpler model. |
-| 5 | L1 against L2 regularisation - what is the geometric intuition? | 2-5 | tech1 | Corners against circles. Sparsity from L1. |
+| 5 | L1 vs L2 regularisation - what is the geometric intuition? | 2-5 | tech1 | Corners against circles. Sparsity from L1. |
 | 6 | Explain gradient descent and its variants. | 2-5 | tech1 | SGD, momentum, Adam. What each fixes. |
 | 7 | What is the vanishing gradient problem and how was it solved? | 2-5 | tech1 | ReLU, residuals, normalisation. Ties to transformers. |
 | 8 | How do decision trees split, and what does a random forest add? | 2-5 | tech1 | Gini or entropy, then variance reduction by bagging. |
 | 9 | Explain gradient boosting. Why does XGBoost still win on tabular data? | 5-10 | tech2 | Sequential error correction. Still the honest answer for tables. |
-| 10 | Bagging against boosting - bias or variance? | 2-5 | tech1 | Clean one-line distinction. |
+| 10 | Bagging vs boosting - bias or variance? | 2-5 | tech1 | Clean one-line distinction. |
 | 11 | Explain k-means and how you choose k. | 2-5 | tech1 | Elbow, silhouette. Limitations of both. |
 | 12 | What is PCA and when would you use it? | 2-5 | tech1 | Variance-preserving projection. Ties to embedding dimensionality. |
 | 13 | How do you handle missing data? | 2-5 | tech1 | Why the missingness mechanism decides the method. |
@@ -508,7 +508,7 @@ new. `L` marks the level band (`0-2`, `2-5`, `5-10`, `10+`) and `R` the rounds
 | 15 | Explain the difference between correlation and causation with a work example. | 2-5 | tech1 | Stakeholder-facing reasoning. |
 | 16 | What is a p-value, and what does it not mean? | 5-10 | tech2 | Asked in A/B test discussions. Most candidates get it wrong. |
 | 17 | How do you design an A/B test - sample size, duration, guardrail metrics? | 5-10 | design | Ties to the GenAI A/B card in topic 11. |
-| 18 | Explain data drift against concept drift and how you detect each. | 5-10 | design | Deepens the degradation card with the right vocabulary. |
+| 18 | Explain data drift vs concept drift and how you detect each. | 5-10 | design | Deepens the degradation card with the right vocabulary. |
 | 19 | What is a feature store and do you need one? | 5-10 | design | Training and serving skew is the real motivation. |
 | 20 | Explain train-serve skew with an example of how it happened. | 5-10 | tech2 | The classic production ML failure. |
 | 21 | What is SHAP and how do you read a SHAP plot? | 5-10 | tech2 | Deepens the explainability card to a named tool. |

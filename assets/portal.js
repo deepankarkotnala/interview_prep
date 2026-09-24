@@ -28,22 +28,121 @@
   /* Inline formatting for authored text: `code` and **bold** only. Escaped
      first, so a card can never inject markup. */
   function fmt(s) {
-    return esc(s)
+    return inline(esc(s));
+  }
+  function inline(h) {
+    return h
       .replace(/`([^`]+)`/g, "<code>$1</code>")
       .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
       .replace(/\n/g, "<br>");
+  }
+
+  /* ---------- glossary tooltips ----------
+     data/glossary.js maps a term (with "|" aliases) to a short definition.
+     glossFmt() is fmt() plus: the first mention of each glossary term becomes a
+     focusable <span class="term">, and one shared tooltip shows its definition. */
+  var glossRe = null, glossTips = null;
+  function buildGloss() {
+    if (glossRe !== null) return glossRe;
+    var g = IR.glossary;
+    if (!g) { glossRe = false; return false; }
+    glossTips = {};
+    var forms = [];
+    Object.keys(g).forEach(function (key) {
+      key.split("|").forEach(function (f) {
+        f = f.trim();
+        if (!f) return;
+        /* A value is a definition string, or {tip, only: ["rag", ...]} to limit
+           a generic word ("generate", "index") to cards whose id starts with
+           one of those prefixes - so a Python "generate" never gets a RAG tip. */
+        var v = g[key];
+        glossTips[f.toLowerCase()] = typeof v === "string" ? { tip: v } : v;
+        forms.push(f);
+      });
+    });
+    forms.sort(function (a, b) { return b.length - a.length; });
+    var alt = forms.map(function (f) { return esc(f).replace(/[.*+?^${}()|[\]\\\/]/g, "\\$&"); }).join("|");
+    glossRe = new RegExp("(?<![A-Za-z0-9_-])(" + alt + ")(?:s|es)?(?![A-Za-z0-9_-])", "gi");
+    return glossRe;
+  }
+  function glossFmt(s, used, cardId) {
+    var h = esc(s), re = buildGloss();
+    if (re) {
+      used = used || {};
+      h = h.replace(re, function (m, term) {
+        var e = glossTips[term.toLowerCase()], tip = e && e.tip;
+        if (!tip || used[tip]) return m;
+        if (e.only && e.only.indexOf(String(cardId || "").split("-")[0]) < 0) return m;
+        used[tip] = 1;
+        return '<span class="term" tabindex="0" data-tip="' + esc(tip) + '">' + m + '</span>';
+      });
+    }
+    return inline(h);
+  }
+  function setupTips() {
+    var tip = document.createElement("div");
+    tip.id = "ir-tip";
+    tip.className = "term-tip";
+    tip.setAttribute("role", "tooltip");
+    tip.hidden = true;
+    document.body.appendChild(tip);
+    var cur = null;
+    function show(t) {
+      if (cur && cur !== t) cur.removeAttribute("aria-describedby");
+      cur = t;
+      tip.textContent = t.getAttribute("data-tip");
+      tip.hidden = false;
+      t.setAttribute("aria-describedby", "ir-tip");
+      var r = t.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight, m = 8;
+      var left = Math.max(m, Math.min(r.left + r.width / 2 - w / 2, window.innerWidth - w - m));
+      var top = r.top - h - m;
+      if (top < m) top = r.bottom + m;
+      tip.style.left = left + "px";
+      tip.style.top = top + "px";
+    }
+    function hide() {
+      if (cur) cur.removeAttribute("aria-describedby");
+      cur = null;
+      tip.hidden = true;
+    }
+    function termOf(e) { return e.target.closest ? e.target.closest(".term") : null; }
+    document.addEventListener("mouseover", function (e) { var t = termOf(e); if (t) show(t); });
+    document.addEventListener("mouseout", function (e) { var t = termOf(e); if (t && t === cur) hide(); });
+    document.addEventListener("focusin", function (e) { var t = termOf(e); if (t) show(t); });
+    document.addEventListener("focusout", function (e) { if (termOf(e)) hide(); });
+    /* Touch has no hover: a tap toggles, a tap anywhere else closes. */
+    document.addEventListener("click", function (e) {
+      var t = termOf(e);
+      if (t) { if (cur === t && !tip.hidden) hide(); else show(t); }
+      else if (cur) hide();
+    });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && cur) hide(); });
+    window.addEventListener("scroll", function () { if (cur) hide(); }, { passive: true, capture: true });
   }
   /* Lines indented by two or more spaces are a small aligned illustration -
      a latency budget, a shape table, a prompt layout. Rendered as prose, the
      browser collapses the spaces and the columns fall apart, so each indented
      run becomes a <pre> in place, dedented to its shallowest line. */
   var INDENTED = /^ {2,}\S/;
-  function paras(s) {
+  /* Light block syntax, one line each: "### " heading, "- " bullet,
+     "1. " numbered item, "> " callout. */
+  function lineMode(l) {
+    if (INDENTED.test(l)) return "pre";
+    if (/^#{2,4} \S/.test(l)) return "h";
+    if (/^- \S/.test(l)) return "ul";
+    if (/^\d+\. \S/.test(l)) return "ol";
+    if (/^> ?\S/.test(l)) return "quote";
+    return "p";
+  }
+  /* gloss: underline glossary terms (first mention across the whole text). */
+  function paras(s, gloss, cardId) {
+    var used = {};
+    var f = gloss ? function (x) { return glossFmt(x, used, cardId); } : fmt;
     return String(s || "").split(/\n\n+/).map(function (p) {
       p = p.replace(/^\n+|\s+$/g, "");
       var lines = p.split("\n");
-      if (!lines.some(function (l) { return INDENTED.test(l); })) {
-        return "<p>" + fmt(p.trim()) + "</p>";
+      if (lines.every(function (l) { return lineMode(l) === "p"; })) {
+        return "<p>" + f(p.trim()) + "</p>";
       }
       var out = "", buf = [], mode = null;
       function flush() {
@@ -52,14 +151,24 @@
           var ind = Math.min.apply(null, buf.map(function (l) { return l.match(/^ */)[0].length; }));
           out += '<pre class="q-code q-inline-pre"><code>' +
             esc(buf.map(function (l) { return l.slice(ind); }).join("\n")) + "</code></pre>";
+        } else if (mode === "h") {
+          buf.forEach(function (l) { out += '<h4 class="q-h">' + f(l.replace(/^#+ /, "")) + "</h4>"; });
+        } else if (mode === "ul" || mode === "ol") {
+          var start = mode === "ol" ? parseInt(buf[0], 10) : 1;
+          out += "<" + mode + ' class="q-list"' + (start > 1 ? ' start="' + start + '"' : "") + ">" +
+            buf.map(function (l) { return "<li>" + f(l.replace(/^(- |\d+\. )/, "")) + "</li>"; }).join("") +
+            "</" + mode + ">";
+        } else if (mode === "quote") {
+          out += '<blockquote class="q-quote">' +
+            f(buf.map(function (l) { return l.replace(/^> ?/, ""); }).join("\n").trim()) + "</blockquote>";
         } else {
-          out += "<p>" + fmt(buf.join("\n").trim()) + "</p>";
+          out += "<p>" + f(buf.join("\n").trim()) + "</p>";
         }
         buf = [];
       }
       lines.forEach(function (l) {
-        var m = INDENTED.test(l) ? "pre" : "p";
-        if (m !== mode) { flush(); mode = m; }
+        var m = lineMode(l);
+        if (m !== mode || m === "h") { flush(); mode = m; }
         buf.push(l);
       });
       flush();
@@ -107,7 +216,7 @@
   function applyTheme(t) {
     document.documentElement.setAttribute("data-theme", t);
     var m = document.querySelector('meta[name="theme-color"]');
-    if (m) m.content = t === "dark" ? "#17191e" : "#f3f4f6";
+    if (m) m.content = t === "dark" ? "#1b1b1b" : "#f4f6fb";
     var btn = document.querySelector("[data-theme-toggle]");
     if (btn) {
       btn.innerHTML = t === "dark" ? ICON_SUN : ICON_MOON;
@@ -188,7 +297,7 @@
     var h = "";
     h += '<a href="' + base + 'index.html" class="brand" style="text-decoration: none; color: inherit;" aria-label="Go to homepage">' +
          '<span class="brand-mark" aria-hidden="true">' +
-         '<img src="' + base + 'assets/brand/interview-room-logo.png?v=6" alt="" ' +
+         '<img src="' + base + 'assets/brand/interview-room-logo.png?v=7" alt="" ' +
          'onerror="this.remove();this.parentNode.textContent=\'IR\'">' +
          '</span>' +
          '<span class="brand-text"><strong>Interview Room</strong>' +
@@ -392,16 +501,17 @@
   var WIDTHS = ["default", "wide", "full"];
   var ALIGNS = ["left", "justify"];
 
+  /* One step smaller on desktop; phones keep "m" (scale 1 there). */
   function defaultSize() {
-    return "m";
+    return matchMedia("(max-width: 860px)").matches ? "m" : "s";
   }
   function readReading() {
     var raw = store(READING_KEY, {});
     return {
-      size: SIZES.indexOf(raw.size) >= 0 ? raw.size : "m",
+      size: SIZES.indexOf(raw.size) >= 0 ? raw.size : defaultSize(),
       width: WIDTHS.indexOf(raw.width) >= 0 ? raw.width : "wide",
       focusWidth: WIDTHS.indexOf(raw.focusWidth) >= 0 ? raw.focusWidth : "default",
-      align: ALIGNS.indexOf(raw.align) >= 0 ? raw.align : "left"
+      align: ALIGNS.indexOf(raw.align) >= 0 ? raw.align : "justify"
     };
   }
   function applyReading(s) {
@@ -546,8 +656,8 @@
     });
     panel.querySelector(".reader-reset").addEventListener("click", function () {
       var isFocus = document.body.classList.contains("focus-mode");
-      settings.size = "m";
-      settings.align = "left";
+      settings.size = defaultSize();
+      settings.align = "justify";
       if (isFocus) {
         settings.focusWidth = "default";
       } else {
@@ -618,6 +728,662 @@
     applyTheme(localStorage.getItem(THEME_KEY) || "light");
   }
 
+  /* ---------- whiteboard diagrams ----------
+     Some questions are answered at a whiteboard, not in a paragraph. "Build a
+     RAG agent in LangGraph - what nodes and edges?" is marked in its own `why`
+     as a whiteboard question, and the answer only lands if you can draw it
+     while you talk.
+
+     So a card may carry a `diagram`, and this renders it as inline SVG, built
+     from a small declarative spec rather than hand-written markup: the spec is
+     short enough to review in a diff, check.js can validate it like any other
+     slot, and layout stays consistent instead of drifting per author.
+
+     Deliberately plain. This is a picture you have to reproduce on a
+     whiteboard under pressure, so it is boxes, arrows and labels - nothing you
+     could not draw with one marker in about forty seconds.
+
+     ---- Why the layout is measured rather than guessed ----
+
+     The first version placed boxes on a grid and drew lines between them, and
+     it produced a mess: edge labels ran off the canvas, two back-edges wrote
+     their labels on top of each other, and a curve between diagonal cells cut
+     straight through the box sitting between them. All three have the same
+     cause - nothing tracked how much room a thing actually needed before
+     committing to a position.
+
+     So this version measures first. Text width is estimated per string and
+     boxes are sized to their content; the side lanes are allocated per edge so
+     two loops never share an x; and every connector is routed orthogonally
+     through the gaps between rows rather than sliced diagonally across them.
+     Nothing is drawn until its extent is known.
+
+     ---- Responsive ----
+
+     The same spec renders at two widths. Above the breakpoint, rows lay out as
+     authored. Below it, every row collapses to one column and the drawing
+     becomes a single vertical track - which is the only honest way to show a
+     graph on a 360px screen. Both are produced at build time and swapped with
+     CSS, so there is no resize listener and no re-render.
+
+     Spec:
+       rows:  [[node, …], …]                 nodes per row, top to bottom
+       node:  { id, label, note?, accent? }   accent: accent|warn|bad|muted
+       edges: [{ from, to, label?, kind? }]   kind: "back" for a loop
+       kind: "lanes" + lanes: [{label, note?, accent?}]   for a plain sequence
+     */
+
+  /* Character-width factors for the two type sizes used inside a drawing.
+     There is no text measurement available while building a string, and an
+     estimate is fine here because it is only ever used to decide whether
+     something FITS - erring wide costs a little whitespace, which is the safe
+     direction. Tuned against the Inter metrics the portal actually loads. */
+  var DIA_CH_LABEL = 6.55;   /* 11.5px, weight 650 */
+  var DIA_CH_NOTE  = 4.85;   /* 9px, weight 600   */
+  var DIA_CH_EDGE  = 5.05;   /* 9.5px, weight 600 */
+
+  /* On a phone the narrow SVG's 700-unit canvas is painted into ~320 CSS
+     pixels, so authored type lands at under half its size and the drawing
+     becomes unreadable. The narrow layout therefore authors its text larger in
+     user units - the viewBox scales it back down to something legible on
+     glass. Layout has to know this, or boxes get sized for 11.5px type and the
+     bigger glyphs overflow them. Kept in step with the font-size rules for
+     `.dg-narrow` in portal.css. */
+  var DIA_NARROW_TYPE = 2.2;
+
+  /* Line heights, per layout, so wrapping and box heights agree with what is
+     actually painted. */
+  function diaMetrics(narrow) {
+    var k = narrow ? DIA_NARROW_TYPE : 1;
+    return {
+      k: k,
+      chLabel: DIA_CH_LABEL * k,
+      chNote: DIA_CH_NOTE * k,
+      chEdge: DIA_CH_EDGE * k,
+      lhLabel: 14 * k,
+      lhNote: 11 * k,
+      lhEdge: 11 * k,
+      padBox: 14 * k
+    };
+  }
+
+  function diaTextW(s, ch) { return String(s == null ? "" : s).length * ch; }
+
+  var DIA = {
+    w: 700,
+    minNodeH: 44,
+    rowGap: 52,       /* vertical room between rows - connectors route in here */
+    colGap: 26,
+    padX: 18,
+    padY: 16,
+    laneStep: 15,     /* horizontal offset between two lanes on the same side */
+    laneGap: 10       /* gap between the outermost lane and the boxes */
+  };
+
+  /* Greedy wrap to a pixel width. Returns every line - nothing is dropped,
+     because a silently truncated label is exactly the failure this is here to
+     prevent; a box grows taller instead. */
+  function diaWrapPx(text, maxPx, ch) {
+    var words = String(text == null ? "" : text).split(/\s+/).filter(Boolean);
+    if (!words.length) return [];
+    var lines = [], cur = words[0];
+    for (var i = 1; i < words.length; i++) {
+      if (diaTextW(cur + " " + words[i], ch) <= maxPx) cur += " " + words[i];
+      else { lines.push(cur); cur = words[i]; }
+    }
+    lines.push(cur);
+    return lines;
+  }
+
+  /* ---- layout ----
+     `cols` forces one column per row when narrow. Returns absolute geometry
+     for every node plus the canvas height, so the caller never guesses. */
+  function diaLayout(spec, narrow) {
+    var rows = spec.rows || [];
+    var M = diaMetrics(narrow);
+    var lanesL = [], lanesR = [];
+
+    /* Lane allocation first, because it decides how much horizontal room the
+       boxes have left. Each long connector gets its OWN lane on its own side - 
+       that is what stops two loop labels landing on the same pixel. */
+    /* Row index per node. When narrow, every row collapses to one column, so
+       a node's effective row is its position in the FLATTENED list - not the
+       row it was authored in. Getting this wrong is what drew a three-row jump
+       as a straight vertical line through the two boxes in between. */
+    var rowOf = {};
+    if (narrow) {
+      var flat = 0;
+      rows.forEach(function (row) { row.forEach(function (n) { rowOf[n.id] = flat++; }); });
+    } else {
+      rows.forEach(function (row, r) { row.forEach(function (n) { rowOf[n.id] = r; }); });
+    }
+
+    (spec.edges || []).forEach(function (e) {
+      var ri = rowOf[e.from], rj = rowOf[e.to];
+      if (ri == null || rj == null) return;
+      /* A back edge between ADJACENT rows needs no lane: it is a short hop
+         through the gap those two rows already share. Sending it round the
+         side gave it a zero-length vertical run, which meant two such loops
+         had identical label positions and no offset could separate them.
+         Only genuinely long connectors get a lane. */
+      var long = Math.abs(ri - rj) > 1;
+      if (!long) return;
+      var w = e.label ? diaTextW(e.label, M.chEdge) + 8 : 0;
+      (e.kind === "back" ? lanesL : lanesR).push({ e: e, w: w });
+    });
+
+    /* Reserve: the widest label on each side, plus one step per extra lane. */
+    /* Reserve for the WORST case: each lane sits one step further out than the
+       last, and its label extends inward from there. Sizing to the widest
+       label alone under-reserves as soon as a third lane appears - the label
+       on the outermost lane then starts left of zero. */
+    function reserve(list) {
+      if (!list.length) return 0;
+      var need = 0;
+      list.forEach(function (l, i) {
+        need = Math.max(need, i * DIA.laneStep + l.w);
+      });
+      return DIA.laneGap + need + 6;
+    }
+    /* Narrow reserves the same way - a label needs its width whatever the
+       viewport, and an earlier version that reserved a flat 22px is exactly
+       how "regenerate once" ended up hanging off the left edge. It is capped
+       so a long label cannot squeeze the boxes to nothing; the label wraps
+       instead. */
+    var resL = reserve(lanesL);
+    var resR = reserve(lanesR);
+    if (narrow) {
+      /* Cap the reservation so a long branch label cannot squeeze the boxes to
+         nothing on a phone; the label wraps instead. Scaled with the type. */
+      resL = Math.min(resL, 96 * M.k);
+      resR = Math.min(resR, 96 * M.k);
+    }
+
+    /* Each long connector gets its own x AND its own vertical slot for the
+       label. Sharing an x was what let two loop labels land on one another. */
+    var laneX = {}, laneSlot = {}, li = 0, ri2 = 0;
+    lanesL.forEach(function (l) {
+      var k = l.e.from + ">" + l.e.to;
+      laneX[k] = DIA.padX + resL - DIA.laneGap - li * DIA.laneStep;
+      laneSlot[k] = li++;
+    });
+    lanesR.forEach(function (l) {
+      var k = l.e.from + ">" + l.e.to;
+      laneX[k] = DIA.w - DIA.padX - resR + DIA.laneGap + ri2 * DIA.laneStep;
+      laneSlot[k] = ri2++;
+    });
+
+    var left = DIA.padX + resL;
+    var inner = DIA.w - DIA.padX * 2 - resL - resR;
+
+    /* Place boxes. Height is derived from wrapped content, and every box in a
+       row shares the tallest - a ragged row reads as a mistake. */
+    var widestRow = 0;
+    rows.forEach(function (row) { widestRow = Math.max(widestRow, row.length); });
+
+    var pos = {}, y = DIA.padY, rowY = [];
+    rows.forEach(function (row) {
+      var cols = narrow ? 1 : row.length;
+      for (var c0 = 0; c0 < row.length; c0 += cols) {
+        var slice = row.slice(c0, c0 + cols);
+        var w = (inner - DIA.colGap * (slice.length - 1)) / slice.length;
+        /* A row holding a single node would otherwise stretch the full width,
+           which looks like a banner and forces every connector reaching it to
+           detour around the whole drawing. Hold it to the width of the widest
+           multi-column row instead, centred, so the columns line up. */
+        var span = w, off = 0;
+        if (!narrow && slice.length === 1 && widestRow > 1) {
+          span = (inner - DIA.colGap * (widestRow - 1)) / widestRow;
+          /* Wide enough for its own content, but never wider than the row it
+             is aligning to plus one gutter. */
+          var need = diaTextW(slice[0].label, M.chLabel) + 28 * M.k;
+          span = Math.max(span, Math.min(need, inner));
+          off = (inner - span) / 2;
+        }
+        w = span;
+        var hMax = DIA.minNodeH * (narrow ? M.k : 1);
+        var wrapped = slice.map(function (n) {
+          var lab = diaWrapPx(n.label, w - 16 * M.k, M.chLabel);
+          var note = n.note ? diaWrapPx(n.note, w - 12 * M.k, M.chNote) : [];
+          var h = M.padBox + lab.length * M.lhLabel +
+                  (note.length ? 2 + note.length * M.lhNote : 0);
+          hMax = Math.max(hMax, h);
+          return { lab: lab, note: note };
+        });
+        slice.forEach(function (n, c) {
+          pos[n.id] = {
+            node: n, row: rowY.length,
+            x: left + off + c * (w + DIA.colGap), y: y, w: w, h: hMax,
+            lab: wrapped[c].lab, note: wrapped[c].note
+          };
+        });
+        rowY.push(y);
+        y += hMax + DIA.rowGap * (narrow ? M.k : 1);
+      }
+    });
+
+    return {
+      pos: pos, laneX: laneX, laneSlot: laneSlot, M: M,
+      h: y - DIA.rowGap * (narrow ? M.k : 1) + DIA.padY,
+      left: left, right: left + inner
+    };
+  }
+
+  /* ---- connectors ----
+     Every edge is orthogonal: down out of the source, across in the gap
+     between rows, then down into the target. Diagonals were what cut through
+     the boxes in between, and a right-angled line is also what someone
+     actually draws on a whiteboard. Arrowheads stop 3px short of the border so
+     the head is visible against the box edge rather than merged into it. */
+  var DIA_R = 7;   /* corner radius on a routed connector */
+
+  function diaPath(pts) {
+    /* Rounded elbows through a list of points, so a routed line reads as one
+       stroke rather than a staircase of separate segments. */
+    var d = "M" + pts[0][0] + " " + pts[0][1];
+    for (var i = 1; i < pts.length - 1; i++) {
+      var p = pts[i], a = pts[i - 1], b = pts[i + 1];
+      var d1x = Math.sign(p[0] - a[0]), d1y = Math.sign(p[1] - a[1]);
+      var d2x = Math.sign(b[0] - p[0]), d2y = Math.sign(b[1] - p[1]);
+      var r = Math.min(DIA_R,
+        Math.max(0, Math.hypot(p[0] - a[0], p[1] - a[1]) / 2),
+        Math.max(0, Math.hypot(b[0] - p[0], b[1] - p[1]) / 2));
+      d += " L" + (p[0] - d1x * r) + " " + (p[1] - d1y * r) +
+           " Q" + p[0] + " " + p[1] + " " + (p[0] + d2x * r) + " " + (p[1] + d2y * r);
+    }
+    var e = pts[pts.length - 1];
+    return d + " L" + e[0] + " " + e[1];
+  }
+
+  function diaEdge(e, L, i) {
+    var a = L.pos[e.from], b = L.pos[e.to];
+    if (!a || !b) return "";
+    var back = e.kind === "back";
+    var key = e.from + ">" + e.to;
+    var lane = L.laneX[key];
+    var pts, lx, ly, anchor = "middle";
+    var GAP = 3;   /* arrowhead standoff */
+
+    if (lane != null) {
+      /* Long or looping. Leaving through the side at the box's own centre
+         height is what drove a line straight through whatever box sat beside
+         it in the same row - `grade → rewrite` passing through `retrieve` was
+         exactly this. So drop out of the bottom edge into the gap below the
+         row first, run sideways there where nothing is drawn, and only then
+         take the lane. The same on arrival, entering through the target's top. */
+      var upward = b.y < a.y;
+      var sx = a.x + a.w / 2, tx = b.x + b.w / 2;
+      /* Leave and arrive on the side the connector is heading, so the detour
+         always uses a gap that exists. An upward loop that left through the
+         source's BOTTOM had to travel below the last row - which is off the
+         canvas entirely, and is why the dashed edges ran off the bottom. */
+      var leaveY = upward ? a.y - GAP : a.y + a.h + GAP;
+      var outY = upward ? a.y - DIA.rowGap / 2 : a.y + a.h + DIA.rowGap / 2;
+      var enterY = upward ? b.y + b.h + GAP : b.y - GAP;
+      var enterAt = upward ? b.y + b.h + DIA.rowGap / 2 : b.y - DIA.rowGap / 2;
+      pts = [[sx, leaveY], [sx, outY], [lane, outY], [lane, enterAt], [tx, enterAt], [tx, enterY]];
+      lx = lane + (back ? -6 : 6);
+      /* Slide the label along its own lane by slot, so two loops running down
+         the same side never write at the same height.
+
+         The offset is measured from the TOP of the lane's vertical run rather
+         than from its midpoint. Midpoint-with-a-clamp looks right until two
+         lanes have a short run: the clamp then pins both offsets to nearly
+         zero and the labels land on the same pixel row anyway, which is what
+         put "weak" and "new query" back on top of each other. Anchoring at the
+         top means slot N is always 16px below slot N-1 for as long as the run
+         allows, and only the last one or two lanes on a very short run need to
+         share - by which point they have been pushed apart as far as the
+         geometry permits. */
+      var top = Math.min(outY, enterAt), bot = Math.max(outY, enterAt);
+      var slot = (L.laneSlot && L.laneSlot[key]) || 0;
+      ly = Math.min(top + 14 + slot * 16, bot - 6);
+      anchor = back ? "end" : "start";
+    } else if (a.row === b.row) {
+      var y = a.y + a.h / 2;
+      var x1 = a.x + a.w, x2 = b.x - GAP;
+      if (b.x < a.x) { x1 = a.x; x2 = b.x + b.w + GAP; }
+      pts = [[x1, y], [x2, y]];
+      lx = (x1 + x2) / 2; ly = y - 8;
+    } else if (back) {
+      /* Adjacent-row loop, running back up. It leaves the source's top edge
+         and enters the target's bottom, through the gap the two rows share - 
+         offset sideways from the box centres so it never sits underneath the
+         forward connector going the other way. */
+      var upB = b.y < a.y;
+      var sxB = a.x + a.w * 0.25, exB = b.x + b.w * 0.25;
+      var leaveB = upB ? a.y - GAP : a.y + a.h + GAP;
+      var enterB = upB ? b.y + b.h + GAP : b.y - GAP;
+      var midB = upB ? a.y - DIA.rowGap / 2 : a.y + a.h + DIA.rowGap / 2;
+      pts = [[sxB, leaveB], [sxB, midB], [exB, midB], [exB, enterB]];
+      lx = (sxB + exB) / 2; ly = midB - 6;
+    } else {
+      /* Adjacent rows. Straight drop when the boxes line up, otherwise a
+         right-angled detour through the gap between the two rows. */
+      var sx = a.x + a.w / 2, ex = b.x + b.w / 2;
+      var y1 = a.y + a.h, y2 = b.y - GAP;
+      if (Math.abs(sx - ex) < 2) {
+        pts = [[sx, y1], [sx, y2]];
+        lx = sx + 7; ly = (y1 + y2) / 2 + 3; anchor = "start";
+      } else {
+        var midY = y1 + (b.y - y1) / 2;
+        pts = [[sx, y1], [sx, midY], [ex, midY], [ex, y2]];
+        lx = (sx + ex) / 2; ly = midY - 6;
+      }
+    }
+
+    var cls = "dg-edge" + (back ? " is-back" : "");
+    var d = diaPath(pts);
+    var out = '<path class="' + cls + '" d="' + d + '" marker-end="url(#dg-ar)"/>';
+    /* The flow pulse. A second copy of the same path, dashed, animated along
+       its own length - so data visibly moves in the direction of the arrow.
+       Purely decorative: it is behind the label, respects reduced-motion, and
+       the drawing is complete and correct with it switched off. */
+    out += '<path class="dg-flow' + (back ? " is-back" : "") + '" d="' + d + '"/>';
+    if (e.label) {
+      /* Wrap the label to whatever room it actually has beside its lane, then
+         plate it so a connector never reads through the text where the two
+         cross. Wrapping rather than widening the reservation is what keeps a
+         long branch label - "no · skip retrieval" - from either running off a
+         phone canvas or squeezing every box to make room for itself. */
+      var room = anchor === "end" ? lx - 4
+               : anchor === "start" ? DIA.w - lx - 4
+               : DIA.w - 8;
+      var ME = L.M || diaMetrics(false);
+      var lines = diaWrapPx(e.label, Math.max(34 * ME.k, room), ME.chEdge);
+      var tw = 0;
+      lines.forEach(function (ln) { tw = Math.max(tw, diaTextW(ln, ME.chEdge)); });
+      var top = ly - ME.lhEdge * 0.73 - (lines.length - 1) * ME.lhEdge / 2;
+      var px = anchor === "middle" ? lx - tw / 2 - 4 : (anchor === "end" ? lx - tw - 4 : lx - 4);
+      out += '<rect class="dg-eplate" x="' + px.toFixed(1) + '" y="' + top.toFixed(1) +
+             '" width="' + (tw + 8).toFixed(1) + '" height="' +
+             (ME.lhEdge * 1.09 + (lines.length - 1) * ME.lhEdge).toFixed(1) + '" rx="3"/>';
+      lines.forEach(function (ln, i) {
+        out += '<text class="dg-elabel" x="' + lx.toFixed(1) + '" y="' +
+               (ly + (i - (lines.length - 1) / 2) * ME.lhEdge).toFixed(1) +
+               '" text-anchor="' + anchor + '">' + esc(ln) + "</text>";
+      });
+    }
+    return out;
+  }
+
+  function diaNode(p, M) {
+    var n = p.node;
+    var cls = "dg-node" + (n.accent ? " is-" + n.accent : "");
+    var total = p.lab.length * M.lhLabel + (p.note.length ? 2 + p.note.length * M.lhNote : 0);
+    var ty = p.y + (p.h - total) / 2 + M.lhLabel * 0.79;
+    var h = '<g class="' + cls + '">' +
+            '<rect x="' + p.x.toFixed(1) + '" y="' + p.y.toFixed(1) +
+            '" width="' + p.w.toFixed(1) + '" height="' + p.h.toFixed(1) + '" rx="8"/>';
+    p.lab.forEach(function (ln, i) {
+      h += '<text class="dg-label" x="' + (p.x + p.w / 2).toFixed(1) + '" y="' +
+           (ty + i * M.lhLabel).toFixed(1) + '">' + esc(ln) + "</text>";
+    });
+    var ny = ty + p.lab.length * M.lhLabel + 1;
+    p.note.forEach(function (ln, i) {
+      h += '<text class="dg-note" x="' + (p.x + p.w / 2).toFixed(1) + '" y="' +
+           (ny + i * M.lhNote).toFixed(1) + '">' + esc(ln) + "</text>";
+    });
+    return h + "</g>";
+  }
+
+  /* A plain left-to-right sequence with an annotation under each step. Wraps to
+     a grid when there are more steps than fit at a readable size, and stacks
+     to one column when narrow. */
+  function renderLanes(spec, narrow) {
+    var lanes = spec.lanes || [];
+    var M = diaMetrics(narrow);
+    var perRow = narrow ? 1 : (lanes.length > 4 ? Math.ceil(lanes.length / 2) : lanes.length);
+    var gap = 16;
+    var inner = DIA.w - DIA.padX * 2;
+    var w = (inner - gap * (perRow - 1)) / perRow;
+    var body = "", y = DIA.padY, maxY = y;
+
+    for (var s = 0; s < lanes.length; s += perRow) {
+      var slice = lanes.slice(s, s + perRow);
+      var wrapped = slice.map(function (l) {
+        return {
+          lab: diaWrapPx(l.label, w - 14 * M.k, M.chLabel),
+          note: l.note ? diaWrapPx(l.note, w - 8 * M.k, M.chNote) : []
+        };
+      });
+      var boxH = DIA.minNodeH * (narrow ? M.k : 1), noteH = 0;
+      wrapped.forEach(function (x) {
+        boxH = Math.max(boxH, M.padBox + x.lab.length * M.lhLabel);
+        noteH = Math.max(noteH, x.note.length * M.lhNote);
+      });
+
+      slice.forEach(function (l, i) {
+        var x = DIA.padX + i * (w + gap);
+        var cls = "dg-node" + (l.accent ? " is-" + l.accent : "");
+        body += '<g class="' + cls + '"><rect x="' + x.toFixed(1) + '" y="' + y +
+                '" width="' + w.toFixed(1) + '" height="' + boxH + '" rx="8"/>';
+        var ty = y + (boxH - wrapped[i].lab.length * M.lhLabel) / 2 + M.lhLabel * 0.79;
+        wrapped[i].lab.forEach(function (ln, j) {
+          body += '<text class="dg-label" x="' + (x + w / 2).toFixed(1) + '" y="' +
+                  (ty + j * M.lhLabel).toFixed(1) + '">' + esc(ln) + "</text>";
+        });
+        body += "</g>";
+        wrapped[i].note.forEach(function (ln, j) {
+          body += '<text class="dg-note" x="' + (x + w / 2).toFixed(1) + '" y="' +
+                  (y + boxH + M.lhNote * 1.27 + j * M.lhNote).toFixed(1) + '">' + esc(ln) + "</text>";
+        });
+        /* Connector to the next step: sideways within a row, and down the left
+           edge when the sequence wraps or is stacked. */
+        var isLast = (s + i) === lanes.length - 1;
+        if (!isLast) {
+          var d;
+          if (i === slice.length - 1) {
+            /* Start below the last note line (its baseline sits ~0.3 line under
+               noteH), so the wrap connector never runs through the text. */
+            var nb = y + boxH + (noteH ? noteH + M.lhNote * 0.55 : 0) + 4;
+            var ny = nb + 18 * M.k;
+            d = diaPath([[x + w / 2, nb],
+                         [x + w / 2, ny - 6], [DIA.padX + w / 2, ny - 6],
+                         [DIA.padX + w / 2, ny + 4]]);
+            if (narrow) d = diaPath([[x + w / 2, nb], [x + w / 2, ny + 4]]);
+          } else {
+            d = "M" + (x + w + 2) + " " + (y + boxH / 2) + " H" + (x + w + gap - 3);
+          }
+          body += '<path class="dg-edge" d="' + d + '" marker-end="url(#dg-ar)"/>' +
+                  '<path class="dg-flow" d="' + d + '"/>';
+        }
+      });
+      y += boxH + noteH + (noteH ? M.lhNote * 0.55 : 0) + 26 * M.k;
+      maxY = y;
+    }
+    return { body: body, h: maxY - 26 * M.k + DIA.padY + 8 };
+  }
+
+  /* ---- compare / matrix / stack ----
+     Three more shapes for things a flowchart draws badly:
+       kind "compare": columns: [{label, note?, accent?, cells: [..]}], aspects?: [..]
+                       side-by-side options; aspects are optional row labels.
+       kind "matrix":  cols: [..], rows: [..], cells: [[{label, note?, accent?}]],
+                       xLabel?, yLabel?   a 2x2 (or up to 3x3) grid.
+       kind "stack":   layers: [{label, note?, accent?}], top?, bottom?
+                       layers top to bottom, with an optional flow arrow.
+     All reuse diaNode, so accents mean the same thing as in every other diagram. */
+  var DIA_CH_CELL = 5.35;   /* 10px, weight 500 - cell text */
+  function diaMeasure(label, note, w, M) {
+    var lab = diaWrapPx(label, w - 14 * M.k, M.chLabel);
+    var nt = note ? diaWrapPx(note, w - 10 * M.k, M.chNote) : [];
+    var h = Math.max(DIA.minNodeH * M.k * (M.k > 1 ? 0.8 : 1),
+                     M.padBox + lab.length * M.lhLabel + (nt.length ? 2 + nt.length * M.lhNote : 0));
+    return { lab: lab, note: nt, h: h };
+  }
+  function diaBox(x, y, w, h, m, accent, M) {
+    return diaNode({ node: { accent: accent }, x: x, y: y, w: w, h: h, lab: m.lab, note: m.note }, M);
+  }
+  function diaCell(x, y, w, text, M, measureOnly) {
+    var ch = DIA_CH_CELL * M.k, lh = 13 * M.k;
+    var lines = diaWrapPx(text, w - 16 * M.k, ch);
+    var h = Math.max(30 * M.k * (M.k > 1 ? 0.8 : 1), 12 * M.k + lines.length * lh);
+    if (measureOnly) return h;
+    return function (hh) {
+      var s = '<g class="dg-cellbox"><rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' +
+              w.toFixed(1) + '" height="' + hh.toFixed(1) + '" rx="6"/>';
+      var ty = y + (hh - lines.length * lh) / 2 + lh * 0.78;
+      lines.forEach(function (ln, i) {
+        s += '<text class="dg-cell" x="' + (x + w / 2).toFixed(1) + '" y="' + (ty + i * lh).toFixed(1) + '">' + esc(ln) + "</text>";
+      });
+      return s + "</g>";
+    };
+  }
+
+  function renderCompare(spec, narrow) {
+    var cols = spec.columns || [], aspects = spec.aspects || [];
+    var M = diaMetrics(narrow), gap = 14, body = "", y = DIA.padY;
+    var nRows = Math.max.apply(null, cols.map(function (c) { return (c.cells || []).length; }).concat([0]));
+    if (narrow) {
+      var w = DIA.w - DIA.padX * 2;
+      cols.forEach(function (c, ci) {
+        var m = diaMeasure(c.label, c.note, w, M);
+        body += diaBox(DIA.padX, y, w, m.h, m, c.accent, M);
+        y += m.h + 8 * M.k;
+        (c.cells || []).forEach(function (t, r) {
+          var text = aspects[r] ? aspects[r] + " - " + t : t;
+          var hh = diaCell(DIA.padX, y, w, text, M, true);
+          body += diaCell(DIA.padX, y, w, text, M)(hh);
+          y += hh + 6 * M.k;
+        });
+        if (ci < cols.length - 1) y += 16 * M.k;
+      });
+      return { body: body, h: y + DIA.padY - 6 * M.k };
+    }
+    var aspectW = aspects.length ? 118 : 0;
+    var x0 = DIA.padX + (aspectW ? aspectW + gap : 0);
+    var cw = (DIA.w - DIA.padX - x0 - gap * (cols.length - 1)) / cols.length;
+    var heads = cols.map(function (c) { return diaMeasure(c.label, c.note, cw, M); });
+    var hh = Math.max.apply(null, heads.map(function (m) { return m.h; }));
+    cols.forEach(function (c, i) { body += diaBox(x0 + i * (cw + gap), y, cw, hh, heads[i], c.accent, M); });
+    y += hh + 10;
+    for (var r = 0; r < nRows; r++) {
+      var rh = 0;
+      cols.forEach(function (c, i) { rh = Math.max(rh, diaCell(x0 + i * (cw + gap), y, cw, (c.cells || [])[r] || "", M, true)); });
+      if (aspects[r]) {
+        var al = diaWrapPx(aspects[r], aspectW - 4, DIA_CH_NOTE * 1.12);
+        var ay = y + (rh - al.length * 12) / 2 + 9;
+        al.forEach(function (ln, j) {
+          body += '<text class="dg-aspect" x="' + (DIA.padX + aspectW) + '" y="' + (ay + j * 12).toFixed(1) + '">' + esc(ln) + "</text>";
+        });
+      }
+      cols.forEach(function (c, i) { body += diaCell(x0 + i * (cw + gap), y, cw, (c.cells || [])[r] || "", M)(rh); });
+      y += rh + 8;
+    }
+    return { body: body, h: y + DIA.padY - 8 };
+  }
+
+  function renderMatrix(spec, narrow) {
+    var cols = spec.cols || [], rows = spec.rows || [], cells = spec.cells || [];
+    var M = diaMetrics(narrow), gap = 10, body = "", y = DIA.padY;
+    var yl = spec.yLabel ? 22 * M.k : 0;
+    var rowHeadW = (narrow ? 150 : 120) + 0;
+    var x0 = DIA.padX + yl + rowHeadW + gap;
+    var cw = (DIA.w - DIA.padX - x0 - gap * (cols.length - 1)) / cols.length;
+    if (spec.xLabel) {
+      body += '<text class="dg-axis" x="' + (x0 + (DIA.w - DIA.padX - x0) / 2).toFixed(1) + '" y="' + (y + 11 * M.k).toFixed(1) + '">' + esc(spec.xLabel) + "</text>";
+      y += 20 * M.k;
+    }
+    var chHead = DIA_CH_NOTE * 1.12 * M.k, lhHead = 12 * M.k;
+    var headLines = cols.map(function (c) { return diaWrapPx(c, cw - 6, chHead); });
+    var headH = Math.max.apply(null, headLines.map(function (l) { return l.length; })) * lhHead + 6 * M.k;
+    headLines.forEach(function (ls, i) {
+      ls.forEach(function (ln, j) {
+        body += '<text class="dg-colhead" x="' + (x0 + i * (cw + gap) + cw / 2).toFixed(1) + '" y="' + (y + (j + 1) * lhHead - 2).toFixed(1) + '">' + esc(ln) + "</text>";
+      });
+    });
+    y += headH;
+    var gridTop = y;
+    rows.forEach(function (rlab, r) {
+      var ms = cols.map(function (c, i) { var cell = (cells[r] || [])[i] || {}; return diaMeasure(cell.label || "", cell.note, cw, M); });
+      var rh = Math.max.apply(null, ms.map(function (m) { return m.h; }));
+      var rl = diaWrapPx(rlab, rowHeadW - 8, chHead);
+      var ry = y + (rh - rl.length * lhHead) / 2 + lhHead * 0.8;
+      rl.forEach(function (ln, j) {
+        body += '<text class="dg-rowhead" x="' + (DIA.padX + yl + rowHeadW).toFixed(1) + '" y="' + (ry + j * lhHead).toFixed(1) + '">' + esc(ln) + "</text>";
+      });
+      cols.forEach(function (c, i) {
+        var cell = (cells[r] || [])[i] || {};
+        body += diaBox(x0 + i * (cw + gap), y, cw, rh, ms[i], cell.accent, M);
+      });
+      y += rh + gap;
+    });
+    if (spec.yLabel) {
+      var cy = (gridTop + y - gap) / 2, cx = DIA.padX + 9 * M.k;
+      body += '<text class="dg-axis" transform="rotate(-90 ' + cx.toFixed(1) + " " + cy.toFixed(1) + ')" x="' + cx.toFixed(1) + '" y="' + (cy + 4 * M.k).toFixed(1) + '">' + esc(spec.yLabel) + "</text>";
+    }
+    return { body: body, h: y - gap + DIA.padY };
+  }
+
+  function renderStack(spec, narrow) {
+    var layers = spec.layers || [];
+    var M = diaMetrics(narrow), body = "", y = DIA.padY;
+    var flow = spec.top || spec.bottom;
+    var lx = DIA.padX + (flow ? 34 * (narrow ? 1.6 : 1) : 0);
+    var w = DIA.w - DIA.padX - lx, gap = 8 * M.k;
+    if (spec.top) {
+      body += '<text class="dg-flowtext" x="' + lx + '" y="' + (y + 10 * M.k).toFixed(1) + '">' + esc(spec.top) + "</text>";
+      y += 20 * M.k;
+    }
+    var start = y;
+    layers.forEach(function (l, i) {
+      var m = diaMeasure(l.label, l.note, w, M);
+      body += diaBox(lx, y, w, m.h, m, l.accent, M);
+      y += m.h + (i < layers.length - 1 ? gap : 0);
+    });
+    if (flow) {
+      var ax = DIA.padX + 12 * (narrow ? 1.6 : 1);
+      body += '<path class="dg-edge" d="M' + ax + " " + (start - (spec.top ? 6 : 0)) + " V" + (y + (spec.bottom ? 4 : 0)) + '" marker-end="url(#dg-ar)"/>';
+    }
+    if (spec.bottom) {
+      y += 20 * M.k;
+      body += '<text class="dg-flowtext" x="' + lx + '" y="' + (y - 2 * M.k).toFixed(1) + '">' + esc(spec.bottom) + "</text>";
+    }
+    return { body: body, h: y + DIA.padY };
+  }
+
+  function diaSvg(spec, narrow, cls) {
+    var body, h;
+    var custom = { lanes: renderLanes, compare: renderCompare, matrix: renderMatrix, stack: renderStack }[spec.kind];
+    if (custom) {
+      var lr = custom(spec, narrow);
+      body = lr.body; h = lr.h;
+    } else {
+      var L = diaLayout(spec, narrow);
+      h = L.h;
+      body = "";
+      /* Edges first so a box always paints over a line, never under it. */
+      (spec.edges || []).forEach(function (e, i) { body += diaEdge(e, L, i); });
+      Object.keys(L.pos).forEach(function (id) { body += diaNode(L.pos[id], L.M); });
+    }
+    return '<svg class="dg ' + cls + '" viewBox="0 0 ' + DIA.w + " " + Math.round(h) + '" ' +
+           'preserveAspectRatio="xMidYMin meet" role="img" ' +
+           'aria-label="' + esc(spec.alt || spec.caption || "Diagram") + '">' +
+           '<defs><marker id="dg-ar" viewBox="0 0 10 10" refX="8.5" refY="5" ' +
+           'markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">' +
+           '<path d="M0.5 1 L9 5 L0.5 9 z"/></marker></defs>' + body + "</svg>";
+  }
+
+  /* Both widths are rendered up front and swapped with a media query. A resize
+     listener would mean re-rendering inside an open <details>, which fights the
+     open/close height animation; two static SVGs cost a few KB and never do. */
+  function renderDiagram(spec) {
+    if (!spec) return "";
+    var need = { lanes: "lanes", compare: "columns", matrix: "cells", stack: "layers" }[spec.kind] || "rows";
+    if (!(spec[need] || []).length) return "";
+    return '<figure class="q-diagram">' +
+      '<b class="slot-label">Picture it</b>' +
+      '<div class="dg-frame">' +
+      diaSvg(spec, false, "dg-wide") +
+      diaSvg(spec, true, "dg-narrow") +
+      "</div>" +
+      (spec.caption ? "<figcaption>" + fmt(spec.caption) + "</figcaption>" : "") +
+      "</figure>";
+  }
+  IR.renderDiagram = renderDiagram;
+
+
   /* ---------- card rendering ---------- */
   var PRIORITY = {
     high:   { label: "High",   hint: "High priority - asked in most interviews. Learn this first." },
@@ -627,32 +1393,62 @@
   IR.priority = PRIORITY;
 
   var ICON_COPY =
-    '<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-    '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>';
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
   var ICON_CHECK =
-    '<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">' +
-    '<path d="m5 12 5 5L20 7"/></svg>';
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M5 12l5 5L20 7"/></svg>';
 
-  /* Clipboard API where allowed; a hidden textarea otherwise (older browsers,
-     or pages opened from file:// in some of them). */
-  function copyText(text, done) {
-    function fallback() {
+  /* Clipboard API first; the textarea fallback covers browsers that block it
+     on file:// pages. */
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (resolve, reject) {
       var ta = document.createElement("textarea");
       ta.value = text;
       ta.setAttribute("readonly", "");
-      ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;pointer-events:none;";
+      ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;";
       document.body.appendChild(ta);
       ta.select();
       var ok = false;
       try { ok = document.execCommand("copy"); } catch (e) {}
       document.body.removeChild(ta);
-      done(ok);
-    }
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text).then(function () { done(true); }, fallback);
-    } else {
-      fallback();
-    }
+      if (ok) resolve(); else reject(new Error("copy failed"));
+    });
+  }
+
+  /* Lives inside <summary>, so the click must not also open or close the card. */
+  function copyButton(question) {
+    var plain = String(question).replace(/`([^`]+)`/g, "$1").replace(/\*\*([^*]+)\*\*/g, "$1");
+    var b = el("button", "q-copy", ICON_COPY);
+    b.type = "button";
+    b.title = "Copy question";
+    b.setAttribute("aria-label", "Copy question");
+    var timer;
+    b.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      copyText(plain).then(function () {
+        b.innerHTML = ICON_CHECK;
+        b.classList.add("is-copied");
+        b.title = "Copied";
+        b.setAttribute("aria-label", "Question copied");
+      }, function () {
+        b.title = "Copy failed";
+      });
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        b.innerHTML = ICON_COPY;
+        b.classList.remove("is-copied");
+        b.title = "Copy question";
+        b.setAttribute("aria-label", "Copy question");
+      }, 1500);
+    });
+    return b;
   }
 
   function renderCard(c, i, opts) {
@@ -670,31 +1466,9 @@
     /* Priority sits in the card's top-right corner. It floats inside the
        title so a long question wraps around it instead of losing width to a
        fixed column - which matters most on a phone. */
-    /* Copy sits just left of the priority pill. Both float right, so it is
-       inserted first and the pill is then put in front of it. */
-    var questionText = titleWrap.textContent.trim();
-    var copyBtn = el("button", "q-copy", ICON_COPY);
-    copyBtn.type = "button";
-    copyBtn.title = "Copy question";
-    copyBtn.setAttribute("aria-label", "Copy question");
-    copyBtn.addEventListener("click", function (ev) {
-      /* Inside <summary>, so stop the click from toggling the card. */
-      ev.preventDefault();
-      ev.stopPropagation();
-      copyText(questionText, function (ok) {
-        copyBtn.innerHTML = ok ? ICON_CHECK : ICON_COPY;
-        copyBtn.classList.toggle("is-copied", ok);
-        copyBtn.title = ok ? "Copied" : "Copy failed";
-        clearTimeout(copyBtn._t);
-        copyBtn._t = setTimeout(function () {
-          copyBtn.innerHTML = ICON_COPY;
-          copyBtn.classList.remove("is-copied");
-          copyBtn.title = "Copy question";
-        }, 1400);
-      });
-    });
-    titleWrap.insertBefore(copyBtn, titleWrap.firstChild);
-
+    /* Copy button floats beside the pill. Inserted first so the pill,
+       inserted before it, stays rightmost. */
+    titleWrap.insertBefore(copyButton(c.q), titleWrap.firstChild);
     var prio = PRIORITY[c.priority];
     if (prio) {
       var pill = el("span", "q-prio is-" + c.priority,
@@ -730,19 +1504,28 @@
     if (c.why) {
       bh += '<div class="q-why"><span class="slot-label">What they are testing</span>' + fmt(c.why) + '</div>';
     }
+    /* Quick recall: 3-5 plain bullets to glance at just before an interview. */
+    if (c.quick && c.quick.length) {
+      bh += '<div class="q-quick"><span class="slot-label">Quick recall</span><ul>' +
+        c.quick.map(function (b) { return '<li>' + fmt(b) + '</li>'; }).join("") + '</ul></div>';
+    }
     if (c.simple) {
-      bh += '<div class="q-simple"><span class="slot-label">Plain-language explanation</span>' + paras(c.simple) + '</div>';
+      bh += '<div class="q-simple"><span class="slot-label">Plain-language explanation</span>' + paras(c.simple, true, c.id) + '</div>';
     }
     if (c.points && c.points.length) {
       bh += '<ul class="q-points">' + c.points.map(function (p) {
         return '<li>' + fmt(p) + '</li>';
       }).join("") + '</ul>';
     }
+    /* Diagram after the explanation and bullets: see the shape, then say it. */
+    if (c.diagram) {
+      bh += renderDiagram(c.diagram);
+    }
     if (c.code) {
       bh += '<pre class="q-code"><code>' + esc(c.code) + '</code></pre>';
     }
     if (c.say) {
-      bh += '<div class="q-say"><span class="slot-label">Say this in the room</span><p>' + fmt(c.say) + '</p></div>';
+      bh += '<div class="q-say"><span class="slot-label">Say this in the room</span><p>' + glossFmt(c.say, null, c.id) + '</p></div>';
     }
     if (c.numbers) {
       bh += '<div class="q-numbers"><span class="slot-label">Numbers to attach</span><p>' + fmt(c.numbers) + '</p></div>';
@@ -793,11 +1576,248 @@
   IR.renderCard = renderCard;
 
   /* ---------- question-card motion ---------- */
+  /* One delegated listener animates the card's height with the Web Animations
+     API: measure, animate, then hand back to native <details>. Only the one
+     card moves (it already clips with overflow:hidden), the body fades on the
+     compositor, and duration scales with distance so a short answer is quick
+     and a long one glides instead of whipping open. Opening eases out (fast
+     start, soft landing). Closing is deliberately brisk - a short range and a
+     curve that moves on the first frame - because folding away should feel
+     like it answered the click, not like it is taking its time. */
   function setupQuestionCardMotion() {
-    /* Native <details> toggling is deliberately used here. It is immediate,
-       reliable on touch devices, and avoids measuring/animating large answer
-       bodies on every open/close. */
+    if (setupQuestionCardMotion.done || !Element.prototype.animate) return;
+    setupQuestionCardMotion.done = true;
+    var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)");
+    var EASE_OPEN = "cubic-bezier(.22, 1, .36, 1)";
+    /* Same curve both ways: it moves on the first frame, so a close answers
+       the click as quickly as an open does. */
+    var EASE_CLOSE = EASE_OPEN;
+
+    function duration(dist, closing) {
+      if (closing) return Math.min(420, Math.max(240, 200 + dist * 0.3));
+      return Math.min(620, Math.max(260, 220 + dist * 0.32));
+    }
+    function closedHeight(d, s) {
+      return s.offsetHeight + (d.offsetHeight - d.clientHeight);
+    }
+    function finish(d) {
+      d._qAnim = d._qFade = null;
+      d.classList.remove("is-animating", "is-closing");
+      d.style.height = "";
+    }
+
+    function run(d, s, opening) {
+      var body = d.querySelector(":scope > .q-body");
+      var from = d.offsetHeight;
+      if (d._qAnim) { d._qAnim.cancel(); if (d._qFade) d._qFade.cancel(); }
+      d.classList.add("is-animating");
+      d.classList.toggle("is-closing", !opening);
+      if (opening) d.open = true;
+      d.style.height = "";
+      var to = opening ? d.offsetHeight : closedHeight(d, s);
+      /* Closing a card taller than the screen: start the collapse from the
+         viewport's bottom edge, not the card's. The part below the fold is
+         invisible anyway, so dropping it is free - and the whole motion now
+         plays where you can see it, instead of mostly off-screen with only
+         the slow tail of the curve visible at the end. */
+      if (!opening) {
+        var r = d.getBoundingClientRect();
+        var bar = document.querySelector(".topbar");
+        var line = bar ? bar.getBoundingClientRect().bottom : 0;
+        var visible = window.innerHeight - Math.max(r.top, line) + 24;
+        if (from > visible) from = Math.max(to, visible);
+      }
+      var ms = duration(Math.abs(to - from), !opening);
+
+      d._qAnim = d.animate(
+        { height: [from + "px", to + "px"] },
+        { duration: ms, easing: opening ? EASE_OPEN : EASE_CLOSE }
+      );
+      if (body) {
+        d._qFade = body.animate(
+          opening ? { opacity: [0, 1], transform: ["translateY(-6px)", "none"] }
+                  : { opacity: [1, 0], transform: ["none", "translateY(-4px)"] },
+          { duration: opening ? ms * 0.9 : ms * 0.45, easing: opening ? EASE_OPEN : "ease-out", fill: "both" }
+        );
+      }
+      var anim = d._qAnim, fade = d._qFade;
+      function done() {
+        if (d._qAnim !== anim) return; /* superseded by a reverse click */
+        if (!opening) d.open = false;
+        anim.cancel();
+        if (fade) fade.cancel();
+        finish(d);
+      }
+      anim.onfinish = done;
+      /* finish events wait for a rendered frame; a hidden tab may never draw
+         one, so a timer guarantees the card still lands in its end state. */
+      setTimeout(done, ms + 80);
+    }
+
+    /* Bulk path (Expand all / Collapse all): no height animation. Height
+       tweens re-lay out the whole page every frame, and a dozen of them at
+       once is what stuttered. Cards snap to their end state; the caller may
+       ask for a compositor-only fade on the few that are on screen. */
+    IR.setCardOpen = function (d, open, fade) {
+      if (d._qAnim) {
+        var a = d._qAnim, f = d._qFade;
+        finish(d);              /* clears d._qAnim, so a's onfinish is a no-op */
+        a.cancel(); if (f) f.cancel();
+      }
+      d.open = open;
+      if (open && fade && !(reduce && reduce.matches)) {
+        var body = d.querySelector(":scope > .q-body");
+        if (body) body.animate(
+          { opacity: [0, 1], transform: ["translateY(-4px)", "none"] },
+          { duration: 280, easing: EASE_OPEN }
+        );
+      }
+    };
+
+    IR.animateCard = function (d, open) {
+      var s = d.querySelector(":scope > summary");
+      if (!s || (reduce && reduce.matches)) { d.open = open; return; }
+      var heading = d._qAnim ? !d.classList.contains("is-closing") : d.open;
+      if (heading !== open) run(d, s, open);
+    };
+
+    document.addEventListener("click", function (e) {
+      var s = e.target.closest && e.target.closest(".q-card > summary");
+      if (!s || e.defaultPrevented || e.button !== 0) return;
+      var d = s.parentElement;
+      if (reduce && reduce.matches) return; /* native instant toggle */
+      e.preventDefault();
+      /* Mid-animation, the direction is whichever way the card is heading. */
+      var opening = d._qAnim ? d.classList.contains("is-closing") : !d.open;
+      /* Closing a card you have scrolled deep into: bring its header back so
+         you do not lose your place when the body folds away above you. */
+      if (!opening) {
+        var top = d.getBoundingClientRect().top;
+        var bar = document.querySelector(".topbar");
+        var line = bar ? bar.getBoundingClientRect().bottom : 0;
+        if (top < line) d.scrollIntoView({ block: "start", behavior: "smooth" });
+      }
+      run(d, s, opening);
+    });
   }
+
+  /* ---------- themed dropdown ----------
+     A native <select> popup is drawn by the OS, so it ignores the theme (grey
+     highlight, light list in dark mode). This wraps a select with a button and
+     a listbox built from tokens. The select stays in the DOM as the source of
+     truth: choosing an option sets its value and fires "change", so existing
+     listeners keep working untouched. */
+  var ddSeq = 0, ddOpen = null;
+  var DD_CARET = '<svg class="dd-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+  var DD_CHECK = '<svg class="dd-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>';
+
+  function enhanceSelect(sel, opts) {
+    if (!sel || sel._dd) return;
+    opts = opts || {};
+    var id = "dd-" + (++ddSeq);
+    var wrap = el("div", "dd" + (opts.inline ? " dd-inline" : ""));
+    sel.parentNode.insertBefore(wrap, sel);
+    wrap.appendChild(sel);
+    sel.classList.add("dd-native");
+    sel.tabIndex = -1;
+    sel.setAttribute("aria-hidden", "true");
+
+    var btn = el("button", "dd-btn", '<span class="dd-value"></span>' + DD_CARET);
+    btn.type = "button";
+    btn.setAttribute("aria-haspopup", "listbox");
+    btn.setAttribute("aria-expanded", "false");
+    btn.setAttribute("aria-controls", id);
+    if (sel.getAttribute("aria-label")) btn.setAttribute("aria-label", sel.getAttribute("aria-label"));
+    var menu = el("ul", "dd-menu");
+    menu.id = id;
+    menu.setAttribute("role", "listbox");
+    menu.tabIndex = -1;
+    var items = [].slice.call(sel.options).map(function (o, i) {
+      var li = el("li", "dd-opt", '<span>' + esc(o.textContent) + '</span>' + DD_CHECK);
+      li.id = id + "-" + i;
+      li.setAttribute("role", "option");
+      li.addEventListener("click", function () { choose(i); });
+      li.addEventListener("mousemove", function () { setActive(i); });
+      menu.appendChild(li);
+      return li;
+    });
+    wrap.appendChild(btn);
+    wrap.appendChild(menu);
+    var valueEl = btn.querySelector(".dd-value");
+    var active = -1;
+
+    function sync() {
+      var i = sel.selectedIndex;
+      valueEl.textContent = i >= 0 ? sel.options[i].textContent : "";
+      items.forEach(function (li, j) { li.setAttribute("aria-selected", j === i ? "true" : "false"); });
+    }
+    function setActive(i) {
+      if (i < 0 || i >= items.length) return;
+      if (items[active]) items[active].classList.remove("is-active");
+      active = i;
+      items[i].classList.add("is-active");
+      menu.setAttribute("aria-activedescendant", items[i].id);
+      var li = items[i], top = li.offsetTop, bot = top + li.offsetHeight;
+      if (top < menu.scrollTop) menu.scrollTop = top;
+      else if (bot > menu.scrollTop + menu.clientHeight) menu.scrollTop = bot - menu.clientHeight;
+    }
+    function open() {
+      if (ddOpen && ddOpen !== api) ddOpen.close(false);
+      ddOpen = api;
+      /* Open upward when there is not room below. */
+      wrap.classList.remove("dd-up");
+      var r = btn.getBoundingClientRect();
+      if (window.innerHeight - r.bottom < Math.min(menu.scrollHeight, 256) + 16 && r.top > window.innerHeight - r.bottom) wrap.classList.add("dd-up");
+      wrap.classList.add("is-open");
+      btn.setAttribute("aria-expanded", "true");
+      setActive(Math.max(0, sel.selectedIndex));
+      menu.focus({ preventScroll: true });
+    }
+    function close(focusBtn) {
+      if (ddOpen === api) ddOpen = null;
+      wrap.classList.remove("is-open");
+      btn.setAttribute("aria-expanded", "false");
+      if (focusBtn) btn.focus({ preventScroll: true });
+    }
+    function choose(i) {
+      if (sel.selectedIndex !== i) {
+        sel.selectedIndex = i;
+        sel.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      sync();
+      close(true);
+    }
+    var api = { close: close, wrap: wrap };
+    sel._dd = api;
+
+    btn.addEventListener("click", function () {
+      if (wrap.classList.contains("is-open")) close(false); else open();
+    });
+    btn.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); open(); }
+    });
+    menu.addEventListener("keydown", function (e) {
+      var k = e.key;
+      if (k === "ArrowDown") { e.preventDefault(); setActive(Math.min(items.length - 1, active + 1)); }
+      else if (k === "ArrowUp") { e.preventDefault(); setActive(Math.max(0, active - 1)); }
+      else if (k === "Home") { e.preventDefault(); setActive(0); }
+      else if (k === "End") { e.preventDefault(); setActive(items.length - 1); }
+      else if (k === "Enter" || k === " ") { e.preventDefault(); choose(active); }
+      else if (k === "Escape") { e.preventDefault(); close(true); }
+      else if (k === "Tab") { close(false); }
+    });
+    sel.addEventListener("change", sync);
+    /* A <label> around the select would focus the hidden control; open instead. */
+    var lab = wrap.closest("label");
+    if (lab) lab.addEventListener("click", function (e) {
+      if (!wrap.contains(e.target)) { e.preventDefault(); open(); }
+    });
+    sync();
+  }
+  document.addEventListener("pointerdown", function (e) {
+    if (ddOpen && !ddOpen.wrap.contains(e.target)) ddOpen.close(false);
+  });
+  IR.enhanceSelect = enhanceSelect;
 
   /* ---------- list mounting & filtering ---------- */
   function mountList(host, cards, opts) {
@@ -849,7 +1869,16 @@
     count.style.fontSize = "0.75rem";
     count.style.color = "var(--text-muted)";
 
+    /* Expand / collapse every card the filters currently show. The label
+       tracks reality: it reads "Collapse all" only while every visible card
+       is open, and updates as cards are toggled one by one. */
+    var ICON_EXPAND = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>';
+    var ICON_COLLAPSE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 20 5-5 5 5"/><path d="m7 4 5 5 5-5"/></svg>';
+    var expandBtn = el("button", "q-expand-all");
+    expandBtn.type = "button";
+
     bar.appendChild(searchWrap);
+    bar.appendChild(expandBtn);
     bar.appendChild(roundSel);
     if (prioSel) bar.appendChild(prioSel);
     bar.appendChild(count);
@@ -886,9 +1915,58 @@
       empty.hidden = shown !== 0;
     }
 
+    function visibleCards() {
+      return [].slice.call(list.querySelectorAll(".q-card")).filter(function (d) { return !d.hidden; });
+    }
+    /* A card mid-close is still [open]; count where it is heading instead. */
+    function isOpening(d) { return d.open && !d.classList.contains("is-closing"); }
+    function syncExpandBtn() {
+      var vis = visibleCards();
+      var allOpen = vis.length > 0 && vis.every(isOpening);
+      expandBtn.innerHTML = (allOpen ? ICON_COLLAPSE : ICON_EXPAND) +
+        '<span>' + (allOpen ? "Collapse all" : "Expand all") + '</span>';
+      expandBtn.setAttribute("aria-label", allOpen ? "Collapse all questions" : "Expand all questions");
+      expandBtn.setAttribute("aria-expanded", allOpen ? "true" : "false");
+      expandBtn.disabled = vis.length === 0;
+      expandBtn.dataset.state = allOpen ? "collapse" : "expand";
+    }
+    expandBtn.addEventListener("click", function () {
+      var open = expandBtn.dataset.state !== "collapse";
+      var cardsNow = visibleCards();
+      /* Collapsing from deep in the list: jump back to the bar first (an
+         instant jump - a smooth scroll across a page that is shrinking under
+         it would fight the layout change). */
+      if (!open && bar.getBoundingClientRect().top < 0) bar.scrollIntoView({ block: "start" });
+      /* Read every position before writing any state, so the loop below does
+         not force a layout per card. */
+      var vh = window.innerHeight;
+      var onScreen = cardsNow.map(function (d) {
+        var r = d.getBoundingClientRect();
+        return r.bottom > 0 && r.top < vh;
+      });
+      cardsNow.forEach(function (d, i) {
+        if (isOpening(d) === open && !d._qAnim) return;
+        if (IR.setCardOpen) IR.setCardOpen(d, open, onScreen[i]);
+        else d.open = open;
+      });
+      syncExpandBtn();
+    });
+    /* toggle does not bubble, so listen in the capture phase. */
+    list.addEventListener("toggle", syncExpandBtn, true);
+    list.addEventListener("click", function (e) {
+      if (e.target.closest && e.target.closest(".q-card > summary")) setTimeout(syncExpandBtn, 0);
+    });
+
     filterInput.addEventListener("input", filter);
     roundSel.addEventListener("change", filter);
     if (prioSel) prioSel.addEventListener("change", filter);
+    roundSel.setAttribute("aria-label", "Filter by round");
+    enhanceSelect(roundSel);
+    if (prioSel) enhanceSelect(prioSel);
+    [filterInput, roundSel, prioSel].forEach(function (c) {
+      if (c) c.addEventListener(c === filterInput ? "input" : "change", syncExpandBtn);
+    });
+    syncExpandBtn();
   }
 
   /* ---------- CampusX comparison modal & trigger ---------- */
@@ -1246,10 +2324,9 @@
       var full = "";
       if (h.classList && h.classList.contains("q-card")) {
         var titleEl = h.querySelector(".q-title");
-        /* The question text only - not the copy button, priority pill or meta chips. */
+        /* The question text only - not the priority pill or the meta chips. */
         full = titleEl ? [].filter.call(titleEl.childNodes, function (n) {
-          return !(n.classList && (n.classList.contains("q-prio") || n.classList.contains("q-copy") ||
-            n.classList.contains("q-meta")));
+          return !(n.classList && (n.classList.contains("q-prio") || n.classList.contains("q-copy") || n.classList.contains("q-meta")));
         }).map(function (n) { return n.textContent; }).join("").trim() : h.textContent.trim();
       } else {
         full = h.textContent.trim();
@@ -1280,7 +2357,7 @@
       '</label>' +
       '<div class="toc-list">' +
         items.map(function (it) {
-          return '<a href="#' + esc(it.id) + '" data-toc="' + esc(it.id) + '" title="' + esc(it.full) + '">' +
+          return '<a href="#' + esc(it.id) + '" data-toc="' + esc(it.id) + '">' +
             '<span class="toc-num">' + esc(it.num) + '</span>' +
             '<span class="toc-label">' + esc(it.full) + '</span></a>';
         }).join("") +
@@ -1322,25 +2399,74 @@
       });
     }
 
+    /* No scroll spy: reading the page never lights up the rail. A click
+       flashes the chosen row - it eases in, holds briefly, then fades out
+       (the slower fade lives on .toc-fade in portal.css). */
+    var flashTimer = null, fadeTimer = null;
+    function flash(link) {
+      clearTimeout(flashTimer); clearTimeout(fadeTimer);
+      links.forEach(function (l) { l.classList.remove("active", "toc-fade"); });
+      void link.offsetWidth; /* restart the ease-in on a repeat click */
+      link.classList.add("active");
+      flashTimer = setTimeout(function () {
+        link.classList.add("toc-fade");
+        link.classList.remove("active");
+        fadeTimer = setTimeout(function () { link.classList.remove("toc-fade"); }, 1000);
+      }, 1600);
+    }
+
+    /* Question rail: scroll to the card first, then open it once the scroll
+       has come to rest - opening mid-scroll would move the target while the
+       page is still travelling towards it. "At rest" is detected by the scroll
+       position holding still for a few frames (scrollend is not universal). */
+    var reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)");
+    var jumpToken = 0;
+    function whenScrollSettles(cb) {
+      var token = ++jumpToken, last = -1, still = 0, fired = false;
+      function go() {
+        if (fired || token !== jumpToken) return; /* once; newest click wins */
+        fired = true; cb();
+      }
+      (function check() {
+        if (fired || token !== jumpToken) return;
+        var y = window.scrollY;
+        still = y === last ? still + 1 : 0;
+        last = y;
+        if (still >= 4) go(); else requestAnimationFrame(check);
+      })();
+      /* Frames can stall (background tab); the card still opens. */
+      setTimeout(go, 1600);
+    }
+    function jumpToCard(card) {
+      var smooth = !(reduceMotion && reduceMotion.matches);
+      card.scrollIntoView({ block: "start", behavior: smooth ? "smooth" : "auto" });
+      whenScrollSettles(function () {
+        /* Off-screen cards are sized by estimate (content-visibility), so the
+           landing spot can drift as cards render on the way. Snap the last
+           few pixels, then open. */
+        var bar = document.querySelector(".topbar");
+        var want = (bar ? bar.getBoundingClientRect().bottom : 0);
+        if (Math.abs(card.getBoundingClientRect().top - want) > 40) card.scrollIntoView({ block: "start" });
+        if (!card.open || card.classList.contains("is-closing")) {
+          if (IR.animateCard) IR.animateCard(card, true); else card.open = true;
+        }
+      });
+    }
+
     links.forEach(function (l) {
-      l.addEventListener("click", function () {
+      l.addEventListener("click", function (e) {
         nav.classList.remove("toc-open");
         if (tocToggle) tocToggle.setAttribute("aria-expanded", "false");
+        flash(l);
+        var target = document.getElementById(l.getAttribute("data-toc"));
+        if (!target || !target.classList.contains("q-card")) return; /* section headings: native jump */
+        e.preventDefault();
+        jumpToCard(target);
+        /* Keep the URL shareable without the native jump; never let a
+           history error (e.g. a sandboxed file:// page) block the scroll. */
+        try { history.replaceState(null, "", "#" + target.id); } catch (err) {}
       });
     });
-
-    if (window.IntersectionObserver) {
-      var obs = new IntersectionObserver(function (entries) {
-        entries.forEach(function (en) {
-          if (en.isIntersecting) {
-            links.forEach(function (l) {
-              l.classList.toggle("active", l.getAttribute("data-toc") === en.target.id);
-            });
-          }
-        });
-      }, { rootMargin: "-72px 0px -70% 0px" });
-      heads.forEach(function (h) { obs.observe(h); });
-    }
   }
 
   /* ---------- sidebar & rail resizers ---------- */
@@ -1556,8 +2682,12 @@
     buildRail();
     buildPager();
     setupQuestionCardMotion();
+    [].forEach.call(document.querySelectorAll("select[data-round-filter]"), function (sel) {
+      enhanceSelect(sel, { inline: true });
+    });
     initResizers();
     initScrollState();
+    setupTips();
 
     document.dispatchEvent(new CustomEvent("ir:ready"));
   }

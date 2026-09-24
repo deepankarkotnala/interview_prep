@@ -29,7 +29,14 @@ window.IR.q["09-mcp"] = {
         "protocol"
       ],
       "why": "Currency. Whether you know how the protocol works today, not how it looked at launch.",
-      "simple": "MCP stands for Model Context Protocol. It is an open standard that lets an AI application find and use tools, data and prompt templates offered by another program, in one common format.\n\nWithout it, every AI app writes custom glue code for every integration. With MCP, a team writes one MCP server for, say, their ticket system. Any MCP-aware app - a chat assistant, an IDE, an agent - can then connect to it. The app side is called the client; the program offering the tools is the server. It works like USB-C for AI integrations: one plug shape, many devices.\n\nMessages travel in two standard ways. For a local server, the app starts it as a child process and they talk over standard input and output (called stdio). For a remote server, they talk over HTTP (called Streamable HTTP).\n\nSince the 2026-07-28 revision, each request carries everything the server needs to handle it, so there is no start-up handshake or session to keep.\n\nWhat MCP is not: an agent framework or a security layer. The application still decides which tools the model sees, checks permissions, and asks for approval before risky actions.",
+      "quick": [
+        "MCP is an open standard for connecting AI apps to tools.",
+        "It replaces custom glue code for every integration.",
+        "The tool side is the server, the app is the client.",
+        "Write one server, and any MCP-aware app can use it.",
+        "It is not a security layer, the app still checks permissions."
+      ],
+      "simple": "MCP stands for Model Context Protocol. It is an open standard that lets an AI application find and use tools, data and prompt templates offered by another program, all in one common format. The problem it solves is integration glue, because without it ten apps and ten systems can mean a hundred one-off connectors.\n\nWith MCP, a team writes one MCP server for a system once, and any MCP-aware app, called the client, can connect to it. For example, one server for a ticket system can serve a chat assistant, an IDE and an internal agent. Local servers talk over stdio and remote ones over Streamable HTTP. But MCP isn't an agent framework or a security layer, so the application still decides which tools the model sees and asks for approval before risky actions.",
       "points": [
         "Open protocol for tools, resources and prompts used by AI applications.",
         "Standard client/server boundary reduces one-off integration glue.",
@@ -37,7 +44,37 @@ window.IR.q["09-mcp"] = {
         "stdio is common locally; Streamable HTTP is the standard remote transport.",
         "MCP standardises interoperability, not tool choice, permissions or safety."
       ],
-      "say": "MCP is an open protocol that standardises how AI applications discover and use tools, resources and prompts. The 2026-07-28 core is stateless, so each request carries the information it needs and calling server discovery first is optional. Local integrations commonly use stdio and remote ones Streamable HTTP. I treat MCP as an interoperability boundary, not an agent or security framework: permissions, validation, approvals and tool-selection logic still belong to the application.",
+      "diagram": {
+        "kind": "stack",
+        "alt": "MCP layers from the host application down through the client, the transport and the server to the real system behind it.",
+        "top": "user and model",
+        "layers": [
+          {
+            "label": "Host application",
+            "note": "chooses tools, checks permissions",
+            "accent": "warn"
+          },
+          {
+            "label": "MCP client",
+            "note": "one standard plug"
+          },
+          {
+            "label": "Transport",
+            "note": "stdio local, Streamable HTTP remote"
+          },
+          {
+            "label": "MCP server",
+            "note": "tools, resources, prompts",
+            "accent": "accent"
+          },
+          {
+            "label": "Your system",
+            "note": "e.g. the ticket system"
+          }
+        ],
+        "caption": "**USB-C for AI integrations**: write one server and any MCP-aware app can use it. MCP standardises the plug, not safety - the host still decides and approves."
+      },
+      "say": "MCP, the Model Context Protocol, is an open standard that lets AI applications find and use tools, data and prompt templates from other programs in one common format. Without it, every AI app writes custom glue for every integration. With it, a team writes one MCP server for, say, their ticket system, and any MCP-aware chat assistant, IDE or agent can connect. The app is the client and the program offering the tools is the server, a bit like USB-C for AI integrations. Local servers usually talk over standard input and output, and remote ones over Streamable HTTP. Since the 2026-07-28 revision the core is stateless, so each request carries everything the server needs and there's no handshake or session to maintain. What juniors miss is what MCP isn't. It's not an agent framework or a security layer, so the application still decides which tools the model sees, checks permissions and asks for approval before risky actions.",
       "numbers": "No number applies. This is an integration-architecture answer.",
       "wrong": "Describing MCP as one vendor's tool feature, or assuming the protocol itself decides which tool to call and makes that call safe.",
       "follow": "So what stops a malicious MCP server from doing damage?",
@@ -57,7 +94,14 @@ window.IR.q["09-mcp"] = {
         "tools"
       ],
       "why": "The obvious follow-up, and a vague answer here undoes the previous one.",
-      "simple": "You can always call an API directly. MCP becomes useful when you want a standard, discoverable interface between many AI hosts and many integrations.\n\nWith a direct integration, the application usually knows the endpoint, request shape and response shape in code. With MCP, the client can list the server's tools, resources or prompts in a common format, so the host does not need a custom adapter for every server.\n\nThat does not mean a new server tool magically appears in a model prompt. The host still decides which capabilities to expose, when to refresh or cache the catalog, and what the user is allowed to use.\n\nFor one service and one application that you control, a normal function or API call is often simpler. MCP pays off when reuse and interoperability are worth the extra protocol and security work.",
+      "quick": [
+        "A direct API is one custom connection per service.",
+        "MCP lets any app list any server's tools the same way.",
+        "The app still decides what to expose and who may use it.",
+        "It pays off when many apps share the same tools.",
+        "For one app and one service, call the API directly."
+      ],
+      "simple": "You can always call an API directly, so the real question is when MCP adds something. With a direct integration, your application knows the endpoint and the request and response shapes in code, so it is one custom connection per service. With MCP, the client can list any server's tools in a common, model-friendly format, so the host doesn't need a bespoke adapter for every server.\n\nThe payoff comes with reuse. For example, if three teams' agents all need the ticket system, one MCP server serves all of them instead of three separate integrations. But for one service and one application you control end to end, a normal API call is often simpler, because MCP adds a server to deploy, secure and version. Either way, keeping the tool logic in plain functions makes wrapping them as a server cheap later.",
       "points": [
         "Direct API: application-specific integration; MCP: standard discoverable boundary.",
         "The host can list capabilities in a uniform model-friendly shape.",
@@ -65,7 +109,41 @@ window.IR.q["09-mcp"] = {
         "MCP is overhead for a single tightly owned integration.",
         "It pays when several hosts, teams or third-party servers need the same boundary."
       ],
-      "say": "A direct API call is usually application-specific: my code knows the endpoint and request shape. MCP gives the host a standard way to discover and call capabilities across different servers, which reduces custom adapters when many applications or teams share integrations. The host still decides which tools to expose and what the user may do. For one service I own end to end, I would often keep the direct API because it is simpler.",
+      "diagram": {
+        "kind": "compare",
+        "alt": "Calling an API directly versus going through MCP, compared by how the integration is known, discovery, when it fits and the cost.",
+        "aspects": [
+          "Interface known",
+          "Discovery",
+          "Best for",
+          "Cost"
+        ],
+        "columns": [
+          {
+            "label": "Direct API call",
+            "note": "custom glue",
+            "cells": [
+              "Hard-coded in the app",
+              "None, you wrote it",
+              "One app, one service",
+              "Simplest to run"
+            ]
+          },
+          {
+            "label": "MCP",
+            "note": "standard boundary",
+            "accent": "accent",
+            "cells": [
+              "Listed by the server",
+              "Tools, resources, prompts listed",
+              "Many hosts, many integrations",
+              "Protocol and security work"
+            ]
+          }
+        ],
+        "caption": "MCP pays off when **reuse and interoperability** are worth the extra protocol. The host still decides which listed capabilities the model ever sees."
+      },
+      "say": "A direct API is one custom connection per service, while MCP gives many AI hosts one standard, discoverable way to reach many integrations. With a direct call, my code hard-wires the endpoint, the request shape and the response shape for that one service. With MCP, the host can list any server's tools, resources or prompts in a common format, so it doesn't need a bespoke adapter for each. Nothing magically lands in the model's prompt, though. The host still decides what to expose, when to refresh or cache the catalogue, and what the user is allowed to do. The payoff comes with reuse. If three teams' agents all need the ticket system, one MCP server serves all of them. For one service and one app I own end to end, I'd just call the API, because MCP adds a server to deploy, secure and version. I keep tool logic in plain functions either way, so wrapping it later is cheap.",
       "numbers": "No number applies. The payoff scales with the number of tools and consuming applications.",
       "wrong": "\"It's just a wrapper around APIs.\" It misses standard discovery across many hosts and servers, which is where the value is - and the follow-up will ask when that value is worth the extra protocol and security work.",
       "follow": "When would you not bother with MCP?",
@@ -87,7 +165,14 @@ window.IR.q["09-mcp"] = {
         "architecture"
       ],
       "why": "The most common MCP question after 'what is it'. The control model is the part candidates get wrong.",
-      "simple": "**Short version: tools are actions the model chooses, resources are data the application chooses to load, and prompts are templates the user picks. The question is always who is in control.**\n\nTools are model-controlled. The model sees the tool list and decides to call one. These are actions: search tickets, create a record, run a query. Because the model decides, tools carry the risk, and their descriptions and input schemas must be precise.\n\nResources are application-controlled. They are data the server exposes - a file, a database row, a document - each named by a URI, which works like a web address. The host application, not the model, decides to fetch a resource and put it into context. Hosts differ in how they show resources, but the control sits with the application.\n\nPrompts are user-controlled. They are templates the server offers that the user picks on purpose, often as a slash command or menu item.\n\nSaying \"model-controlled, application-controlled, user-controlled\" is what gets the mark. It shows you see MCP as a control model, not a feature list.\n\nThe practical rule: anything with side effects or cost is a tool, with a schema, validation and an approval path. Content the app already knows it needs should be a resource. That keeps it out of the model's choices, which is cheaper and safer. Making everything a tool bloats the tool list and makes tool selection worse.",
+      "quick": [
+        "The difference is who controls each one.",
+        "The model chooses to call tools, like creating a ticket.",
+        "The app decides when to load resources, like files.",
+        "The user picks prompts on purpose, often as slash commands.",
+        "Anything with side effects or cost should be a tool."
+      ],
+      "simple": "MCP servers can offer tools, resources and prompts, and the real difference is who is in control. Tools are model-controlled, resources are application-controlled and prompts are user-controlled.\n\nTools are actions, like search tickets or create a record, and the model decides to call one, so they carry the risk and need precise descriptions and schemas. Resources are data, like a file or a document named by a URI, and the host application decides when to put them into context. Prompts are templates the user picks on purpose, often as a slash command.\n\nSo anything with side effects should be a tool, with validation and an approval path, while content the app already knows it needs should be a resource. For example, a company style guide should be a resource, while \"create ticket\" must be a tool. Making everything a tool bloats the list and makes selection worse.",
       "points": [
         "Tools: model-controlled actions. The model chooses to call them.",
         "Resources: application-controlled data, addressed by URI. The host decides.",
@@ -97,7 +182,52 @@ window.IR.q["09-mcp"] = {
         "Content the app already knows it wants should be a resource, not a tool.",
         "Tool-list bloat degrades selection accuracy - do not make everything a tool."
       ],
-      "say": "Three primitives separated by who controls them. Tools are model-controlled actions, so that is where the risk sits and where schemas must be precise. Resources are application-controlled data addressed by URI - the host decides to fetch them, not the model. Prompts are user-controlled templates the user invokes explicitly. The practical rule is that anything with side effects is a tool, and anything the app already knows it wants should be a resource.",
+      "diagram": {
+        "kind": "compare",
+        "alt": "MCP tools, resources and prompts compared by who controls them, what they are, an example and where the risk sits.",
+        "aspects": [
+          "Controlled by",
+          "What it is",
+          "Example",
+          "Watch out"
+        ],
+        "columns": [
+          {
+            "label": "Tools",
+            "note": "actions",
+            "accent": "warn",
+            "cells": [
+              "The model",
+              "Actions with side effects",
+              "Create a ticket",
+              "Schema, validation, approval"
+            ]
+          },
+          {
+            "label": "Resources",
+            "note": "data by URI",
+            "accent": "accent",
+            "cells": [
+              "The application",
+              "Data the host loads",
+              "A file or record",
+              "Keeps it out of model choices"
+            ]
+          },
+          {
+            "label": "Prompts",
+            "note": "templates",
+            "cells": [
+              "The user",
+              "Templates picked on purpose",
+              "A slash command",
+              "Invoked explicitly"
+            ]
+          }
+        ],
+        "caption": "Say it as a control model: **model-controlled, application-controlled, user-controlled**. Side effects mean a tool; content the app already needs is a resource."
+      },
+      "say": "The difference is who's in control. Tools are model-controlled, resources are application-controlled and prompts are user-controlled. With tools, the model reads the list and decides to call one, like search tickets or create a record. Because the model decides, tools carry the risk, so their descriptions and input schemas have to be precise. Resources are data the server exposes, like a file or a database row, each named by a URI, and the host application decides when to fetch one into context. Prompts are templates the user picks on purpose, often as a slash command. The practical rule follows from that. Anything with side effects or cost is a tool, with a schema, validation and an approval path. Content the app already knows it needs should be a resource, which keeps it out of the model's choices and is cheaper and safer. Making everything a tool bloats the list and makes selection worse.",
       "numbers": "If the host sends every tool definition on every turn - a common default - a bloated tool list costs tokens continuously and tends to worsen tool selection. Measure the serialised tool payload on your own server.",
       "wrong": "Describing all three as 'ways to give the model data'. It misses the control model, which is the entire point of the distinction.",
       "follow": "Your server exposes forty tools and the model keeps choosing badly. What do you change?",
@@ -119,7 +249,14 @@ window.IR.q["09-mcp"] = {
         "deployment"
       ],
       "why": "A common practical follow-up. It shows whether you have actually run a server locally and remotely.",
-      "simple": "A transport is how MCP messages physically travel between client and server. The messages are the same JSON either way; only the delivery changes. There are two standard transports.\n\n**stdio** is for local servers. The client app starts the server as a child process on the same machine. They exchange messages over standard input and output, one JSON message per line. It is simple and fast, and needs no network or login; the server reads its credentials from environment variables. One rule catches people: the server must write only protocol messages to stdout. Logs go to stderr, or they corrupt the stream.\n\n**Streamable HTTP** is for remote, shared servers. The server exposes one HTTP endpoint, and every message is a POST. The server replies with plain JSON, or streams progress and then the result as Server-Sent Events (a simple one-way HTTP stream). Since the 2026-07-28 revision there is no session, so any server instance behind a load balancer can take any request. Remote servers use OAuth for authorization.\n\nThe older HTTP+SSE transport is deprecated, so use Streamable HTTP for anything new.\n\nRule of thumb: stdio for a tool on one developer's machine; Streamable HTTP when many users or apps share one server.",
+      "quick": [
+        "Both carry the same messages, just in different ways.",
+        "With stdio, the app starts the server on the same machine.",
+        "With stdio, logs must go to the error stream, not output.",
+        "Streamable HTTP suits remote servers shared by many users.",
+        "The older HTTP plus SSE method is deprecated."
+      ],
+      "simple": "A transport is how MCP messages travel between client and server, and the JSON is the same either way. There are two standard transports, stdio for local servers and Streamable HTTP for remote ones.\n\nWith stdio, the client starts the server as a child process on the same machine and they exchange messages over standard input and output. It is simple and fast, and the server reads credentials from environment variables. The server must write only protocol messages to stdout, so logs go to stderr. For example, a single stray print statement will corrupt the stream and break the connection.\n\nStreamable HTTP is for remote, shared servers, where every message is a POST to one endpoint and the server replies with JSON or a stream. Remote servers use OAuth. The rule of thumb is stdio for one developer's machine, and Streamable HTTP when many users share a server.",
       "points": [
         "**stdio**: client launches the server as a subprocess; newline-delimited JSON-RPC over stdin/stdout.",
         "stdio: only MCP messages on stdout, logs on stderr; credentials come from the environment, not OAuth.",
@@ -128,7 +265,42 @@ window.IR.q["09-mcp"] = {
         "2026-07-28: no `Mcp-Session-Id` and no GET stream; requests carry `Mcp-Method` and `Mcp-Name` headers for gateways.",
         "Legacy HTTP+SSE is deprecated - migrate to Streamable HTTP."
       ],
-      "say": "MCP has two standard transports carrying the same JSON-RPC messages. stdio is for local servers: the client launches the server as a subprocess and they talk over standard input and output, with logs on stderr and credentials from the environment. Streamable HTTP is for shared remote servers: one endpoint, every message a POST, replies as JSON or a stream, with OAuth for authorization. The old HTTP+SSE transport is deprecated.",
+      "diagram": {
+        "kind": "compare",
+        "alt": "The two MCP transports, stdio and Streamable HTTP, compared by where they run, how messages travel, how they authenticate and the common gotcha.",
+        "aspects": [
+          "Runs",
+          "Messages",
+          "Auth",
+          "Gotcha"
+        ],
+        "columns": [
+          {
+            "label": "stdio",
+            "note": "local",
+            "accent": "accent",
+            "cells": [
+              "Child process, same machine",
+              "JSON lines on stdin/stdout",
+              "Credentials from environment",
+              "Logs to stderr, never stdout"
+            ]
+          },
+          {
+            "label": "Streamable HTTP",
+            "note": "remote, shared",
+            "accent": "warn",
+            "cells": [
+              "Shared server, many users",
+              "POST to one endpoint",
+              "OAuth",
+              "Validate the Origin header"
+            ]
+          }
+        ],
+        "caption": "Same JSON messages, different delivery. **stdio for one developer's machine, Streamable HTTP when many share a server**. Legacy HTTP+SSE is deprecated."
+      },
+      "say": "There are two standard transports, stdio for local servers and Streamable HTTP for remote ones, and the JSON messages are identical in both. With stdio, the client starts the server as a child process on the same machine and they exchange one JSON message per line over standard input and output. It's simple, needs no network or login, and the server reads credentials from environment variables. The rule that catches people is that stdout carries only protocol messages. A stray print statement corrupts the stream, so logs go to stderr. Streamable HTTP exposes one endpoint where every message is a POST, and the server replies with plain JSON or streams progress as Server-Sent Events. Since 2026-07-28 there's no session, so any instance behind a load balancer can take any request, and remote servers use OAuth. The old HTTP plus SSE transport is deprecated. So stdio suits one developer's machine, and Streamable HTTP suits a server many users share.",
       "numbers": "No universal number. stdio adds no network hop, so its overhead is small. For Streamable HTTP, measure p95 latency per tool call through your gateway, because that hop is added to every agent step that calls a tool.",
       "wrong": "\"MCP uses WebSockets\" or \"remote MCP means SSE\". The standard remote transport is Streamable HTTP, the older HTTP+SSE transport is deprecated, and WebSockets is not a standard MCP transport.",
       "follow": "You want to share a stdio server you built with the whole company. What changes?",
@@ -149,7 +321,14 @@ window.IR.q["09-mcp"] = {
         "security"
       ],
       "why": "A design question. It reveals whether you have built one or read about them.",
-      "simple": "Most of it is the tool design discipline from topic 07, applied at the server boundary, plus the things a shared server adds.\n\nTools: one job each, a name that says what it does, a description that says when to use it and when not to, and typed constrained parameters. Remember the description is prompt text going into someone else's context - write it for a model.\n\nReturns: small and summarised. A tool that dumps a full payload will consume the client's context in a few calls, and the client is not yours to fix.\n\nErrors as instructions: what was wrong and what to try instead, never a stack trace.\n\nSecurity: read and write tools separated, arguments validated in code, the end user's identity carried through so authorisation is per-user, and least-privilege credentials.\n\nAnd because it is shared: version it, because consumers you do not know will depend on it; log every call with the caller's identity; and rate-limit, because one badly-behaved agent loop should not take down the system behind it.",
+      "quick": [
+        "Give each tool one job with a description written for models.",
+        "Return small summaries, since you use another team's space.",
+        "Write errors that say what to try next.",
+        "Separate read and write, and check permissions per user.",
+        "Limit calls per caller, version it, and log every call."
+      ],
+      "simple": "Building an MCP server for your team is mostly good tool design applied at the server boundary. Each tool gets one job, a clear name and a description written for a model, saying when to use it and when not to, with typed, constrained parameters. A common mistake is mapping forty REST endpoints one to one instead of designing a few clear tools.\n\nReturns should stay small, around a few hundred to a thousand tokens, because a full payload eats the client's context. Errors should say what to try instead, never show a stack trace. Read and write tools are separated, arguments are validated in code and authorisation is per user.\n\nBecause the server is shared, you also version it, log every call and rate-limit per caller. For example, one agent stuck retrying a search tool should not be able to take down the ticket system behind it.",
       "points": [
         "One job per tool; descriptions written for a model, not a developer.",
         "Small summarised returns - you are spending someone else's context.",
@@ -159,7 +338,7 @@ window.IR.q["09-mcp"] = {
         "Version it - unknown consumers will depend on it.",
         "Rate-limit per caller. One runaway loop must not take the system down."
       ],
-      "say": "Tool discipline first: one job each, descriptions written for a model saying when to use and when not to, typed parameters, and small summarised returns because I am spending someone else's context. Errors phrased as what to try next. Security: read and write separated, arguments validated in code, user identity carried through for per-user authorisation. And because it is shared - versioning, per-caller logging and rate limits.",
+      "say": "Mostly good tool design, plus the discipline a shared server adds. Each tool gets one job, a clear name, and a description that says when to use it and when not to, written for a model, because it becomes prompt text in someone else's context. Parameters are typed and constrained. Returns stay small and summarised, within a budget of a few hundred to about a thousand tokens with pagination beyond it, since I'm spending another team's context window. Errors say what went wrong and what to try next, never a stack trace. On security, read and write tools are separate, arguments are validated in code, and the end user's identity flows through so authorisation is per user with least-privilege credentials. Because it's shared, I version it, log every call with the caller, and rate-limit per caller, since one runaway agent loop fires far more calls than a human would. What I avoid is mapping our REST endpoints one to one into forty tools.",
       "numbers": "Set an explicit result budget per tool - a few hundred to about a thousand tokens is a reasonable starting point - and paginate or summarise beyond it. Rate-limit per caller, because an agent loop can generate far more calls per minute than a human client ever would.",
       "wrong": "\"I'd expose our existing REST endpoints as MCP tools.\" A one-to-one mapping gives the model forty developer-shaped tools it cannot choose between.",
       "follow": "A consumer needs a breaking change to a tool. How do you ship it?",
@@ -181,7 +360,14 @@ window.IR.q["09-mcp"] = {
         "supply-chain"
       ],
       "why": "The question that matters at any regulated employer, and where candidates who only read the happy path stop.",
-      "simple": "MCP makes integrations easy to connect, so I treat every server as a new trust boundary.\n\nThe first risk is the server itself: it may run code or reach sensitive systems. I review what I deploy, pin versions, isolate it, and give it the smallest set of permissions it needs.\n\nThe second risk is model influence. Tool descriptions and returned content are untrusted input. They can contain prompt injection - hidden instructions aimed at the model - so the model is never the final authority on access. Arguments, tenant boundaries, spend limits and write permissions are checked in code before an action runs.\n\nFor remote servers, authorization must be done properly. MCP uses OAuth: the user logs in and the client gets an access token meant for that one server. The server must reject tokens meant for anyone else, and must never pass the user's token on to other services. The 2026-07-28 revision also tightens the login flow, for example by requiring clients to check which authorization server sent a response.\n\nFinally, I log sensitive calls with the user, tool, validated arguments, decision and outcome so incidents can be investigated.",
+      "quick": [
+        "Treat every MCP server as a new trust boundary.",
+        "Review, pin versions, isolate and minimise each server's permissions.",
+        "Tool text and results can hide instructions for the model.",
+        "Keep permission checks in code, never with the model.",
+        "Reject access keys meant for others, and log sensitive calls."
+      ],
+      "simple": "MCP makes integrations very easy to connect, which is exactly why every server should be treated as a new trust boundary and a supply-chain dependency.\n\nThe first risk is the server itself, since it may run code or reach sensitive systems, so you review it, pin versions, isolate it and give it the least permissions it needs. The second is influence over the model, because tool descriptions and results are untrusted input that can carry prompt injection. For example, a tool result could tell the model to send customer data to an outside address. So arguments, tenant boundaries and write permissions are checked in code, never left to the model.\n\nThe third is authorisation on remote servers. The server must reject tokens issued for anyone else and never pass the user's token on. Finally, you log sensitive calls so incidents can be investigated.",
       "points": [
         "Treat every server as a trust boundary and supply-chain dependency.",
         "Least privilege, isolation and reviewed/pinned deployments.",
@@ -190,7 +376,7 @@ window.IR.q["09-mcp"] = {
         "Do not pass unrelated downstream tokens through the MCP server.",
         "Audit sensitive tool calls end to end."
       ],
-      "say": "I treat every MCP server as a trust boundary. I review and pin what we deploy, isolate it and use least privilege. Tool descriptions and returned content are untrusted model input, so permissions, tenant checks and argument validation stay in code. Remote credentials must be intended for that server and must not be casually passed through to downstream services. Sensitive calls are logged with the user, tool, validated arguments and outcome for audit.",
+      "say": "MCP makes integrations very easy to connect, so every server is a new trust boundary and a supply-chain dependency. The first risk is the server itself, which may run code or reach sensitive systems. I review what we deploy, pin versions, isolate it and give it the smallest set of permissions it needs. The second risk is influence over the model. Tool descriptions and results are untrusted input, and a tool result could hide instructions telling the model to send data somewhere else. So permissions, tenant checks, spend limits and argument validation stay in code, and the model is never the final authority on access. The third is authorisation on remote servers, which use OAuth. Each server must reject tokens issued for anyone else and never pass the user's token on to other services. Finally, I log sensitive calls with the user, tool, validated arguments, decision and outcome, because an incident you can't reconstruct is one you can't fix.",
       "numbers": "No number applies. Track attempted-call refusals as the operational signal - a rising count means something is probing.",
       "wrong": "Saying MCP is secure because it is a standard. A protocol defines message behaviour; it does not make an unknown server, credential or tool action trustworthy.",
       "follow": "How do you pass the end user's identity through to the server?",
@@ -212,7 +398,14 @@ window.IR.q["09-mcp"] = {
         "multi-agent"
       ],
       "why": "A distinction question. Getting it right shows you track the space rather than one product.",
-      "simple": "MCP and A2A solve different boundaries, so they can be used together.\n\nMCP is mainly an agent or AI application reaching down to tools, resources and prompts. A2A, or Agent2Agent, is for one agent or agent service working with another as a peer. The remote agent publishes an Agent Card - a description of what it can do and how to reach it. It can accept a task, send updates, and return results or artifacts without exposing how it works inside.\n\nA2A started at Google in 2025 and is now governed under the Linux Foundation. Its first stable version, 1.0, shipped in March 2026, with several bindings (JSON-RPC, gRPC and plain HTTP+JSON) and signed Agent Cards so a caller can verify who published one. In August 2026 it joined the Agentic AI Foundation, the same Linux Foundation home as MCP. Adoption still varies by company and platform, which matters more than the version number in a design decision.\n\nInside one tightly controlled system, a normal internal API may still be simpler. I use A2A when independent agents need a standard discovery, task and interoperability contract; I use MCP when the boundary is tools and context.",
+      "quick": [
+        "A2A lets one agent service work with another as a peer.",
+        "MCP connects an app down to tools, A2A connects agents sideways.",
+        "Each agent publishes a card saying what it can do.",
+        "It hands over tasks without exposing inner workings.",
+        "Inside one system, a plain internal API may be simpler."
+      ],
+      "simple": "MCP and A2A solve different boundaries, so they can be used together. MCP is an agent or AI application reaching down to its tools, resources and prompts. A2A, which stands for Agent2Agent, is for one agent working with another as a peer. The remote agent publishes an Agent Card describing what it can do, and a caller can hand it a task and get back results without seeing how it works inside.\n\nFor example, a claims agent passing a case to another team's fraud agent is A2A, while the fraud agent reaching its own database is MCP. A2A started at Google in 2025 and reached version 1.0 in March 2026, but real-world adoption still varies. So A2A makes sense when independent agents need a standard task contract, and MCP when the boundary is tools and context.",
       "points": [
         "MCP: AI application to tools, resources and prompts.",
         "A2A: agent service to agent service as peers.",
@@ -220,7 +413,36 @@ window.IR.q["09-mcp"] = {
         "A2A 1.0 (March 2026) is stable and Linux Foundation governed; real-world adoption still varies.",
         "A plain internal API can still be the simpler choice inside one system."
       ],
-      "say": "They sit at different boundaries. MCP connects an AI application to tools, resources and prompts. A2A connects independent agent services to each other as peers, with capability discovery and task-oriented interaction. A2A 1.0 is now stable, although adoption still varies by platform and company. I would not add either protocol just for fashion: inside one controlled service a normal API may be simpler, while standards pay off when interoperability across teams or products is the real requirement.",
+      "diagram": {
+        "kind": "stack",
+        "alt": "A2A sits between peer agents, while MCP sits between an agent and its tools, resources and prompts.",
+        "top": "peer agent",
+        "layers": [
+          {
+            "label": "Remote agent",
+            "note": "publishes an Agent Card"
+          },
+          {
+            "label": "A2A",
+            "note": "tasks, updates, results between peers",
+            "accent": "warn"
+          },
+          {
+            "label": "Your agent",
+            "accent": "accent"
+          },
+          {
+            "label": "MCP",
+            "note": "reach down to capabilities",
+            "accent": "accent"
+          },
+          {
+            "label": "Tools, resources, prompts"
+          }
+        ],
+        "caption": "Different boundaries, so they combine: **A2A is agent to agent, MCP is agent to tools and context**. Inside one system, a plain internal API may still be simpler."
+      },
+      "say": "A2A, or Agent2Agent, is a protocol for agents working with each other as peers, while MCP connects an application down to its tools. So they cover different boundaries and fit together. A remote A2A agent publishes an Agent Card describing what it can do and how to reach it. A caller hands it a task, gets updates, and receives results or artifacts without seeing how it works inside. Picture a claims agent passing a case to another team's fraud agent. That hand-off is A2A, while the fraud agent reaching its own database is MCP. A2A started at Google and reached a stable 1.0 in March 2026, and it's governed under the Linux Foundation, like MCP. Adoption still varies by platform, and that matters more than the version number. Inside one tightly controlled system, a plain internal API is often simpler. I reach for A2A only when independent agents need a standard discovery and task contract.",
       "numbers": "No number applies.",
       "wrong": "Calling A2A an immature idea that should not be built on at all. The protocol has reached 1.0; the real question now is whether interoperability justifies it in your system.",
       "follow": "Two agents from different teams disagree on a result. Who resolves it?",
@@ -243,7 +465,14 @@ window.IR.q["09-mcp"] = {
         "production"
       ],
       "why": "The main MCP currency check in 2026. It shows whether you understand the protocol as it runs today rather than the older session-based version.",
-      "simple": "The biggest change is that MCP became stateless. Before, a client and server did a start-up handshake (`initialize`) and then kept a session with an id. In 2026-07-28 both are gone. Every request now carries its own protocol version, client details and capabilities. So any server instance behind an ordinary load balancer can answer any request, which makes scaling much simpler.\n\nIf a client wants to learn a server's capabilities first, it can call `server/discover`. Every server must support it, but clients do not have to call it.\n\nHTTP requests now carry the method and tool name in headers (`Mcp-Method`, `Mcp-Name`). A gateway can route, rate-limit and meter calls without reading the JSON body.\n\nList responses carry cache hints: how long to keep them, and whether shared caches may store them. Servers should also list tools in a stable order, which helps prompt caching.\n\nServers no longer send their own requests to the client. When a tool needs user input mid-call, it returns an \"input required\" result and the client retries with the answer. This is called Multi Round-Trip Requests.\n\nTasks and MCP Apps are now optional extensions. Roots, Sampling, Logging, the old HTTP+SSE transport and Dynamic Client Registration are deprecated.",
+      "quick": [
+        "The protocol became stateless, with no start-up handshake or session.",
+        "Any server copy behind a load balancer can answer any request.",
+        "Headers name the method and tool, so gateways route easily.",
+        "Tool lists come in a stable order with cache hints.",
+        "Tasks and Apps became optional extras, and old features are deprecated."
+      ],
+      "simple": "The biggest change in the 2026-07-28 revision is that MCP became stateless. Before, a client and server did a start-up handshake and then kept a session with an ID. Now every request carries its own protocol version and capabilities, so any server instance behind an ordinary load balancer can answer it. That matters in production because scaling an MCP server becomes ordinary web scaling.\n\nOther changes help operations. Requests carry the method and tool name in headers, so a gateway can route and rate-limit calls without reading the body. Servers also no longer send their own requests to the client. For example, a booking tool that needs the user to confirm a date returns an \"input required\" result instead of holding a connection open. Several older features are deprecated with a twelve-month window, so you negotiate the revision both sides support.",
       "points": [
         "Stateless core: no initialize/initialized handshake or MCP session id in the 2026-07-28 revision.",
         "Per-request protocol/client/capability metadata; servers must implement server/discover, clients may skip it.",
@@ -253,7 +482,45 @@ window.IR.q["09-mcp"] = {
         "Extensions are first-class; Tasks and MCP Apps are important examples.",
         "Roots, Sampling, Logging, legacy HTTP+SSE and Dynamic Client Registration (in favour of Client ID Metadata Documents) are deprecated for new implementations."
       ],
-      "say": "The 2026-07-28 release made MCP stateless at the protocol layer: no initialize handshake or session id, and each request carries the client and capability information it needs. It also added a server/discover call that clients may skip, header-based routing, cacheable lists and Multi Round-Trip Requests for mid-call input. Extensions became first-class, with Tasks and MCP Apps as key examples. Operationally, the big win is simpler horizontal scaling and cleaner gateway control.",
+      "diagram": {
+        "kind": "compare",
+        "alt": "MCP before and after the 2026-07-28 revision, compared by start-up, session, scaling, gateways and how a server asks for input.",
+        "aspects": [
+          "Start-up",
+          "Session",
+          "Scaling",
+          "Gateways",
+          "Needs user input"
+        ],
+        "columns": [
+          {
+            "label": "Before",
+            "note": "stateful",
+            "accent": "muted",
+            "cells": [
+              "initialize handshake",
+              "Session id kept",
+              "Sticky to one instance",
+              "Must read JSON body",
+              "Server sends own request"
+            ]
+          },
+          {
+            "label": "2026-07-28",
+            "note": "stateless core",
+            "accent": "accent",
+            "cells": [
+              "None; server/discover optional",
+              "Each request self-contained",
+              "Any instance, plain load balancer",
+              "Mcp-Method and Mcp-Name headers",
+              "Returns input required, client retries"
+            ]
+          }
+        ],
+        "caption": "The big change: **every request carries its own version and capabilities**, so any server instance can answer any request. That makes scaling much simpler."
+      },
+      "say": "MCP went stateless, and that matters because scaling a server becomes ordinary web scaling. Earlier revisions opened with an initialize handshake and then held a session with an ID. In 2026-07-28 both are gone. Every request carries its own protocol version, client details and capabilities, so any instance behind a plain load balancer can answer any request. Clients can call server/discover to learn capabilities first, but they don't have to. HTTP requests now name the method and tool in headers, so a gateway can route, rate-limit and meter calls without parsing the body. List responses carry cache hints, and tools come back in a stable order, which helps prompt caching. A tool needing user input mid-call returns an input-required result and the client retries, which replaces server-initiated requests. Tasks and MCP Apps became optional extensions, while Sampling, Roots, Logging and the old HTTP plus SSE transport are deprecated, with at least a twelve-month window.",
       "numbers": "The release defines a minimum twelve-month deprecation window for deprecated protocol features. Do not hard-code a migration date; negotiate the protocol revision your client and server actually support.",
       "wrong": "Describing current MCP as requiring a long-lived protocol session and initialize handshake for every modern remote server. That describes the older revision, not 2026-07-28.",
       "follow": "If the protocol is stateless, how would a shopping or browser tool keep application state across calls?",
@@ -274,7 +541,14 @@ window.IR.q["09-mcp"] = {
         "authorization"
       ],
       "why": "Asked at any company exposing MCP servers beyond one laptop. It checks whether you know the standard flow and the token rules that stop real attacks.",
-      "simple": "For remote servers over HTTP, MCP uses OAuth 2.1, the standard web login-and-token protocol. The MCP server is the resource server - the thing being protected. A separate authorization server, often your existing identity provider, logs the user in and issues tokens.\n\nThe flow is short. The client calls the server without a token and gets a 401 reply. That reply points to a small metadata document on the server naming its authorization server. The client sends the user there to log in, using PKCE - a check that stops a stolen login code from being reused. It asks for a token for this exact server, using a `resource` parameter. Then it sends that token as a bearer header on every request.\n\nThree rules matter most. The server accepts only tokens issued for itself. It never passes the user's token on to other services; it gets its own token for those. And clients request only the scopes they need, stepping up later if a 403 asks for more.\n\nHow does a client register with an authorization server it has never seen? The preferred way is now a Client ID Metadata Document: the client id is a URL pointing to a file that describes the client. Dynamic Client Registration is deprecated.\n\nLocal stdio servers skip all of this and read credentials from the environment.",
+      "quick": [
+        "Remote servers use OAuth 2.1, the standard login protocol.",
+        "A separate identity service issues the access keys.",
+        "The user logs in, and the key works for one server only.",
+        "The server rejects keys meant for others and never forwards them.",
+        "Keep permissions minimal, while local servers just read stored secrets."
+      ],
+      "simple": "Remote MCP servers use OAuth 2.1, the standard web login-and-token protocol. The MCP server is the thing being protected, and a separate authorisation server, often your existing identity provider, logs the user in and issues tokens.\n\nThe client first calls the server without a token and gets a 401 reply, which points to the server's authorisation server. The user logs in there, using PKCE so a stolen login code can't be reused, and the client gets a short-lived token for this exact server, which it sends on every request.\n\nThe key rule is that the server accepts only tokens issued for itself. For example, a token issued for the ticket server is useless on the payroll server. The server also never passes the user's token on, and clients request only the scopes they need. Local stdio servers skip all this and read credentials from the environment.",
       "points": [
         "Remote (HTTP) servers: OAuth 2.1. stdio servers: credentials from the environment.",
         "The MCP server is a resource server and must publish Protected Resource Metadata (RFC 9728) naming its authorization server.",
@@ -284,7 +558,41 @@ window.IR.q["09-mcp"] = {
         "Registration: Client ID Metadata Documents preferred, pre-registration allowed, Dynamic Client Registration deprecated.",
         "Clients validate the `iss` value in the authorization response to block mix-up attacks."
       ],
-      "say": "Remote MCP servers use OAuth 2.1. The server is a resource server and publishes metadata naming its authorization server. After a 401, the client discovers that, sends the user to log in with PKCE, and requests a token bound to this server with the resource parameter. The server accepts only tokens issued for itself and never forwards them downstream. Scopes stay minimal, with step-up when needed. Local stdio servers use environment credentials instead.",
+      "diagram": {
+        "kind": "lanes",
+        "alt": "Remote MCP authorization: call without a token, get a 401 pointing to metadata, log the user in with PKCE, get a token bound to this server, then send it on every request.",
+        "lanes": [
+          {
+            "label": "Call, no token",
+            "note": "server replies 401"
+          },
+          {
+            "label": "Read metadata",
+            "note": "names the auth server"
+          },
+          {
+            "label": "User logs in",
+            "note": "OAuth 2.1 with PKCE"
+          },
+          {
+            "label": "Token for this server",
+            "note": "resource parameter",
+            "accent": "accent"
+          },
+          {
+            "label": "Bearer on each call",
+            "note": "server checks audience",
+            "accent": "accent"
+          },
+          {
+            "label": "Never pass it on",
+            "note": "own token downstream",
+            "accent": "bad"
+          }
+        ],
+        "caption": "The MCP server is a **resource server that accepts only tokens issued for itself**. Local stdio servers skip all this and read credentials from the environment."
+      },
+      "say": "Remote MCP servers use OAuth 2.1. The MCP server is the protected resource, and a separate authorization server, often our existing identity provider, logs the user in and issues tokens. The flow is short. The client calls without a token and gets a 401, which points to a small metadata document naming the authorization server. The user logs in there using PKCE, which stops a stolen login code being reused, and the client asks for a token bound to this exact server. It then sends that token as a bearer header on every request. Three rules stop the real attacks. The server accepts only tokens issued for itself, so a ticket-server token is useless anywhere else. It never forwards the user's token downstream, and gets its own token instead. And scopes stay minimal, stepping up only when a 403 asks for more. For registration, Client ID Metadata Documents are now preferred. Local stdio servers skip all this and read credentials from the environment.",
       "numbers": "No number applies. Keep access tokens short-lived and rely on refresh tokens rather than long-lived bearer tokens; set the exact lifetime with your identity team.",
       "wrong": "\"We put one API key in the server config and everyone shares it.\" Every user then acts with the same permissions, the audit log cannot say who did what, and one leaked key exposes everything.",
       "follow": "Your MCP server has to call Salesforce on the user's behalf. Which token does it use?",
@@ -306,7 +614,14 @@ window.IR.q["09-mcp"] = {
         "debugging"
       ],
       "why": "The realistic failure of MCP adoption at scale, and it catches people who have only connected one server to a demo.",
-      "simple": "The problem appears when the host eagerly exposes a very large tool catalog to the model on every turn. Tool names, descriptions and schemas consume context, cost tokens, and make selection harder when many tools overlap.\n\nI do not assume MCP requires that behaviour. The host can curate tools by product or user role, load or search tool definitions only when they are relevant, or route the request to the right server before exposing a smaller set. Some platforms also support deferred or searchable tool catalogs, which is useful when the surface is large.\n\nThen I improve the tool definitions themselves. Names should be distinct, descriptions should say when to use and when not to use a tool, and similar actions should not differ only by tiny wording.\n\nI measure selection accuracy, extra context tokens and latency. The goal is not the smallest tool list; it is the smallest relevant list that still lets the agent do the job.",
+      "quick": [
+        "The app likely sends every tool from all five servers.",
+        "That fills space, costs money, and confuses similar tools.",
+        "MCP does not require this, so fix it in the app.",
+        "Filter tools by role, route first, or load on demand.",
+        "Make similar tools clearly distinct, then measure accuracy."
+      ],
+      "simple": "When you connect five MCP servers and accuracy drops, the likely cause is that the host exposes every tool from all five servers to the model on every turn. All those names, descriptions and schemas cost tokens before the user has asked anything, and selection gets harder when tools overlap.\n\nMCP doesn't require that, so it is a host problem you can fix. The host can curate tools by user role, route the request to the right server first, or load tool definitions only when relevant. Then you improve the definitions themselves. For example, if the ticket server and the wiki server each have a tool called search, the model can't tell them apart, so they need distinct names and descriptions.\n\nThe goal is not the smallest possible tool list, but the smallest relevant list that still lets the agent do the job.",
       "points": [
         "Large eagerly-exposed tool catalogs consume context and reduce selection accuracy.",
         "MCP does not require every tool to be injected on every turn.",
@@ -314,10 +629,11 @@ window.IR.q["09-mcp"] = {
         "Use distinct names and descriptions that include when not to use a tool.",
         "Measure tool-selection accuracy, added tokens and latency."
       ],
-      "say": "I only get this problem if the host eagerly exposes a huge tool catalog on every turn. That wastes context and turns selection into a difficult classification problem when tools overlap. I curate by product and user role, route to the relevant server first, or load and search tool definitions on demand when the platform supports it. Then I make names and descriptions unambiguous and measure selection accuracy, added context tokens and latency rather than guessing.",
+      "say": "Most likely the host is sending every tool from all five servers to the model on every turn. All those names, descriptions and schemas eat context and cost tokens before the user has asked anything, and selection gets harder when tools overlap. MCP doesn't require that behaviour, so it's a host problem to fix. I'd curate tools by product or user role, route the request to the right server first, or search and load tool definitions only when they're relevant. Some platforms support deferred or searchable tool catalogues, which helps when the surface is large. Then I tighten the definitions themselves. If two servers each have a search tool, their names and descriptions need to be clearly distinct and say when not to use each one, rather than differing by a word. Then I measure selection accuracy, added tokens and latency. The goal isn't the smallest tool list, it's the smallest relevant list that still gets the job done.",
       "numbers": "A large catalog can consume thousands of tokens before the user asks anything, but the exact cost depends on schema size. Measure the serialized tool payload instead of quoting a universal token number.",
       "wrong": "Saying the protocol forces every connected tool into every prompt. Tool exposure is a host/runtime design choice, and large catalogs should be filtered or loaded on demand.",
-      "follow": "Your router picks the wrong server on a genuinely ambiguous question. What is the fallback?"
+      "follow": "Your router picks the wrong server on a genuinely ambiguous question. What is the fallback?",
+      "followAnswer": "I fall back to asking or widening, never to a confident guess. When the router's confidence is low or two servers score closely, I load the relevant tools from both, so the model can see both options and choose with more context. If the question is still ambiguous, the agent asks the user a short clarifying question, like whether they mean a billing ticket or a support ticket. I log those cases, because repeated ambiguity usually means the server boundaries or descriptions overlap."
     },
     {
       "id": "mcp-06",
@@ -335,7 +651,14 @@ window.IR.q["09-mcp"] = {
         "architecture"
       ],
       "why": "A judgement question with no correct answer - the reasoning is the whole mark.",
-      "simple": "It depends on how many integrations and how many consuming applications you have, and the honest answer names the condition.\n\nIt pays when several applications need the same tools, when different teams build agents that all need shared internal systems, or when you want to consume third-party servers rather than write those integrations. In that shape you write each integration once and every client gets it.\n\nIt does not pay for one application with three tools that you own end to end. There the protocol is overhead - a server to run, monitor, secure and version, for something a direct function call already does.\n\nThe migration path that is easy to defend: keep tool logic in plain functions, and expose them through MCP as a thin layer. Then adoption is reversible, and the decision does not hold your business logic hostage.\n\nAnd whichever way you argue, name the security work as part of the cost. Adopting the protocol without the review, isolation and per-user authorisation is not adoption, it is exposure.",
+      "quick": [
+        "It depends on how many apps need the same integrations.",
+        "It pays when many teams or outside servers share tools.",
+        "For one app with a few owned tools, it is overhead.",
+        "Keep logic in plain functions with MCP as a thin layer.",
+        "Count security work as cost, and pilot on one safe server."
+      ],
+      "simple": "Whether to adopt MCP depends on how many integrations and consuming applications you have. It pays off when several applications or teams need the same tools, or when you want to use third-party servers rather than write those integrations yourself. For example, if five teams are building agents that all need the ticket system, you write that integration once as an MCP server and every agent uses it.\n\nIt doesn't pay for one application with three tools you own end to end, because it adds a server to run, secure and version for something a function call already does. The safe path is to keep tool logic in plain functions and expose them through MCP as a thin layer, so adoption stays reversible. Security work is part of the cost, so a sensible start is a pilot on one non-sensitive server.",
       "points": [
         "Pays with many tools, many consuming applications, or third-party servers.",
         "Overhead for one application with a handful of owned tools.",
@@ -343,10 +666,11 @@ window.IR.q["09-mcp"] = {
         "Count the security work - review, isolation, per-user auth - as part of the cost.",
         "A pilot on one non-sensitive server is a cheap way to decide."
       ],
-      "say": "It depends on the shape. It pays when several applications need the same tools, when different teams all need shared internal systems, or when we want to consume third-party servers. It is overhead for one application with three tools we own. So I would keep tool logic in plain functions and expose it through MCP as a thin reversible layer, and I would count the security work - review, isolation, per-user auth - as part of the cost.",
+      "say": "It depends on how many applications need the same integrations, and I'd make the case around that condition. MCP pays off when several apps need the same tools, when different teams build agents that share internal systems, or when we want to consume third-party servers rather than write those integrations ourselves. If five teams are building agents that all need the ticket system, we write that integration once and every agent gets it. It doesn't pay for one app with three tools we own end to end, where it's just another server to run, monitor, secure and version. Whichever way we go, I'd keep the tool logic in plain functions and expose it through MCP as a thin layer, so the decision stays reversible. The cost people skip is security. Review, isolation and per-user authorisation are part of adoption, not extras. So my recommendation would be a pilot on one non-sensitive server, then a decision on evidence.",
       "numbers": "No number applies. The reasoning and the named condition are what score.",
       "wrong": "\"Yes, it's the industry standard now.\" Adoption is not a reason on its own, and it skips the cost side that the question is really asking about.",
-      "follow": "Pilot it on what, specifically?"
+      "follow": "Pilot it on what, specifically?",
+      "followAnswer": "I would pilot on a read-only internal system that several teams already want, like the ticket or knowledge base search. Read-only keeps the risk low, and multiple consumers tests the real claim, which is reuse. I would build a small server with three or four tools, connect two different hosts, say an IDE assistant and an internal agent, and run it for a few weeks. Then I compare integration effort, latency, selection accuracy and the security review cost against direct calls."
     },
     {
       "id": "mcp-10",
@@ -365,7 +689,14 @@ window.IR.q["09-mcp"] = {
         "ui"
       ],
       "why": "Extensions are now part of the production MCP story, and experienced candidates should know which problem each one solves.",
-      "simple": "They are optional MCP extensions that solve two different problems.\n\nTasks are for work that may not finish inside one request. A server can return a task handle instead of the final tool result, and the client can later get the status, update or cancel the task and retrieve the result. I use this for long-running jobs such as a large export, research run or batch operation. The server still needs real durable job state; the extension is the protocol contract, not the queue itself.\n\nMCP Apps are for interactions that are awkward as plain text. A tool can declare an HTML UI resource, and a compatible host renders it in a sandboxed iframe. That fits dashboards, forms, visualisations and review flows where clicking or editing is better than several chat turns.\n\nBecause both are extensions, support is negotiated and hosts may differ. I keep the core tool useful without assuming every client supports every extension.",
+      "quick": [
+        "Both are optional extras solving different problems.",
+        "Tasks handle work too long for one request.",
+        "The client checks status later, cancels, or fetches the result.",
+        "Apps let a tool show a form or dashboard screen.",
+        "Support varies, so keep a plain fallback working."
+      ],
+      "simple": "MCP Tasks and MCP Apps are two optional MCP extensions that solve different problems.\n\nTasks are for work that may not finish inside one request. Instead of the final result, the server returns a task handle, and the client can later check the status, cancel it or retrieve the result. For example, a large data export or a batch operation fits this well. But the extension only defines the protocol, so the server still needs a real durable queue and job state behind it.\n\nMCP Apps are for interactions that are awkward as plain text. A tool can declare an HTML UI that a compatible host renders in a sandboxed iframe, which suits dashboards, forms and review flows. Because both are extensions, support varies between hosts, so the core tool should still work on its own for clients that support neither.",
       "points": [
         "Tasks: durable, long-running tool work represented by a task handle and later status/result retrieval.",
         "The server still owns the real queue, idempotency and durable execution.",
@@ -373,10 +704,46 @@ window.IR.q["09-mcp"] = {
         "Use Apps for forms, dashboards, visual review and other UI-heavy interactions.",
         "Extensions are optional and negotiated; design a sensible fallback."
       ],
-      "say": "Tasks and MCP Apps solve different problems. Tasks let a server turn a long-running tool call into a durable task handle that the client can check, update or cancel later; I use that for batch or research jobs. MCP Apps let tools provide interactive HTML interfaces such as forms or dashboards inside compatible hosts. Both are optional extensions, so I negotiate support and keep a fallback instead of assuming every client implements them.",
+      "diagram": {
+        "kind": "compare",
+        "alt": "Two optional MCP extensions compared: Tasks for long-running work returned as a handle, and MCP Apps for interactive HTML UI rendered by the host.",
+        "aspects": [
+          "Solves",
+          "Server returns",
+          "Client or host",
+          "Use for"
+        ],
+        "columns": [
+          {
+            "label": "Tasks",
+            "note": "long-running work",
+            "accent": "accent",
+            "cells": [
+              "Work longer than one request",
+              "A task handle",
+              "Polls status, cancels, gets result",
+              "Big export, batch, research run"
+            ]
+          },
+          {
+            "label": "MCP Apps",
+            "note": "interactive UI",
+            "accent": "accent",
+            "cells": [
+              "Awkward as plain text",
+              "An HTML UI resource",
+              "Renders it in sandboxed iframe",
+              "Forms, dashboards, visual review"
+            ]
+          }
+        ],
+        "caption": "Both are **optional, negotiated extensions**, and hosts differ. Tasks is the contract, not the queue. Keep the core tool useful for a client that supports neither."
+      },
+      "say": "They're two optional MCP extensions for two different problems. Tasks handle work that outlives a request, and Apps give tools an interactive screen. With Tasks, the server returns a task handle instead of the final result, and the client comes back later to check status, cancel, or fetch the result. A large data export or a batch research run fits that well. The trap is thinking the extension is the job system. It only defines the contract, so the server still needs a durable queue, idempotency and real job state behind it. MCP Apps cover interactions that are clumsy as plain text. A tool declares an HTML interface, like a form, a dashboard or a review screen, and a compatible host renders it in a sandboxed iframe. Because both are extensions, support is negotiated and hosts differ. So I always keep the core tool useful on its own, with a plain fallback for clients that don't support either.",
       "numbers": "No universal duration makes a call a Task. Use it when the work can outlive a normal request or needs durable progress, cancellation or later result retrieval.",
       "wrong": "Treating Tasks as the background worker itself, or MCP Apps as unrestricted web pages. Tasks still need durable backend execution, and Apps are rendered through a host-controlled sandbox and permission path.",
-      "follow": "Your task takes twenty minutes and the worker restarts after ten. What must survive outside the MCP connection?"
+      "follow": "Your task takes twenty minutes and the worker restarts after ten. What must survive outside the MCP connection?",
+      "followAnswer": "Everything about the job must live in durable storage, not in the worker or the connection. That means the task ID, its status, the input, progress checkpoints and any partial results, kept in a queue or database. When the worker restarts, another picks the job up from the last checkpoint rather than starting again, and steps are idempotent so repeating one is safe. The client just keeps polling the same task handle, and the final result stays stored until fetched or expired."
     }
   ]
 };

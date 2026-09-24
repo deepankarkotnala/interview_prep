@@ -29,7 +29,14 @@ window.IR.q["17-python-coding"] = {
         "concurrency"
       ],
       "why": "The most relevant Python question for this role, because the work is almost entirely I/O-bound.",
-      "simple": "Use async when your code spends most of its time waiting. An AI app waits a lot: for the model, the vector database, a tool API. Async lets one program wait on many of these at once.\n\nThe rule: async helps I/O-bound work, not CPU-bound work. I/O-bound means the time goes on waiting for the network or disk. CPU-bound means the time goes on calculation.\n\nA quick example. Twenty model calls take about one second each. One after another, that is twenty seconds. With ten running at a time, they finish in two waves, so about two seconds. Do not remove the limit completely, though. Thousands of calls at once will hit rate limits and connection limits.\n\nFor CPU-heavy work, like parsing big PDFs, async does not help. Use a process pool or a separate worker service. Threads still help when a library only offers blocking I/O. (py-19 covers the GIL and free-threaded Python.)\n\nThe classic bug is a blocking call inside async code, such as `requests.get` or `time.sleep`. The event loop is the single scheduler that runs all your coroutines. One blocking call freezes it, and every other request waits too. Use an async client, or move the call to a thread with `asyncio.to_thread`.",
+      "quick": [
+        "Use async when code mostly waits, not calculates.",
+        "AI apps wait on the model, search and tools.",
+        "Twenty one-second calls, ten at a time, take two seconds.",
+        "Still cap how many run at once.",
+        "One blocking call freezes everything, and heavy work needs separate processes."
+      ],
+      "simple": "Async is a way of writing Python so that one program can wait on many things at the same time. An AI application spends most of its time waiting for the model, the vector database or a tool API, so the work is I/O-bound, and that is exactly where async helps. For CPU-bound work it does nothing.\n\nFor example, twenty model calls of about one second each take twenty seconds one after another. With async and a limit of ten calls in flight, they finish in two waves, so roughly two seconds. You still bound the concurrency with a semaphore, because thousands of calls at once hit rate limits.\n\nThe classic bug is a blocking call like requests.get inside async code, which freezes the event loop so every request waits. So the simple rule is async for waiting and processes for computing.",
       "code": "import asyncio\n\n# sequential: about 20s for twenty ~1s calls\nresults = [await llm.ainvoke(q) for q in questions]\n\n# bounded concurrency: ten at a time -> roughly two waves\nsem = asyncio.Semaphore(10)\n\nasync def one(q):\n    async with sem:\n        return await llm.ainvoke(q)\n\nresults = await asyncio.gather(\n    *(one(q) for q in questions),\n    return_exceptions=True,\n)",
       "points": [
         "Async helps I/O-bound work such as model, retrieval, tool and database calls.",
@@ -38,7 +45,49 @@ window.IR.q["17-python-coding"] = {
         "Move CPU-heavy work off the event loop.",
         "Do not call blocking network libraries directly inside async request code."
       ],
-      "say": "I use async for I/O-bound work such as model calls, retrieval and tool APIs, because waiting can overlap. If twenty calls take about one second each and I allow ten at a time, I expect roughly two waves, not one second total. I bound concurrency to protect rate limits. CPU-heavy work goes to an appropriate worker or process path, and I avoid blocking library calls inside async code because they stall the event loop.",
+      "diagram": {
+        "kind": "compare",
+        "alt": "Twenty one-second model calls compared three ways: in sequence takes about twenty seconds, ten in flight takes about two, and unbounded hits rate limits.",
+        "aspects": [
+          "In flight",
+          "Twenty 1s calls",
+          "Risk"
+        ],
+        "columns": [
+          {
+            "label": "One at a time",
+            "note": "sync, queued",
+            "accent": "bad",
+            "cells": [
+              "1",
+              "About 20 seconds",
+              "Slow for everyone"
+            ]
+          },
+          {
+            "label": "Bounded async",
+            "note": "semaphore of 10",
+            "accent": "accent",
+            "cells": [
+              "Up to 10",
+              "About 2 seconds",
+              "Tune the limit"
+            ]
+          },
+          {
+            "label": "Unbounded async",
+            "note": "everything at once",
+            "accent": "warn",
+            "cells": [
+              "Thousands",
+              "Fails partway",
+              "Rate and connection limits"
+            ]
+          }
+        ],
+        "caption": "Async overlaps the **waiting**, so twenty calls finish in two waves. Keep a **cap**, and keep blocking calls and CPU work off the event loop."
+      },
+      "say": "Almost always, because an AI app spends most of its time waiting rather than calculating. It waits on the model, the vector database and tool APIs, and async lets one program overlap those waits instead of queuing them. Say you have twenty model calls of about a second each. In sequence that's twenty seconds, but with ten in flight they finish in two waves, so roughly two seconds. I still cap the concurrency with a semaphore or a worker pool, because thousands of calls at once will hit rate limits and connection limits. The mistake I watch for is a blocking call like requests.get or time.sleep inside async code. It freezes the event loop, so every other request waits too, and the fix is an async client or asyncio.to_thread. Async also does nothing for CPU-heavy work like parsing big PDFs, which belongs in a process pool or a separate worker. My rule is simple: async for waiting, processes for computing.",
       "numbers": "With a concurrency limit of 10, twenty independent one-second calls have a lower bound of about two seconds plus overhead. Pick the limit from provider and connection capacity, not a magic constant.",
       "wrong": "\"Async makes it faster.\" Only for I/O. Saying it generally invites the follow-up about CPU-bound work, which this answer cannot survive.",
       "follow": "Your gather of 500 calls returns rate-limit errors. What do you change?",
@@ -59,7 +108,14 @@ window.IR.q["17-python-coding"] = {
         "gil"
       ],
       "why": "Frequently asked, and the correct answer for this role is counter-intuitive to people who half-remember it.",
-      "simple": "The GIL is the Global Interpreter Lock. In standard CPython, it lets only one thread run Python code at a time. So adding threads does not speed up pure-Python CPU work.\n\nThreads still help with waiting. When a thread waits on the network or disk, it releases the lock and another thread runs. That is why threads work well for blocking I/O.\n\nFor CPU-heavy Python code, multiprocessing is the classic answer. Each process has its own interpreter and its own GIL, so processes really run on separate cores. The cost is memory, and data must be copied (pickled) between processes.\n\nLibraries like NumPy and PyTorch are different. Their heavy maths runs in C and often releases the GIL. So profile before you add processes.\n\nThe version caveat matters now. Python 3.13 added an experimental free-threaded build with no GIL. Python 3.14 made it officially supported, but it is still optional and not the default. Python 3.15, due in October 2026, keeps the GIL build as the default too. Some C extensions are not ready yet, and importing one can switch the GIL back on. So decide based on the runtime you actually deploy.\n\nFor an AI service: async or threads for model and API calls, and processes or a worker service for heavy CPU work like PDF parsing.",
+      "quick": [
+        "The GIL lets only one thread run Python at a time.",
+        "Threads still help while waiting on network or disk.",
+        "Heavy calculation needs separate processes, one per core.",
+        "Processes cost memory and data copying between them.",
+        "NumPy often skips the lock, so measure first."
+      ],
+      "simple": "The GIL is the Global Interpreter Lock. In standard CPython it lets only one thread run Python code at a time, so four threads doing pure-Python calculation take about as long as one.\n\nThreads still help with waiting, because a thread waiting on the network or disk releases the lock and another thread runs. For CPU-heavy Python code, multiprocessing is the classic answer. Each process has its own interpreter and its own GIL, so the work really runs on separate cores, at the cost of memory and the time to copy data between processes.\n\nFor example, in an AI service I would use async or threads for model calls, and a process pool for heavy CPU work like PDF parsing. NumPy and PyTorch often release the GIL anyway, so I profile first. Python 3.14 supports an optional free-threaded build with no GIL, but it is not the default yet.",
       "points": [
         "Standard CPython still has a GIL; pure Python CPU threads do not normally scale across cores.",
         "Threads remain useful for blocking I/O - the lock is released while waiting.",
@@ -68,7 +124,48 @@ window.IR.q["17-python-coding"] = {
         "Extension compatibility still matters, so verify the production runtime.",
         "NumPy and PyTorch release the GIL in native code - profile before adding processes."
       ],
-      "say": "The GIL answer now depends on the Python build. Standard CPython still lets only one thread execute Python bytecode at a time, so threads mainly help blocking I/O. Optional free-threaded builds can run Python threads across cores, but extension compatibility still matters and some modules can change that behaviour. So I choose based on the runtime we deploy: async or threads for I/O, and processes or worker services when I need predictable CPU parallelism.",
+      "diagram": {
+        "kind": "matrix",
+        "alt": "A grid of work type against tool: threads suit I/O-bound work, processes suit CPU-bound work, threads give no speed-up on CPU-bound Python, processes are overkill for I/O.",
+        "xLabel": "Tool",
+        "yLabel": "Work type",
+        "cols": [
+          "Threads",
+          "Processes"
+        ],
+        "rows": [
+          "I/O-bound",
+          "CPU-bound"
+        ],
+        "cells": [
+          [
+            {
+              "label": "Works well",
+              "note": "lock released while waiting",
+              "accent": "accent"
+            },
+            {
+              "label": "Overkill",
+              "note": "memory for nothing",
+              "accent": "muted"
+            }
+          ],
+          [
+            {
+              "label": "No speed-up",
+              "note": "one GIL, one thread runs",
+              "accent": "bad"
+            },
+            {
+              "label": "Real parallel",
+              "note": "own GIL; pays memory, pickling",
+              "accent": "accent"
+            }
+          ]
+        ],
+        "caption": "One GIL per process: **threads for waiting, processes for computing**. NumPy and PyTorch often release the GIL, so profile first."
+      },
+      "say": "In standard CPython the GIL, the Global Interpreter Lock, lets only one thread run Python bytecode at a time, so threads don't speed up pure-Python CPU work. They still help with waiting, because a thread releases the lock during network or disk I/O and another one runs. For CPU-heavy code, multiprocessing is the classic answer. Each process has its own interpreter and its own GIL, so the work really runs on separate cores, but you pay in memory and in pickling data between processes. In an AI service that usually means async or threads for model calls and a process pool for PDF parsing. What juniors miss is that NumPy and PyTorch do their heavy maths in C and often release the GIL anyway, so I profile before adding processes. The free-threaded build was experimental in 3.13 and is officially supported in 3.14, but it's still optional and not the default. So I decide based on the runtime and extensions we actually deploy.",
       "numbers": "On a standard build, four threads running pure-Python CPU code take about as long as one. Four processes on four cores can approach a 4x speed-up, minus process start-up and pickling cost. Measure it on your own workload.",
       "wrong": "Saying 'Python threads can never use multiple cores' without mentioning free-threaded builds, or saying the GIL is simply gone for everyone. Both are now too absolute.",
       "follow": "Your ingestion job is CPU-bound on PDF parsing and I/O-bound on embedding. How do you structure it?",
@@ -88,7 +185,14 @@ window.IR.q["17-python-coding"] = {
         "memory"
       ],
       "why": "A common live-coding theme, because ingestion pipelines are exactly where this bites.",
-      "simple": "A generator gives you items one at a time, instead of building a whole list in memory. You write one with `yield` instead of `return`.\n\nFor document ingestion this matters a lot. Say you read ten thousand documents into a list, chunk them into another list, then embed. You now hold everything in memory at once. On a big corpus the process runs out of memory and the operating system kills it.\n\nWith generators, each document flows through the pipeline and is released before the next one is read. Memory stays flat, whatever the corpus size. Think of a conveyor belt instead of a warehouse.\n\nGenerators also fit streaming. You yield each token as it arrives, rather than waiting for the full response.\n\nTwo trade-offs to say out loud. A generator can be used only once. If you need the data twice, store it in a list or create the generator again. And you cannot ask for its length without using it up. So a progress bar over a generator needs the total passed in separately.\n\nThe code shows the standard pattern: a chunk generator, plus a helper that groups items into batches for the embedding API. Python 3.12+ has this helper built in as `itertools.batched`.",
+      "quick": [
+        "Generators hand over one item at a time.",
+        "Memory stays flat however many documents you have.",
+        "A full list of everything can crash the program.",
+        "They suit sending the answer word by word.",
+        "Usable only once, and no length without using them up."
+      ],
+      "simple": "A generator is a function that hands you items one at a time, instead of building a whole list in memory. You write it with yield instead of return, and each item is produced only when the next step asks for it.\n\nThis matters a lot for document ingestion. If you read ten thousand documents into a list, chunk them into another list and then embed them, a big corpus runs out of memory. With generators, each document flows through the pipeline and is released before the next one, so memory stays flat, like a conveyor belt instead of a warehouse. For example, a chunk generator can feed itertools.batched, which groups chunks into batches for the embedding API.\n\nThe trade-off is that a generator can be used only once, and you cannot ask its length without using it up. So stream by default, and build a list only when you need a second pass.",
       "code": "def chunks(paths):\n    for p in paths:                  # one document in memory at a time\n        for c in split(read(p)):\n            yield c\n\ndef batched(it, n):                  # embed in batches without a full list\n    batch = []\n    for item in it:\n        batch.append(item)\n        if len(batch) == n:\n            yield batch\n            batch = []\n    if batch:\n        yield batch\n\nfor group in batched(chunks(paths), 100):\n    store.add(embed(group))",
       "points": [
         "One item in memory at a time - memory stays flat as the corpus grows.",
@@ -97,7 +201,42 @@ window.IR.q["17-python-coding"] = {
         "No length without consuming - pass the count separately for progress.",
         "Batching over a generator is the standard ingestion pattern."
       ],
-      "say": "A generator yields items one at a time instead of building the whole list, so an ingestion pipeline holds one document rather than ten thousand and memory stays flat as the corpus grows. It is also the natural shape for token streaming. The trade-offs are that it can only be consumed once, so I materialise if I need the data twice, and I cannot take its length without consuming it.",
+      "diagram": {
+        "kind": "compare",
+        "alt": "A list is a warehouse holding every document at once so memory grows with the corpus; a generator is a conveyor belt holding one item so memory stays flat.",
+        "aspects": [
+          "Holds",
+          "Memory",
+          "Passes",
+          "Length"
+        ],
+        "columns": [
+          {
+            "label": "List",
+            "note": "warehouse",
+            "accent": "warn",
+            "cells": [
+              "Every document at once",
+              "Grows with corpus",
+              "Reuse freely",
+              "Known"
+            ]
+          },
+          {
+            "label": "Generator",
+            "note": "conveyor belt",
+            "accent": "accent",
+            "cells": [
+              "One item at a time",
+              "Stays flat",
+              "Consumed once",
+              "Pass count separately"
+            ]
+          }
+        ],
+        "caption": "A generator is a **conveyor belt, not a warehouse**: each document is released before the next is read, so memory stays flat at any corpus size."
+      },
+      "say": "Generators hand you one item at a time instead of a whole list, so memory stays flat however large the corpus gets. Each document is released before the next one is read. Picture reading ten thousand documents into a list, chunking them into a second list, then embedding. You're holding everything at once, and on a big corpus the process runs out of memory. Chain generators into a batching step for the embedding API and that simply doesn't happen, which is why it's the standard ingestion pattern. They're also the natural shape for token streaming, because you yield each token as it arrives. The catch is that a generator is consumed once. If I need the data twice, I materialise it or recreate the generator. I also can't get its length without consuming it, so a progress bar needs the total passed in separately. Stream by default, and only build a list when you truly need random access or a second pass.",
       "numbers": "No number applies - memory stays roughly constant instead of scaling with corpus size, which is the whole point.",
       "wrong": "\"Generators are more memory efficient.\" True and unexplained. The interviewer wants the ingestion pipeline consequence.",
       "follow": "You need to retry a failed batch. What does that do to your generator design?",
@@ -119,7 +258,14 @@ window.IR.q["17-python-coding"] = {
         "basics"
       ],
       "why": "Core Python fluency. Almost every AI codebase uses both, for logging, retries, tracing and cleaning up connections.",
-      "simple": "Both let you wrap extra behaviour around code without rewriting that code.\n\nA decorator is a function that takes a function and returns a new one. The new one usually does something before and after calling the original. Writing `@retry` above a function is shorthand for `fn = retry(fn)`. Typical uses in AI code are logging, timing, retries, caching and auth checks.\n\nTwo details interviewers check. First, use `functools.wraps`. Without it, the wrapped function loses its name and docstring, and every trace shows `wrapper`. Second, a decorator that takes arguments, like `@retry(times=3)`, needs three layers. The outer function takes the arguments and returns the real decorator.\n\nA context manager handles setup and cleanup around a block of code, using `with`. The cleanup always runs, even when the block raises an error. `with open(path) as f:` closes the file for you. Think of a door that locks itself behind you.\n\nYou can write one as a class with `__enter__` and `__exit__`. Or, more simply, as a generator with `@contextmanager`. Code before `yield` is setup, and code in `finally` is cleanup. Put the cleanup in `finally`, or an error will skip it.\n\nBoth have async forms. An async decorator needs an `async def` wrapper that awaits the call. Async resources use `async with` and `@asynccontextmanager`.",
+      "quick": [
+        "Both wrap extra behaviour around code without rewriting it.",
+        "A decorator takes a function and returns a wrapped one.",
+        "Use functools.wraps so the real function name survives in logs.",
+        "A context manager runs setup and guaranteed cleanup around code.",
+        "Put the cleanup in finally so errors cannot skip it."
+      ],
+      "simple": "Decorators and context managers both let you wrap extra behaviour around code without rewriting it, which is why AI codebases use them for logging, retries and cleaning up connections.\n\nA decorator is a function that takes a function and returns a new one, which usually does something before and after calling the original. For example, I can write one retry decorator and put it on every model call without touching their bodies. Use functools.wraps, because without it every trace shows the name wrapper, and remember that a decorator taking arguments needs three layers.\n\nA context manager handles setup and cleanup around a with block, and the cleanup always runs, even when the block raises an error. Opening a file in a with block closes it for you. The simplest way to write one is a generator with the contextmanager decorator, with the cleanup in a finally block so an error cannot skip it.",
       "code": "import functools, time\nfrom contextlib import contextmanager\n\n# 1) A decorator that takes arguments: three layers\ndef retry(times=3, on=(TimeoutError,), delay=0.5):\n    def decorator(fn):\n        @functools.wraps(fn)                # keep fn.__name__ and docstring\n        def wrapper(*args, **kwargs):\n            for attempt in range(times):\n                try:\n                    return fn(*args, **kwargs)\n                except on:\n                    if attempt == times - 1:\n                        raise\n                    time.sleep(delay * 2 ** attempt)\n        return wrapper\n    return decorator\n\n@retry(times=3)\ndef fetch_context(query):\n    return vector_store.search(query)       # may raise TimeoutError\n\n# 2) A context manager: setup, yield, guaranteed cleanup\n@contextmanager\ndef span(name):\n    start = time.perf_counter()\n    try:\n        yield                               # the with-block runs here\n    finally:                                # runs even if the block raises\n        ms = (time.perf_counter() - start) * 1000\n        print(f\"{name} took {ms:.0f} ms\")\n\nwith span(\"retrieve\"):\n    docs = fetch_context(\"refund policy\")",
       "points": [
         "A decorator takes a function and returns a wrapped one; `@d` means `fn = d(fn)`.",
@@ -130,7 +276,7 @@ window.IR.q["17-python-coding"] = {
         "If `__exit__` returns True it swallows the exception - usually a bug.",
         "Async code needs an `async def` wrapper and `@asynccontextmanager`."
       ],
-      "say": "A decorator is a function that takes a function and returns a wrapped version, so I can add logging, timing, retries or caching without touching the body. I always use functools.wraps so the name survives in traces, and a decorator with arguments needs an extra factory layer. A context manager guarantees setup and cleanup around a with block, even when it raises. I usually write one with contextmanager and put the cleanup in finally.",
+      "say": "Both wrap extra behaviour around code without rewriting it, which is why almost every AI codebase leans on them. A decorator is a function that takes a function and returns a wrapped version, so at d above a def just means fn equals d of fn. I'd write a timing or retry decorator and put it on every model call without touching their bodies. I always use functools.wraps, because otherwise every trace shows the name wrapper. If the decorator takes arguments, it needs a third layer, a factory that returns the real decorator. A context manager handles setup and cleanup around a with block, and the cleanup runs even when the block raises. The quickest way to write one is the contextmanager decorator, with setup before the yield and cleanup in a finally block, because without finally an error skips the cleanup. One trap is an exit method that returns True, which silently swallows the exception. Async code needs an async def wrapper and asynccontextmanager.",
       "numbers": "No meaningful number applies. The wrapper adds one extra function call per invocation, which is negligible next to a model call measured in hundreds of milliseconds.",
       "wrong": "\"A decorator is the @ symbol that adds features to a function.\" It names the syntax, not the mechanism. The follow-up - write one that takes arguments, or explain why every traced function is now called wrapper - shows whether you have actually written one.",
       "follow": "How would you write a decorator that works on both sync and async functions?",
@@ -152,7 +298,14 @@ window.IR.q["17-python-coding"] = {
         "mutability"
       ],
       "why": "A screening favourite. It checks basic fluency, and whether you know the shared-state bug that leaks data between requests.",
-      "simple": "Pick the structure by what you need to do with the data.\n\nA list is an ordered sequence you can change. Use it for items in order, like retrieved chunks. Checking `x in my_list` scans every item, so it gets slow on big lists.\n\nA tuple is an ordered sequence you cannot change. Use it for fixed records, like `(doc_id, score)`. Because it cannot change, it can be a dict key or a set member, as long as everything inside it is also unchangeable.\n\nA set holds unique items with no order. Checking `x in my_set` is fast, whatever the size. Use it to remove duplicates or to ask \"have I seen this id?\".\n\nA dict maps keys to values, with fast lookup by key. Since Python 3.7, dicts keep insertion order.\n\nNow the gotchas. Mutable means an object can change in place. Lists, dicts and sets are mutable. Tuples, strings and numbers are not.\n\nThe famous bug is a mutable default argument, like `def add(msg, history=[])`. Python creates that list once, when the function is defined, not on each call. So every call shares one list, and conversation history leaks between users. Use `None` as the default and create the list inside.\n\nTwo more traps. `[[]] * 3` gives three references to the same inner list. And `b = a` does not copy; it gives the same list a second name.",
+      "quick": [
+        "Pick the structure by what you do with the data.",
+        "List is ordered and changeable, but slow to search.",
+        "Tuple is fixed, so it can be a dict key.",
+        "Set gives unique items and fast checks, dict gives fast lookup.",
+        "A list as a default argument is shared by every call."
+      ],
+      "simple": "You pick a data structure by what you need to do with the data. A list is an ordered sequence you can change, but membership checks scan every item, so they are O(n). A tuple is an ordered sequence you cannot change, so it can be a dict key. A set holds unique items with O(1) membership on average, which suits removing duplicates. A dict maps keys to values with fast lookup and keeps insertion order. For example, 10,000 lookups against a 100,000-item list took several seconds, but against a set about a millisecond.\n\nMutable means an object can change in place, and this causes the famous bug. A default argument that is an empty list is created once, when the function is defined, so every call shares it and conversation history leaks between users. The fix is to default to None and create the list inside.",
       "code": "# The mutable default bug\ndef add_turn(msg, history=[]):        # ONE list, created at def time\n    history.append(msg)\n    return history\n\nadd_turn(\"hi\")                        # ['hi']\nadd_turn(\"hello\")                     # ['hi', 'hello']  <- leaked in\n\n# The fix: None as the default, a new list per call\ndef add_turn(msg, history=None):\n    if history is None:\n        history = []\n    history.append(msg)\n    return history\n\n# Aliasing traps\ngrid = [[]] * 3                       # three names for ONE inner list\ngrid[0].append(\"x\")                   # [['x'], ['x'], ['x']]\ngrid = [[] for _ in range(3)]         # three separate lists\n\n# Picking the structure\nresults = [(\"d1\", 0.91), (\"d2\", 0.88), (\"d1\", 0.91)]   # tuples as records\nseen = set()                          # fast membership test\nunique = []\nfor doc_id, score in results:\n    if doc_id not in seen:\n        seen.add(doc_id)\n        unique.append((doc_id, score))\nscores = dict(unique)                 # key -> value lookup",
       "points": [
         "**list**: ordered, mutable; `in` scans every item, O(n).",
@@ -163,7 +316,7 @@ window.IR.q["17-python-coding"] = {
         "`[[]] * 3` and `b = a` alias; use a comprehension or `copy.deepcopy`.",
         "Dataclasses: `field(default_factory=list)` for mutable defaults."
       ],
-      "say": "I pick by access pattern. A list for ordered items I will change, a tuple for fixed records like doc id and score, which can also be dict keys, a set for fast membership and deduplication, and a dict for lookups by key. The gotcha I always mention is the mutable default argument: the default list is created once, at definition time, so every call shares it. I use None and create the list inside.",
+      "say": "I pick by what I need to do with the data. A list is ordered and changeable, which suits retrieved chunks, but a membership check scans every item, so it's O of n and gets slow on big lists. A tuple is fixed, so it fits records like a document id and score, and because it's hashable when its contents are, it can be a dict key. A set holds unique items with O of one average membership, ideal for deduplication and seen-checks. A dict gives fast lookup by key and has kept insertion order since 3.7. The gotcha I always raise is a mutable default argument. A default history list is created once, when the function is defined, so every call shares it and conversation history leaks between users. I default to None and create the list inside, or use default_factory in a dataclass. The related trap is aliasing. Assigning b equals a, or multiplying a nested list, copies nothing.",
       "numbers": "Membership in a list is O(n); in a set or dict it is O(1) on average. In a quick check, 10,000 lookups against a 100,000-item list took several seconds; against a set, about a millisecond.",
       "wrong": "\"Tuples are just faster lists.\" The real difference is immutability and hashability. And missing the mutable-default bug suggests you have never debugged shared state in a long-running service.",
       "follow": "Why can a tuple be a dict key but a list cannot?",
@@ -184,7 +337,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "Product companies still screen with these. Pretending otherwise costs candidates offers.",
-      "simple": "Many product companies still run a standard coding round for AI roles. Strong GenAI experience does not exempt you. Prepare for it as a separate track.\n\nThe good news is that the pattern list is short. Many easy and medium problems reduce to one idea: use a hash map (a Python dict) to turn a nested loop into one pass.\n\nTwo sum: store each number's index in a dict as you go. For each new number, check whether its partner is already there. That is O(n) instead of O(n²).\n\nGroup anagrams: sort each word's letters to get a key. Words with the same key are anagrams, so group them in a dict.\n\nMerge intervals: sort by start first. Then walk through and extend the last interval whenever the next one overlaps it.\n\nThe habits matter more than any single answer. Ask about input size, duplicates and whether the data is sorted. Say the time and space complexity before you are asked. Test the empty case out loud. Interviewers grade how you approach a new problem, not whether you memorised this one.\n\nThe patterns worth practising: hash maps, two pointers, sliding window, binary search, heaps for top-k, and basic BFS and DFS on trees and graphs.",
+      "quick": [
+        "Product companies still test classic coding problems.",
+        "A dict often turns a double loop into one pass.",
+        "Two sum stores each number and checks for its partner.",
+        "Anagrams group by sorted letters, intervals need sorting first.",
+        "Ask about input, state the speed, test the empty case."
+      ],
+      "simple": "Many product companies still run a standard coding round for AI roles, and strong GenAI experience does not exempt you from it, so prepare it as a separate track.\n\nThe good news is that many easy and medium problems reduce to one idea, which is using a dict to turn a nested loop into one pass. For example, in two sum you store each number's index in a dict as you go and check whether its partner is already there, which makes it O(n) instead of O(n²). In group anagrams, the sorted letters of each word become the dict key, and in merge intervals you sort by start and extend the last interval whenever the next one overlaps.\n\nThe habits matter more than any single answer. Ask about input size and edge cases first, state the complexity before you are asked, and speak while coding, because silent solving reads as guessing.",
       "code": "from collections import defaultdict\n\ndef two_sum(nums, target):\n    seen = {}                                # value -> index\n    for i, n in enumerate(nums):\n        if target - n in seen:\n            return [seen[target - n], i]\n        seen[n] = i\n    return []\n\ndef group_anagrams(words):\n    groups = defaultdict(list)\n    for w in words:\n        groups[tuple(sorted(w))].append(w)   # canonical key\n    return list(groups.values())\n\ndef merge_intervals(intervals):\n    out = []\n    for start, end in sorted(intervals):     # sort first, always\n        if out and start <= out[-1][1]:\n            out[-1][1] = max(out[-1][1], end)\n        else:\n            out.append([start, end])\n    return out",
       "points": [
         "Product-company AI roles still screen on DSA - prepare for it.",
@@ -193,7 +353,7 @@ window.IR.q["17-python-coding"] = {
         "Ask about input size and edge cases before writing.",
         "Services companies weight this far less than product companies do."
       ],
-      "say": "I would not skip DSA preparation for an AI role at a product company - the screening round is often still standard. The pattern set is small: hash maps to collapse nested loops, two pointers, sliding window, binary search, and basic graph traversal. I state complexity before being asked and check the empty case. It is a separate preparation track from GenAI depth, and both get tested.",
+      "say": "I prepare for DSA as its own track, because many product companies still screen AI engineers on two sum and merge intervals, whatever their GenAI experience. The good news is the pattern list is short: hash maps, two pointers, sliding windows, binary search, heaps and graph traversal. A lot of problems just use a Python dict to turn a nested loop into one pass. In two sum, I store each number's index as I go and check whether its partner is already there, which makes it linear instead of quadratic. Group anagrams keys a dict on the sorted letters, and merge intervals sorts by start first, then sweeps. How you work matters as much as the answer. I ask about input size and duplicates before writing, state time and space complexity without being asked, and test the empty case out loud. Services companies weigh this far less, but for product roles I'd assume it's coming and talk while I code.",
       "numbers": "Roughly 30–45 minutes for one or two problems. Practise speaking while coding - silent solving reads as guessing even when the answer is right.",
       "wrong": "Assuming GenAI experience exempts you from the coding round. It is the most common way strong AI candidates fail a product-company loop.",
       "follow": "Walk me through your approach before you write anything.",
@@ -214,7 +374,14 @@ window.IR.q["17-python-coding"] = {
         "vectorisation"
       ],
       "why": "Most data and retrieval code in AI roles is NumPy or Pandas. Loop-heavy code is the quickest way to look junior in a live round.",
-      "simple": "Vectorising means you hand NumPy or Pandas a whole array in one call, instead of looping over items in Python.\n\nIt is faster because the loop still happens, but in compiled C code over tightly packed numbers. A Python loop pays interpreter overhead on every single item. The speed-up is often tens or hundreds of times.\n\nBroadcasting is how NumPy combines arrays of different shapes without copying data. It lines the shapes up from the right. Two sizes match if they are equal, or if one of them is 1. A size-1 axis is stretched to fit. So a (1000, 768) matrix minus a (768,) mean vector subtracts the mean from every row.\n\nThe classic trap is a silent wrong axis. Row norms have shape (n,). Dividing an (n, d) matrix by them fails, or, if n equals d, runs and divides the wrong way. Use `keepdims=True` to keep the shape (n, 1).\n\nIn Pandas the same idea applies. Use column maths like `df[\"a\"] * df[\"b\"]`, and `np.where` for simple conditions. Avoid `iterrows()` and row-wise `apply`, which are Python loops in disguise.\n\nThe trade-off: vectorised code builds full temporary arrays. For data that does not fit in memory, work in chunks. And a tiny loop that runs once is fine; readability wins there.",
+      "quick": [
+        "Hand the whole array to NumPy in one call.",
+        "It runs in fast compiled code, often a hundred times faster.",
+        "Broadcasting stretches size-one sides so arrays match without copying.",
+        "Keep the shape when dividing by row lengths, or rows mix up.",
+        "In Pandas use column maths, and split huge data into parts."
+      ],
+      "simple": "Vectorising means handing NumPy or Pandas a whole array in one call, instead of looping over items in Python. The loop still happens, but in compiled C code, whereas a Python loop pays interpreter overhead on every item. For example, summing the squares of a million floats took about 250 ms with a Python loop and under 1 ms with np.dot.\n\nBroadcasting is how NumPy combines arrays of different shapes without copying data. It lines the shapes up from the right, and a size of 1 is stretched to fit, so a 1000 by 768 embedding matrix minus a mean vector of length 768 subtracts the mean from every row. The classic trap is a silent wrong axis, which keepdims set to True fixes.\n\nIn Pandas the same idea means column maths instead of iterrows. The cost is memory, so use float32 for embeddings and work in chunks.",
       "code": "import numpy as np\nimport pandas as pd\n\nx = np.random.rand(1_000_000)\n\n# Loop: interpreter overhead on every element\ntotal = 0.0\nfor v in x:\n    total += v * v\n\n# Vectorised: one call, the loop runs in C\ntotal = float(np.dot(x, x))\n\n# Broadcasting: (n, d) with (d,) -> subtract the mean from every row\nE = np.random.rand(1000, 768).astype(np.float32)\ncentred = E - E.mean(axis=0)                    # (1000, 768) - (768,)\n\n# keepdims keeps norms as (n, 1), so each ROW is divided by its own norm\nunit = E / np.linalg.norm(E, axis=1, keepdims=True)\n\n# Pandas: column maths and np.where, not iterrows or row-wise apply\nPRICE_IN, PRICE_OUT = 3e-6, 15e-6               # illustrative $ per token\ndf = pd.DataFrame({\"tokens_in\": [1200, 300], \"tokens_out\": [400, 50]})\ndf[\"cost\"] = df[\"tokens_in\"] * PRICE_IN + df[\"tokens_out\"] * PRICE_OUT\ndf[\"size\"] = np.where(df[\"tokens_in\"] > 1000, \"long\", \"short\")",
       "points": [
         "Vectorise: one call over the whole array; the loop runs in compiled code.",
@@ -224,7 +391,7 @@ window.IR.q["17-python-coding"] = {
         "Use float32 for embeddings - half the memory of float64.",
         "Vectorised code creates temporaries - chunk data that does not fit in memory."
       ],
-      "say": "Vectorising means handing NumPy or Pandas the whole array, so the loop runs in compiled code instead of the Python interpreter, which is often tens or hundreds of times faster. Broadcasting lets arrays of different shapes combine: shapes align from the right and a size-one axis stretches. The bug I watch for is dividing by row norms without keepdims, which fails or divides the wrong way. In Pandas I use column operations, not iterrows.",
+      "say": "Vectorising hands the library a whole array in one call, which is often tens or hundreds of times faster than a Python loop. The loop still happens, just in compiled code over packed numbers, whereas Python pays interpreter overhead on every single item. Broadcasting is how NumPy combines arrays of different shapes without copying. It lines the shapes up from the right, and each axis must match or be size one, which gets stretched. So subtracting a mean vector from an embedding matrix subtracts it from every row. The bug I watch for is dividing by row norms without keepdims. That either fails or, when the sizes happen to match, silently divides along the wrong axis. In Pandas the same idea means column expressions and np.where, not iterrows or row-wise apply. The cost is memory, because vectorised code builds full temporary arrays. I use float32 for embeddings and work in chunks when the data doesn't fit.",
       "numbers": "Summing the squares of a million floats: a Python loop took about 250 ms in a quick check, np.dot under 1 ms. A (1,000,000, 768) float32 matrix is about 3 GB; the same in float64 is about 6 GB.",
       "wrong": "Writing `df.apply(lambda row: ..., axis=1)` and calling it vectorised. It is still one Python function call per row, and the interviewer will ask you to time it.",
       "follow": "Your array is 20 GB and does not fit in memory. What now?",
@@ -246,7 +413,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "The single most-asked AI coding question in these loops. It checks whether you understand the maths behind retrieval or only call a library.",
-      "simple": "Cosine similarity asks one question: do two vectors point the same way? It ignores their length and looks only at direction. Two texts about the same topic point the same way, even if one is short and one is long.\n\nThe formula is the dot product divided by the two lengths multiplied together. The length of a vector is called its norm. Dividing by the norms removes size and leaves pure direction. The result runs from -1 (opposite) to 1 (same direction).\n\nWrite the two-vector version first, so the interviewer sees you know the formula. Guard against a zero vector, which has no direction and would divide by zero.\n\nThen vectorise. In retrieval you compare one query against a million documents. Calling the pair function in a Python loop takes many seconds. Instead, normalise every row of the matrix and do one matrix-vector product. Use `keepdims=True` on the row norms, or the shapes will not line up correctly.\n\nThe senior step: normalise your vectors once, when you store them. Then every query is just one dot product per document. That is what a vector database does inside, with an index on top so it does not check every row.",
+      "quick": [
+        "Cosine similarity checks if two vectors point the same way.",
+        "Divide the dot product by both lengths.",
+        "Write the simple version first and guard the zero vector.",
+        "Then scale each row once and do one matrix multiply.",
+        "Scale vectors once when storing, so search is one multiply."
+      ],
+      "simple": "Cosine similarity asks whether two vectors point the same way. It ignores their length and looks only at direction, which is why it is the standard score for embeddings: two texts about the same topic point the same way even if one is longer. The formula is the dot product divided by the two lengths, called norms, so the result runs from minus one to one.\n\nIn the interview, I write the two-vector version first, with a guard for a zero vector, which would divide by zero. Then I vectorise, because retrieval compares one query against a million documents. For example, a Python loop over a million vectors takes well over ten seconds, while normalising the rows and doing one matrix-vector product takes on the order of 100 ms.\n\nIn production you normalise the vectors once, when you store them, so every query is just a dot product.",
       "code": "import numpy as np\n\ndef cosine(a, b):\n    na, nb = np.linalg.norm(a), np.linalg.norm(b)\n    if na == 0 or nb == 0:\n        return 0.0                         # zero vector: no direction\n    return float(np.dot(a, b) / (na * nb))\n\ndef cosine_batch(q, M, eps=1e-12):\n    # q: (d,)   M: (n, d)  ->  scores: (n,)\n    q = q / max(np.linalg.norm(q), eps)\n    M = M / np.maximum(np.linalg.norm(M, axis=1, keepdims=True), eps)\n    return M @ q",
       "points": [
         "Cosine measures direction only; magnitude is divided out.",
@@ -255,7 +429,7 @@ window.IR.q["17-python-coding"] = {
         "Normalise once at write time; then cosine equals a plain dot product.",
         "Guard the zero vector - a zero-length vector divides by zero."
       ],
-      "say": "Cosine is the dot product over the product of the norms, so it measures direction and ignores magnitude. I would write the two-line version first, then vectorise it: normalise the query, normalise the matrix rows with keepdims, and take a single matrix-vector product. In production I normalise at write time, so retrieval is one dot product rather than recomputing norms per query.",
+      "say": "Cosine similarity asks whether two vectors point the same way, ignoring length, which is why it's the standard score for embeddings. You take the dot product and divide by both norms, so magnitude drops out and only direction is left. I'd write the two-vector version first so the interviewer sees the formula, with a guard for a zero vector, since that divides by zero. Then I'd vectorise, because calling that function in a Python loop over a million documents takes well over ten seconds. Normalise every row of the document matrix, using keepdims so the shapes line up, then do one matrix-vector product with the query. Over pre-normalised rows that's on the order of a hundred milliseconds, and it's limited by memory bandwidth. Skip keepdims and it either fails or, when rows equal columns, silently divides along the wrong axis. In production I normalise once at write time, so each query is a plain dot product, which is essentially what a vector database does inside.",
       "numbers": "A million 768-dimension vectors is about 3 GB in float32. On a laptop CPU, one matrix-vector product over pre-normalised rows takes on the order of 100 ms, because it is limited by memory bandwidth. Calling the pair function in a Python loop over the same rows takes well over ten seconds.",
       "wrong": "Writing the loop and stopping there. The interviewer is waiting to see if you notice it will not survive a real index, and most candidates do not.",
       "follow": "Now the matrix does not fit in memory. What changes?",
@@ -276,7 +450,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "A small function where the off-by-one errors are the entire test.",
-      "simple": "A chunker cuts long text into pieces of a fixed size. Overlap means each piece repeats the end of the previous one. So a sentence cut at a boundary still appears whole in one of them.\n\nIt looks like three lines of code. It is also where many candidates make a bug live.\n\nThe core idea: each new chunk starts `size - overlap` characters after the last one. That distance is the step. With size 1000 and overlap 200, chunks start at 0, 800, 1600 and so on.\n\nTrap one: stepping by `size`. Then chunks sit end to end and there is no overlap at all.\n\nTrap two: overlap equal to or bigger than size. The step becomes zero or negative. A zero step makes `range` raise an error, a negative one silently returns nothing, and a hand-written `while` loop never ends. Check it at the top and fail with a clear message.\n\nTrap three: stop once a chunk reaches the end of the text. Otherwise you emit tiny trailing chunks that only repeat the end.\n\nThen give the honest caveat. Characters are not tokens. A real chunker splits on structure, like headings and paragraphs, and measures in tokens.",
+      "quick": [
+        "Cut text into fixed pieces that repeat a little at the edges.",
+        "Each piece starts size minus overlap after the last.",
+        "Reject overlap equal to or bigger than size.",
+        "Stop at the end to avoid tiny leftover pieces.",
+        "Real splitters follow headings and count words, not letters."
+      ],
+      "simple": "A chunker cuts long text into pieces of a fixed size. Overlap means each piece repeats the end of the previous one, so a sentence cut at a boundary still appears whole in one of them. It looks like three lines of code, but the off-by-one errors are the entire test.\n\nThe whole function rests on one idea: each new chunk starts size minus overlap characters after the last one. For example, with size 1000 and overlap 200, chunks start at 0, 800, 1600 and so on. The traps are stepping by the size, which gives no overlap, and an overlap as big as the size, which makes the step zero or negative, so you check it at the top and fail clearly.\n\nThis is the interview version, though. A real chunker splits on headings and paragraphs and measures in tokens, since 1000 characters is only about 250 tokens.",
       "code": "def chunk(text, size=1000, overlap=200):\n    if overlap >= size:\n        raise ValueError(\"overlap must be smaller than size\")\n    step = size - overlap\n    out = []\n    for start in range(0, len(text), step):\n        piece = text[start:start + size]\n        if piece:\n            out.append(piece)\n        if start + size >= len(text):   # window reached the end\n            break\n    return out",
       "points": [
         "step = size - overlap. This is the whole function.",
@@ -285,7 +466,7 @@ window.IR.q["17-python-coding"] = {
         "Character size is not token size - convert before trusting a limit.",
         "State that a real chunker splits on structure, not raw characters."
       ],
-      "say": "The core is that the step is size minus overlap, not size. I validate that overlap is smaller than size at the top, because otherwise the step is zero or negative, and the function errors, returns nothing, or loops forever. I break once a window reaches the end, so there are no tiny trailing fragments. And I say that character chunking is a baseline - for real documents I split on structure and measure in tokens.",
+      "say": "The whole function rests on one line: each chunk starts size minus overlap characters after the previous one. Overlap repeats the tail of each piece at the start of the next, so a sentence cut at a boundary still appears whole somewhere. With size 1000 and overlap 200, chunks start at 0, 800, 1600 and so on. The edge cases are where people slip. If the overlap equals or exceeds the size, the step is zero or negative, and the code errors, returns nothing or loops forever. So I reject that at the top with a clear error. I also stop once a window reaches the end of the text, which avoids tiny trailing fragments. Then I'd say out loud that this is the interview version. A real chunker splits on structure like headings and paragraphs, and measures in tokens, because character size isn't token size. Overlap above about a quarter of the chunk mostly buys duplicate storage.",
       "numbers": "1000 characters with 200 overlap is a reasonable default, roughly 250 tokens. Overlap above about a quarter of the chunk size mostly buys duplicate storage.",
       "wrong": "Stepping by `size` and never subtracting the overlap. The chunks sit end to end, a sentence cut at a boundary is broken in both chunks, and nobody notices until retrieval quality drops.",
       "follow": "This splits a sentence in half. Fix it.",
@@ -307,7 +488,14 @@ window.IR.q["17-python-coding"] = {
         "structured-output"
       ],
       "why": "Pydantic is named in a large share of these JDs, and its role here is specific.",
-      "simple": "Pydantic lets you define data as a Python class with typed fields, then checks real data against it. In an LLM pipeline it does two jobs.\n\nJob one: it defines what you ask the model for. Most SDKs and frameworks can turn a Pydantic class into a JSON schema. A JSON schema is a formal description of the fields and types you expect. You send it as the structured-output format or a tool definition. So one class describes the request and parses the reply, and the two cannot drift apart.\n\nJob two: it checks what comes back. You need this even with strict structured output, because valid JSON is not correct JSON. A claim id can have the right shape and still not exist. Put those business rules in validators. Pass per-request facts, such as the retrieved chunk ids, with `model_validate(data, context={...})`.\n\nThree practical tips. Keep models shallow; deep nesting tends to raise failure rates. Use `Literal` or an enum when the allowed values are known, because that limits what the model can generate. And write good field descriptions. They go into the schema the model reads, so they are really part of the prompt.",
+      "quick": [
+        "Pydantic defines expected data as a typed class.",
+        "The same class tells the model the format and reads the reply.",
+        "Still check the reply, since valid JSON can be wrong.",
+        "Check business rules, like whether an id really exists.",
+        "Keep it shallow, limit allowed values, write clear field descriptions."
+      ],
+      "simple": "Pydantic lets you define data as a Python class with typed fields, and then checks real data against it. In an LLM pipeline it does two jobs, which is what makes it so useful.\n\nThe first job is defining what you ask the model for. Most SDKs can turn a Pydantic class into a JSON schema that you send as the structured-output format, so one class describes the request and parses the reply, and the two cannot drift apart. The second job is checking what comes back, because valid JSON is not the same as correct JSON. For example, a claim id can have the right shape and still not exist, so business rules like that go in validators.\n\nKeep models shallow, use Literal for known values, and write good field descriptions, because the model reads them. Validation catches bad output but does not prevent it, so you still need a plan for failures.",
       "code": "from typing import Literal\nfrom pydantic import BaseModel, Field, field_validator\n\nclass ClaimDecision(BaseModel):\n    claim_id: str = Field(description=\"Claim reference as printed on the form, e.g. C-4471\")\n    decision: Literal[\"approve\", \"deny\", \"refer\"]\n    reason:   str = Field(max_length=300)\n    cited:    list[str] = Field(description=\"Chunk ids supporting this decision\")\n\n    @field_validator(\"cited\")\n    @classmethod\n    def cited_must_exist(cls, v, info):\n        # shape was guaranteed by the schema; existence never is\n        retrieved = (info.context or {}).get(\"retrieved_ids\", set())\n        unknown = set(v) - retrieved\n        if unknown:\n            raise ValueError(f\"invented citations: {unknown}\")\n        return v\n\n# decision = ClaimDecision.model_validate(data, context={\"retrieved_ids\": ids})",
       "points": [
         "One class defines both the schema sent to the model and the parser.",
@@ -317,7 +505,7 @@ window.IR.q["17-python-coding"] = {
         "`Literal` and enums over free text - they constrain generation too.",
         "Field descriptions are prompt text the model reads, not documentation."
       ],
-      "say": "Two jobs. It defines the schema handed to the model, so one class is both the tool definition and the parser and nothing drifts. And it validates what comes back, which matters even with constrained decoding, because valid JSON is not correct JSON - a well-shaped claim id can still be invented. Business rules go in validators. I keep models shallow and use Literal over free text, since that constrains generation too.",
+      "say": "I define the output I expect as one typed Pydantic class, and that class does two jobs. It defines what we ask for, because most SDKs turn a Pydantic class into the JSON schema sent as the structured-output format. It also parses the reply, so the request and the parser can't drift apart. I still validate what comes back, even with strict structured output, because valid JSON isn't the same as correct JSON. A claim id can have the right shape and still not exist, so a validator checks it against the real ids passed in through validation context. Business rules like plausible dates live there too. I keep models shallow, around two levels of nesting by default, because deep nesting tends to raise failure rates. I use Literal or enums for known values, which constrains generation too. And I write field descriptions carefully, since the model reads them as prompt text, not documentation.",
       "numbers": "There is no universal limit, but two levels of nesting or fewer is a sensible default. Measure the failure rate on your own provider and schema before going deeper.",
       "wrong": "\"I use it to parse the JSON response.\" Half its value. It misses that the same class defines what you asked the model for.",
       "follow": "The schema validated and the claim id does not exist. Where does that get caught?",
@@ -338,7 +526,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "One of the most common real-world parsing bugs in LLM applications, and a good test of defensive thinking.",
-      "simple": "You asked the model for JSON. It replied with a friendly sentence, then the JSON wrapped in a markdown code fence. `json.loads` fails on that.\n\nSo write a parser that accepts what models really send. Try the cheap options first.\n\nStep one: try `json.loads` on the whole text. Often it just works.\n\nStep two: look for a fenced block with a regex and parse what is inside. Use the `re.DOTALL` flag, so the dot also matches newlines, because the JSON spans several lines.\n\nStep three: take everything from the first `{` to the last `}`. Use `rfind` for the closing brace, so nested objects are not cut short.\n\nIf all three fail, raise an error that includes the start of the raw text. Without it, you are debugging blind.\n\nThe senior point: this is a safety net, not the fix. The real fix is structured output, where the provider forces the reply to match a JSON schema. But keep the parser anyway. Providers change behaviour, and a clear error beats a crash at 3 a.m. After parsing, validate the fields with Pydantic, because parsed does not mean correct.",
+      "quick": [
+        "First try to read the whole reply as JSON.",
+        "Next, pull out the fenced block and read that.",
+        "Then take the first opening brace to the last closing brace.",
+        "If all fail, show the raw reply's start in the error.",
+        "This is a backup, the real fix is forcing a fixed format."
+      ],
+      "simple": "You asked the model for JSON, and it replied with a friendly sentence and then the JSON wrapped in a markdown code fence, so a plain json.loads call fails. The answer is a forgiving parser that tries the cheap options first.\n\nFirst, try json.loads on the whole text, because often it just works. If it fails, look for a fenced block with a regular expression and parse what is inside. The third step takes everything from the first opening brace to the last closing brace. If all three fail, raise an error that includes the start of the raw text, and after parsing, still validate the fields with Pydantic.\n\nThis is a safety net, not the fix. For example, at a million calls a month, even 1% of replies wrapped in fences is ten thousand failures. The real fix is structured output, but I keep the parser because providers change behaviour.",
       "code": "import json, re\n\n# What the model actually sent:\n#   Sure! Here is the JSON you asked for:\n#   ```json\n#   {\"name\": \"Priya\", \"score\": 8}\n#   ```\n\nFENCE = re.compile(r\"```(?:json)?\\s*(.*?)```\", re.DOTALL)\n\ndef parse_json(text):\n    try:\n        return json.loads(text)              # happy path first\n    except json.JSONDecodeError:\n        pass\n    m = FENCE.search(text)\n    if m:\n        return json.loads(m.group(1).strip())\n    start, end = text.find(\"{\"), text.rfind(\"}\")\n    if start != -1 and end > start:\n        return json.loads(text[start:end + 1])\n    raise ValueError(f\"no JSON found in: {text[:200]!r}\")",
       "points": [
         "Try json.loads first - usually it just works.",
@@ -347,7 +542,32 @@ window.IR.q["17-python-coding"] = {
         "Include the raw text in the error; debugging without it is guesswork.",
         "Say this is a fallback - structured output is the real fix."
       ],
-      "say": "I layer it cheapest first: try json.loads directly, then strip a markdown fence with a DOTALL regex, then fall back to the outermost braces using find and rfind so nested objects survive. I put the raw text in the exception because otherwise you cannot debug it. And I would say this is a safety net - the real fix is structured output or constrained decoding so the model cannot wrap it in prose at all.",
+      "diagram": {
+        "kind": "lanes",
+        "alt": "A fallback ladder for parsing model JSON: parse the whole text, then a fenced block, then first brace to last brace, and only if all three fail raise an error with the raw text.",
+        "lanes": [
+          {
+            "label": "Parse whole text",
+            "note": "often just works",
+            "accent": "accent"
+          },
+          {
+            "label": "Fenced block",
+            "note": "regex with DOTALL"
+          },
+          {
+            "label": "First to last brace",
+            "note": "rfind the closing brace"
+          },
+          {
+            "label": "Raise with raw text",
+            "note": "only if all three fail",
+            "accent": "bad"
+          }
+        ],
+        "caption": "Try the **cheapest parse first** and fall back step by step, then validate with Pydantic. It is a safety net; **structured output** is the real fix."
+      },
+      "say": "I write a forgiving parser that tries the cheap options first. Step one is json.loads on the whole text, which often just works. If that fails, I look for a fenced block with a regex and parse what's inside, using the DOTALL flag since the JSON spans several lines. The last fallback takes everything from the first opening brace to the last closing brace, and I find that closing brace with rfind from the end, so a nested object isn't cut short. If all three fail, I raise an error that includes the start of the raw text, because debugging without it is guesswork. After parsing, I still validate the fields with Pydantic. But this is a safety net, not the design. Without structured output, fences can show up in a small share of replies even when you ask it not to, and at a million calls a month even one percent is ten thousand failures. Structured output is the real fix.",
       "numbers": "Without structured output, fence-wrapping can show up in a small share of responses even with an explicit instruction not to. At a million calls a month, even 1% is ten thousand failures.",
       "wrong": "json.loads(response) with no try/except. It passes the demo; the first fenced or prose-wrapped response in production raises an unhandled exception, and the follow-up asks what the user sees then.",
       "follow": "It parses now but a required field is missing. Where does that get caught?",
@@ -368,7 +588,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "The most realistic async task for this role, and the semaphore is the point.",
-      "simple": "You have ten thousand documents to embed. Sending all ten thousand requests at once hits the rate limit and may run out of connections. Sending them one at a time takes hours. You want a fixed number in flight.\n\nAn `asyncio.Semaphore` does this. It is a counter with a waiting line. With a limit of eight, eight tasks get in. The ninth waits at `async with sem` until one finishes.\n\nNote what the semaphore limits. All ten thousand tasks are still created up front; only eight run their request at a time. For millions of items, feed a fixed pool of workers from a queue instead (see py-27).\n\n`return_exceptions=True` is the production detail. Without it, the first error is raised out of `gather` and you lose all the results. The other tasks keep running in the background, because `gather` does not cancel them. With it, errors come back as values in the result list. So you keep the successes and retry the failures.\n\n`asyncio.TaskGroup` (Python 3.11+) works the other way. On the first failure it cancels the rest. That is right for all-or-nothing work and wrong for a bulk job like this.\n\n`gather` returns results in input order, so you can zip them back to the inputs.",
+      "quick": [
+        "Keep a fixed number of requests running at once.",
+        "A semaphore lets eight in, the ninth waits.",
+        "Collect errors as results so one failure loses nothing.",
+        "Results come back in input order, so retry just the failures.",
+        "For millions of items, use a few workers pulling from a queue."
+      ],
+      "simple": "The goal is to keep a fixed number of API calls in flight. For example, if you have ten thousand documents to embed, sending all the requests at once hits the rate limit, while sending them one at a time takes hours.\n\nAn asyncio Semaphore solves this. It is a counter with a waiting line, so with a limit of eight, eight tasks get in and the ninth waits until one finishes. Then you collect the results with gather, with return_exceptions set to true. Without it, the first error is raised and you lose all the results, while with it, errors come back as values, so you keep the successes and retry just the failures.\n\nTaskGroup works the other way, cancelling the rest on the first failure, which suits all-or-nothing work but not a bulk job. A concurrency of 8 to 16 is a sane start, tuned against the provider's limits.",
       "code": "import asyncio\n\nasync def map_bounded(items, fn, limit=8):\n    sem = asyncio.Semaphore(limit)\n\n    async def run(item):\n        async with sem:                    # at most `limit` in here\n            return await fn(item)\n\n    return await asyncio.gather(\n        *(run(i) for i in items),\n        return_exceptions=True,            # one failure must not lose the rest\n    )\n\n# usage, inside an async function\nresults = await map_bounded(docs, embed)\nok = [r for r in results if not isinstance(r, Exception)]\nfailed = [d for d, r in zip(docs, results) if isinstance(r, Exception)]",
       "points": [
         "Semaphore bounds what is in flight, not what is created.",
@@ -377,7 +604,37 @@ window.IR.q["17-python-coding"] = {
         "For very large inputs, stream in batches rather than creating millions of tasks.",
         "Combine with retry so a transient 429 is not counted as a failure."
       ],
-      "say": "I bound concurrency with an asyncio.Semaphore - every task acquires it before the call, so only N are in flight regardless of how many exist. I pass return_exceptions=True so a single failure does not throw away the whole gather, then split the results into successes and a dead-letter list by index, since gather preserves order. For very large inputs I would chunk rather than create millions of task objects at once.",
+      "diagram": {
+        "kind": "lanes",
+        "alt": "Bounded batching: all tasks are created up front, a semaphore lets eight run their request at a time, gather returns errors as values in input order, and only the failures are retried.",
+        "lanes": [
+          {
+            "label": "Create all tasks",
+            "note": "all 10,000 exist",
+            "accent": "warn"
+          },
+          {
+            "label": "Semaphore gate",
+            "note": "8 in flight, rest wait",
+            "accent": "accent"
+          },
+          {
+            "label": "Call the API",
+            "note": "embed one batch"
+          },
+          {
+            "label": "Gather results",
+            "note": "errors come back as values",
+            "accent": "accent"
+          },
+          {
+            "label": "Retry failures",
+            "note": "zip back by input order"
+          }
+        ],
+        "caption": "The semaphore bounds **what runs, not what is created**. With return_exceptions on, one failure no longer throws away every other result."
+      },
+      "say": "The goal is a fixed number of requests in flight, because ten thousand at once hits the rate limit and one by one takes hours. I use an asyncio Semaphore, which is a counter with a waiting line. With a limit of eight, eight tasks run and the ninth waits until one finishes. Then I call gather with return_exceptions set to true, because otherwise the first error propagates and I lose every other result. If a few embedding batches fail, I keep the successes and retry just the failures, and since gather preserves input order, I can zip results back to inputs. I'd pair it with retry logic too, so a transient 429 isn't counted as a failure. What people miss is that the semaphore limits what runs, not what's created, so all ten thousand tasks still exist up front. For millions of items I switch to a fixed pool of workers pulling from a queue, and I tune the limit against the provider's requests-per-minute.",
       "numbers": "Concurrency of 8 to 16 is a sane starting point for a hosted embedding API. Tune against the provider's requests-per-minute rather than raising it until it breaks.",
       "wrong": "asyncio.gather over the entire list with no semaphore. It is the answer that looks most confident and fails on the first real corpus.",
       "follow": "Half the batch failed with 429s. What now?",
@@ -399,7 +656,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "A very common live-coding task, and most candidates miss two of the four requirements.",
-      "simple": "A safe retry wrapper needs four things.\n\nOne: retry only temporary failures. That means rate limits (HTTP 429), timeouts, dropped connections and some 5xx server errors. A bad request, a failed login or a policy refusal will fail the same way again, so fail fast.\n\nTwo: wait between attempts, and wait longer each time. This is exponential backoff. Add jitter, a small random extra wait, so many clients do not all retry at the same moment. If the server sends a `Retry-After` header, obey it.\n\nThree: cap both the number of attempts and the total time. A user waiting on a chat reply will not wait a minute for retries.\n\nFour: make repeats safe. If the call creates something, like a ticket or a payment, use an idempotency key. That is a unique id that lets the server spot and ignore a duplicate. Log every retry too; a rising retry rate is an early warning.\n\nOne SDK trap. The official OpenAI and Anthropic Python clients already retry connection errors, timeouts, 429s and 5xx errors, twice by default (`max_retries`). Set `max_retries=0` or count them. Otherwise your three attempts quietly become up to nine calls.\n\nIn production I use a tested library such as tenacity, but I can explain what it does.",
+      "quick": [
+        "Retry only temporary failures like too many requests or timeouts.",
+        "Wait longer each time, add a little random delay.",
+        "Cap the number of tries and the total time.",
+        "Use a unique request id so repeats create no duplicates.",
+        "The official clients already retry, so do not retry twice."
+      ],
+      "simple": "A retry wrapper re-sends a failed model call, and a safe one needs four things.\n\nFirst, it retries only temporary failures, like rate limits (HTTP 429), timeouts and some 5xx errors, while a bad request fails fast. Second, it waits longer after each attempt, which is exponential backoff, with a little random jitter so clients do not all retry at once. Third, it caps both the number of attempts and the total time, because a user will not wait a minute for a chat reply. Fourth, it makes repeats safe. For example, if the call creates a payment, you send an idempotency key so the server can ignore a duplicate.\n\nThere is one SDK trap. The official OpenAI and Anthropic clients already retry twice by default, so wrapping them in three attempts of your own can turn one request into up to nine calls. Set max_retries deliberately.",
       "code": "import asyncio, logging, random, time\nfrom openai import APIConnectionError, InternalServerError, RateLimitError\n# (the anthropic SDK has the same names; APITimeoutError subclasses APIConnectionError)\n\nlog = logging.getLogger(__name__)\nRETRYABLE = (RateLimitError, APIConnectionError, InternalServerError)\n\ndef retry_after_seconds(e):\n    response = getattr(e, \"response\", None)\n    value = response.headers.get(\"retry-after\") if response is not None else None\n    try:\n        return float(value)\n    except (TypeError, ValueError):\n        return None        # absent, or an HTTP-date this sketch does not parse\n\nasync def call(prompt, attempts=3, deadline=20.0):\n    started = time.monotonic()\n    for i in range(attempts):\n        try:\n            return await llm.ainvoke(prompt)\n        except RETRYABLE as e:\n            elapsed = time.monotonic() - started\n            retry_after = retry_after_seconds(e)\n            fallback = min(2 ** i, 8) + random.uniform(0, 1)\n            wait = retry_after if retry_after is not None else fallback\n            if i == attempts - 1 or elapsed + wait > deadline:\n                raise\n            log.info(\"retrying attempt=%s wait=%.2fs\", i + 1, wait)\n            await asyncio.sleep(wait)\n        # permanent errors are not caught and fail immediately",
       "points": [
         "Retry temporary failures only.",
@@ -409,7 +673,81 @@ window.IR.q["17-python-coding"] = {
         "Log retry rate and final outcome.",
         "Account for the SDK's built-in retries (`max_retries`) so you do not retry twice."
       ],
-      "say": "I retry only temporary failures such as rate limits, timeouts and selected server errors. Between attempts I use backoff plus jitter, and I honour a server Retry-After hint when it is available. I cap both attempts and total elapsed time so an interactive request cannot hang forever. If the operation has a side effect, I add idempotency or deduplication. Every retry is logged, because a rising retry rate is an early incident signal.",
+      "diagram": {
+        "alt": "A retry decision path: a permanent error fails fast; a temporary error backs off with jitter and calls again only while attempts and time remain, otherwise it gives up and logs.",
+        "rows": [
+          [
+            {
+              "id": "call",
+              "label": "Call the model",
+              "note": "idempotency key if it creates"
+            }
+          ],
+          [
+            {
+              "id": "tmp",
+              "label": "Temporary failure?",
+              "note": "429, timeout, some 5xx",
+              "accent": "warn"
+            }
+          ],
+          [
+            {
+              "id": "ff",
+              "label": "Fail fast",
+              "note": "bad request, auth, refusal",
+              "accent": "bad"
+            },
+            {
+              "id": "left",
+              "label": "Attempts and time left?",
+              "accent": "warn"
+            }
+          ],
+          [
+            {
+              "id": "give",
+              "label": "Give up and log",
+              "accent": "bad"
+            },
+            {
+              "id": "wait",
+              "label": "Back off with jitter",
+              "note": "Retry-After; then call again",
+              "accent": "accent"
+            }
+          ]
+        ],
+        "edges": [
+          {
+            "from": "call",
+            "to": "tmp",
+            "label": "error"
+          },
+          {
+            "from": "tmp",
+            "to": "ff",
+            "label": "no"
+          },
+          {
+            "from": "tmp",
+            "to": "left",
+            "label": "yes"
+          },
+          {
+            "from": "left",
+            "to": "give",
+            "label": "no"
+          },
+          {
+            "from": "left",
+            "to": "wait",
+            "label": "yes"
+          }
+        ],
+        "caption": "Four needs: **retry only temporary failures, back off with jitter, cap attempts and time, make repeats safe**. Count the SDK's own retries too."
+      },
+      "say": "It needs four things, and most people miss at least two. It should retry only temporary failures like rate limits, timeouts and some server errors, because a bad request will fail the same way again. It should back off longer each time, with jitter, a small random extra wait, so clients don't all retry in lockstep, and it should honour a Retry-After header. It needs a cap on attempts and on total time, because a chat user won't wait a minute. And if the call creates something like a ticket, it needs an idempotency key so the server can ignore a duplicate. The trap is that the official OpenAI and Anthropic clients already retry twice by default. Wrap them in three attempts of your own and one request can quietly become nine calls, so I set max_retries deliberately. I also log the retry rate and final outcome. In production I'd use a tested library like tenacity, but I can explain exactly what it does.",
       "numbers": "Two or three attempts inside a bounded interactive deadline is a reasonable starting point, but the real values come from the service SLA, timeout budget and retry guidance.",
       "wrong": "Retrying every exception. It converts a permanent failure into a slow permanent failure, at three times the cost, with the real error buried.",
       "follow": "The provider is down for ten minutes. Does your wrapper help or hurt?",
@@ -430,7 +768,14 @@ window.IR.q["17-python-coding"] = {
         "mocking"
       ],
       "why": "It reveals whether your GenAI code is production code or notebook code.",
-      "simple": "Only the model call is unpredictable. Everything around it is normal code, so test that part like normal code.\n\nStart with the design. Put the model call behind a small interface, like a `complete(prompt)` method. In tests, swap in a fake that returns a fixed reply. Now prompt building, parsing, validation, routing and stop conditions are all deterministic. Deterministic means the same input always gives the same output. These tests run in milliseconds and need no API key. They are most of your suite.\n\nNext, test the failure paths on purpose. A fake makes this easy. Return malformed JSON, a cut-off reply, a rate-limit error, an empty search result, or a tool that raises. This is where production breaks.\n\nThen keep a small integration suite that calls a real model. Check structure, not wording. Does it parse? Are the required fields there? Is it in the right language? Never assert on exact text.\n\nFinally, keep evaluation separate from testing. An eval is a quality score you track over time, such as accuracy on a labelled set. A test is pass or fail. Mixing them gives a flaky suite that people learn to ignore.",
+      "quick": [
+        "Only the model call is unpredictable, test the rest normally.",
+        "Swap the model for a fake with a fixed reply.",
+        "Test failures on purpose, like broken JSON and overload errors.",
+        "Real model tests check the shape, never the exact wording.",
+        "Keep quality scores separate from pass or fail tests."
+      ],
+      "simple": "When code calls an LLM, only the model call itself is unpredictable. Everything around it is normal code, so you test that part like normal code.\n\nIt starts with the design. You put the model call behind a small interface, and in tests you swap in a fake that returns a fixed reply. Now prompt building, parsing, validation and routing are deterministic, and these tests run in milliseconds with no API key. Then you test the failure paths on purpose. For example, the fake returns malformed JSON, a cut-off reply or a rate-limit error, and you check the code handles each one.\n\nYou also keep a small integration suite that calls a real model and checks structure, not exact wording. Evaluation stays separate, because an eval is a quality score tracked over time, while a test is pass or fail, and mixing them gives a flaky suite.",
       "points": [
         "Model call behind an interface so a fake can be substituted.",
         "Unit-test prompt assembly, parsing, validation, routing, termination - all deterministic.",
@@ -439,7 +784,7 @@ window.IR.q["17-python-coding"] = {
         "Evaluation is a tracked score, not a pass/fail test. Keep them separate.",
         "If every test needs an API key, the suite will not run in CI."
       ],
-      "say": "I put the model call behind a small interface so tests can substitute a fake with a fixed response. Then prompt assembly, parsing, validation, routing and termination are all deterministic and test in milliseconds without an API key - that is the bulk of the suite. I explicitly test failure paths like malformed JSON and rate limits. Integration tests assert structure, never wording. And evaluation is a tracked score, not a test.",
+      "say": "Only the model call is unpredictable, so everything around it gets tested like normal code. I put the model call behind a small interface and swap in a fake that returns a fixed reply. That makes prompt building, parsing, validation and routing deterministic, so those tests run in milliseconds without an API key, and they're most of the suite. Next I test the failure paths on purpose, because that's where production breaks. The fake returns malformed JSON, a cut-off reply, a rate-limit error or empty retrieval, and I check the code handles each one. Then I keep a small integration suite that calls a real model and checks structure, like whether the reply parses, but never exact wording. Evaluation stays separate, as a quality score tracked over time. Mixing it into pass-or-fail tests gives a flaky suite that people learn to ignore. If every test needs an API key, the suite won't run in CI, and then it isn't really a suite.",
       "numbers": "Keep the mocked suite fast enough to run on every commit - seconds, not minutes. If it needs an API key it will get skipped.",
       "wrong": "\"You cannot really test LLM code because it is non-deterministic.\" Only the model call is. Everything around it is ordinary software, and this answer says you did not try.",
       "follow": "Your fake returns valid JSON. What bug does that hide?",
@@ -460,7 +805,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "The most realistic take-home task in this market - it is the actual shape of the job.",
-      "simple": "Streaming sends the answer to the browser token by token, instead of waiting for the full reply. The user sees text in a few hundred milliseconds instead of several seconds.\n\nServer-Sent Events (SSE) is the usual format. It is a simple one-way stream from server to browser over normal HTTP. Each event is a few text lines, like `event: token` and `data: {...}`, then a blank line.\n\nFastAPI 0.135 (March 2026) added native SSE. Set `response_class=EventSourceResponse` and `yield` `ServerSentEvent` objects from the endpoint. FastAPI then handles the event format, the streaming headers and keep-alive pings. Pings stop proxies from closing a quiet connection. It also JSON-encodes the `data` field for you. Use `raw_data` for a plain string, like a `[DONE]` marker. On older versions you use `StreamingResponse` and write the `data:` lines yourself.\n\nThree production details matter more than the syntax.\n\nCancellation: if the user closes the tab, stop the upstream model call, so you do not pay for tokens nobody reads.\n\nErrors: once streaming has started, you cannot switch to a normal 500 response. Send a typed error event the client understands, or close the stream.\n\nSafety: tokens already sent cannot be taken back. High-risk apps may buffer and check small chunks before sending them.",
+      "quick": [
+        "Send the answer word by word so users see text fast.",
+        "Use a one-way stream from server to browser.",
+        "Newer FastAPI handles the format and keep-alive pings.",
+        "Stop the model call when the user closes the tab.",
+        "Mid-stream errors need an error message, sent text cannot be recalled."
+      ],
+      "simple": "Streaming means sending the answer to the browser token by token instead of waiting for the full reply, so the user sees text in a few hundred milliseconds instead of several seconds. Server-Sent Events, or SSE, is the usual format, a simple one-way stream from server to browser over normal HTTP.\n\nFastAPI 0.135 added native SSE. You set EventSourceResponse as the response class and yield ServerSentEvent objects, and FastAPI handles the event format, headers and keep-alive pings. On older versions you use StreamingResponse and write the data lines yourself.\n\nThe production details matter more than the syntax. For example, if the user closes the tab, you cancel the upstream model call, so you do not pay for tokens nobody reads. And once streaming has started you cannot switch to a normal 500 response, so a failure goes out as a typed error event.",
       "code": "import asyncio\nfrom collections.abc import AsyncIterable\nfrom fastapi import FastAPI\nfrom fastapi.sse import EventSourceResponse, ServerSentEvent\nfrom pydantic import BaseModel\n\napp = FastAPI()\n\nclass ChatRequest(BaseModel):\n    message: str\n\n@app.post(\"/chat\", response_class=EventSourceResponse)\nasync def chat(req: ChatRequest) -> AsyncIterable[ServerSentEvent]:\n    try:\n        async for chunk in llm.astream(req.message):\n            yield ServerSentEvent(event=\"token\", data={\"text\": chunk.content})\n        yield ServerSentEvent(event=\"done\", raw_data=\"[DONE]\")\n    except asyncio.CancelledError:\n        # client disconnected: release/cancel upstream work if needed\n        raise",
       "points": [
         "Use FastAPI's native `EventSourceResponse` and `ServerSentEvent` for SSE.",
@@ -470,7 +822,7 @@ window.IR.q["17-python-coding"] = {
         "Mid-stream failures need an in-band error event or a closed stream.",
         "Streaming and output moderation require an explicit design trade-off."
       ],
-      "say": "For current FastAPI I set EventSourceResponse as the response class and yield ServerSentEvent objects directly from the async endpoint. FastAPI handles SSE framing and JSON-encodes the data field, while I use typed token, progress and done events. I still handle cancellation so a disconnect stops upstream work. After bytes are sent, failures need an in-band error event or a closed stream, and output moderation needs an explicit streaming strategy.",
+      "say": "I stream tokens as Server-Sent Events, so the user sees text almost immediately instead of waiting for the whole reply. SSE is a simple one-way stream from server to browser over plain HTTP. Recent FastAPI versions support it natively, so I set EventSourceResponse as the response class and yield ServerSentEvent objects for tokens, progress and done. FastAPI handles the format, the headers and the keep-alive pings that stop proxies closing a quiet connection. Three production details matter more than the syntax. If the user closes the tab, I cancel the upstream model call, so we stop paying for tokens nobody reads. Once streaming starts, I can't send a normal error response, so failures go out as a typed error event. And tokens already sent can't be taken back, so a high-risk app needs a moderation plan, like checking small chunks before release. I measure time to first event and total completion separately, because they're different budgets.",
       "numbers": "Measure time to first event and total completion separately. Do not quote a universal target; the acceptable budget depends on whether the endpoint is interactive chat, voice, or a background workflow.",
       "wrong": "Awaiting the whole model response and returning JSON, or manually reimplementing SSE framing when the FastAPI version in use already provides a native SSE response.",
       "follow": "How do you run an output guardrail on a response you are already streaming?",
@@ -492,7 +844,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "Whether you know that sorting everything to take five results is the wrong complexity.",
-      "simple": "You have similarity scores for a million documents and want the best five. The obvious move is to sort everything and take the top. It works, but it does far more work than needed.\n\nA full sort is O(n log n), and it orders all million scores when you need five. `np.argpartition` does a partial selection in O(n). It moves the k largest values to the front, in no particular order, without sorting the rest. Then you sort just those k, which costs almost nothing.\n\nThree small details. NumPy partitions in ascending order, so negate the scores to get the largest. Clamp k to the array length, because a new index can hold fewer than k items and argpartition raises an error. And remember this is still a full scan of every score.\n\nAt real scale, an approximate nearest-neighbour (ANN) index does this job for you. It finds close vectors without scoring every one.",
+      "quick": [
+        "Do not sort a million scores to get five.",
+        "Pull the top k to the front without sorting the rest.",
+        "Then sort only those few.",
+        "Flip the sign for largest first, and cap k at the size.",
+        "At big scale, use a fast approximate search index instead."
+      ],
+      "simple": "Top-k retrieval means taking similarity scores for many documents and returning the best few. For example, you have scores for a million documents and want the best five. Sorting everything works, but it does far more work than needed.\n\nA full sort is O(n log n) and orders all million scores. NumPy's argpartition does a partial selection in O(n) instead, moving the k largest values to the front without sorting the rest, and then you sort just those k. In a quick check this was roughly five to ten times faster. You negate the scores, since it partitions in ascending order, and clamp k to the array length.\n\nBut this is still a full scan of every score. Past a few million vectors, you move to an approximate index such as HNSW, which finds close vectors without scoring every one, at the cost of occasionally missing a true neighbour.",
       "code": "import numpy as np\n\ndef top_k(scores, k=5):\n    k = min(k, len(scores))\n    if k == 0:\n        return np.array([], dtype=int)\n    idx = np.argpartition(-scores, k - 1)[:k]    # O(n), unordered\n    return idx[np.argsort(-scores[idx])]         # sort only the k",
       "points": [
         "argpartition is O(n); a full sort is O(n log n).",
@@ -501,7 +860,7 @@ window.IR.q["17-python-coding"] = {
         "Clamp k to the array length - a small corpus otherwise raises.",
         "At real scale this is what the ANN index does for you."
       ],
-      "say": "I would use argpartition rather than a sort. Partitioning is linear and puts the k best at the front without ordering the rest, then I sort just those k, which is negligible. I negate because NumPy partitions ascending, and I clamp k to the array length so a corpus smaller than k does not raise. Beyond a few million rows I stop doing this in NumPy and use an ANN index.",
+      "say": "I avoid sorting every score, because a full sort orders a million values when I only need five. Instead I use argpartition, which is linear rather than n log n. It moves the k largest to the front without ordering the rest, and then I sort just those k survivors, which costs almost nothing. NumPy partitions in ascending order, so I negate the scores to get the largest. I also clamp k to the array length, because a small index might hold fewer than k items and argpartition raises an error. In a quick check this was roughly five to ten times faster than a full argsort. The honest caveat is that it's still a full scan of every score. Past a few million vectors, or once the exact scan misses the latency budget, I'd stop tuning this and move to an approximate nearest-neighbour index like HNSW, which is what a vector database is doing for you anyway.",
       "numbers": "On a million scores, argpartition plus a sort of the top k was roughly 5-10x faster than a full argsort in a quick NumPy check. Past a few million vectors, or once the exact scan misses your latency budget, move to an ANN index such as HNSW rather than tuning this.",
       "wrong": "np.argsort(scores)[-k:] with a comment saying it is fine. It works and it is the answer of someone who has not thought about the cost per query at a thousand queries a second.",
       "follow": "Where does this break down, and what would you replace it with?",
@@ -523,7 +882,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "Two things in one card: whether you can write a real decorator, and whether you know what is worth measuring.",
-      "simple": "A decorator wraps a function, so you can run code before and after it without editing the function. For LLM calls that is ideal. You want every call measured, without pasting timing code into forty places.\n\nThree details separate a real answer from a textbook one.\n\n`functools.wraps` copies the original function's name and docstring onto the wrapper. Without it, every function in your traces is called `wrapper`.\n\n`time.perf_counter` is the right clock for timing. It is monotonic, meaning it never jumps backwards when the system clock is corrected. `time.time` can.\n\nLog in a `finally` block, so failed calls are measured too. Errors are the calls you most want latency on. And re-raise the exception. An observability decorator that swallows errors hides real failures.\n\nToken counts come from the SDK response object, but the field names differ. Anthropic and the OpenAI Responses API use `input_tokens` and `output_tokens`. OpenAI Chat Completions uses `prompt_tokens` and `completion_tokens`. Map them to one log schema.\n\nFor async functions, you need an `async def` wrapper that awaits the call. A normal wrapper would only time creating the coroutine, which is almost zero.",
+      "quick": [
+        "A decorator times every model call without editing each one.",
+        "Keep the real function name in the logs.",
+        "Use a clock that never jumps backwards.",
+        "Log in finally so failures count, then re-raise the error.",
+        "Providers name word counts differently, so map to one log format."
+      ],
+      "simple": "A decorator wraps a function so you can run code before and after it without editing the function. For LLM calls that is ideal, because you want every call measured without pasting timing code into forty places. So the decorator starts a timer, calls the model, reads the token usage and writes one log line.\n\nA few details separate a real answer from a textbook one. Use functools.wraps so traces keep the real function name, and time.perf_counter, because it never jumps backwards. Log in a finally block so failed calls are measured too, and always re-raise the exception.\n\nToken field names differ by provider. For example, Anthropic reports input_tokens and output_tokens, while OpenAI Chat Completions uses prompt_tokens and completion_tokens, so you map both into one structured log schema. And a normal wrapper around an async function only times creating the coroutine, so you need an async def wrapper that awaits the call.",
       "code": "import functools, time, logging\n\nlog = logging.getLogger(__name__)\n\ndef observed(fn):\n    @functools.wraps(fn)               # keeps __name__ and the docstring\n    def wrapper(*args, **kwargs):\n        start = time.perf_counter()\n        status, usage = \"ok\", None\n        try:\n            result = fn(*args, **kwargs)\n            usage = getattr(result, \"usage\", None)   # token counts\n            return result\n        except Exception:\n            status = \"error\"\n            raise                      # measure it, do not swallow it\n        finally:\n            log.info(\"llm_call\", extra={\n                \"fn\": fn.__name__,\n                \"ms\": round((time.perf_counter() - start) * 1000),\n                \"status\": status,\n                \"input_tokens\": getattr(usage, \"input_tokens\", None),\n                \"output_tokens\": getattr(usage, \"output_tokens\", None),\n            })\n    return wrapper",
       "points": [
         "functools.wraps, or every traced function is named wrapper.",
@@ -532,7 +898,7 @@ window.IR.q["17-python-coding"] = {
         "Re-raise - never let instrumentation swallow an exception.",
         "For async, you need a parallel async def wrapper with await."
       ],
-      "say": "I wrap with functools.wraps so the traced name survives, time with perf_counter because it is monotonic, and log inside a finally block so failed calls are measured too - errors are exactly the calls you want latency on. I re-raise rather than swallowing. I would pull token counts off the response object and log them alongside, so cost attribution is per-feature rather than one bill at month end.",
+      "say": "The point is to measure every LLM call without pasting timing code into forty places. I use functools.wraps so traces keep the real function name instead of wrapper. I time with perf_counter, because it's monotonic, whereas time.time can jump backwards when the system clock is corrected. I log inside a finally block, so failed calls get measured too, and I always re-raise, because instrumentation that swallows errors hides real failures. Token fields differ by provider. Anthropic reports input and output tokens, while OpenAI Chat Completions calls them prompt and completion tokens, so I map both into one schema. The logs are structured, not f-strings, and tagged with feature and tenant at call time, because you can't aggregate a string or reconstruct attribution later. The bit people miss is async. A plain wrapper around an async function only times creating the coroutine, so I need a parallel async def wrapper that awaits the call.",
       "numbers": "Structured logs, not f-strings - you cannot aggregate on a string. Tag with feature and tenant at call time; you cannot reconstruct attribution later.",
       "wrong": "Timing with time.time and logging only on success. You lose the failure latencies, which is where your p99 actually lives.",
       "follow": "The function is async. What changes?",
@@ -554,7 +920,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "Everyone says they use a retry library. This checks whether you know what it is doing and why jitter exists.",
-      "simple": "Retrying straight away against a rate-limited API just burns your quota faster. So you wait, and double the wait each time: one second, two, four, eight. That is exponential backoff. A cap stops the wait growing forever.\n\nJitter is the part candidates miss. Picture a hundred workers, all rate-limited at the same moment. Without jitter, they all wait exactly two seconds, then all retry in the same millisecond. You have rebuilt the traffic spike that caused the problem. Jitter adds randomness to each wait, so the retries spread out. \"Full jitter\" picks a random wait between zero and the current backoff limit.\n\nKnow what to retry. A 429 (rate limit) or a 503 (service unavailable) is worth retrying. A 400 means your request is malformed, and it will stay malformed.\n\nIf the server sends a `Retry-After` header, obey it. The server knows more than your formula.\n\nFinally, cap the total time as well as the number of attempts. The code checks a deadline before each sleep.\n\nFor the rest of the policy, such as idempotency, logging and the SDK's own retries, see py-04.",
+      "quick": [
+        "Double the wait after each failure, up to a cap.",
+        "Add randomness so many clients do not retry together.",
+        "Retry overload and outage errors, never bad requests.",
+        "Obey the server's Retry-After wait when it sends one.",
+        "Cap the total time as well as the attempts."
+      ],
+      "simple": "Exponential backoff means that after each failure you wait before retrying, and you double the wait each time: one second, two, four, eight. Retrying straight away against a rate-limited API just burns your quota, so waiting gives the provider room to recover, and a cap stops the wait growing forever.\n\nJitter is the part candidates miss. For example, picture a hundred workers that all get rate-limited at the same moment. Without jitter, they all wait exactly two seconds and retry in the same millisecond, rebuilding the spike that caused the problem. With full jitter, each worker sleeps a random time between zero and the current backoff limit, so the retries spread out.\n\nYou retry a 429 or a 5xx error, but never a 400 or 401, because those will not fix themselves. You obey a Retry-After header, and cap the total time as well as the attempts.",
       "code": "import random, time\n\ndef backoff(attempt, base=1.0, cap=60.0):\n    window = min(cap, base * (2 ** attempt))\n    return random.uniform(0, window)          # full jitter\n\ndef call_with_retry(fn, retries=5, deadline=30.0):\n    start = time.monotonic()\n    for attempt in range(retries):\n        try:\n            return fn()\n        except (RateLimited, ServerError) as e:   # 429 and 5xx only\n            wait = getattr(e, \"retry_after\", None) or backoff(attempt)\n            out_of_time = time.monotonic() - start + wait > deadline\n            if attempt == retries - 1 or out_of_time:\n                raise\n            time.sleep(wait)\n        # anything else - 400, 401, validation errors - propagates at once",
       "points": [
         "Double the wait each attempt, with a ceiling.",
@@ -563,7 +936,42 @@ window.IR.q["17-python-coding"] = {
         "Honour Retry-After when the provider sends it.",
         "Cap total elapsed time, not just the attempt count."
       ],
-      "say": "Exponential backoff doubles the wait each attempt with a ceiling, and jitter randomises it so that a hundred clients rate-limited at once do not all retry in the same millisecond and rebuild the stampede. I only retry 429 and 5xx - a 400 is malformed and will stay malformed. I honour Retry-After when the provider sends it, and I bound total elapsed time so a request cannot hang for minutes.",
+      "diagram": {
+        "kind": "lanes",
+        "alt": "An exponential backoff timeline with full jitter: after each failure the wait is random between zero and a limit that doubles from one to two to four to eight seconds, capped at sixty, with a total deadline.",
+        "lanes": [
+          {
+            "label": "Fail: 429 or 503",
+            "accent": "bad"
+          },
+          {
+            "label": "Wait 0 to 1s",
+            "note": "random, full jitter",
+            "accent": "accent"
+          },
+          {
+            "label": "Wait 0 to 2s",
+            "note": "limit doubles",
+            "accent": "accent"
+          },
+          {
+            "label": "Wait 0 to 4s",
+            "accent": "accent"
+          },
+          {
+            "label": "Wait 0 to 8s",
+            "note": "never past 60s cap",
+            "accent": "accent"
+          },
+          {
+            "label": "Deadline check",
+            "note": "about 30s total",
+            "accent": "warn"
+          }
+        ],
+        "caption": "**Double the limit, randomise the wait, stop at a cap.** Without jitter a hundred workers retry in the same millisecond and rebuild the spike."
+      },
+      "say": "Double the wait after every failure, add randomness to it, and stop at a cap. Retrying straight away against a rate-limited API only burns quota faster, so the wait grows from one second to two, four and eight, never past sixty. Jitter is the part candidates usually miss. Picture a hundred workers rate-limited in the same moment. Without jitter they all wait exactly two seconds and retry in the same millisecond, which rebuilds the spike that caused the problem. With full jitter each one sleeps a random time between zero and the current limit, so the retries spread out. I only retry 429s and 5xx errors, because a 400 is malformed and will stay malformed. If the server sends Retry-After, I obey it, since it knows more than my formula. The last guard is a total deadline, not just five attempts. I check it before each sleep, because a user won't wait much longer than thirty seconds.",
       "numbers": "Base 1 second, cap 60, five attempts. Bound the total to roughly 30 seconds for an interactive request - the `deadline` check in the code - because a user will not wait longer than that.",
       "wrong": "Backoff without jitter. It looks correct in a single-client test and causes synchronised retry storms the moment you run more than one worker.",
       "follow": "Your retries now exceed the user's timeout. What gives?",
@@ -584,7 +992,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "Whether you can test code whose dependency is slow, costly and non-deterministic.",
-      "simple": "You cannot call a real model in unit tests. It costs money, it is slow, and the output changes every run, so you cannot assert on it exactly.\n\nSo test your code, not the model. Your retry logic, parsing and fallbacks are fully deterministic once the API is replaced by a mock. A mock is a fake object that records how it was called and returns whatever you script.\n\nThe key tool is `side_effect` with a list. Each call takes the next item. If the item is an exception, the mock raises it. So you can script exactly: two rate limits, then a success.\n\nAssert the call count as well as the result. The count is what proves the retry happened.\n\nPatch `time.sleep`, so the test does not really wait out the backoff. Patch the name where your code looks it up. `patch(\"time.sleep\")` works if your code calls `time.sleep`. After `from time import sleep`, you must patch `yourmodule.sleep`.\n\nThe second test is the one candidates forget. Check that a 400 is not retried. A retry loop on a bad request just burns quota.\n\nThe tests assume a `summarise(client, text)` function built on the py-10 retry loop.",
+      "quick": [
+        "Never call the real model in unit tests.",
+        "Use a fake client that follows a script of replies.",
+        "Script two rate-limit errors, then a success.",
+        "Check the call count and skip real waiting.",
+        "Also test that a bad request is never retried."
+      ],
+      "simple": "You cannot call a real model in unit tests, because it costs money, it is slow and the output changes every run. So you test your own code. Your retry logic and parsing are fully deterministic once the API is replaced by a mock, a fake object that records its calls and returns whatever you script.\n\nThe key tool is side_effect set to a list. Each call takes the next item, and if the item is an exception, the mock raises it. For example, you script two rate-limit errors followed by a success, then assert both the result and a call count of three, which proves the retry happened. You also patch time.sleep, so the test does not really wait, patching the name where your code looks it up.\n\nThe second test is the one candidates forget. A 400 must fail after exactly one call, because retrying a bad request just burns quota.",
       "code": "import pytest\nfrom unittest.mock import Mock, patch\n\ndef test_retries_then_succeeds():\n    client = Mock()\n    client.complete.side_effect = [\n        RateLimited(\"429\"),\n        RateLimited(\"429\"),\n        Mock(text='{\"ok\": true}'),\n    ]\n    with patch(\"time.sleep\"):              # do not actually wait\n        result = summarise(client, \"hello\")\n    assert result == {\"ok\": True}\n    assert client.complete.call_count == 3\n\ndef test_does_not_retry_bad_request():\n    client = Mock()\n    client.complete.side_effect = BadRequest(\"400\")\n    with pytest.raises(BadRequest):\n        summarise(client, \"hello\")\n    assert client.complete.call_count == 1",
       "points": [
         "side_effect with a list scripts an exact failure sequence.",
@@ -593,7 +1008,7 @@ window.IR.q["17-python-coding"] = {
         "Test the negative case: 400 must not be retried.",
         "Keep a small live smoke test outside CI for real behaviour."
       ],
-      "say": "I mock the client and use side_effect with a list to script the exact sequence - two rate limits then a success - and assert both the result and the call count, which proves the retry ran. I patch sleep so the suite does not wait out the backoff. I always add the negative test that a 400 is not retried, since retrying a malformed request just burns quota. Real model behaviour belongs in evals.",
+      "say": "I never let a unit test call the real model, so I mock the client and test my own retry logic. A real call is slow, costs money and answers differently every run. A mock is a fake object that records its calls and returns whatever I script. Setting side_effect to a list gives an exact sequence, where each call takes the next item and raises it if it's an exception. So I script two rate-limit errors, then a success, and assert both the result and a call count of three. The count is what proves the retry actually happened. I patch time.sleep too, or the suite sits through the real backoff. Then comes the negative test people forget. A 400 must fail after exactly one call, because retrying it just burns quota. Whether the model itself behaves well is a different question. That belongs in an eval suite on a schedule, while unit tests stay fast and deterministic.",
       "numbers": "Unit tests should run in seconds. Anything model-dependent goes in the eval suite, which runs on a schedule rather than on every commit.",
       "wrong": "Calling the real API in CI and asserting on the text. It is slow, it costs money, and it fails randomly, so the team learns to ignore red builds.",
       "follow": "How do you test that the prompt itself is any good?",
@@ -614,7 +1029,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "Structured output is only as good as the validation behind it, and the semantic checks are where candidates stop early.",
-      "simple": "Valid shape is not the same as correct. A model can return perfect JSON with a confidence of 3.7 and a citation to a document you never retrieved.\n\nPydantic gives you three layers of checks.\n\nField constraints handle cheap structural rules: number ranges with `ge` and `le`, string lengths, and fixed choices with `Literal`.\n\nA `field_validator` adds a meaning check on one field. The valuable one here checks each citation against the ids you actually retrieved. That catches an invented source. It does not catch a real source cited for a claim it does not support; that needs a faithfulness check. The retrieved ids arrive through validation context: `Answer.model_validate_json(raw, context={\"retrieved_ids\": ids})`. With no context, the check fails closed and rejects every citation.\n\nA `model_validator(mode=\"after\")` runs once the whole object is built. So it can check rules across fields, such as \"a high-confidence answer must cite something\".\n\nWhen validation fails, send the error message back to the model as a retry. Models usually fix their output when told exactly what was wrong. Cap it at one or two retries.",
+      "quick": [
+        "Right shape does not mean right answer.",
+        "Field rules check ranges, lengths and allowed choices.",
+        "Check each citation against documents you really found.",
+        "A whole-object check handles rules across several fields.",
+        "On failure, send the error back, retry once or twice."
+      ],
+      "simple": "Valid shape is not the same as correct. A model can return perfect JSON with a confidence of 3.7 and a citation to a document you never retrieved. So structured output is only as good as the validation behind it, and Pydantic gives you three layers of checks.\n\nField constraints handle cheap structural rules, like a confidence between zero and one. A field_validator adds a meaning check on one field. For example, it checks each citation against the ids you actually retrieved, which arrive through the validation context. A model_validator runs once the whole object is built, so it can check rules across fields, such as a high-confidence answer needing a citation.\n\nWhen validation fails, you send the error back to the model as a retry, and one retry usually fixes it. Cap it at one or two, because beyond that the prompt or schema is the problem.",
       "code": "from typing import Literal\nfrom pydantic import BaseModel, Field, field_validator, model_validator\n\nclass Answer(BaseModel):\n    text: str = Field(min_length=1)\n    confidence: float = Field(ge=0.0, le=1.0)\n    citations: list[str] = Field(default_factory=list)\n    sentiment: Literal[\"positive\", \"neutral\", \"negative\"]\n\n    @field_validator(\"citations\")\n    @classmethod\n    def known_docs(cls, v, info):\n        allowed = (info.context or {}).get(\"retrieved_ids\", set())\n        unknown = [c for c in v if c not in allowed]\n        if unknown:\n            raise ValueError(f\"cited documents not retrieved: {unknown}\")\n        return v\n\n    @model_validator(mode=\"after\")\n    def confident_answers_cite(self):\n        if self.confidence > 0.8 and not self.citations:\n            raise ValueError(\"high confidence requires a citation\")\n        return self\n\n# answer = Answer.model_validate_json(raw, context={\"retrieved_ids\": ids})",
       "points": [
         "Field constraints for ranges, lengths and enums via Literal.",
@@ -623,10 +1045,11 @@ window.IR.q["17-python-coding"] = {
         "Pass the error text back as a retry - the model usually self-corrects.",
         "Bound retries; two failures means the prompt is wrong, not the output."
       ],
-      "say": "I use field constraints for the structural checks - ranges, lengths, Literal for enums - then a field_validator for semantics. The one that earns its place checks that every citation is in the set of documents actually retrieved, which catches fabricated sources directly. A model_validator enforces cross-field rules like high confidence requiring a citation. On failure I feed the error back as a retry, bounded at two attempts.",
+      "say": "Right shape isn't right answer, so I validate an LLM's output in three layers. Field constraints handle the cheap structural rules, like a confidence between zero and one, a non-empty string, or a sentiment limited to three values with Literal. A field_validator then checks the meaning of one field. Take citations. I pass the ids we actually retrieved in through the validation context, and the validator rejects any citation outside that set. That catches an invented source, though not a real source cited for the wrong claim. A model_validator runs after the whole object is built, so it handles rules across fields, such as a high-confidence answer needing at least one citation. When validation fails, I send the error text back to the model and ask again, because models usually fix their output when told exactly what was wrong. I cap that at one or two retries. If two don't fix it, the prompt or schema is the problem, not the output.",
       "numbers": "One retry with the validation error attached fixes the large majority of schema failures. If two do not fix it, the prompt or schema is the problem.",
       "wrong": "Defining the model and calling it validated. Type-correct output that cites a document you never retrieved is exactly the failure you needed to catch.",
-      "follow": "The model fails validation twice in a row. What does the user get?"
+      "follow": "The model fails validation twice in a row. What does the user get?",
+      "followAnswer": "They get a clear, honest fallback, never the half-valid output. After two failed attempts I stop retrying, log the raw output and the validation errors, and return a typed failure state the interface can show, such as 'I could not complete this, here is what I found' or a handoff to a person. If a safe partial answer exists, like the retrieved sources without a summary, I show that. Then I treat the repeated failure as a prompt or schema bug and add the case to the eval set."
     },
     {
       "id": "py-15",
@@ -643,7 +1066,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "Practical and discriminating - the partial-chunk problem catches most candidates.",
-      "simple": "Streaming replies arrive as server-sent events. In the OpenAI-style format, each line starts with `data:` and carries one JSON object. The stream ends with `data: [DONE]`.\n\nThe trap: the network does not respect your line breaks. One chunk off the socket can end halfway through a line. So you cannot parse chunk by chunk. Keep a buffer. Add each chunk to it, parse only complete lines, and leave the unfinished tail for the next chunk. That one pattern is most of the answer.\n\nFour real-world details. Treat `[DONE]` as the end signal, not as JSON. Use `.get(\"content\")`, because the first delta often carries only the role. Skip events with an empty `choices` list; with usage reporting switched on, the final chunk carries only token usage. And decode UTF-8 incrementally. One character, like an emoji or a Hindi letter, can be split across two reads, and decoding each chunk alone corrupts it.\n\nOther providers differ. Anthropic's Messages stream uses named `event:` lines with different payloads. In production the provider SDK parses the stream for you. The exercise shows you know what it handles.",
+      "quick": [
+        "Each data line holds one JSON piece, ending with DONE.",
+        "Network pieces can end halfway through a line.",
+        "Keep a buffer and read only complete lines.",
+        "Treat DONE as the end, and the first piece may be empty.",
+        "Decode text gradually, since one character can split across reads."
+      ],
+      "simple": "Streaming replies from an LLM API arrive as server-sent events. In the OpenAI-style format, each line starts with data and carries one JSON object with a small piece of the answer, and the stream ends with a data line saying DONE.\n\nThe trap is that the network does not respect your line breaks. One chunk can end halfway through a line, so if you parse chunk by chunk, json.loads blows up. So you keep a buffer, parse only the complete lines up to the last newline, and leave the unfinished tail for the next chunk. The same happens with text. For example, an emoji or a Hindi letter is several bytes and can be split across two reads, so you need an incremental UTF-8 decoder.\n\nYou also treat DONE as the end signal rather than JSON, and skip events with an empty choices list. In production the SDK does this, but knowing it helps when a stream misbehaves.",
       "code": "import codecs, json\n\nasync def stream(response):\n    decoder = codecs.getincrementaldecoder(\"utf-8\")()\n    buffer = \"\"\n    async for raw in response.aiter_bytes():\n        buffer += decoder.decode(raw)     # holds back a split character\n        while \"\\n\" in buffer:\n            line, buffer = buffer.split(\"\\n\", 1)\n            line = line.strip()\n            if not line.startswith(\"data:\"):\n                continue\n            payload = line[5:].strip()\n            if payload == \"[DONE]\":\n                return\n            try:\n                event = json.loads(payload)\n            except json.JSONDecodeError:\n                continue              # malformed line: skip, do not crash\n            choices = event.get(\"choices\") or []\n            if not choices:           # e.g. the final usage-only chunk\n                continue\n            text = choices[0].get(\"delta\", {}).get(\"content\")\n            if text:\n                yield text",
       "points": [
         "Buffer across chunks - socket reads do not align to lines.",
@@ -653,10 +1083,11 @@ window.IR.q["17-python-coding"] = {
         "With usage reporting on, the final chunk has usage and empty choices - handle it and record the usage.",
         "Decode UTF-8 incrementally - a character can straddle two reads."
       ],
-      "say": "The key point is that socket chunks do not align to line boundaries, so I accumulate into a buffer and only parse complete lines, leaving the remainder for the next read. I treat [DONE] as termination rather than JSON, skip lines that are not data, and use .get for content because the first delta only carries a role. I also capture the usage block on the final chunk for cost tracking.",
+      "say": "Each SSE data line carries one JSON delta and the stream ends with a DONE marker, but you can't parse it chunk by chunk. Network reads don't line up with line breaks, so one read can end halfway through a line and json.loads blows up. That's why I keep a buffer, append each chunk, consume only complete lines, and leave the unfinished tail for the next read. The same thing happens one level down with text. An emoji or a Hindi letter is several bytes and can straddle two reads, so I decode UTF-8 with an incremental decoder. A few details are easy to miss. DONE is a signal, not JSON. The first delta often carries only the role, so I read content with get. And with usage reporting on, the final chunk has empty choices plus the token counts, which I record. In production the provider SDK does all of this for you, but knowing it matters when a stream misbehaves.",
       "numbers": "TTFT is what the user perceives - typically a few hundred milliseconds against several seconds for the full response. That gap is the entire reason to stream.",
       "wrong": "json.loads on each chunk as it arrives. It works locally where responses come in one piece and fails under real network conditions.",
-      "follow": "The connection drops at 80%. What does the user see?"
+      "follow": "The connection drops at 80%. What does the user see?",
+      "followAnswer": "They see the 80% that already arrived, followed by a clear message that the answer was cut off, never a silently truncated reply that looks complete. On the client I detect that the stream ended without the done marker or a finish reason, keep the partial text, and offer a retry. On the server I log the partial output and token usage, because we were still billed. For a retry I usually regenerate from scratch rather than stitch, since continuing mid-sentence reliably is harder than it looks."
     },
     {
       "id": "py-16",
@@ -673,7 +1104,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "Applies the context-window topic to code, and the system-message detail is the tell.",
-      "simple": "A conversation keeps growing until it no longer fits the context window. You need to drop old turns while keeping the request valid.\n\nThree things are being tested.\n\nPin the system message. If you trim it away, the model forgets its instructions. This is the most common bug in home-grown memory code. It shows up as \"the model stopped following the system prompt after twenty turns\".\n\nWalk backwards from the newest message, adding turns until the next one would go over budget. Recent turns matter most in a conversation.\n\nDo not start the kept history mid-pair. If the oldest kept message is an assistant reply or a tool result, its question or tool call is gone. That history is confusing, and some APIs reject it. So drop leading messages until the history starts with a user turn.\n\nThe budget is not the full context window. It is the window minus the space you reserve for the answer, minus a small safety margin. And count with the model's real tokeniser, not characters divided by four.",
+      "quick": [
+        "Drop old turns so the chat fits the limit.",
+        "Always keep the system message at the top.",
+        "Add turns from newest back until the budget runs out.",
+        "Make the kept history start with a user message.",
+        "Leave room for the answer, count with the real counter."
+      ],
+      "simple": "A conversation keeps growing until it no longer fits the model's context window. So you need a trimmer that drops old turns while keeping the request valid, and three things are being tested.\n\nFirst, you pin the system message, because trimming it makes the model forget its instructions, which is the most common bug in home-grown memory code. Second, you walk backwards from the newest message, adding turns until the next one would go over budget, because recent turns matter most. Third, you do not start the kept history mid-pair. For example, if the oldest kept message is a tool result whose tool call was trimmed, some APIs reject the request, so you start with a user turn.\n\nThe budget is the window minus the space reserved for the answer, counted with the real tokeniser. Once you would drop turns the user still refers to, summarise them instead.",
       "code": "def trim(messages, budget, count):\n    system = [m for m in messages if m[\"role\"] == \"system\"]\n    rest = [m for m in messages if m[\"role\"] != \"system\"]\n\n    used = sum(count(m) for m in system)\n    kept = []\n    for m in reversed(rest):              # newest first\n        c = count(m)\n        if used + c > budget:\n            break\n        kept.append(m)\n        used += c\n    kept.reverse()\n\n    while kept and kept[0][\"role\"] != \"user\":\n        kept.pop(0)                       # no orphaned reply or tool result\n    return system + kept",
       "points": [
         "Pin the system message; never let it be trimmed.",
@@ -682,7 +1120,41 @@ window.IR.q["17-python-coding"] = {
         "Budget = context window − reserved output − a safety margin.",
         "Count with the real tokeniser, not len(text) // 4."
       ],
-      "say": "I separate the system message and pin it, then walk the remaining turns newest-first, accumulating until I would exceed the budget. I reverse back into order and drop a leading assistant turn so the history does not start mid-pair. The budget is the window minus reserved output space, not the whole window, and I count with the provider's tokeniser rather than estimating from characters.",
+      "diagram": {
+        "kind": "stack",
+        "alt": "The layout of a trimmed request inside the context window: a pinned system message, dropped old turns, dropped leading assistant or tool messages, the newest turns that fit, and space reserved for the answer.",
+        "top": "context window",
+        "bottom": "sent to the model",
+        "layers": [
+          {
+            "label": "System message",
+            "note": "pinned, never trimmed",
+            "accent": "accent"
+          },
+          {
+            "label": "Oldest turns",
+            "note": "dropped first",
+            "accent": "muted"
+          },
+          {
+            "label": "Leading assistant or tool",
+            "note": "drop until a user turn",
+            "accent": "bad"
+          },
+          {
+            "label": "Newest turns",
+            "note": "walk back until budget full",
+            "accent": "accent"
+          },
+          {
+            "label": "Reserved for answer",
+            "note": "1-2k tokens plus margin",
+            "accent": "warn"
+          }
+        ],
+        "caption": "**Pin the system message, keep the newest turns that fit, start on a user turn.** The budget is the window minus the answer reserve and a margin."
+      },
+      "say": "Pin the system message, keep as many recent turns as fit the budget, and make sure what's left is still a valid request. The system message comes first because trimming it means the model forgets its instructions, and that's the commonest bug in home-grown memory code. Then I walk backwards from the newest message, adding turns until the next one would go over, since recent turns matter most. After that I drop leading messages until the history starts with a user turn. Otherwise you can open on a tool result whose tool call was trimmed, which confuses the model, and some APIs reject it outright. The budget isn't the full context window. It's the window minus the space reserved for the answer, usually one to two thousand tokens, minus a small safety margin. I count with the model's real tokeniser, not length divided by four. And once I'm dropping turns the user still refers to, I switch to summarising them instead.",
       "numbers": "Reserve 1–2k tokens for the answer. Summarise rather than drop once you are discarding turns that carry decisions the user still refers to.",
       "wrong": "Keeping the last N messages by count. A single pasted document blows the budget and the request fails regardless of N.",
       "follow": "The user refers to something from turn three, which you dropped. Now what?",
@@ -704,7 +1176,14 @@ window.IR.q["17-python-coding"] = {
         "concurrency"
       ],
       "why": "A representative hands-on task. What is being marked is error handling and bounded concurrency, not the happy path.",
-      "simple": "Before coding, state the requirements. Do not load the whole corpus into memory. Do not let one bad document kill the run. Keep concurrency bounded. Make reruns safe.\n\nThen build it in steps. Stream documents in and make chunks lazily with a generator. Group chunks into batches for the embedding API. Run a small window of batches at the same time. That gives parallel I/O without creating thousands of tasks at once.\n\nEach batch catches its own error and records the failed ids for a later retry. Writes are upserts with stable ids. An upsert updates a row if the id exists and inserts it if not. So a rerun updates the same chunks instead of duplicating them.\n\nTwo common mistakes. First, a semaphore around a function, but each batch still awaited in a plain `for` loop. It looks concurrent but runs one batch at a time. Second, one giant `gather` over the whole corpus. That creates too many tasks and hits rate limits.\n\nThe window version in the code is simple, but each window waits for its slowest batch. A fixed pool of workers pulling from a bounded queue (py-27) keeps every slot busy. For long production jobs, save checkpoints or use a job queue, so a restart resumes instead of starting over.",
+      "quick": [
+        "State the rules first, like memory limits and safe reruns.",
+        "Read documents one by one and group pieces into batches.",
+        "Run a few batches at once, not thousands.",
+        "Each batch records its own failures for a later retry.",
+        "Use stable ids so reruns overwrite instead of duplicating."
+      ],
+      "simple": "This is a hands-on task, and what is being marked is error handling and bounded concurrency, not the happy path. So before coding, you state the requirements: do not load the whole corpus into memory, do not let one bad document kill the run, keep concurrency bounded, and make reruns safe.\n\nThen you build it in steps. A generator makes chunks lazily, chunks are grouped into batches for the embedding API, and a small window of four to eight batches runs at the same time. Each batch catches its own error and records the failed ids for a retry. Writes are upserts with stable ids, so a rerun updates the same chunks instead of duplicating them.\n\nThere are two common mistakes. For example, someone wraps a function in a semaphore but still awaits each batch in a plain for loop, which runs one at a time. The other is one giant gather over the whole corpus, which hits rate limits.",
       "code": "async def ingest(paths, batch_size=100, concurrency=8):\n    sem = asyncio.Semaphore(concurrency)\n    failed = []\n\n    async def process(group):\n        async with sem:\n            try:\n                vectors = await embedder.aembed([c.text for c in group])\n                await store.upsert([\n                    (c.stable_id, v, c.metadata)\n                    for c, v in zip(group, vectors)\n                ])\n            except Exception:\n                log.exception(\"embedding batch failed\")\n                failed.extend(c.stable_id for c in group)\n\n    groups = batched(chunks(paths), batch_size)     # generators from py-02\n    # windowed: each window waits for its slowest batch. A fixed pool of\n    # workers pulling from a bounded queue (see py-27) keeps every slot busy.\n    for window in batched(groups, concurrency):\n        await asyncio.gather(*(process(group) for group in window))\n\n    return failed",
       "points": [
         "Stream input and batch chunks; do not materialise the corpus.",
@@ -713,7 +1192,41 @@ window.IR.q["17-python-coding"] = {
         "Use stable ids so retries and reruns are idempotent.",
         "Persist progress or use a queue for long-running production ingestion."
       ],
-      "say": "I stream documents, generate chunks lazily, batch them for the embedding API, and process only a bounded window of batches concurrently. The important coding detail is that I actually schedule several batch tasks together; a semaphore around a loop that awaits one batch at a time is still sequential. Each batch records failures separately, and vector upserts use stable ids so a retry or full rerun does not duplicate data. For long jobs I persist progress too.",
+      "diagram": {
+        "kind": "lanes",
+        "alt": "A concurrent ingestion pipeline: stream documents, chunk lazily with a generator, group into batches, embed a bounded window of batches, and upsert with stable ids while recording failures.",
+        "lanes": [
+          {
+            "label": "Stream documents",
+            "note": "never load the corpus"
+          },
+          {
+            "label": "Chunk lazily",
+            "note": "generator"
+          },
+          {
+            "label": "Batch chunks",
+            "note": "embedding API size"
+          },
+          {
+            "label": "Embed a window",
+            "note": "4-8 batches at once",
+            "accent": "accent"
+          },
+          {
+            "label": "Record failures",
+            "note": "failed ids, retry later",
+            "accent": "warn"
+          },
+          {
+            "label": "Upsert stable ids",
+            "note": "reruns do not duplicate",
+            "accent": "accent"
+          }
+        ],
+        "caption": "Marked on the unhappy path: **bounded concurrency, per-batch errors and idempotent upserts**, not the happy-path loop."
+      },
+      "say": "I'd pin down four rules before writing any code. The corpus won't fit in memory, one bad document mustn't kill the run, concurrency has to be bounded, and reruns must be safe. Documents stream in, a generator chunks them lazily, and chunks are grouped into batches for the embedding API. A few batches run at once, maybe four to eight to start, tuned later against measured rate limits and latency. Each batch catches its own errors and records the failed ids, so I can retry just those. Writes are upserts keyed on stable chunk ids, which means a rerun overwrites the same rows instead of duplicating them. The classic mistake is an unbounded gather over every document, which rate-limits on the first real corpus. The quieter one is a semaphore around a function that's still awaited in a plain loop, which looks concurrent but runs one batch at a time. For long jobs, checkpoints or a durable queue let a restart resume.",
       "numbers": "Start with a small concurrency such as 4–8 embedding batches and tune from measured rate limits, latency and provider batch limits. The important property is bounded work, not the exact number.",
       "wrong": "An unbounded `asyncio.gather` over every document. It looks impressively concurrent and rate-limits on the first real corpus.",
       "follow": "The run died at 60%. What happens when you restart it?",
@@ -734,7 +1247,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "Producer-consumer with a queue. Tests whether you can overlap stages instead of batching them.",
-      "simple": "The naive version chunks all ten thousand documents first, then embeds them all. The embedder sits idle during chunking, and every chunk sits in memory.\n\nBetter: start embedding the first chunks while chunking is still running. Put a queue between the two stages. A producer puts chunks in. Several consumers take them out and embed them.\n\nTwo design points carry this answer.\n\nThe queue is bounded, and that is deliberate. It gives backpressure: if embedding is slower than chunking, the producer waits at `put` instead of filling memory. Memory stays flat, whatever the corpus size. An unbounded queue is a memory leak with extra steps.\n\nSend one stop marker, called a sentinel, per consumer. Each consumer takes exactly one and exits. Send only one and the other seven wait forever. The sentinels go out in a `finally` block, so a chunking failure still releases the consumers.\n\nEach consumer also catches its own errors. Otherwise one bad chunk kills a worker and fails the whole `gather`.\n\nAn alternative to sentinels is `queue.join()` with `task_done()`, then cancelling the workers. Python 3.13 also added `Queue.shutdown()` for this.",
+      "quick": [
+        "Put a queue between the two stages.",
+        "One worker makes pieces, several others process them.",
+        "Limit the queue size so memory stays flat.",
+        "Send one stop signal per worker, even after errors.",
+        "Each worker catches its own errors."
+      ],
+      "simple": "The naive pipeline chunks all ten thousand documents first and then embeds them all, so the embedder sits idle and every chunk sits in memory. It is better to start embedding while chunking is still running, by putting a queue between the two stages. A producer puts chunks in, and several consumers take them out and embed them.\n\nTwo design points carry this answer. The queue is bounded on purpose, which gives backpressure. If embedding is slower than chunking, the producer waits instead of filling memory, so memory stays flat. The second is shutdown. You send one stop marker, called a sentinel, per consumer, from a finally block. For example, with eight consumers and only one sentinel, one consumer exits and the other seven wait forever.\n\nA queue size of about a hundred and eight consumers is a reasonable start, and a persistently full queue means the consumers are the bottleneck.",
       "code": "async def pipeline(docs, limit=8, queue_size=100):\n    q = asyncio.Queue(maxsize=queue_size)      # bounded = backpressure\n    DONE = object()\n\n    async def producer():\n        try:\n            for doc in docs:\n                for c in chunk(doc):\n                    await q.put(c)             # waits when full\n        finally:                               # even if chunking fails\n            for _ in range(limit):\n                await q.put(DONE)              # one sentinel per consumer\n\n    results = []\n    async def consumer():\n        while True:\n            item = await q.get()\n            if item is DONE:\n                return\n            try:\n                results.append(await embed(item))\n            except Exception:\n                log.exception(\"embed failed\")  # record it, keep consuming\n\n    await asyncio.gather(producer(),\n                         *(consumer() for _ in range(limit)))\n    return results",
       "points": [
         "Bounded queue gives backpressure and flat memory.",
@@ -743,7 +1263,64 @@ window.IR.q["17-python-coding"] = {
         "Overlapping stages beats batching whenever both are non-trivial.",
         "`queue.join()` with `task_done()`, or `Queue.shutdown()` on 3.13+, are alternatives to sentinels."
       ],
-      "say": "I put a bounded asyncio.Queue between the stages so consumers start while the producer is still working. Bounded is the important word - it gives backpressure, so if embedding is slower than chunking the producer blocks instead of loading the whole corpus into memory. I send one sentinel per consumer so they all terminate, and each consumer catches its own exceptions so a single bad chunk does not kill a worker.",
+      "diagram": {
+        "alt": "A producer chunks documents into a bounded queue; when the queue is full the producer waits; eight consumers pull chunks, embed them and write to the vector store.",
+        "rows": [
+          [
+            {
+              "id": "prod",
+              "label": "Producer",
+              "note": "chunks docs; sentinels in finally"
+            }
+          ],
+          [
+            {
+              "id": "q",
+              "label": "Bounded queue",
+              "note": "about 100 slots",
+              "accent": "accent"
+            }
+          ],
+          [
+            {
+              "id": "cons",
+              "label": "8 consumers",
+              "note": "embed; catch own errors",
+              "accent": "accent"
+            }
+          ],
+          [
+            {
+              "id": "store",
+              "label": "Vector store"
+            }
+          ]
+        ],
+        "edges": [
+          {
+            "from": "prod",
+            "to": "q",
+            "label": "put"
+          },
+          {
+            "from": "q",
+            "to": "prod",
+            "label": "full: wait",
+            "kind": "back"
+          },
+          {
+            "from": "q",
+            "to": "cons",
+            "label": "get"
+          },
+          {
+            "from": "cons",
+            "to": "store"
+          }
+        ],
+        "caption": "A **bounded queue gives backpressure**: stage two starts at once, memory stays flat, and **one stop marker per consumer** lets every worker exit."
+      },
+      "say": "Put a bounded queue between the stages, so one producer chunks documents while several consumers embed them at the same time. The embedder never sits idle waiting for chunking to finish. The bound matters as much as the queue, because it gives you backpressure. If embedding is slower than chunking, which it usually is, the producer just waits at put instead of filling memory. So memory stays flat whatever the corpus size. Shutdown is where people get caught. I send one stop marker per consumer, because with a single marker only one consumer exits and the rest wait forever. I send them from a finally block, so a chunking failure still releases everyone. Each consumer also catches its own errors, or one bad chunk kills a worker and fails the whole gather. On Python 3.13 and later, Queue.shutdown is a cleaner alternative to sentinels. I'd start with a queue of about a hundred and eight consumers, then watch queue depth.",
       "numbers": "Queue size around 100 and eight consumers is a reasonable start. Watch queue depth - persistently full means the consumer is the bottleneck.",
       "wrong": "An unbounded queue. It runs fine on a hundred documents and exhausts memory on the real corpus, because the producer always outruns the network-bound consumer.",
       "follow": "The queue is always full. What does that tell you, and what do you do?",
@@ -764,7 +1341,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "A debugging round, not a writing round. Reading broken concurrent code is a different and rarer skill.",
-      "simple": "The first class in the code works in tests and hangs in production.\n\nThe bug: `asyncio.Lock` is not reentrant. Reentrant means the holder can take the same lock again. `get_or_fetch` holds the lock, then calls `fetch`, which tries to take the same lock. It waits for a lock held by its own caller, and its caller waits for it. Nothing moves, forever.\n\nWhy tests pass: a warm-cache request returns before it ever reaches `fetch`. The hang needs a cache miss.\n\nThere is a second, quieter bug. Holding a lock across a slow `await` on an API makes every caller queue. A hundred requests for a hundred different keys run one after another. The lock should protect the dictionary, not the network call.\n\nThe fix: take the lock to check the cache, release it, fetch without the lock, then take the lock again to store the result. `setdefault` handles the race where two callers miss at the same time. Both fetch, the first stored value wins, and both return the same object.\n\nIf duplicate fetches are expensive, store an in-flight future per key, so later callers await the first fetch.",
+      "quick": [
+        "The same lock is taken twice, so it waits forever.",
+        "Tests pass because it only hangs on a cache miss.",
+        "Holding a lock during a slow call makes everyone queue.",
+        "Lock only to read and write the cache, not to fetch.",
+        "If two fetch at once, keep the first stored result."
+      ],
+      "simple": "This is a debugging round. The code is a small async cache with a get_or_fetch method that takes a lock, checks a dictionary, and on a miss calls a fetch method. It works in tests and hangs in production.\n\nThe bug is that asyncio.Lock is not reentrant, meaning the holder cannot take it again. Here get_or_fetch holds the lock and calls fetch, which tries to take the same lock, so each waits for the other forever. Tests pass because a warm-cache request never reaches fetch.\n\nThere is a second, quieter bug. Holding a lock across a slow API call makes every caller queue. For example, a hundred requests for a hundred different keys run one after another. The lock should protect the dictionary, not the network call. So the fix is to check the cache under the lock, release it, fetch with no lock held, and lock again to store the result.",
       "code": "import asyncio\n\n# Broken: hangs on the first cache miss\nclass Cache:\n    def __init__(self):\n        self.lock = asyncio.Lock()\n        self.data = {}\n\n    async def get_or_fetch(self, key):\n        async with self.lock:\n            if key in self.data:\n                return self.data[key]\n            value = await self.fetch(key)      # slow API call\n            self.data[key] = value\n            return value\n\n    async def fetch(self, key):\n        async with self.lock:                  # <-- same lock again\n            return await call_api(key)\n\n# Fixed: lock the dictionary, not the network call\nclass FixedCache:\n    def __init__(self):\n        self.lock = asyncio.Lock()\n        self.data = {}\n\n    async def get_or_fetch(self, key):\n        async with self.lock:\n            if key in self.data:\n                return self.data[key]\n        value = await call_api(key)            # no lock held here\n        async with self.lock:\n            return self.data.setdefault(key, value)",
       "points": [
         "asyncio.Lock is not reentrant - re-acquiring self-deadlocks.",
@@ -773,7 +1357,42 @@ window.IR.q["17-python-coding"] = {
         "Lock the data structure, not the network call.",
         "setdefault resolves the duplicate-fetch race cleanly."
       ],
-      "say": "The deadlock is that asyncio.Lock is not reentrant - get_or_fetch holds it and fetch tries to take it again, so it waits on itself. It only shows on a cache miss, which is why tests pass. The deeper problem is holding a lock across a slow await, which serialises every caller. I would lock only the dictionary reads and writes, fetch outside the lock, and use setdefault to settle the duplicate-fetch race.",
+      "diagram": {
+        "kind": "compare",
+        "alt": "The buggy cache holds the lock across the fetch and re-takes it, deadlocking on a miss; the fix locks only the dictionary, fetches with no lock, and stores with setdefault.",
+        "aspects": [
+          "Check cache",
+          "Fetch on miss",
+          "Store result",
+          "Under load"
+        ],
+        "columns": [
+          {
+            "label": "Buggy",
+            "note": "lock the network call",
+            "accent": "bad",
+            "cells": [
+              "Takes the lock",
+              "Re-takes same lock: hangs",
+              "Never reached",
+              "Every key queues"
+            ]
+          },
+          {
+            "label": "Fixed",
+            "note": "lock the dictionary",
+            "accent": "accent",
+            "cells": [
+              "Lock, check, release",
+              "No lock held",
+              "Lock again, setdefault",
+              "Keys fetch in parallel"
+            ]
+          }
+        ],
+        "caption": "asyncio.Lock is **not reentrant**, and the hang needs a cache miss, so tests pass. **Lock the data structure, never a slow await.**"
+      },
+      "say": "It deadlocks because asyncio.Lock isn't reentrant, so a task holding it can't take it again. get_or_fetch holds the lock and calls fetch, which tries to take the same lock, so it waits on its own caller forever. Tests pass because a warm cache returns before ever reaching fetch. The hang only appears on a cache miss, usually with the first real traffic. There's a quieter second bug too. Holding a lock across a slow API call serialises every caller, so a hundred requests for a hundred different keys run one after another. A reentrant lock isn't the answer, and asyncio has none. The fix is to lock the dictionary, not the network call. I take the lock to check the cache, release it, fetch with no lock held, then take it again to store the result. setdefault settles the case where two callers both missed. If duplicate fetches are expensive, I store an in-flight future per key, so later callers await the first.",
       "numbers": "This class of bug typically appears at the first real concurrency, not in staging. Timeouts on lock acquisition turn a permanent hang into a visible error.",
       "wrong": "Reaching for a reentrant lock. asyncio has none, and a threading.RLock is owned by the event-loop thread, so it gives no mutual exclusion between coroutines. Even a working reentrant lock would leave the serialisation, which the throughput follow-up exposes.",
       "follow": "Two requests miss the cache for the same key at once. What happens in your version?",
@@ -794,7 +1413,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "A classic that still appears, and the O(1) requirement is the actual question.",
-      "simple": "An LRU cache keeps the most recent N results and evicts the least recently used one when it is full. The real requirement is that both get and put run in O(1), constant time.\n\nIn Python, `OrderedDict` gives you that directly. It remembers order and can move a key to the end in constant time. So the end holds the newest items and the front holds the oldest.\n\nOn get, move the key to the end to mark it as recently used. On put, move an existing key to the end too. Assigning to an existing key keeps its old position, so without the move, eviction picks the wrong victim. After inserting, if you are over capacity, pop from the front with `popitem(last=False)`.\n\nIf the interviewer bans `OrderedDict`, they want the structure underneath. That is a hash map for O(1) lookup plus a doubly linked list for O(1) reordering. The map points at list nodes. On each access you unlink the node and move it to the end.\n\nTwo notes. This class is not thread-safe. And `get` returns `None` for a miss, so a cached `None` looks like a miss; use a sentinel if that matters.",
+      "quick": [
+        "Keep recent results, drop the least recently used.",
+        "Get and put must both be instant, whatever the size.",
+        "An ordered dict can move a key to the end.",
+        "Move keys on every get and put, remove from the front.",
+        "Underneath it is a dict plus a two-way linked list."
+      ],
+      "simple": "An LRU cache keeps the most recent N results and evicts the least recently used one when full. The real requirement is that both get and put run in O(1), constant time.\n\nIn Python, an OrderedDict gives you that directly, because it can move a key to the end in constant time. So the end holds the newest items and the front the oldest. On get, you move the key to the end. On put, you move an existing key to the end too, assign the value, and if you are over capacity you pop from the front. The bug people write is skipping the move on put. For example, assigning to an existing key keeps its old position, so eviction picks the wrong victim.\n\nIf OrderedDict is banned, you build what is underneath: a hash map for O(1) lookup plus a doubly linked list for O(1) reordering.",
       "code": "from collections import OrderedDict\n\nclass LRU:\n    def __init__(self, capacity=128):\n        self.capacity = capacity\n        self.data = OrderedDict()\n\n    def get(self, key):\n        if key not in self.data:\n            return None\n        self.data.move_to_end(key)          # mark as recently used\n        return self.data[key]\n\n    def put(self, key, value):\n        if key in self.data:\n            self.data.move_to_end(key)\n        self.data[key] = value\n        if len(self.data) > self.capacity:\n            self.data.popitem(last=False)   # evict oldest",
       "points": [
         "Both get and put must be O(1) - that is the real constraint.",
@@ -803,7 +1429,32 @@ window.IR.q["17-python-coding"] = {
         "Underneath: hash map for lookup, doubly-linked list for recency.",
         "Not thread-safe - add a lock if shared across threads."
       ],
-      "say": "I use an OrderedDict, which keeps insertion order and lets me move a key to the end in constant time. get moves the key to the end and returns it; put moves it if present, assigns, then evicts from the front with popitem when over capacity. Underneath, that is a hash map for O(1) lookup plus a doubly-linked list for O(1) reordering, which is what I would write if OrderedDict were disallowed.",
+      "diagram": {
+        "kind": "lanes",
+        "alt": "An LRU cache as an ordered row of keys from least recently used at the front to newest at the end; a hash map points to each node, gets and puts move a key to the end, and eviction pops the front.",
+        "lanes": [
+          {
+            "label": "Front: oldest",
+            "note": "evicted when over capacity",
+            "accent": "bad"
+          },
+          {
+            "label": "Key B",
+            "note": "hash map points here"
+          },
+          {
+            "label": "Key C",
+            "note": "unlink in O(1)"
+          },
+          {
+            "label": "End: newest",
+            "note": "moved here on get or put",
+            "accent": "accent"
+          }
+        ],
+        "caption": "**Hash map for O(1) lookup, doubly linked list for O(1) reordering.** Move to the end on get and on put, or eviction picks the wrong victim."
+      },
+      "say": "An OrderedDict does it, because the real requirement is that get and put both run in constant time. OrderedDict remembers order and can move a key to the end in constant time. So on get I call move_to_end to mark the key as recent. On put I do the same for an existing key, assign the value, and if we're over capacity I call popitem with last set to False, which evicts from the front. The bug people write is skipping the move on put. Assigning to an existing key keeps its old position, so eviction picks the wrong victim. A plain dict with a list of keys fails too, because removing from the middle of a list is O of n. If OrderedDict is banned, they want the structure underneath, and that is a hash map plus a doubly linked list. And I'd say upfront that this isn't thread-safe without a lock.",
       "numbers": "For LLM work, cache on a hash of the normalised prompt plus model plus temperature. Excluding any of those returns answers from the wrong configuration.",
       "wrong": "A dict plus a list of keys for recency. Removing from the middle of a list is O(n), which breaks the one constraint the question is testing.",
       "follow": "Two threads call put at the same time. What happens?",
@@ -824,7 +1475,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "A common systems-flavoured coding question, and the follow-up on thread safety is the real test.",
-      "simple": "You are allowed sixty requests a minute. Your code must never go over.\n\nThe token bucket is the standard answer. A bucket holds tokens. Each request takes one. Tokens refill at a steady rate. When the bucket is empty, you wait. It allows a short burst, because a full bucket can serve several requests at once, while holding the long-run average to the limit.\n\nA sliding window is the stricter option. It counts requests in the last sixty seconds and refuses when the count hits the limit. No burst goes above the limit.\n\nTwo details in the code are the real test.\n\nRefill lazily. Work out the new tokens from the time since the last call. No background timer thread is needed, and it stays correct after an idle hour.\n\nSleep outside the lock. Compute the wait while holding the lock, release it, then sleep. Sleeping while holding the lock blocks every other thread for the whole wait.\n\nUse `time.monotonic`, which never jumps when the system clock changes.\n\nAnd say the scaling limit. A local bucket limits only one process. With several pods, the bucket must live somewhere shared, such as Redis.",
+      "quick": [
+        "Each request takes a token, tokens refill at a steady rate.",
+        "This allows short bursts but keeps the average in limit.",
+        "A sliding window counts the last minute and is stricter.",
+        "Refill from elapsed time, and never sleep holding the lock.",
+        "Several servers need one shared counter, like Redis."
+      ],
+      "simple": "A rate limiter makes sure your code never goes over a request limit. For example, you are allowed sixty requests a minute to a provider, and your code must never exceed it.\n\nThe token bucket is the standard answer. A bucket holds tokens, each request takes one, and tokens refill at a steady rate, so a full bucket allows a short burst while the long-run average stays at the limit. A sliding window is stricter, counting requests in the last sixty seconds so no burst goes above it.\n\nTwo details in the code are the real test. You refill lazily, working out new tokens from the time since the last call with time.monotonic, so no background thread is needed. And you sleep outside the lock, so other threads are not blocked. Finally, a local bucket only limits one process, so with several pods it has to live somewhere shared, such as Redis.",
       "code": "import time, threading\n\nclass TokenBucket:\n    def __init__(self, rate, capacity):\n        self.rate = rate               # tokens per second\n        self.capacity = capacity\n        self.tokens = float(capacity)\n        self.updated = time.monotonic()\n        self.lock = threading.Lock()\n\n    def acquire(self, n=1):\n        if n > self.capacity:          # could never be satisfied\n            raise ValueError(\"n exceeds bucket capacity\")\n        while True:\n            with self.lock:\n                now = time.monotonic()\n                self.tokens = min(\n                    self.capacity,\n                    self.tokens + (now - self.updated) * self.rate)\n                self.updated = now\n                if self.tokens >= n:\n                    self.tokens -= n\n                    return\n                deficit = (n - self.tokens) / self.rate\n            time.sleep(deficit)        # sleep OUTSIDE the lock",
       "points": [
         "Token bucket permits bursts; sliding window is stricter and smoother.",
@@ -833,7 +1491,39 @@ window.IR.q["17-python-coding"] = {
         "Never sleep while holding the lock.",
         "For multiple processes this must move to Redis, not a local object."
       ],
-      "say": "I would use a token bucket: tokens refill lazily from elapsed monotonic time, each request takes one, and an empty bucket waits. It allows a controlled burst while holding the average. The critical detail is computing the wait inside the lock but sleeping outside it - sleeping while holding the lock serialises every caller. Across processes this has to live in Redis, since a local bucket only limits one worker.",
+      "diagram": {
+        "kind": "compare",
+        "alt": "A token bucket refills tokens at a steady rate and allows short bursts; a sliding window counts requests in the last sixty seconds and never exceeds the limit.",
+        "aspects": [
+          "Idea",
+          "Bursts",
+          "Best for"
+        ],
+        "columns": [
+          {
+            "label": "Token bucket",
+            "note": "default",
+            "accent": "accent",
+            "cells": [
+              "Take a token, refill steadily",
+              "Allowed up to capacity",
+              "Long-run average"
+            ]
+          },
+          {
+            "label": "Sliding window",
+            "note": "stricter",
+            "accent": "warn",
+            "cells": [
+              "Count the last 60 seconds",
+              "Never above the limit",
+              "Hard limits"
+            ]
+          }
+        ],
+        "caption": "Refill **lazily from elapsed time** on a monotonic clock, **sleep outside the lock**, and move the bucket to Redis once several pods share it."
+      },
+      "say": "My default is a token bucket, because it allows short bursts while holding the long-run average. Each request takes a token, tokens refill at a steady rate, and when the bucket's empty the caller waits. A sliding window is the stricter option. It counts requests in the last sixty seconds, so a burst can never exceed the limit. I refill lazily from elapsed time on a monotonic clock, which means no timer thread and no breakage when the wall clock gets adjusted. The detail that really gets tested is where you sleep. I compute the wait inside the lock but sleep outside it, because sleeping while holding the lock blocks every other thread. For sizing, capacity is the burst I'll tolerate, rate is the sustained limit, and I aim for about eighty percent of the provider's quota to leave room for retries. A local bucket only limits one process, so with several pods it has to live somewhere shared like Redis.",
       "numbers": "Set capacity to roughly the burst you want to tolerate and rate to the sustained limit. Run at about 80% of the provider's stated limit to leave headroom for retries.",
       "wrong": "A local in-memory limiter on a service running four replicas. Each replica limits itself to the full quota, so you exceed it by four times and cannot work out why.",
       "follow": "You now run eight pods. What breaks?",
@@ -854,7 +1544,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "Short, elegant, and it proves you understand why hybrid search needs a merge step at all.",
-      "simple": "Hybrid search gives you two ranked lists: one from vector search and one from keyword search (BM25). You must merge them. You cannot compare their scores directly, because cosine similarity and BM25 use completely different scales.\n\nReciprocal rank fusion (RRF) avoids the problem. It ignores the scores and uses only the positions.\n\nEach document gets 1 / (k + rank) from every list it appears in, and the parts add up. So a document ranked third in both lists beats one ranked first in only one list. That is the behaviour you want: two different methods agreeing is strong evidence.\n\nThe constant k, usually 60, flattens the curve at the top. Without it, rank 1 would count so much more than rank 2 that one list would dominate. With it, one retriever being confidently wrong does less damage.\n\nThat is the whole algorithm: a few lines, no score normalisation, and little tuning beyond k. It is a common default in hybrid search engines, though some engines use normalised score fusion instead.\n\nTo trust one list more, multiply its contribution by a weight.",
+      "quick": [
+        "Reciprocal rank fusion merges ranked lists from two search methods.",
+        "Scores differ in scale, so use only positions.",
+        "Each list adds one over sixty plus the rank.",
+        "Documents found by both lists rise to the top.",
+        "Multiply a list's share if you trust it more."
+      ],
+      "simple": "Hybrid search gives you two ranked lists, one from vector search and one from keyword search using BM25, and you have to merge them. You cannot just add their scores, because cosine similarity and BM25 use completely different scales, so one retriever would silently dominate.\n\nReciprocal rank fusion, or RRF, ignores the scores and uses only the positions. Each document gets one divided by k plus its rank from every list it appears in, and those parts add up. For example, a document ranked third in both lists beats one ranked first in only one list, which is what you want, because two methods agreeing is strong evidence. The constant k, usually 60, flattens the curve at the top so one confidently wrong list does less damage.\n\nIt is a few lines, needs no score normalisation, and extends to any number of lists, but you should still confirm the gain on your own data.",
       "code": "from collections import defaultdict\n\ndef rrf(*lists, k=60):\n    scores = defaultdict(float)\n    for ranked in lists:\n        for rank, doc_id in enumerate(ranked, start=1):\n            scores[doc_id] += 1.0 / (k + rank)\n    return sorted(scores, key=scores.get, reverse=True)",
       "points": [
         "Uses rank only - no score normalisation needed.",
@@ -863,7 +1560,7 @@ window.IR.q["17-python-coding"] = {
         "Extends to any number of lists, including a reranker.",
         "Weight lists by multiplying their contribution if one is more trusted."
       ],
-      "say": "RRF merges ranked lists using positions rather than scores, which avoids normalising cosine against BM25 - different scales that do not compare cleanly. Each document gets one over k plus rank from every list it appears in, summed, so agreement across retrievers wins over a single confident hit. k around sixty flattens the top so one retriever cannot dominate. It is five lines and needs almost no tuning, which is why it is a common production default.",
+      "say": "RRF merges ranked lists using only positions, which is why it's the standard way to fuse vector and keyword search. You can't just add their scores, because cosine similarity and BM25 live on completely different scales, so one retriever silently dominates. RRF ignores the scores. Every list a document appears in contributes one over k plus its rank, and those parts add up. So a document ranked third in both lists beats one ranked first in only one, and that's what we want, because two different methods agreeing is strong evidence. The constant k, usually sixty from the original paper, flattens the curve at the top, so one retriever being confidently wrong does less damage. It needs no normalisation, little tuning, and extends to any number of lists. If I trust one list more, I multiply its contribution by a weight chosen on a labelled query set. And I'd still confirm hybrid beats either retriever alone on our data.",
       "numbers": "k=60 is the standard from the original paper and works well unchanged. Hybrid with RRF often beats either retriever alone on mixed keyword-and-semantic queries - confirm it on your own labelled set.",
       "wrong": "Adding raw cosine and BM25 scores together. They live on different scales, so one retriever silently dominates. Score fusion needs normalisation first, and even min-max is sensitive to outliers and candidate-set size - which is what the follow-up probes.",
       "follow": "You trust the vector results more than BM25. How do you express that?",
@@ -885,7 +1582,14 @@ window.IR.q["17-python-coding"] = {
         "window-functions"
       ],
       "why": "SQL and data handling appear in many senior AI/ML jobs even when the title says AI Engineer rather than Data Engineer.",
-      "simple": "Use a window function. A window function computes a value across related rows without collapsing them into one. Here, `ROW_NUMBER()` numbers the events inside each request, newest first. Then you keep row 1.\n\n`GROUP BY` with `MAX(event_time)` is the tempting wrong answer. It gives you the latest time, but not the other columns from that same row.\n\nAdd a tie-breaker. Two events can share a timestamp. Without a second sort column, such as an increasing event id, the database may pick a different winner on each run.\n\nDecide what happens with nulls. PostgreSQL, Oracle and Snowflake sort NULLs first under `DESC`, so a row with a missing timestamp would win. `NULLS LAST` fixes that. MySQL and SQL Server already put NULLs last under `DESC`, but they do not accept the `NULLS LAST` keyword, so drop it there.\n\nIn production, select only the columns you need instead of `SELECT *`. If the table is large, ask about partitioning and indexes.\n\nThen test the awkward cases: null timestamps, duplicate timestamps, requests with one row, and late-arriving events. Those look fine on a toy sample and fail in a pipeline.",
+      "quick": [
+        "Number each request's events, newest first, keep number one.",
+        "Taking the maximum time loses the other columns.",
+        "Add a tie-breaker for events with the same time.",
+        "Decide where missing times sort, or they may win.",
+        "Test ties, missing times and late events."
+      ],
+      "simple": "The task is to keep only the latest event for each request id in a table of model events. The right tool is a window function, which computes a value across related rows without collapsing them. You use ROW_NUMBER, partitioned by request id and ordered by event time newest first, and keep the rows numbered one, so the whole winning row survives.\n\nGROUP BY with MAX of the event time is the tempting wrong answer, because it gives the latest time but not the other columns from that row. Two details make the query deterministic. You add a tie-breaker, such as an increasing event id, because two events can share a timestamp. And you decide what happens with nulls. For example, PostgreSQL sorts nulls first when ordering descending, so a row with a missing timestamp would win unless you add NULLS LAST.\n\nThen you test the awkward cases, like duplicate timestamps and late-arriving events.",
       "code": "WITH ranked AS (\n    SELECT\n        request_id,\n        event_id,\n        event_time,\n        status,\n        output,\n        ROW_NUMBER() OVER (\n            PARTITION BY request_id\n            ORDER BY event_time DESC NULLS LAST, event_id DESC\n        ) AS rn\n    FROM model_events\n)\nSELECT request_id, event_id, event_time, status, output\nFROM ranked\nWHERE rn = 1;",
       "points": [
         "Use `ROW_NUMBER()` partitioned by the business key.",
@@ -895,7 +1599,41 @@ window.IR.q["17-python-coding"] = {
         "Test duplicate timestamps, nulls and late-arriving events.",
         "Ask about partitioning/indexing when the table is large."
       ],
-      "say": "I use `ROW_NUMBER()` over each request id, ordered by event time descending, then keep row one. I add a stable tie-breaker such as event id because timestamps can collide, otherwise the result can change between runs. I select only the columns the pipeline needs and ask about table size, partitioning and indexes if this is on a hot path. I would test duplicate timestamps, nulls and late-arriving events rather than only the happy sample.",
+      "diagram": {
+        "kind": "lanes",
+        "alt": "Keeping the latest event per request with a window function: partition by request id, order newest first, add a tie-breaker, put nulls last, number the rows, and keep row one.",
+        "lanes": [
+          {
+            "label": "Partition by request",
+            "note": "one group per request id"
+          },
+          {
+            "label": "Newest first",
+            "note": "order by event time"
+          },
+          {
+            "label": "Add a tie-breaker",
+            "note": "increasing event id",
+            "accent": "warn"
+          },
+          {
+            "label": "Nulls last",
+            "note": "or a missing time wins",
+            "accent": "warn"
+          },
+          {
+            "label": "Number the rows",
+            "note": "ROW_NUMBER, rows kept"
+          },
+          {
+            "label": "Keep row 1",
+            "note": "whole winning row",
+            "accent": "accent"
+          }
+        ],
+        "caption": "A window function **numbers rows without collapsing them**, so the whole latest row survives. GROUP BY with MAX gives the time but not the row."
+      },
+      "say": "I'd use ROW_NUMBER, partitioned by request id and ordered newest first, then keep row one. A window function numbers rows within each group without collapsing them, so the whole winning row survives. GROUP BY with MAX is the tempting wrong answer, because it gives you the latest time but not the status or output from that same row. Two details make it deterministic. I add a tie-breaker like an increasing event id, since two events can share a timestamp and the database may pick a different winner each run. And I decide where nulls go. In PostgreSQL, nulls sort first in descending order, so a row with no timestamp would win unless I add NULLS LAST. On Snowflake, BigQuery or DuckDB, QUALIFY lets me drop the CTE. Then I test duplicate timestamps, nulls and late-arriving events, because they look fine on a toy sample and break in a pipeline. For a big table, I'd check the query plan before assuming an index or partitioning helps.",
       "numbers": "No fixed row count changes the SQL idea, but scale changes the physical design. Check the query plan on production-like data before assuming an index or partition strategy helps.",
       "wrong": "Using `MAX(event_time)` alone and then assuming the rest of the columns come from that same row. You need a deterministic way to select the whole winning row.",
       "follow": "A late event arrives tomorrow with an event_time from yesterday. Should it replace the row you kept, and how does that change the pipeline?",
@@ -916,7 +1654,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "An optimisation round with a stated target. The best answer questions the premise before micro-tuning.",
-      "simple": "The starting code loops over two million documents in Python, scores each one, sorts everything and returns five. It also crashes on a tied score: the sort then compares two doc objects, which Python cannot do. `key=lambda t: t[0]` fixes that.\n\nWork through it in order of payoff.\n\nFirst, vectorise. The Python loop is the biggest cost. Stack the vectors into one matrix, normalise them when you store them, and scoring becomes one matrix-vector product. That is commonly a hundred times faster, with the same results.\n\nSecond, stop sorting everything. You want five results, not two million in order. `argpartition` is linear.\n\nThird, the real answer: it is still O(n) per query. Every query still touches every vector. Vectorising made each step cheap; it did not change the complexity.\n\nTo beat O(n) you need an index that does not look at everything. HNSW is a graph index that hops between close neighbours. It searches in roughly logarithmic time, for a small and tunable loss in recall. Recall here means the share of the true top results you actually get back.\n\nSay the trade-off honestly. Approximate search can miss a true neighbour. Tune the `ef` setting against a measured recall target, not by guessing.",
+      "quick": [
+        "First do all the maths in one array call.",
+        "Pick the top five without sorting everything.",
+        "Both help, but every query still checks every document.",
+        "A fast approximate index is what really beats that.",
+        "It can miss true matches, so measure and tune it."
+      ],
+      "simple": "The starting code loops over two million documents in Python, scores each one, sorts everything and returns five. You work through the improvements in order of payoff.\n\nFirst, you vectorise, because the Python loop is the biggest cost. You stack the vectors into one normalised matrix, so scoring becomes one matrix-vector product, commonly around a hundred times faster. Second, you use argpartition instead of sorting everything, since you want five results, not two million in order. But these are constant-factor wins, because every query still touches every vector. For example, two million 768-dimension vectors is about 6 GB in float32, and each query scans all of it.\n\nTo actually beat O(n), you need an index such as HNSW, a graph that hops between close neighbours and searches in roughly logarithmic time. It can miss a true neighbour, so you tune its ef setting against a measured recall target.",
       "code": "import numpy as np\n\n# Before: Python loop + full sort (and a TypeError on a tied score)\ndef search(query_vec, docs, k=5):\n    scored = []\n    for doc in docs:                        # docs: 2 million\n        s = cosine(query_vec, doc.vector)\n        scored.append((s, doc))\n    scored.sort(reverse=True)\n    return scored[:k]\n\n# Steps 1-2: one matrix product + partial selection\n# M: (n, d) float32 matrix, rows normalised at write time\ndef search_fast(q, M, ids, k=5):\n    scores = M @ (q / np.linalg.norm(q))\n    k = min(k, len(scores))\n    idx = np.argpartition(-scores, k - 1)[:k]\n    idx = idx[np.argsort(-scores[idx])]\n    return [(ids[i], float(scores[i])) for i in idx]\n\n# Step 3: an ANN index to beat O(n)\nimport hnswlib\nindex = hnswlib.Index(space=\"cosine\", dim=768)\nindex.init_index(max_elements=2_000_000, ef_construction=200, M=16)\nindex.add_items(vectors, ids)                   # ids: integer labels\nindex.set_ef(64)                                # recall/latency knob\nlabels, distances = index.knn_query(query_vec, k=5)   # distance = 1 - cosine",
       "points": [
         "Vectorise first - the biggest win for the least risk.",
@@ -925,7 +1670,39 @@ window.IR.q["17-python-coding"] = {
         "An ANN index is what actually beats O(n).",
         "Approximate means recall loss - quantify it, do not hide it."
       ],
-      "say": "I would take it in stages. Vectorise the loop into one matrix product and normalise at write time - that alone is roughly a hundred times faster. Replace the sort with argpartition. But both are constant-factor wins and it is still linear per query, so the real fix is an ANN index like HNSW for roughly logarithmic search. That costs exact recall, so I would tune ef against a measured recall target rather than guessing.",
+      "diagram": {
+        "kind": "stack",
+        "alt": "A ladder of speed-ups for retrieval: a Python loop, then vectorising, then argpartition, all still O(n), and finally an ANN index such as HNSW which actually beats O(n) at some recall cost.",
+        "top": "slowest",
+        "bottom": "fastest",
+        "layers": [
+          {
+            "label": "Python loop, full sort",
+            "note": "crashes on tied scores",
+            "accent": "bad"
+          },
+          {
+            "label": "Vectorise",
+            "note": "one matrix product, about 100x"
+          },
+          {
+            "label": "argpartition top 5",
+            "note": "linear, not a full sort"
+          },
+          {
+            "label": "Still O(n) per query",
+            "note": "every vector touched",
+            "accent": "warn"
+          },
+          {
+            "label": "ANN index (HNSW)",
+            "note": "about log time; tune ef",
+            "accent": "accent"
+          }
+        ],
+        "caption": "Vectorising and argpartition are **constant-factor wins**. Only an **index that skips most vectors** beats O(n), traded against measured recall."
+      },
+      "say": "I'd go in order of payoff, but only an index actually beats O of n. The biggest cost is the Python loop, so I vectorise first. I normalise vectors when they're stored, and scoring becomes one matrix-vector product, often around a hundred times faster. Next, I use argpartition to pick the top five instead of sorting two million scores. Both are constant-factor wins, though. Every query still touches every vector, and two million 768-dimension float32 vectors is about six gigabytes. To change the complexity I need an approximate nearest-neighbour index like HNSW, a graph that hops between close neighbours and searches in roughly logarithmic time. Approximate means it can miss a true neighbour. It typically holds recall above ninety-five percent, but I tune its ef setting against a measured recall target rather than guessing. I'd also fix the crash in the original, where a tied score makes sort compare document objects and raise a TypeError.",
       "numbers": "Two million 768-dimension vectors is about 6 GB in float32. HNSW typically holds 95%+ recall at a fraction of the latency; ef is the knob that trades one for the other.",
       "wrong": "Jumping straight to 'use a vector database' without the arithmetic. It is often right, but stated without cost or recall it sounds like a memorised answer rather than a decision.",
       "follow": "Recall dropped to 85% and the product team noticed. What do you change?",
@@ -946,7 +1723,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "The harder chunker variant. Boundary logic plus the character-versus-token distinction.",
-      "simple": "Character chunking cuts sentences in half. Half a sentence has a muddled meaning, so it embeds badly. And characters are the wrong unit anyway, because model limits are in tokens.\n\nSo split the text into sentences first. Then pack whole sentences into a chunk until the next one would go over the token budget. Start a new chunk and carry the last sentence or two across as overlap.\n\nThe case that separates a complete answer is one sentence longer than the whole budget. Think of a table row, a code block or a long legal clause. It can never fit. Without a guard you either drop it or loop forever. So split it by force as a fallback, for example word by word up to the budget.\n\nTwo smaller guards. `overlap_sents=0` must mean no overlap, because `current[-0:]` returns the whole list, a classic Python slicing bug. And drop carried sentences if they would push the next chunk over budget.\n\nThen give the honest caveat. The regex breaks on abbreviations like \"Dr.\" and \"e.g.\". In production, use a real sentence splitter, such as spaCy or NLTK, and split on document structure first.",
+      "quick": [
+        "Split text into sentences first.",
+        "Add whole sentences until the next would exceed the budget.",
+        "Carry the last sentence into the next piece.",
+        "Force-split any single sentence longer than the budget.",
+        "Make zero overlap truly mean none, and use a proper sentence splitter."
+      ],
+      "simple": "Character chunking cuts sentences in half, and half a sentence has a muddled meaning, so it embeds badly. Characters are also the wrong unit, because model limits are in tokens. So a better chunker never splits mid-sentence and measures in tokens.\n\nThe approach is to split the text into sentences first, then pack whole sentences into a chunk until the next one would go over the token budget, counted with the model's real tokeniser. Then you start a new chunk and carry the last sentence or two across as overlap. The case that separates a complete answer is one sentence longer than the whole budget. For example, a long table row or legal clause can never fit, so without a guard you drop it or loop forever, and the fallback is to split it word by word.\n\nA simple regex splitter breaks on abbreviations like Dr., so in production you use a real sentence splitter such as spaCy.",
       "code": "import re\n\nSENT = re.compile(r\"(?<=[.!?])\\s+\")\n\ndef hard_split(s, count, max_tokens):\n    # fallback for one oversized sentence: pack words greedily\n    out, cur = [], []\n    for w in s.split():\n        if cur and count(\" \".join(cur + [w])) > max_tokens:\n            out.append(\" \".join(cur))\n            cur = []\n        cur.append(w)\n    if cur:\n        out.append(\" \".join(cur))\n    return out\n\ndef chunk_by_tokens(text, count, max_tokens=500, overlap_sents=1):\n    sentences = [s for s in SENT.split(text) if s.strip()]\n    chunks, current, used = [], [], 0\n\n    for s in sentences:\n        n = count(s)\n        if n > max_tokens:                     # single huge sentence\n            if current:\n                chunks.append(\" \".join(current))\n                current, used = [], 0\n            chunks.extend(hard_split(s, count, max_tokens))\n            continue\n        if used + n > max_tokens and current:\n            chunks.append(\" \".join(current))\n            current = current[-overlap_sents:] if overlap_sents > 0 else []\n            used = sum(count(x) for x in current)\n            while current and used + n > max_tokens:\n                used -= count(current.pop(0))   # overlap must fit too\n        current.append(s)\n        used += n\n\n    if current:\n        chunks.append(\" \".join(current))\n    return chunks",
       "points": [
         "Split into sentences, then pack greedily to a token budget.",
@@ -955,7 +1739,7 @@ window.IR.q["17-python-coding"] = {
         "Count tokens with the real tokeniser, not a character estimate.",
         "Name the regex limitation on abbreviations before being asked."
       ],
-      "say": "I split into sentences and pack them greedily until the next one would exceed the token budget, then carry the last sentence forward as overlap. The case that matters is a single sentence longer than the budget, like a table row or code block. It needs a hard fallback split, or it is dropped or loops forever. I count with the real tokeniser and use a proper sentence splitter in production.",
+      "say": "Split into sentences first, then pack whole sentences up to a token budget. Half a sentence has muddled meaning and embeds badly, and model limits are in tokens, not characters. So I add sentences to the current chunk until the next one would go over, then start a new chunk carrying the last sentence across as overlap. The case most people miss is one sentence longer than the whole budget. A table row or a long legal clause can never fit, so without a guard you either drop it or loop forever. My fallback force-splits it word by word. There's a subtle Python trap too. Slicing from minus zero returns the whole list, so an overlap of zero needs its own branch or it silently keeps everything. I count with the real tokeniser and use a proper sentence splitter, because a regex breaks on abbreviations. Around five hundred tokens is a sensible default, though splitting on headings usually matters more than tuning.",
       "numbers": "500 tokens with one sentence of overlap is a reasonable default. Structure-aware splitting on headings usually beats any tuning of these numbers.",
       "wrong": "Splitting on the full stop with no guard for the oversized sentence. It works on prose and breaks on the first document containing a table.",
       "follow": "The document is a contract with numbered clauses. Does your chunker still make sense?",
@@ -976,7 +1760,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "A design question wearing a coding question's clothes. Delete is where it gets interesting.",
-      "simple": "**Short version: keep every vector in one normalised matrix, make add an upsert, and delete by marking rows dead instead of removing them.**\n\nDelete is the real design question. If you physically remove a row, every row after it shifts up one place. Your id-to-row map is now wrong, and search returns the wrong documents without any error. So real stores use tombstones. A tombstone marks a row as dead. Search skips dead rows, and a background job compacts the matrix later.\n\nNormalise each vector when you add it. Then search is one matrix-vector product, and the scores are cosine similarities.\n\nMake add an upsert. If the id already exists, overwrite its row. Otherwise re-ingesting a document silently creates a duplicate.\n\nCheck the dimension on write. A wrong-sized vector should fail at add time, not at the next query.\n\nSay the scaling limits too. `np.vstack` copies the whole matrix on every add, which is O(n) per add. Pre-allocate and grow in blocks for real use. And once an exact scan gets too slow, use an ANN index.",
+      "quick": [
+        "Keep all vectors scaled in one matrix.",
+        "Search is then one multiply for all documents.",
+        "Add replaces an existing id, so no duplicates.",
+        "Delete marks rows dead, and a later job cleans up.",
+        "Check the vector size when adding."
+      ],
+      "simple": "A simple vector store keeps every vector in one normalised matrix, makes add an upsert, and deletes by marking rows dead instead of removing them. It looks like a coding question, but it is really a design question, and delete is where it gets interesting.\n\nIf you physically remove a row, every row after it shifts up, so your map from id to row is wrong and search silently returns the wrong documents. So real stores use tombstones. A tombstone marks a row as dead, search skips it, and a background job compacts the matrix later, for example once tombstones exceed about 20% of the rows. Add is an upsert, because otherwise re-ingesting a document creates a duplicate, and you check the dimension on write.\n\nSearch is still an exact scan of every row, so once it misses your latency budget, you switch to a real ANN index.",
       "code": "import numpy as np\n\nclass VectorStore:\n    def __init__(self, dim):\n        self.dim = dim\n        self.vectors = np.zeros((0, dim), dtype=np.float32)\n        self.ids = []\n        self.pos = {}                       # id -> row index\n        self.dead = set()                   # tombstoned rows\n\n    def add(self, id_, vec, meta=None):\n        v = np.asarray(vec, dtype=np.float32)\n        if v.shape != (self.dim,):\n            raise ValueError(f\"expected dim {self.dim}, got {v.shape}\")\n        norm = np.linalg.norm(v)\n        if norm == 0:\n            raise ValueError(\"zero vector has no direction\")\n        v = v / norm                        # normalise at write time\n        if id_ in self.pos:                 # upsert, not duplicate\n            self.vectors[self.pos[id_]] = v\n            return\n        self.vectors = np.vstack([self.vectors, v])\n        self.pos[id_] = len(self.ids)\n        self.ids.append(id_)\n\n    def delete(self, id_):\n        if id_ in self.pos:\n            self.dead.add(self.pos[id_])    # tombstone, do not compact\n            del self.pos[id_]\n\n    def search(self, q, k=5):\n        q = np.asarray(q, dtype=np.float32)\n        k = min(k, len(self.ids) - len(self.dead))\n        if k <= 0 or not np.linalg.norm(q):\n            return []\n        scores = self.vectors @ (q / np.linalg.norm(q))\n        if self.dead:\n            scores[list(self.dead)] = -np.inf\n        idx = np.argpartition(-scores, k - 1)[:k]\n        idx = idx[np.argsort(-scores[idx])]\n        return [(self.ids[i], float(scores[i])) for i in idx]",
       "points": [
         "Normalise at write time; search becomes a single dot product.",
@@ -985,10 +1776,11 @@ window.IR.q["17-python-coding"] = {
         "vstack per add is O(n) - pre-allocate and grow in blocks for real use.",
         "Validate the dimension on write, not at query time."
       ],
-      "say": "The interesting part is delete. Physically removing a row shifts every index after it and invalidates the id map, so I tombstone: mark the row dead, mask it to negative infinity at search time, and compact in a background job. I normalise on write so search is one matrix product, and I make add an upsert so re-ingesting a document does not duplicate it. For real scale, vstack per add is too slow - pre-allocate in blocks.",
+      "say": "I keep every vector in one normalised matrix, so search is a single matrix-vector product that returns cosine scores. Add is an upsert, meaning an existing id overwrites its row, because otherwise re-ingesting a document silently creates a duplicate. I also check the dimension on add, so a wrong-sized vector fails there and not at the next query. Delete is the real design question. If I physically remove a row, every later row shifts up, the id-to-row map now points at the wrong vectors, and search returns wrong documents with no error at all. So real stores use tombstones. A deleted row is marked dead, search skips it, and a background job compacts the matrix later, say once dead rows pass about twenty percent. The other cost to name is that stacking on every add copies the whole matrix. I'd pre-allocate in blocks, and once exact search misses the latency budget, switch to a proper ANN index.",
       "numbers": "Compact when tombstones exceed roughly 20% of rows. Once an exact scan stops meeting your latency budget - often somewhere between a few hundred thousand and a few million vectors - use a real ANN index.",
       "wrong": "np.delete on the row and moving on. Every index after it shifts, the id map now points at the wrong vectors, and search silently returns wrong documents.",
-      "follow": "A million deletes and no compaction. What does search look like?"
+      "follow": "A million deletes and no compaction. What does search look like?",
+      "followAnswer": "Search gets slower and can return too few results. Every query still scores the dead rows, so if a million of the rows are tombstones, a large share of the compute and memory is wasted. Worse, if I take the top k and then drop dead rows, I can end up returning fewer than k, or nothing. So I either mask dead rows before selecting the top k, or over-fetch, and I compact once tombstones pass about twenty percent, rebuilding the matrix and the id-to-row map."
     },
     {
       "id": "py-26",
@@ -1005,7 +1797,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "Separates candidates who understand hybrid search from those who can only name it.",
-      "simple": "BM25 scores how well a document matches the words in a query. It stacks three ideas, and each fixes a flaw in the one before.\n\nIdea one: a document that uses a query word more often is more relevant. But common words like \"the\" appear everywhere and mean nothing. So weight each word by how rare it is across the corpus. That weight is IDF, inverse document frequency.\n\nIdea two: a word appearing twenty times is not twenty times more relevant than one appearing once. So the count saturates. The `k1` setting controls how fast extra occurrences stop helping.\n\nIdea three: long documents contain more of every word, so they would always win. So normalise by length. The `b` setting controls how strongly.\n\nIn the IDF formula, the +1 inside the log keeps the weight positive, even for words found in most documents. This is the form Lucene uses.\n\nThis is why hybrid search works. BM25 matches exact tokens, such as a part number or an error code. That is exactly where dense embeddings are weakest.\n\nA real engine does not score every document per query. It uses an inverted index: a map from each word to the documents that contain it.",
+      "quick": [
+        "BM25 scores how well a document matches query words.",
+        "Rare words count more than common ones like the.",
+        "Extra repeats of a word help less and less.",
+        "Adjust for length so long documents do not always win.",
+        "It finds exact codes and part numbers meaning-based search misses."
+      ],
+      "simple": "BM25 is the standard algorithm for scoring how well a document matches the words in a query. It stacks three ideas on top of plain word matching, and each one fixes a flaw in the idea before it.\n\nFirst, a document that uses a query word more often is more relevant, but common words like the mean nothing, so each word is weighted by how rare it is across the corpus, which is IDF. Second, a word appearing twenty times is not twenty times more relevant, so the count saturates, controlled by k1. Third, long documents contain more of every word, so the score is normalised by length, controlled by b. Typical values are k1 around 1.2 and b of 0.75.\n\nThis is why hybrid search works. For example, BM25 matches exact tokens such as a part number or an error code, which is where embeddings are weakest. But it knows nothing about meaning or synonyms.",
       "code": "import math\nfrom collections import Counter\n\nclass BM25:\n    def __init__(self, docs, k1=1.5, b=0.75):     # docs: lists of tokens\n        self.docs = [Counter(d) for d in docs]\n        self.len = [len(d) for d in docs]\n        self.avg = sum(self.len) / len(docs)\n        self.k1, self.b = k1, b\n        self.df = Counter()\n        for d in self.docs:\n            self.df.update(d.keys())\n        self.N = len(docs)\n\n    def idf(self, term):\n        n = self.df.get(term, 0)\n        return math.log((self.N - n + 0.5) / (n + 0.5) + 1)\n\n    def score(self, query, i):\n        total = 0.0\n        norm = self.len[i] / self.avg\n        for term in query:\n            f = self.docs[i].get(term, 0)\n            if not f:\n                continue\n            total += self.idf(term) * (f * (self.k1 + 1)) / (\n                f + self.k1 * (1 - self.b + self.b * norm))\n        return total",
       "points": [
         "IDF weights rare terms above common ones.",
@@ -1014,10 +1813,11 @@ window.IR.q["17-python-coding"] = {
         "Typical k1 is 1.2-2.0 (Lucene uses 1.2, rank_bm25 1.5) with b=0.75; tune only with evidence.",
         "BM25 catches exact identifiers that dense retrieval misses."
       ],
-      "say": "BM25 stacks three corrections. IDF weights rare terms higher. k1 saturates term frequency so the twentieth occurrence barely adds anything. And b normalises for document length so long documents do not win by default. Typical values are k1 around 1.2 to 2 and b of 0.75. The reason it matters is that it matches exact tokens - part numbers, error codes, names - which is exactly where dense embeddings are weakest, so the two are complementary.",
+      "say": "BM25 layers three ideas on top of plain word matching, each fixing a flaw in the one before. Rare words count more. Common words like the appear everywhere and tell you nothing, so each term is weighted by inverse document frequency. Next, term frequency saturates. A word appearing twenty times isn't twenty times more relevant, and k1 controls how quickly extra repeats stop helping. Then it normalises for length, because long documents contain more of every word and would always win, and b controls how strongly. Typical values are k1 between 1.2 and 2, with Lucene defaulting to 1.2, and b of 0.75. I'd only tune them with evidence. This is also why hybrid search works so well. BM25 nails an exact part number or error code, which is exactly where dense embeddings are weakest. In production, a real engine scores through an inverted index, so it only touches documents containing the query terms instead of scanning everything.",
       "numbers": "k1 between 1.2 and 2.0 (Lucene and Elasticsearch default to 1.2) and b=0.75. In production use an inverted index rather than scanning every document per query.",
       "wrong": "Describing it as 'like TF-IDF but better' with no mechanism. The follow-up is always what k1 and b do, and that is where it ends.",
-      "follow": "Combine this with your vector scores. How?"
+      "follow": "Combine this with your vector scores. How?",
+      "followAnswer": "I would fuse them by rank with reciprocal rank fusion rather than adding raw scores. BM25 scores are unbounded and depend on the query, while cosine similarity sits in a narrow range, so a plain sum lets one retriever dominate. With RRF each document gets one over sixty plus its rank from each list, summed. If I want score-based fusion instead, I normalise both per query, for example min-max, then take a weighted sum and tune the weight on a labelled query set."
     },
     {
       "id": "py-29",
@@ -1034,7 +1834,14 @@ window.IR.q["17-python-coding"] = {
         "coding"
       ],
       "why": "The applied version of the LRU question, and the wrong-hit failure mode is the real discussion.",
-      "simple": "An exact-match cache almost never hits on natural language. \"What is the refund policy?\" and \"How do refunds work?\" are the same question but different strings.\n\nA semantic cache embeds each query and stores the answer with it. For a new query, it finds the closest stored query. If the similarity is above a threshold, it returns the stored answer.\n\nThe threshold is the whole design, and it is risky in a way an exact cache is not. Set it too low and you serve a confidently wrong answer. \"Refund policy for domestic orders\" might match a cached answer about international orders. The user has no way to tell.\n\nSo start high, around 0.95, and tune it on a labelled set of query pairs, not by feel. Similarity scales differ between embedding models, so a threshold never transfers blindly.\n\nThree more requirements. Add a TTL (time to live), because answers about changing data go stale. Keep a separate cache per tenant, or one customer's answer leaks to another. And never cache personalised answers.\n\nThis sketch scans every entry and evicts the oldest. A production cache uses a vector index and a proper eviction policy.",
+      "quick": [
+        "Store answers by meaning, not exact wording.",
+        "Reuse a stored answer if a new question is close enough.",
+        "Set the bar too low and users get wrong answers.",
+        "Start high, near 0.95, and tune on labelled pairs.",
+        "Expire old answers, separate customers, never store personal answers."
+      ],
+      "simple": "An exact-match cache almost never hits on natural language. For example, \"What is the refund policy?\" and \"How do refunds work?\" are the same question but different strings. A semantic cache matches by meaning instead. It embeds each query, finds the closest stored query, and if the similarity is above a threshold, returns the stored answer in milliseconds.\n\nThe threshold is the whole design, because a wrong hit is worse than a miss. Set it too low, and a question about domestic refunds might get a cached answer about international orders, with no way for the user to tell. So you start high, around 0.95, and tune it on a labelled set of query pairs, not by feel.\n\nYou also add a TTL so answers about changing data expire, keep a separate cache per tenant so answers do not leak, and never cache personalised answers.",
       "code": "import numpy as np\n\nclass SemanticCache:\n    def __init__(self, embed, dim, threshold=0.95, max_size=10_000):\n        self.embed = embed\n        self.threshold = threshold\n        self.max_size = max_size\n        self.vecs = np.zeros((0, dim), dtype=np.float32)\n        self.entries = []                   # (query, answer, expires_at)\n\n    def _unit(self, text):\n        v = np.asarray(self.embed(text), dtype=np.float32)\n        return v / np.linalg.norm(v)\n\n    def put(self, query, answer, now, ttl=3600):\n        self.vecs = np.vstack([self.vecs, self._unit(query)])\n        self.entries.append((query, answer, now + ttl))\n        if len(self.entries) > self.max_size:   # drop the oldest\n            self.vecs, self.entries = self.vecs[1:], self.entries[1:]\n\n    def get(self, query, now):\n        if not len(self.vecs):\n            return None\n        scores = self.vecs @ self._unit(query)\n        i = int(np.argmax(scores))\n        if scores[i] < self.threshold:\n            return None\n        _, answer, expires = self.entries[i]\n        if expires < now:\n            return None                     # stale, treat as a miss\n        return answer",
       "points": [
         "Embed the query; hit when similarity clears the threshold.",
@@ -1043,10 +1850,71 @@ window.IR.q["17-python-coding"] = {
         "TTL, because cached answers over live data go stale.",
         "Namespace by tenant, or you leak across customers."
       ],
-      "say": "I embed the query, compare against cached query vectors, and return the stored answer only above a high similarity threshold. The threshold is the whole design: too low and you serve a confidently wrong answer the user cannot detect, so I start high, around 0.95, and tune it on labelled pairs. I add a TTL for staleness and namespace per tenant, because a shared cache leaks one customer's answer to another.",
+      "diagram": {
+        "alt": "A semantic cache flow: embed the query, find the nearest stored query in the same tenant, and if similarity clears the threshold return the cached answer, otherwise generate and store with a time to live.",
+        "rows": [
+          [
+            {
+              "id": "emb",
+              "label": "Embed the query"
+            }
+          ],
+          [
+            {
+              "id": "near",
+              "label": "Nearest stored query",
+              "note": "same tenant only"
+            }
+          ],
+          [
+            {
+              "id": "th",
+              "label": "Above threshold?",
+              "note": "start near 0.95",
+              "accent": "warn"
+            }
+          ],
+          [
+            {
+              "id": "hit",
+              "label": "Return cached answer",
+              "note": "milliseconds; risk: wrong hit",
+              "accent": "accent"
+            },
+            {
+              "id": "miss",
+              "label": "Generate and store",
+              "note": "with a TTL; skip personal"
+            }
+          ]
+        ],
+        "edges": [
+          {
+            "from": "emb",
+            "to": "near"
+          },
+          {
+            "from": "near",
+            "to": "th"
+          },
+          {
+            "from": "th",
+            "to": "hit",
+            "label": "yes"
+          },
+          {
+            "from": "th",
+            "to": "miss",
+            "label": "no"
+          }
+        ],
+        "caption": "The **threshold is the whole design**: a wrong hit is worse than a miss because the user cannot tell. Tune it on labelled pairs."
+      },
+      "say": "Exact-match caching rarely hits on natural language, so a semantic cache matches by meaning instead. It embeds each query and stores the answer alongside. For a new query it finds the closest stored one and returns that answer if the similarity clears a threshold. The threshold is the whole design, because a wrong hit is worse than a miss. Set it too low and a question about domestic refunds gets a cached answer about international orders, and the user has no way to tell. So I start high, around 0.95, and tune on labelled query pairs, since thresholds don't transfer between embedding models. Then come three guards. A time to live, so answers about changing data expire. A separate namespace per tenant, so answers never leak between customers. And no caching of personalised answers at all. Hit rates vary a lot, high for repetitive support queries and low for open-ended chat, so I'd measure wrong hits before ever lowering that threshold.",
       "numbers": "Hit rates depend heavily on traffic: repetitive support queries can reach tens of percent, open-ended chat far less. Each hit saves the full generation cost and returns in milliseconds instead of seconds.",
       "wrong": "Lowering the threshold to 0.85 because it improves the hit rate, without measuring wrong hits. Hits do go up - and the cache starts answering questions the user did not ask, which costs far more than a miss.",
-      "follow": "How would you detect that your cache is serving wrong answers?"
+      "follow": "How would you detect that your cache is serving wrong answers?",
+      "followAnswer": "I measure wrong hits directly, because users cannot see them. I log every hit with the new query, the cached query and the similarity score, then regularly sample hits near the threshold and have a person or an LLM judge check whether the cached answer actually fits the new question. I also watch for signals like thumbs-down, rephrased repeats or escalations straight after a cache hit. And I keep a labelled set of near-miss pairs, so any threshold or embedding change is tested before release."
     }
   ]
 };

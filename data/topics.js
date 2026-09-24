@@ -7,6 +7,12 @@
 window.IR = window.IR || {};
 
 window.IR.topics = [
+  /* Placed first on purpose: a short, current explainer the user asked to see at the top. */
+  { num: "00", slug: "jev",
+    title: "Jev: System-1 decision models",
+    blurb: "TypeSafe AI's new model type that returns typed decisions with calibrated confidence instead of text - what it is, how it differs from an LLM, and where it fits.",
+    status: "live" },
+
   { num: "01", slug: "llm-foundations",
     title: "LLM foundations",
     blurb: "Tokens, context windows, sampling, why the same prompt gives two answers, and what actually happens at inference time.",

@@ -55,7 +55,7 @@ function tokens(s) {
 function bag(c) {
   var text = [c.q, (c.tags || []).join(" "), c.why, c.simple, c.say,
               c.numbers, c.wrong, c.follow, c.followAnswer || "",
-              (c.points || []).join(" ")].join(" ");
+              (c.points || []).join(" "), (c.quick || []).join(" ")].join(" ");
   var seen = {}, out = [];
   tokens(text).forEach(function (w) {
     if (!seen[w]) { seen[w] = 1; out.push(w); }

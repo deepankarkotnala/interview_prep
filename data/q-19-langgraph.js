@@ -28,14 +28,85 @@ window.IR.q["19-langgraph"] = {
         "trade-off"
       ],
       "why": "Whether you pick the tool for the control flow you actually need.",
-      "simple": "LangChain and LangGraph sit at different levels, so I do not choose between them as if one replaced the other. In current LangChain, a standard agent created with create_agent already runs on LangGraph underneath.\n\nFor a fixed data-flow pipeline, LCEL is still a good fit. It can sequence steps, run independent branches in parallel, and do conditional routing. So a branch by itself is not a reason to build a StateGraph.\n\nI reach for LangGraph directly when the workflow needs explicit, durable orchestration: state that must survive between steps, cycles with custom exit rules, pause-and-resume for human approval, recovery after failure, or a long-running workflow where I need to control exactly which node runs next.\n\nMy rule is simple: use the highest-level abstraction that expresses the workflow clearly. Plain LCEL for a composable pipeline, create_agent for the normal model-and-tools loop, and StateGraph when I need custom durable control flow.",
+      "quick": [
+        "They work at different levels, not as rivals.",
+        "create_agent already runs on LangGraph underneath.",
+        "Fixed pipelines with branches do not need a graph.",
+        "Use the graph for saved state, pauses and crash recovery.",
+        "Pick the simplest tool that shows the flow clearly."
+      ],
+      "simple": "LangChain and LangGraph aren't rivals, because they sit at different levels. A standard agent made with create_agent already runs on LangGraph underneath, so the real question is how much orchestration your workflow needs.\n\nFor a fixed pipeline, LCEL is still a good fit, and it can even branch and run steps in parallel. You reach for a StateGraph when the workflow needs durable orchestration, like state that survives between steps, loops with custom exit rules, pausing for human approval, or recovery after a failure. For example, an expense approval that waits hours for a manager and must survive a server crash is a clear case for a graph, while a simple summarise-then-translate pipeline isn't.\n\nSo the rule is to use the smallest abstraction that expresses the workflow clearly, because a graph adds code and concepts to maintain.",
       "points": [
         "LCEL can do sequences, parallel branches and conditional routing; it is not limited to a straight line.",
         "LangChain create_agent is the normal starting point for a standard tool-calling agent and runs on LangGraph.",
         "Use LangGraph directly for durable state, custom cycles, pause/resume, recovery and explicit orchestration.",
         "Choose the smallest abstraction that makes the control flow and failure handling clear."
       ],
-      "say": "I do not treat LangChain and LangGraph as replacements. LCEL is fine for a composable pipeline and can sequence, parallelise and route conditionally. For a normal model-and-tools loop I start with LangChain create_agent, which already runs on LangGraph. I use StateGraph directly when I need durable state, custom cycles, pause-and-resume, recovery, or explicit control over which step runs next.",
+      "diagram": {
+        "alt": "A decision path: a fixed pipeline goes to LCEL; otherwise a standard model-and-tools loop goes to create_agent; otherwise custom durable control flow goes to a StateGraph.",
+        "rows": [
+          [
+            {
+              "id": "q1",
+              "label": "Fixed pipeline?",
+              "note": "steps known in advance",
+              "accent": "warn"
+            }
+          ],
+          [
+            {
+              "id": "lcel",
+              "label": "LCEL",
+              "note": "sequence, parallel, branch",
+              "accent": "accent"
+            },
+            {
+              "id": "q2",
+              "label": "Standard tool loop?",
+              "note": "model picks tools",
+              "accent": "warn"
+            }
+          ],
+          [
+            {
+              "id": "ca",
+              "label": "create_agent",
+              "note": "runs on LangGraph",
+              "accent": "accent"
+            },
+            {
+              "id": "sg",
+              "label": "StateGraph",
+              "note": "durable state, pause, cycles",
+              "accent": "accent"
+            }
+          ]
+        ],
+        "edges": [
+          {
+            "from": "q1",
+            "to": "lcel",
+            "label": "yes"
+          },
+          {
+            "from": "q1",
+            "to": "q2",
+            "label": "no"
+          },
+          {
+            "from": "q2",
+            "to": "ca",
+            "label": "yes"
+          },
+          {
+            "from": "q2",
+            "to": "sg",
+            "label": "no"
+          }
+        ],
+        "caption": "Not rivals, **levels**. Use the **highest-level abstraction that expresses the flow clearly**; a branch alone is no reason to build a graph."
+      },
+      "say": "They aren't rivals, because they sit at different levels. LangChain's create_agent already runs on LangGraph underneath. For a fixed data-flow pipeline, LCEL is still a good fit. It can sequence steps, run independent branches in parallel and route conditionally, so a branch alone is no reason to build a graph. I reach for a StateGraph directly when the workflow needs explicit, durable orchestration. That means state that must survive between steps, cycles with custom exit rules, pause and resume for a human, recovery after a failure, or exact control over which node runs next. An approval workflow that waits hours for a manager and has to survive a crash is the clear case. The mistake I'd avoid is reaching for the graph for its own sake. Use the highest-level abstraction that expresses the flow clearly, so LCEL for pipelines, create_agent for the normal tool loop, and StateGraph for custom durable control.",
       "numbers": "No number applies. The decision is about control flow, durability and how much orchestration you actually need.",
       "wrong": "Saying LCEL is only a straight line, or saying every branch requires LangGraph. LCEL supports parallel and conditional composition; LangGraph is about durable, stateful orchestration and custom control.",
       "follow": "Show me what the state object looks like for a RAG agent.",
@@ -56,9 +127,51 @@ window.IR.q["19-langgraph"] = {
         "reducers"
       ],
       "why": "The single most-misunderstood part of LangGraph, and easy to verify in one question.",
-      "simple": "Every LangGraph run has one state object, usually a typed dictionary. Each node receives the current state and returns a partial update - just the keys it changed. The graph merges that update into the state and moves on.\n\nThe default merge is replace. A node that returns a value for a key overwrites what was there.\n\nThat is wrong for message history, where you want to append rather than overwrite. This is what a reducer is for: a function attached to a state field that says how to combine the old value with the new one. `add_messages` is the built-in reducer for message lists - it appends, and it also handles updating a message by id.\n\nThe practical consequence: if your conversation history keeps resetting to a single message, you forgot the reducer. That is one of the most common LangGraph bugs, and naming it shows you have written this code rather than read about it.",
+      "quick": [
+        "Each run has one shared state object.",
+        "Each step returns only the fields it changed.",
+        "By default a new value replaces the old one.",
+        "A reducer says how to combine old and new values.",
+        "Chat history resetting usually means a missing reducer."
+      ],
+      "simple": "Every LangGraph run has one shared state object, usually a typed dictionary. Each node receives the current state and returns just the keys it changed, and the graph merges that update in. By default, the merge is replace, so a new value overwrites the old one.\n\nThat's fine for a step counter, but wrong for message history, where you want to append. That's what a reducer is for. It's a function attached to a state field that says how to combine the old value with the new one, and the built-in add_messages reducer appends messages. Reducers also matter with parallel nodes, because two branches writing the same key without one raises an error.\n\nFor example, if a chatbot's history keeps resetting to a single message after each turn, the cause is almost always a missing reducer on the messages field.",
       "code": "from typing import Annotated, TypedDict\nfrom langgraph.graph.message import add_messages\nimport operator\n\nclass State(TypedDict):\n    messages: Annotated[list, add_messages]   # appends\n    docs:     Annotated[list, operator.add]   # concatenates\n    step:     int                             # replaced (default)\n\ndef retrieve(state: State) -> dict:\n    return {\"docs\": search(state[\"messages\"][-1].content)}   # partial update only",
-      "say": "There is one state object per run. Each node gets the state and returns only the keys it changed, and the graph merges that in. The default merge replaces the value, which is wrong for message history - so you attach a reducer, a function that says how to combine old and new. `add_messages` appends instead of overwriting. If history keeps resetting to one message, a missing reducer is the usual cause.",
+      "diagram": {
+        "kind": "compare",
+        "alt": "The default replace merge compared with the add_messages reducer, showing old value, node update, result and what each suits.",
+        "aspects": [
+          "Old value",
+          "Node returns",
+          "Merged result",
+          "Use for"
+        ],
+        "columns": [
+          {
+            "label": "Default: replace",
+            "note": "no reducer",
+            "accent": "warn",
+            "cells": [
+              "[hi]",
+              "[bye]",
+              "[bye]",
+              "Counters, flags"
+            ]
+          },
+          {
+            "label": "add_messages",
+            "note": "reducer on the field",
+            "accent": "accent",
+            "cells": [
+              "[hi]",
+              "[bye]",
+              "[hi, bye]",
+              "Message history"
+            ]
+          }
+        ],
+        "caption": "Nodes return **only the keys they changed**; a reducer says how to merge them. History that keeps resetting to one message means **a missing reducer**."
+      },
+      "say": "Each run has one shared state object, and reducers decide how updates to it get merged. The state is usually a typed dictionary. Each node receives the current state and returns only the keys it changed, and the graph merges that partial update before moving on. By default the merge replaces the old value. That's fine for a step counter but wrong for message history, where you want to append. A reducer is a function attached to a state field that says how to combine old and new. add_messages is the built-in one for message lists, so it appends and also updates an existing message by its id. operator.add simply concatenates lists. Reducers matter even more with parallel nodes. If two branches write the same key in one step and it has no reducer, LangGraph raises an error rather than guess. And if chat history keeps resetting to one message, a missing reducer is almost always why.",
       "numbers": "No number applies. This is a mechanism question - the code is the answer.",
       "wrong": "\"State is just a dictionary passed between nodes.\" True but incomplete. Without reducers you cannot explain what happens when two parallel nodes write to `messages` in the same step - with no reducer on that key, LangGraph rejects the conflicting updates with an error instead of merging them.",
       "follow": "Two nodes run in parallel and both write to the same key. What happens?",
@@ -80,9 +193,82 @@ window.IR.q["19-langgraph"] = {
         "routing"
       ],
       "why": "The most common thing you build in LangGraph. Whether you can draw the loop is whether you have built one.",
-      "simple": "Underneath the prebuilt agent are two pieces, and being able to name them is the difference between having used a tutorial and having built the thing.\n\n`ToolNode` is a node that executes tool calls. It reads the last message, finds the tool calls on it, runs them - in parallel when there is more than one - and appends a `ToolMessage` per call back onto the message list.\n\n`tools_condition` is the routing function. It looks at the last message: if the model asked for tools, route to the tool node; otherwise route to END. That single decision is what makes the loop a loop.\n\nThe wiring is a cycle: model → conditional edge → tools → back to model. The edge from the tool node back to the model is unconditional, because after running tools you always want the model to see the results.\n\nThe detail that catches people: the model has to be bound to the tools with `bind_tools`, or it never emits a tool call and the conditional edge always routes straight to END. An agent that answers immediately and never calls anything is very often a missing `bind_tools` (the other usual suspect is a tool description that does not tell the model when to use it).",
+      "quick": [
+        "It is a loop between the model and a tool step.",
+        "The tool step runs every tool the model asked for.",
+        "A routing check sends it to tools or to the end.",
+        "After tools it always goes back to the model.",
+        "An agent that never uses tools usually lacks bind_tools."
+      ],
+      "simple": "Underneath the prebuilt LangGraph agent there are two pieces. ToolNode is a node that executes tool calls. It reads the last message, runs the tools it asks for, and appends one ToolMessage per call. tools_condition is the routing function. If the model asked for tools, it routes to the tool node, otherwise to END.\n\nSo the wiring is a cycle, from the model, through a conditional edge, to the tools, and always back to the model so it sees the results.\n\nThe detail that catches people is bind_tools. If the model isn't bound to the tools, it never emits a tool call, and the edge always routes straight to END. For example, if a weather agent answers every question instantly with a guess instead of calling the weather tool, a missing bind_tools is the first thing to check.",
       "code": "from langgraph.graph import StateGraph, START, END\nfrom langgraph.prebuilt import ToolNode, tools_condition\n\nmodel = model.bind_tools(tools)   # without this the loop never starts\n\ng = StateGraph(State)\ng.add_node(\"model\", call_model)\ng.add_node(\"tools\", ToolNode(tools))\ng.add_edge(START, \"model\")\ng.add_conditional_edges(\"model\", tools_condition)   # tools, or END\ng.add_edge(\"tools\", \"model\")                        # always back to the model\napp = g.compile()",
-      "say": "ToolNode executes the tool calls on the last message and appends a ToolMessage per call, running them in parallel when there is more than one. tools_condition is the router: if the last message has tool calls, go to the tool node, otherwise END. The edge from tools back to the model is unconditional, which is what makes it a cycle. And the model must be bound with bind_tools or it never emits a call at all.",
+      "diagram": {
+        "alt": "The tool-calling loop: START to the model, then tools_condition routes to ToolNode if there are tool calls or to END if not, and ToolNode always returns to the model.",
+        "rows": [
+          [
+            {
+              "id": "s",
+              "label": "START"
+            }
+          ],
+          [
+            {
+              "id": "m",
+              "label": "Model",
+              "note": "needs bind_tools",
+              "accent": "accent"
+            }
+          ],
+          [
+            {
+              "id": "c",
+              "label": "tools_condition",
+              "note": "checks last message",
+              "accent": "warn"
+            }
+          ],
+          [
+            {
+              "id": "t",
+              "label": "ToolNode",
+              "note": "runs calls, adds ToolMessages"
+            },
+            {
+              "id": "e",
+              "label": "END",
+              "note": "plain answer"
+            }
+          ]
+        ],
+        "edges": [
+          {
+            "from": "s",
+            "to": "m"
+          },
+          {
+            "from": "m",
+            "to": "c"
+          },
+          {
+            "from": "c",
+            "to": "t",
+            "label": "tool calls"
+          },
+          {
+            "from": "c",
+            "to": "e",
+            "label": "none"
+          },
+          {
+            "from": "t",
+            "to": "m",
+            "label": "always",
+            "kind": "back"
+          }
+        ],
+        "caption": "**One conditional edge makes the loop.** An agent that answers instantly and never calls a tool is usually **missing bind_tools**."
+      },
+      "say": "It's a cycle between the model and a tool node, built from ToolNode and tools_condition. ToolNode reads the last message, runs every tool call on it, in parallel when there are several, and appends one ToolMessage per call. tools_condition is the routing function. It checks the last message and sends the flow to the tool node if the model asked for tools, or to END otherwise. That one decision is what makes the loop a loop. So the flow goes model, conditional edge, tools, and back to the model. The edge back is unconditional, because after running tools you always want the model to see the results. The detail that catches people is bind_tools. If the model was never bound to the tools, it can't emit a tool call and the edge routes straight to END. When an agent answers instantly and never calls anything, that's my first check, followed by a tool description that never says when to use it.",
       "numbers": "No number applies. This is a wiring question - the graph is the answer.",
       "wrong": "Describing the loop but never mentioning `bind_tools`. It is the single most common reason a hand-built agent silently never calls a tool, and the natural follow-up - \"why does my agent never call a tool?\" - is exactly what it answers.",
       "follow": "Two tool calls come back in one message. What order do they run in?",
@@ -104,9 +290,16 @@ window.IR.q["19-langgraph"] = {
         "judgement"
       ],
       "why": "Whether you reach for the abstraction that fits, or hand-build a loop the library already gives you - and whether you know the current API.",
-      "simple": "For a standard tool-calling agent, use the prebuilt factory. It wires the whole loop for you: call the model; if the reply asks for tools, run them; feed the results back; repeat until the model answers without a tool call.\n\nGet the name right, because it moved. `create_react_agent` from `langgraph.prebuilt` is deprecated since LangGraph 1.0. The current factory is `create_agent` from the `langchain` package. It is the same idea plus middleware - small hooks for things you used to hand-build, such as human approval of tool calls, summarising long conversations or redacting PII. Naming the old import suggests your knowledge is from before 1.0.\n\nDrop to a hand-built `StateGraph` when the flow stops being that loop. For example: you need state fields beyond the message list, steps that are not model calls, routing the model did not decide, an approval step that is more than \"approve this tool call\" (middleware covers that one), or a loop with its own exit rule.\n\nThe judgement being tested: these are not skill levels. Rebuilding the prebuilt loop by hand is not seniority; it is work you did not need to do. Start with the factory and leave it at the first requirement it cannot express.",
+      "quick": [
+        "Start with create_agent for a normal tool-using agent.",
+        "It already runs the model, tools, repeat loop.",
+        "The old create_react_agent is outdated.",
+        "Build a StateGraph only when the flow stops being that loop.",
+        "Rebuilding the ready-made loop by hand is wasted work."
+      ],
+      "simple": "For a standard tool-calling agent, you use the prebuilt factory, because it already wires the whole loop. It calls the model, runs any tools it asks for, feeds the results back and repeats until the model answers. Rebuilding that by hand is work you didn't need to do. The current factory is create_agent from the langchain package, since the old create_react_agent was deprecated in LangGraph 1.0, and it adds middleware for things like tool approval or summarising long chats.\n\nYou drop to a hand-built StateGraph when the flow stops being that simple loop, such as extra state fields, steps that aren't model calls, or routing the model doesn't decide. For example, a refund agent where every refund must pass a fixed policy-check node before money moves needs a graph, because that step isn't the model's choice.",
       "code": "from langchain.agents import create_agent    # not langgraph.prebuilt\n\nagent = create_agent(model, tools=[search, lookup])\nagent.invoke({\"messages\": [(\"user\", question)]})\n\n# Drop to a StateGraph when the flow needs more than the loop:\n#   extra state fields, non-model nodes, an approval pause,\n#   routing on something the model did not decide.",
-      "say": "For a standard tool-calling loop I use the prebuilt factory - and the current one is create_agent from langchain, not create_react_agent from langgraph.prebuilt, which is deprecated. I hand-build a StateGraph when the flow needs state beyond the message list, nodes that are not the model, a human approval pause, or routing on something the model did not decide. Rebuilding the prebuilt loop by hand is work you did not need to do.",
+      "say": "I start with create_agent, because it already wires the standard loop. It calls the model, runs any tools it asks for, feeds the results back and repeats until the model answers without a tool call. The name matters because it moved. create_react_agent from langgraph.prebuilt is deprecated as of LangGraph 1.0, and the current factory is create_agent from the langchain package. It adds middleware, small hooks for things people used to hand-build, like approving tool calls, summarising long conversations or redacting PII. I drop to a hand-built StateGraph when the flow stops being that loop. Maybe I need state beyond the message list, steps that aren't model calls, routing the model didn't decide, or a loop with its own exit rule. A refund that must always pass a policy-check node is a good example. Rebuilding the prebuilt loop by hand isn't seniority, it's unneeded work. I leave the factory at the first requirement it can't express.",
       "numbers": "No number applies. This is an API-choice question.",
       "wrong": "\"I always build the graph myself for control.\" The follow-up will be why you rebuilt a loop the library already provides, and what your version does differently. The senior answer names the cheap default and the specific trigger for leaving it.",
       "follow": "What is the first requirement that makes you leave the prebuilt?",
@@ -127,7 +320,14 @@ window.IR.q["19-langgraph"] = {
         "human-in-loop"
       ],
       "why": "Checkpointing is what makes production features possible. Candidates who only ran notebooks have never needed it.",
-      "simple": "A checkpointer saves the graph state at every step (each \"super-step\" of nodes), keyed by a thread id. An in-memory saver is fine for development; production uses a database-backed one, such as Postgres.\n\nIt sounds like a logging detail. It is actually what enables four things you cannot build without it.\n\nConversation memory across requests - the next message on the same thread resumes with all previous state, without you managing history yourself.\n\nHuman in the loop - a node can call `interrupt()`, return control to the application, and resume hours later when the approval arrives, because the state is durable.\n\nFault recovery - if a node crashes, you resume from the last checkpoint instead of re-running the whole expensive chain.\n\nTime travel - go back to an earlier checkpoint and re-run from there, optionally with edited state, which is one of the most useful debugging tools the framework has.",
+      "quick": [
+        "A checkpointer saves the state after every step.",
+        "It gives memory across messages in the same conversation.",
+        "It lets a flow pause for approval and resume later.",
+        "After a crash, resume from the last saved step.",
+        "Use a real database in production, and expect extra delay."
+      ],
+      "simple": "A checkpointer saves the graph state at every step, keyed by a thread id. An in-memory saver is fine in development, but production uses a database-backed one, like Postgres. It sounds like a logging detail, but it's what makes four production features possible.\n\nThe first is conversation memory, since the next message on a thread resumes with all previous state. The second is human in the loop, where a node pauses and resumes hours later when approval arrives. The third is fault recovery. For example, if a research chain with ten expensive model calls crashes at step nine, you resume from the last checkpoint instead of paying for everything again. The fourth is time travel, re-running from an earlier checkpoint to debug.\n\nThe trade-off is an extra write on every step, so it belongs in your latency budget.",
       "points": [
         "Saves state at every step (super-step), keyed by thread id.",
         "Cross-request memory without hand-rolled history.",
@@ -137,7 +337,36 @@ window.IR.q["19-langgraph"] = {
         "Durability mode trades speed for safety: `\"sync\"` writes before the next step, `\"async\"` writes in the background, `\"exit\"` writes only at the end.",
         "In production use a database-backed saver such as Postgres, never the in-memory one."
       ],
-      "say": "It persists the graph state after every step, keyed by thread id. That is what makes four things possible: conversation memory across requests without managing history myself, human-in-the-loop where the graph interrupts and resumes hours later when approval arrives, crash recovery that resumes from the last node instead of re-running an expensive chain, and time travel to rewind to a checkpoint and replay with edited state.",
+      "diagram": {
+        "kind": "lanes",
+        "alt": "A run where each node's state is saved by the checkpointer, a later node crashes, and the run resumes from the last checkpoint instead of the start.",
+        "lanes": [
+          {
+            "label": "Retrieve",
+            "note": "checkpoint saved"
+          },
+          {
+            "label": "Grade",
+            "note": "checkpoint saved"
+          },
+          {
+            "label": "Generate",
+            "note": "checkpoint saved"
+          },
+          {
+            "label": "Check",
+            "note": "crashes",
+            "accent": "bad"
+          },
+          {
+            "label": "Resume at Check",
+            "note": "same thread id",
+            "accent": "accent"
+          }
+        ],
+        "caption": "State saved **after every step, keyed by thread id**. The same saves give memory, hours-long approvals, crash recovery and **time travel**."
+      },
+      "say": "A checkpointer saves the graph state after every step, keyed by a thread id, and it's what makes most production features possible. In development an in-memory saver is fine. In production it's a database-backed one, such as Postgres. It sounds like a logging detail, but it gives you four things. The first is conversation memory, because the next message on the same thread resumes with all previous state. The second is human approval. A node calls interrupt, the run ends, and it resumes hours later when the decision arrives. The third is fault recovery. If a long chain crashes near the end, I resume from the last checkpoint rather than paying for every model call again. The fourth is time travel, rewinding to an earlier checkpoint and replaying, optionally with edited state, which is one of the best debugging tools the framework has. The cost is a write on every step, so I budget for that latency or pick a lighter durability mode.",
       "numbers": "Measure checkpoint write latency and storage growth in your own deployment. Durability adds I/O on every step, so include it in the latency budget - or choose a lighter durability mode where losing a mid-run step is acceptable.",
       "wrong": "\"It saves the conversation.\" That is one use of four, and it misses the interrupt-and-resume story, which is the one regulated employers care about.",
       "follow": "Walk me through an approval flow where the human replies the next morning.",
@@ -159,7 +388,14 @@ window.IR.q["19-langgraph"] = {
         "checkpointer"
       ],
       "why": "Memory is one of the most asked agent topics. This checks whether you know which LangGraph piece holds which kind of memory.",
-      "simple": "They hold two different kinds of memory, and mixing them up is the classic mistake.\n\nThe checkpointer is short-term memory. It saves the state of one thread - one conversation - after each step. Come back on the same thread id and the agent sees everything from that conversation. Start a new thread and it sees nothing.\n\nThe Store is long-term memory. It is a separate key-value store shared across threads. You save items under a namespace, which is just a tuple such as `(user_id, \"preferences\")`, and read them from any conversation. Give it an embedding model and it can also search by meaning, so the agent fetches memories related to this question instead of everything.\n\nThink of the checkpointer as the notes from today's meeting, and the Store as the customer file you open at every meeting.\n\nThe hard part is not the API. It is deciding what to write: which facts are worth keeping, when they expire, and how a user can see or delete them. Writing every message into the Store just recreates an ever-growing history in a new place.",
+      "quick": [
+        "The checkpointer is short-term memory for one conversation.",
+        "A new conversation starts empty.",
+        "The Store is long-term memory shared across conversations.",
+        "Save items like user preferences, and search them by meaning.",
+        "The hard part is deciding what to keep and when to delete."
+      ],
+      "simple": "LangGraph has two pieces for memory, and mixing them up is the classic mistake. The checkpointer is short-term memory. It saves the state of one thread, meaning one conversation, so the same thread id sees everything, but a new thread sees nothing.\n\nThe Store is long-term memory, a separate key-value store shared across threads. You save items under a namespace, such as the user id plus \"preferences\", and read them from any conversation, even searching by meaning if you give it an embedding model. For example, a travel assistant keeps today's booking chat in the checkpointer, but saves \"prefers aisle seats\" in the Store, so next month's new conversation still knows it.\n\nThe hard part isn't the API but the write policy, meaning which facts are worth keeping and when they expire. Writing every message into the Store just recreates an ever-growing history.",
       "points": [
         "**Checkpointer**: per-thread state; same `thread_id` resumes, new thread starts empty.",
         "**Store**: cross-thread items under a namespace tuple, e.g. `(user_id, \"preferences\")`.",
@@ -168,8 +404,45 @@ window.IR.q["19-langgraph"] = {
         "Use a database-backed store (Postgres or similar) in production.",
         "The real design is the write policy: what, when, expiry, and user deletion."
       ],
+      "diagram": {
+        "kind": "compare",
+        "alt": "The checkpointer compared with the Store on memory type, scope, key, lookup and analogy.",
+        "aspects": [
+          "Memory",
+          "Scope",
+          "Keyed by",
+          "Lookup",
+          "Think of it as"
+        ],
+        "columns": [
+          {
+            "label": "Checkpointer",
+            "note": "short-term",
+            "cells": [
+              "One conversation",
+              "One thread only",
+              "thread_id",
+              "Reload whole state",
+              "Today's meeting notes"
+            ]
+          },
+          {
+            "label": "Store",
+            "note": "long-term",
+            "accent": "accent",
+            "cells": [
+              "Facts across conversations",
+              "Shared by all threads",
+              "Namespace, e.g. user id",
+              "get, put, semantic search",
+              "The customer file"
+            ]
+          }
+        ],
+        "caption": "New thread, empty checkpointer; **the Store remembers across threads**. The hard part is the **write policy**: what to keep, expiry, user deletion."
+      },
       "code": "from dataclasses import dataclass\nfrom langgraph.graph import StateGraph, MessagesState\nfrom langgraph.store.memory import InMemoryStore   # PostgresStore in production\nfrom langgraph.runtime import Runtime\n\n@dataclass\nclass Context:\n    user_id: str\n\ndef personalise(state: MessagesState, runtime: Runtime[Context]):\n    ns = (runtime.context.user_id, \"preferences\")\n    prefs = runtime.store.search(ns, query=state[\"messages\"][-1].content, limit=5)\n    return {\"messages\": [system_note(prefs)]}      # works across all threads\n\nbuilder = StateGraph(MessagesState, context_schema=Context)\n# ... add nodes and edges ...\ngraph = builder.compile(checkpointer=saver, store=InMemoryStore(index=index_cfg))\n\ngraph.invoke(inputs,\n             config={\"configurable\": {\"thread_id\": \"chat-7\"}},   # short-term\n             context=Context(user_id=\"u-42\"))                    # whose long-term memory",
-      "say": "The checkpointer is short-term memory: it saves one thread's state, so the same thread id resumes that conversation and a new thread starts empty. The Store is long-term memory shared across threads - items saved under a namespace such as user id and preferences, optionally with semantic search. The hard part is the write policy: what is worth keeping, when it expires, and how a user can delete it.",
+      "say": "The checkpointer is short-term memory for one conversation, and the Store is long-term memory shared across all of them. The checkpointer saves one thread's state after each step. Come back on the same thread id and the agent sees everything from that conversation. Start a new thread and it sees nothing. The Store is a separate key-value store shared across threads. You save items under a namespace, which is a tuple like the user id plus preferences, and read them from any conversation. Give it an embedding index and it can search by meaning, so the agent fetches the few memories relevant to this question. I think of the checkpointer as today's meeting notes and the Store as the customer file you open at every meeting. The API is the easy bit. The hard part is the write policy, meaning what to keep, when it expires and how a user sees or deletes it, because storing every message just rebuilds an endless history.",
       "numbers": "No universal number. Track how many memories you read per turn and how many tokens they add - retrieve a handful of relevant items, not the whole namespace.",
       "wrong": "\"The checkpointer gives the agent memory, so it remembers users.\" It remembers one thread. A returning user on a new thread gets nothing unless you add a cross-thread store.",
       "follow": "How do you stop one user's memories leaking into another user's conversation?",
@@ -191,9 +464,16 @@ window.IR.q["19-langgraph"] = {
         "compliance"
       ],
       "why": "The concrete version of the previous question - and the feature regulated employers ask for by name.",
-      "simple": "**Short version: the node pauses itself with `interrupt()`, the checkpointer saves where it stopped, and the application resumes it with the reviewer's answer - even the next morning.**\n\nPut `interrupt()` inside the node that needs a human decision. When execution reaches it, LangGraph pauses and the checkpointer saves the thread's state. The caller gets the interrupt payload back (under `__interrupt__` in the result) and shows it to a reviewer in a web page, chat message or approval queue.\n\nThe reviewer can approve, reject or send back edited data. Later, the application resumes the same thread with `Command(resume=...)`. That value becomes the return value of `interrupt()`, so the node applies the decision and carries on.\n\nThis is better than a static `interrupt_before` breakpoint, which is mainly a debugging tool. The pause is explicit in the node and carries exactly what the reviewer needs to see.\n\nOne gotcha: on resume, the node runs again from its first line, not from the `interrupt()` call. Anything before the interrupt runs twice, so put side effects after it or in the next node.\n\nThe checkpointer makes the long wait safe: no request stays open and no process has to stay alive. Make the final action idempotent - safe to run twice - so a duplicate approval cannot send the same payment twice.\n\nFor the framework-agnostic design - approval expiry, re-checking preconditions after the wait - see ag-33 in the Agents section.",
+      "quick": [
+        "Put a pause call inside the step needing a decision.",
+        "The flow stops and its state is saved.",
+        "Show the reviewer what to approve, reject or edit.",
+        "Resume the same conversation with their answer, even next day.",
+        "The step reruns from the top, so actions must be safe twice."
+      ],
+      "simple": "Human approval in LangGraph works by letting a node pause itself. You put an interrupt call inside the node that needs a decision. When execution reaches it, LangGraph pauses, the checkpointer saves the state, and the caller shows the payload to a reviewer.\n\nThe reviewer can approve, reject or edit. Later, maybe the next morning, the application resumes the thread with a Command carrying the decision, which becomes the return value of the interrupt call. Because the state is saved, no process has to stay alive during the wait.\n\nThere's one gotcha. On resume, the node runs again from its first line, so anything before the interrupt runs twice, and side effects belong after it. For example, if a payments node sends a notification email before the interrupt, the customer gets that email twice. The final action should also be safe to run twice.",
       "code": "from langgraph.types import Command, interrupt\n\ndef review_email(state):\n    review = interrupt({\n        \"action\": \"send_email\",\n        \"draft\": state[\"draft\"],\n    })\n    if not review[\"approved\"]:\n        return {\"status\": \"rejected\"}\n    return {\n        \"draft\": review.get(\"draft\", state[\"draft\"]),\n        \"status\": \"approved\",\n    }\n\ngraph = builder.compile(checkpointer=checkpointer)\ncfg = {\"configurable\": {\"thread_id\": \"case-4471\"}}\n\ngraph.invoke(inputs, config=cfg)  # pauses at interrupt()\n\n# ... later, after the reviewer responds ...\ngraph.invoke(\n    Command(resume={\"approved\": True, \"draft\": edited_text}),\n    config=cfg,\n)",
-      "say": "I put `interrupt()` inside the node that needs approval. The graph pauses there and the checkpointer persists the thread state, while the application shows the interrupt payload to a reviewer. When the person approves, rejects or edits the proposal, I resume the same thread with `Command(resume=...)`, and that value returns from the interrupt call. The wait can last hours without holding a request open, and the downstream action must be idempotent.",
+      "say": "You put an interrupt call inside the node that needs the decision, and the checkpointer does the waiting. When the run reaches interrupt, LangGraph pauses and saves the thread's state. The caller gets the interrupt payload back and shows it to a reviewer in a web page, a chat message or an approval queue. The reviewer approves, rejects or sends back edited data. Later, maybe the next morning, the application resumes the same thread with Command and a resume value, and that value becomes interrupt's return value. No request stays open and no process has to stay alive. The gotcha is that on resume the node re-runs from its first line, not from the interrupt. Anything before it runs twice, so side effects go after the interrupt or in the next node. I also make the final action idempotent, so a duplicate approval can't send the same payment twice. That beats a static interrupt_before breakpoint, which is mainly a debugging tool.",
       "numbers": "No number applies, but do track reviewer turnaround time and the edit rate. A near-zero edit rate means the review is a rubber stamp.",
       "wrong": "Using a prompt like 'ask for confirmation' as the approval mechanism. A prompt cannot durably pause execution, enforce who approves, or prevent a duplicate side effect.",
       "follow": "How do you make sure two reviewers do not approve the same action twice?",
@@ -205,7 +485,42 @@ window.IR.q["19-langgraph"] = {
         "Resume with `Command(resume=...)` on the same thread.",
         "On resume the node re-runs from the top - keep side effects after the `interrupt()` call.",
         "Make the downstream side effect idempotent so duplicate approvals are harmless."
-      ]
+      ],
+      "diagram": {
+        "kind": "lanes",
+        "alt": "Human approval in LangGraph: a node calls interrupt, the checkpointer saves the thread, a reviewer decides later, the app resumes with Command, the node re-runs from its first line, and the final action is idempotent.",
+        "lanes": [
+          {
+            "label": "interrupt()",
+            "note": "node pauses itself",
+            "accent": "accent"
+          },
+          {
+            "label": "State saved",
+            "note": "checkpointer, thread id"
+          },
+          {
+            "label": "Reviewer decides",
+            "note": "approve, reject, edit"
+          },
+          {
+            "label": "Command(resume=...)",
+            "note": "same thread, maybe next day",
+            "accent": "accent"
+          },
+          {
+            "label": "Node re-runs",
+            "note": "from its first line",
+            "accent": "warn"
+          },
+          {
+            "label": "Idempotent action",
+            "note": "no double payment",
+            "accent": "accent"
+          }
+        ],
+        "caption": "**The checkpointer does the waiting**: no open request, no live process. On resume the node **re-runs from the top**, so side effects go after interrupt()."
+      }
     },
     {
       "id": "lg-12",
@@ -222,7 +537,14 @@ window.IR.q["19-langgraph"] = {
         "system-design"
       ],
       "why": "A whiteboard question. Whether you can lay out control flow, not just name components.",
-      "simple": "Start with the state, because everything else follows from it: the messages, the retrieved documents, a retry counter, and the final answer.\n\nThen the nodes. A router that decides whether this question even needs retrieval - many do not, and skipping retrieval is a large latency saving. A retrieve node. A grade node that checks whether the retrieved documents are actually relevant. A rewrite node that reformulates the query when they are not. A generate node. And a check node that verifies the answer is grounded in the documents.\n\nThe edges are where the design lives. After grading, go forward if the documents are good, or back to rewrite if not - but only while the retry counter is under two, otherwise fall through to an honest \"I could not find this\". After checking groundedness, either finish or go back once.\n\nThat retry counter in the state is the part interviewers listen for. Without it, this graph loops forever on a question your corpus cannot answer.",
+      "quick": [
+        "Start with the state, messages, documents, retry count, answer.",
+        "A router decides if the question needs a search at all.",
+        "Search, grade the results, rewrite the question if weak.",
+        "Write the answer, then check it matches the documents.",
+        "Cap retries at about two, or it loops forever."
+      ],
+      "simple": "A RAG agent in LangGraph starts with the state, which holds the messages, retrieved documents, a retry counter and the answer. Then come the nodes. A router decides whether the question needs retrieval at all, then there's retrieve, a grade node that checks relevance, a rewrite node for weak results, generate, and a check that the answer is grounded.\n\nThe edges are where the design lives. Good documents go to generate, while weak ones loop back to rewrite, but only while the retry counter is under two. Otherwise the agent honestly says it couldn't find the answer.\n\nFor example, if an employee asks about a travel policy that doesn't exist, the rewrite node tries once or twice and then the agent admits it can't find it. That retry counter is what interviewers listen for, because without it the graph loops forever.",
       "code": "class State(TypedDict):\n    messages: Annotated[list, add_messages]\n    docs: list\n    retries: int\n\ng.add_node(\"route\", route); g.add_node(\"retrieve\", retrieve)\ng.add_node(\"grade\", grade); g.add_node(\"rewrite\", rewrite)\ng.add_node(\"generate\", generate); g.add_node(\"check\", check)\n\ng.add_edge(START, \"route\")\n\ng.add_conditional_edges(\"route\", needs_docs,\n                        {\"yes\": \"retrieve\", \"no\": \"generate\"})\ng.add_edge(\"retrieve\", \"grade\")\ng.add_conditional_edges(\"grade\", docs_ok,\n                        {\"ok\": \"generate\",\n                         \"retry\": \"rewrite\",     # only while retries < 2\n                         \"give_up\": \"generate\"}) # answers \"not found\"\ng.add_edge(\"rewrite\", \"retrieve\")                # rewrite increments retries\ng.add_edge(\"generate\", \"check\")\ng.add_conditional_edges(\"check\", grounded,\n                        {\"yes\": END, \"no\": \"rewrite\"})  # also bounded by retries",
       "diagram": {
         "alt": "LangGraph RAG agent over a PDF corpus: route decides if retrieval is needed, retrieve pulls chunks from pgvector, grade checks relevance, rewrite reformulates the query and loops back, generate writes the answer, check verifies groundedness and can loop back once.",
@@ -338,7 +660,7 @@ window.IR.q["19-langgraph"] = {
         ],
         "caption": "Walk it with one question. **“What is our refund window?”** - route says yes, this needs the corpus. Retrieve pulls the top eight chunks from pgvector; grade reads them and finds shipping policy, not refunds. That is the **weak** branch: rewrite turns the query into “refund eligibility period returns policy” and retrieval runs again against the new wording. Second pass lands the right clause, generate writes the answer with page citations, check confirms every claim traces to a retrieved chunk, END. The **retry counter in state** is the part interviewers listen for - without it, a question your PDFs simply do not answer loops between rewrite and retrieve forever. At two, grade gives up and generate says so."
       },
-      "say": "State holds messages, retrieved documents and a retry counter. Nodes: route, which skips retrieval when the question does not need it; retrieve; grade, which checks whether the documents are actually relevant; rewrite, which reformulates the query; generate; and check, which verifies groundedness. The edges carry the design - grade loops back to rewrite, but only while retries are under two, then it falls through to an honest not-found answer.",
+      "say": "I'd start with the state, because everything else follows from it. That's the messages, the retrieved documents, a retry counter and the final answer. The nodes come next. A router decides whether the question needs retrieval at all, and skipping it for simple questions is a large latency saving. Then retrieve, a grade node that checks the documents are actually relevant, a rewrite node that reformulates a weak query, generate, and a check node that confirms the answer is grounded in the documents. The edges are where the design lives. After grading, good documents go forward to generate. Weak ones loop back to rewrite, but only while the retry counter is under two, and otherwise it falls through to an honest 'I could not find this'. The groundedness check can send it back once too. That counter is what interviewers listen for, because without it the graph loops forever on a question the corpus can't answer.",
       "numbers": "Cap rewrites low - one or two is a common starting point. Each one costs a full retrieval plus a model call, and a third rarely recovers a question the corpus cannot answer.",
       "wrong": "Drawing retrieve → generate → END. It is a chain, not an agent, and it does not answer the question that was asked.",
       "follow": "What happens when the grade node itself is wrong?",
@@ -360,7 +682,14 @@ window.IR.q["19-langgraph"] = {
         "latency"
       ],
       "why": "Streaming is a hard requirement for chat UX and a real source of bugs, so it is a good discriminator.",
-      "simple": "There are two different things you might stream, and mixing them up is where the bugs come from.\n\nStreaming tokens means the words of the final answer appear as they are generated. That is what users think of as streaming, and it is what makes a five-second response feel acceptable.\n\nStreaming state means you emit an update after each node - \"searching documents\", \"reading three sources\", \"drafting\". For an agent, that is arguably more valuable, because during a long tool call there are no tokens at all, and a silent UI feels broken.\n\nA good agent UI does both: progress events for the loop, token streaming for the final answer.\n\nThe practical trap: anything that needs the whole output cannot stream. A parser that must validate complete JSON will buffer everything (some JSON parsers can emit partial objects, but validation still waits for the end). So if you promised streaming and your last node validates JSON, you have a design conflict to resolve, usually by streaming a summary field separately from the structured payload.",
+      "quick": [
+        "There are two kinds of streaming to handle.",
+        "Stream the answer word by word as it is written.",
+        "Stream progress updates after each step.",
+        "Progress matters because tool calls leave long silent gaps.",
+        "Checking a full JSON reply blocks streaming, so split it."
+      ],
+      "simple": "When you stream a LangGraph agent's output, there are two different things you might stream. Streaming tokens means the final answer's words appear as they're generated, which makes a five-second response feel acceptable. Streaming state means an update after each node, like \"searching documents\". For an agent that's arguably more valuable, because during a long tool call there are no tokens, and a silent screen feels broken.\n\nSo a good agent UI does both. The messages stream mode gives model tokens, filtered to the answering node, and the updates mode gives one event per node for progress.\n\nThe practical trap is that anything needing the whole output can't stream. For example, if the last node validates complete JSON before replying, the user sees nothing until the end, so you stream a summary field separately from the structured payload.",
       "points": [
         "`stream_mode=\"messages\"` - LLM tokens from every model call in the graph; filter by the `langgraph_node` metadata to show only the answer.",
         "`stream_mode=\"updates\"` - one event per node, for progress UI.",
@@ -371,10 +700,52 @@ window.IR.q["19-langgraph"] = {
         "Measure time to first token separately from total time - they drive different UX complaints.",
         "The streaming API is still evolving: `version=\"v2\"` gives one uniform event shape, and LangGraph 1.2 added a beta `version=\"v3\"` event API. Check the version your stack pins."
       ],
-      "say": "Two different streams. Token streaming gives the words of the final answer as they generate. Update streaming emits an event per node, so the UI can say \"searching\" or \"reading three sources\" - which matters more for agents, because a long tool call produces no tokens at all and silence reads as broken. A good UI does both. The trap is that whole-output parsers buffer, so structured output and token streaming conflict.",
+      "diagram": {
+        "kind": "compare",
+        "alt": "Three LangGraph stream modes compared: messages for tokens, updates for per-node progress, and custom for your own events, by what they emit, UI use and watch-out.",
+        "aspects": [
+          "Emits",
+          "Shows the user",
+          "Watch out"
+        ],
+        "columns": [
+          {
+            "label": "messages",
+            "note": "tokens",
+            "accent": "accent",
+            "cells": [
+              "LLM tokens, every model call",
+              "Answer word by word",
+              "Filter to answer node"
+            ]
+          },
+          {
+            "label": "updates",
+            "note": "per node",
+            "accent": "accent",
+            "cells": [
+              "One event per node",
+              "Searching, drafting...",
+              "Covers silent tool calls"
+            ]
+          },
+          {
+            "label": "custom",
+            "note": "your events",
+            "cells": [
+              "get_stream_writer() events",
+              "Fine-grained progress",
+              "You emit them yourself"
+            ]
+          }
+        ],
+        "caption": "A good agent UI streams **both tokens and progress**. A final node that validates whole JSON **cannot stream**, so stream a summary field separately."
+      },
+      "say": "There are two kinds of streaming, and mixing them up is where the bugs come from. Token streaming shows the final answer word by word, which is what makes a five-second response feel acceptable. Update streaming emits an event after each node, like searching documents or drafting. For an agent that matters just as much, because a long tool call produces no tokens at all and a silent screen feels broken. So a good UI does both. I use the messages stream mode for tokens, filtered to the answering node, and the updates mode or custom events for progress. The trap is structured output. If the last node validates complete JSON, it has to buffer everything and can't stream, so I stream a summary field separately from the structured payload. I also measure time to first token apart from total time, because they drive different complaints.",
       "numbers": "Time to first token is the metric users feel. Roughly, sub-second feels responsive and several seconds of silence feels broken - but set the target from your own product and users rather than quoting a universal threshold.",
       "wrong": "\"I set streaming=True.\" It does not explain what happens during a twenty-second tool call, which is the actual UX problem in agents.",
-      "follow": "Your last node validates JSON. How do you still give the user something to watch?"
+      "follow": "Your last node validates JSON. How do you still give the user something to watch?",
+      "followAnswer": "I stream progress events and a separate plain-text summary, while the JSON is still validated at the end. Earlier nodes emit updates or custom events, such as searching documents or checking policy, so the screen is never silent. For the answer itself, I generate a short human-readable part that streams token by token, then build and validate the structured payload after it. The UI shows the text straight away and renders the structured parts once validation passes."
     },
     {
       "id": "lg-23",
@@ -392,9 +763,16 @@ window.IR.q["19-langgraph"] = {
         "routing"
       ],
       "why": "The LangGraph mechanics behind multi-agent answers. Panels ask it right after you name a supervisor or handoff pattern.",
-      "simple": "`Command` is an object a node or a tool can return to do two things at once: update the state and say which node runs next. Normally those are separate - the node returns an update, and an edge decides where to go. With `Command(goto=\"billing\", update={...})` the node decides both in one step.\n\nThat is exactly what a handoff needs. In a multi-agent setup, each agent is a node or a subgraph. The current agent gets a transfer tool, such as `transfer_to_billing`. When the model calls it, the tool returns a `Command` that routes to the billing agent and passes along the context it needs. If the agent is a subgraph, `graph=Command.PARENT` makes the jump happen in the parent graph.\n\nOne detail catches people: the model called a tool, so the history must also contain a matching tool result message. Without it, the next model call fails on malformed history.\n\n`Command` is also how you resume after an interrupt, with `Command(resume=...)`.\n\nThe senior point: LangChain's current guidance is to try one agent with changing tools and prompts, or a supervisor that calls sub-agents as tools, before building peer-to-peer handoffs. Handoffs are harder to debug, because control can move anywhere.",
+      "quick": [
+        "Command updates state and picks the next step together.",
+        "That is exactly what a handoff between agents needs.",
+        "A transfer tool returns a Command routing to another agent.",
+        "Keep a matching tool reply in history or calls fail.",
+        "Try one agent or a supervisor first, handoffs are harder to debug."
+      ],
+      "simple": "Command is an object that a node or tool can return to do two things at once. It updates the state and says which node runs next, so the node decides both in one step instead of leaving the routing to an edge.\n\nThat's exactly what a handoff between agents needs. For example, a support agent gets a transfer_to_billing tool, and when the model calls it, the tool returns a Command that routes to the billing agent and passes along the context it needs. One detail catches people, which is that the history must also contain a matching tool result message, or the next model call fails.\n\nBut handoffs are harder to debug, because control can move anywhere. So LangChain's guidance is to try one agent, or a supervisor calling sub-agents as tools, before building peer-to-peer handoffs.",
       "code": "from typing import Literal\nfrom langchain.tools import tool, ToolRuntime\nfrom langchain.messages import ToolMessage\nfrom langgraph.types import Command\n\n# A node that updates state AND routes, with no separate edge\ndef triage(state) -> Command[Literal[\"billing\", \"support\"]]:\n    target = \"billing\" if is_billing(state) else \"support\"\n    return Command(goto=target, update={\"route\": target})\n\n# A handoff tool used inside an agent subgraph\n@tool\ndef transfer_to_billing(runtime: ToolRuntime) -> Command:\n    \"\"\"Hand the conversation to the billing agent.\"\"\"\n    ai_call = runtime.state[\"messages\"][-1]          # the AI message that called this tool\n    done = ToolMessage(content=\"Transferred to billing.\",\n                       tool_call_id=runtime.tool_call_id)\n    return Command(\n        goto=\"billing\",\n        update={\"messages\": [ai_call, done], \"active_agent\": \"billing\"},\n        graph=Command.PARENT,   # route in the parent graph, not this subgraph\n    )",
-      "say": "Command lets a node or tool return a state update and the next node together, so routing is decided in the same step. That is how handoffs work: the active agent calls a transfer tool, and the tool returns a Command with goto set to the other agent, graph set to parent when agents are subgraphs, and a matching tool message so history stays valid. Command is also how you resume an interrupt.",
+      "say": "Command lets a node or tool update state and choose the next node in one return, instead of leaving routing to an edge. Normally a node returns an update and an edge decides where to go. With Command, you pass goto billing plus the update, and that's exactly the shape a handoff needs. Each agent is a node or a subgraph. The support agent gets a transfer_to_billing tool, and when the model calls it, the tool returns a Command routing to billing with the context it needs. If the agent is a subgraph, setting graph to Command.PARENT makes the jump in the parent graph. The detail that catches people is history. The model called a tool, so there must be a matching tool result message, or the next model call fails on malformed history. Command is also how you resume after an interrupt. Still, I'd try one agent or a supervisor calling sub-agents as tools first, because peer handoffs are harder to debug.",
       "numbers": "No number applies. Track handoffs per conversation - bouncing between agents more than once or twice usually means their descriptions overlap.",
       "wrong": "Saying agents 'talk to each other' without naming the mechanism. The panel wants to hear that control moves through a returned Command or a routing edge, and what context moves with it.",
       "follow": "After a handoff, how much of the previous agent's history should the next agent see?",
@@ -415,12 +793,80 @@ window.IR.q["19-langgraph"] = {
         "multi-agent"
       ],
       "why": "How you compose anything past a toy. Panels use it to see whether you have built something with more than one moving part.",
-      "simple": "A subgraph is a compiled graph used as a node inside another graph. It is how a LangGraph app stays readable once it outgrows one flat set of nodes.\n\nThere are two ways to attach one, and which applies depends entirely on state.\n\nIf the subgraph shares state keys with the parent, you pass the compiled subgraph straight to `add_node`. It reads and writes the parent's state directly and there is nothing to translate.\n\nIf the schemas differ, you wrap it in a normal node function: map the parent's state into the subgraph's input shape, invoke it, then map the output back. That wrapper is the whole pattern.\n\nThe second case is the one that matters in multi-agent work. Each agent keeps its own private message history in its own schema, and the parent only sees what the wrapper chooses to lift out. Without that, every agent's internal chatter lands in one shared message list and the context you send the top-level model grows without limit.\n\nThe other reason to reach for one is plain reuse - an approval flow or a retrieval step that several parts of the app need, defined once.",
+      "quick": [
+        "A subgraph is a whole graph used as one step.",
+        "It keeps a big app readable and reusable.",
+        "Shared state fields mean you can plug it in directly.",
+        "Different state needs a wrapper that maps data in and out.",
+        "Each agent keeps its own chat private this way."
+      ],
+      "simple": "A subgraph is a compiled graph used as a single node inside another graph, and it's how a LangGraph app stays readable as it grows. If the subgraph shares state keys with the parent, you add it directly as a node. If the schemas differ, you wrap it in a node function that maps the parent's state in and the output back.\n\nThat second case matters in multi-agent work, because each agent keeps its own private message history, and the parent only sees what the wrapper lifts out. Otherwise every agent's internal chatter lands in one shared list and the context grows without limit.\n\nFor example, a search agent that makes twenty tool calls while reading papers keeps them in its own history and hands the parent only a short summary. Subgraphs also allow reuse, so an approval flow can be defined once and plugged in anywhere.",
       "code": "# Shared schema - attach the compiled graph directly.\nparent.add_node(\"research\", research_graph)\n\n# Different schema - wrap it and translate both ways.\ndef call_research(state: ParentState) -> dict:\n    out = research_graph.invoke({\"query\": state[\"question\"]})\n    return {\"findings\": out[\"result\"]}     # only what the parent needs\n\nparent.add_node(\"research\", call_research)",
-      "say": "A subgraph is a compiled graph used as a node in another graph. If it shares state keys with the parent you attach it directly to add_node. If the schemas differ you wrap it in a node function that maps parent state in and the result back out. That second pattern is what keeps each agent's private message history out of the parent's state in a multi-agent app, so the top-level context does not grow without limit.",
+      "diagram": {
+        "alt": "Attaching a subgraph: if it shares state keys with the parent, add it directly as a node; if schemas differ, wrap it in a node that maps state in and out, keeping its message history private.",
+        "rows": [
+          [
+            {
+              "id": "p",
+              "label": "Parent graph state"
+            }
+          ],
+          [
+            {
+              "id": "q",
+              "label": "Same state keys?",
+              "accent": "warn"
+            }
+          ],
+          [
+            {
+              "id": "d",
+              "label": "add_node(subgraph)",
+              "note": "reads, writes parent state"
+            },
+            {
+              "id": "w",
+              "label": "Wrapper node",
+              "note": "map in, invoke, map out",
+              "accent": "accent"
+            }
+          ],
+          [
+            {
+              "id": "s",
+              "label": "Agent subgraph",
+              "note": "private message history",
+              "accent": "accent"
+            }
+          ]
+        ],
+        "edges": [
+          {
+            "from": "p",
+            "to": "q"
+          },
+          {
+            "from": "q",
+            "to": "d",
+            "label": "yes"
+          },
+          {
+            "from": "q",
+            "to": "w",
+            "label": "no"
+          },
+          {
+            "from": "w",
+            "to": "s"
+          }
+        ],
+        "caption": "A subgraph is **a compiled graph used as one node**. The wrapper lets each agent **keep its chatter private**, so the parent's context does not grow without limit."
+      },
+      "say": "A subgraph is a compiled graph used as a single node inside another graph. It's how a LangGraph app stays readable once it outgrows one flat set of nodes. How you attach it depends entirely on state. If the subgraph shares state keys with the parent, you pass it straight to add_node and it reads and writes the parent's state directly. If the schemas differ, you wrap it in an ordinary node function that maps the parent's state into the subgraph's input, invokes it, and maps the output back. That second case is the one that matters in multi-agent work. Each agent keeps its own private message history, and the parent only sees what the wrapper lifts out. Without that, every agent's internal chatter lands in one shared list and the top-level context grows without limit. The other reason is plain reuse, like an approval flow or a retrieval step that several parts of the app need, defined once.",
       "numbers": "No number applies. This is a composition question.",
       "wrong": "\"I'd just put all the nodes in one graph.\" It works until two agents share a message list, and then every agent's internal reasoning is in the context of every other one.",
-      "follow": "Two subgraph agents both write to the same parent key. What do you need?"
+      "follow": "Two subgraph agents both write to the same parent key. What do you need?",
+      "followAnswer": "I need a reducer on that parent key, or a separate key for each agent. If both subgraphs write the same key in the same step without a reducer, LangGraph raises an error because it can't pick a winner. So for something like collected findings, I annotate the key with a reducer such as operator.add, and make sure the merge doesn't depend on order. Where the outputs mean different things, I give each agent its own key and let a later node combine them."
     },
     {
       "id": "lg-19",
@@ -438,7 +884,14 @@ window.IR.q["19-langgraph"] = {
         "debugging"
       ],
       "why": "The characteristic LangGraph production failure, and it only happens to people who have actually run one at volume.",
-      "simple": "The usual cause is putting large payloads directly into graph state. Checkpointed state is persisted repeatedly as the graph advances, so a large document, huge tool result or growing message history can make storage and resume time grow quickly.\n\nI keep state small. Large raw results go to object storage, a database or a cache, and the graph state keeps an id, metadata and a short summary. A later node can fetch the full object only if it actually needs it.\n\nMessage history needs the same discipline. Long-running agents should trim or summarise old turns instead of appending every large tool result forever.\n\nTo debug it, I plot checkpoint size by step for one thread. The step where the size jumps usually identifies the node that added the payload. I also treat checkpoints as retained application data: avoid unnecessary secrets or PII and define a cleanup policy for old threads.",
+      "quick": [
+        "Big documents were stored directly in the saved state.",
+        "State is saved every step, so big data is rewritten repeatedly.",
+        "Store big results elsewhere and keep only an id and summary.",
+        "Trim or summarise old messages too.",
+        "Plot saved size per step to find the step causing it."
+      ],
+      "simple": "When checkpoints explode on large documents, the usual cause is putting large payloads directly into graph state. State is saved again at every step, and any key that changes, above all a growing message list, is rewritten in full each time, so storage and resume time grow quickly.\n\nTo find the culprit, you plot checkpoint size by step for one thread. Flat is healthy, while a staircase means something is piling up. For example, if a contract-review agent's checkpoints jump from a few KB to several MB right after the fetch-document node, that node is putting the whole contract into state.\n\nThe fix is that state holds references, not payloads. The raw document goes to object storage or a database, and state keeps an id and a short summary. Long-running agents also trim or summarise old messages instead of appending every large tool result forever.",
       "points": [
         "State is serialised into checkpoints as the graph advances; any key that changes - above all a growing message list - is rewritten in full each time.",
         "State holds references, not payloads: tool writes to storage, returns an id and a summary.",
@@ -449,10 +902,46 @@ window.IR.q["19-langgraph"] = {
         "Set a thread retention policy, or the checkpoint table grows unbounded.",
         "LangGraph 1.2 added a beta `DeltaChannel` that stores only the change per step; useful for long threads, but it does not excuse payloads in state."
       ],
-      "say": "Because checkpointed state is serialised as the graph advances, so a 50 MB document in state, or an ever-growing message list, gets rewritten again and again. The rule is that state holds references, not payloads - the tool writes the raw result to object storage and returns an id and a short summary, and whoever needs the content fetches it. I also trim message history, and I diagnose by plotting checkpoint size per step, since the jump names the node.",
+      "diagram": {
+        "kind": "compare",
+        "alt": "Putting a large document directly in graph state compared with keeping only a reference in state and the raw document in storage, by what state holds, checkpoint size, resume and access to the full document.",
+        "aspects": [
+          "State holds",
+          "Each checkpoint",
+          "Size over steps",
+          "Full document"
+        ],
+        "columns": [
+          {
+            "label": "Payload in state",
+            "note": "the usual mistake",
+            "accent": "bad",
+            "cells": [
+              "Whole document, big results",
+              "Rewrites the payload",
+              "Staircase, slow resume",
+              "Carried everywhere"
+            ]
+          },
+          {
+            "label": "Reference in state",
+            "note": "the fix",
+            "accent": "accent",
+            "cells": [
+              "Id, metadata, short summary",
+              "Small and cheap",
+              "Flat",
+              "Fetched only if needed"
+            ]
+          }
+        ],
+        "caption": "**State holds references, not payloads.** Plot checkpoint size per step: flat is healthy, and **the step where it jumps names the node**."
+      },
+      "say": "Almost always, large payloads are sitting directly in graph state. Whole documents, huge tool results or an ever-growing message list get persisted again as the graph advances, so storage and resume time climb fast. I'd find the culprit by plotting checkpoint size per step for one thread. Flat is healthy, a staircase means accumulation, and the step where it jumps usually names the node that added the payload. The fix is that state holds references, not payloads. The tool writes the raw document to object storage or a database and returns an id, some metadata and a short summary. The model needs to know the data exists and what it is, not carry it around, and a later node fetches the full object only if it needs it. I'd trim or summarise message history too. And since checkpoints are retained data, I keep secrets and PII out of them and set a retention policy for old threads.",
       "numbers": "Plot checkpoint size across steps in one thread. Flat is healthy; a staircase means accumulation, and the step where it jumps is your culprit.",
       "wrong": "Blaming the checkpointer and switching from Postgres to something else. The backend is not the problem - you are asking it to persist megabytes per step.",
-      "follow": "You need the full document available to a node three steps later. How do you pass it?"
+      "follow": "You need the full document available to a node three steps later. How do you pass it?",
+      "followAnswer": "I pass a reference, not the document. The node that fetches it writes the full text to object storage or a database and puts only the id, some metadata and a short summary into state. Three steps later, the node that needs the whole document reads the id from state and loads it from storage itself. Checkpoints stay small, the intermediate steps never carry it, and the stored object gets the same access control and retention rules as the thread."
     }
   ]
 };

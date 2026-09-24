@@ -68,7 +68,7 @@
   --accent-hover: #0c6135;
   --accent-strong: #0c6135;
   --accent-soft: #eaf6ef;
-  --accent-ring: rgba(16, 124, 65, .22);
+  --accent-ring: rgba(30, 58, 138, .22);
   --excel: #107c41;
   --excel-soft: #eaf6ef;
 
@@ -121,7 +121,7 @@
   --fs-h1: clamp(1.625rem, 2.05vw, 2.0625rem);
   --fs-h2: 1.28125rem;
   --fs-h3: 0.9375rem;
-  --fs-lead: clamp(0.9375rem, 1.2vw, 1.0625rem);
+  --fs-lead: clamp(0.9375rem, 1.1vw, 1rem);
   --fs-hero: var(--fs-h1);
 }
 
@@ -791,7 +791,7 @@ html[data-reading-size] {
   --fs-h1:   calc(clamp(1.5rem, 2.05vw, 2.0625rem) * var(--reading-scale));
   --fs-h2:   calc(1.28125rem * var(--reading-scale));
   --fs-h3:   calc(0.9375rem * var(--reading-scale));
-  --fs-lead: calc(clamp(0.9375rem, 1.2vw, 1.0625rem) * var(--reading-scale));
+  --fs-lead: calc(clamp(0.9375rem, 1.1vw, 1rem) * var(--reading-scale));
 }
 
 @media (max-width: 860px) {
@@ -898,6 +898,14 @@ html[data-reading-size] .toc-top {
 /* --- tables inside cards and prose --- */
 html[data-reading-size] table { font-size: calc(0.78125rem * var(--reading-scale)); }
 html[data-reading-size] th    { font-size: calc(0.5625rem * var(--reading-scale)); }
+
+/* Desktop rails vs. reading column: the sidebar renders at --density (90%)
+   and the rail's base was 0.75rem, so both read noticeably smaller than the
+   body text between them. Nudge them up so the three columns sit closer. */
+@media (min-width: 861px) {
+  html[data-reading-size] .nav-link { font-size: calc(0.875rem * var(--reading-scale)); }
+  html[data-reading-size] .toc a    { font-size: calc(0.8125rem * var(--reading-scale)); }
+}
 
 /* Width applies to the reading column. Outside focus mode, only standard and wide are active. */
 html[data-reading-width="default"] .content { max-width: 65rem; }
@@ -1014,9 +1022,9 @@ html[data-reading-width="full"] body.focus-mode .content    { max-width: none; }
 .note.is-highlight {
   position: relative;
   background: var(--accent-soft);
-  border-color: rgba(16, 124, 65, .32);
+  border-color: rgba(30, 58, 138, .32);
   color: var(--text);
-  box-shadow: 0 0 0 0 rgba(16, 124, 65, .35), 0 4px 16px rgba(16, 124, 65, .10);
+  box-shadow: 0 0 0 0 rgba(30, 58, 138, .35), 0 4px 16px rgba(30, 58, 138, .10);
   animation: notePulseGlow 3s cubic-bezier(.4, 0, .2, 1) infinite;
 }
 .note.note-guide strong,
@@ -1038,16 +1046,16 @@ html[data-reading-width="full"] body.focus-mode .content    { max-width: none; }
 
 @keyframes notePulseGlow {
   0% {
-    box-shadow: 0 0 0 0 rgba(16, 124, 65, .35), 0 2px 8px rgba(16, 124, 65, .08);
-    border-color: rgba(16, 124, 65, .32);
+    box-shadow: 0 0 0 0 rgba(30, 58, 138, .35), 0 2px 8px rgba(30, 58, 138, .08);
+    border-color: rgba(30, 58, 138, .32);
   }
   50% {
-    box-shadow: 0 0 0 6px rgba(16, 124, 65, 0), 0 6px 24px rgba(16, 124, 65, .22);
-    border-color: rgba(16, 124, 65, .55);
+    box-shadow: 0 0 0 6px rgba(30, 58, 138, 0), 0 6px 24px rgba(30, 58, 138, .22);
+    border-color: rgba(30, 58, 138, .55);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(16, 124, 65, 0), 0 2px 8px rgba(16, 124, 65, .08);
-    border-color: rgba(16, 124, 65, .32);
+    box-shadow: 0 0 0 0 rgba(30, 58, 138, 0), 0 2px 8px rgba(30, 58, 138, .08);
+    border-color: rgba(30, 58, 138, .32);
   }
 }
 
@@ -1070,7 +1078,7 @@ html[data-reading-width="full"] body.focus-mode .content    { max-width: none; }
   .note.note-guide,
   .note.is-highlight {
     animation: none;
-    box-shadow: 0 4px 16px rgba(16, 124, 65, .12);
+    box-shadow: 0 4px 16px rgba(30, 58, 138, .12);
   }
   [data-theme="dark"] .note.note-guide,
   [data-theme="dark"] .note.is-highlight {
@@ -1302,23 +1310,24 @@ html[data-reading-width="full"] body.focus-mode .content    { max-width: none; }
 .q-prio.is-medium { background: var(--amber-soft); color: var(--amber); border-color: color-mix(in srgb, var(--amber) 28%, transparent); }
 .q-prio.is-low    { background: var(--surface);    color: var(--text-secondary); border-color: var(--border); }
 html[data-reading-size] .q-prio { font-size: calc(0.65625rem * var(--reading-scale)); }
-/* Copy-question button - floats just left of the priority pill. */
+/* Copy-question button - floats just left of the priority pill, same height. */
 .q-copy {
   float: right;
   display: inline-grid; place-items: center;
-  width: 1.3125rem; height: 1.3125rem;
-  margin: 1px 0 0.375rem 0.625rem;
-  padding: 0;
-  border: 1px solid var(--border); border-radius: var(--radius-sm);
-  background: var(--bg-elevated); color: var(--text-muted);
+  width: 1.5rem; height: 1.5rem;
+  margin: 0 0 0.375rem 0.5rem; padding: 0;
+  border: 1px solid var(--border); border-radius: 999px;
+  background: transparent; color: var(--text-muted);
   cursor: pointer;
   transition: color .15s var(--ease), border-color .15s var(--ease), background .15s var(--ease);
 }
-.q-copy:hover { color: var(--text); border-color: var(--border-strong); }
-.q-copy:focus-visible { outline: 2px solid var(--excel); outline-offset: 1px; }
-.q-copy.is-copied { color: var(--excel); border-color: var(--excel); background: var(--excel-soft); }
+.q-copy:hover { color: var(--text); border-color: var(--border-strong); background: var(--surface); }
+.q-copy:focus-visible { outline: 2px solid var(--excel); outline-offset: 2px; }
+.q-copy.is-copied { color: var(--excel); border-color: var(--excel); }
+.q-copy svg { display: block; }
 /* Balanced wrapping fights the float and leaves ragged short lines. */
-.q-title:has(> .q-prio), .q-title:has(> .q-copy) { text-wrap: pretty; }
+.q-title:has(> .q-prio),
+.q-title:has(> .q-copy) { text-wrap: pretty; }
 @media (max-width: 980px) {
   /* Below 980px the list's search box is hidden (the jump bar replaces it),
      so its empty wrapper should not push the filters onto a second row. */
@@ -1329,7 +1338,6 @@ html[data-reading-size] .q-prio { font-size: calc(0.65625rem * var(--reading-sca
   /* A phone keeps the colour and the word that matters; "priority" goes. */
   .q-prio-word { display: none; }
   .q-prio { margin-left: 0.5rem; padding: 1px 0.4375rem; }
-  .q-copy { margin-left: 0.5rem; }
 }
 @media print {
   .q-prio { border-color: #999; background: none; color: #000; }
@@ -1385,6 +1393,16 @@ html[data-reading-size] .q-prio { font-size: calc(0.65625rem * var(--reading-sca
 .q-body :is(p, li) { max-width: none; line-height: 1.7; }
 .q-simple .slot-label { color: var(--excel); }
 .q-simple p:last-child { margin-bottom: 0; }
+.q-simple .q-h { margin: 1.125rem 0 0.375rem; font-size: 1rem; font-weight: 650; color: var(--heading); }
+.q-simple .slot-label + .q-h { margin-top: 0.25rem; }
+.q-simple .q-list { margin: 0.25rem 0 0.75rem; padding-left: 1.375rem; }
+.q-simple .q-list li { margin: 0 0 0.125rem; }
+.q-simple .q-quote {
+  margin: 0.5rem 0 0.875rem; padding: 0.5rem 0.875rem;
+  border-left: 3px solid var(--accent); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--accent-soft); color: var(--heading); font-weight: 560;
+}
+.q-simple .q-inline-pre { margin: 0.375rem 0 0.875rem; }
 .q-points { margin: 0 0 0.875rem; padding-left: 1.25rem; }
 .q-points li { margin-bottom: 0.3125rem; color: var(--text-secondary); }
 .q-points li strong { color: var(--heading); }
@@ -1991,11 +2009,20 @@ tr:last-child td { border-bottom: 0; }
   transform: translateX(-2px);
 }
 .toc a:hover::before { opacity: .45; transform: scaleY(.7); }
+/* Click-only highlight (no scroll spy). .active eases in quickly; when it is
+   removed, .toc-fade carries a slower transition so it dissolves. No weight
+   change, so the label never reflows mid-animation. */
 .toc a.active {
-  color: var(--text); background: var(--accent-soft); font-weight: 600;
+  color: var(--text); background: var(--accent-soft);
   transform: none;
+  transition: background .3s var(--ease), color .3s var(--ease), transform .18s var(--ease);
 }
-.toc a.active::before { opacity: 1; transform: scaleY(1); }
+.toc a.active::before {
+  opacity: 1; transform: scaleY(1);
+  transition: transform .3s var(--ease), opacity .3s ease;
+}
+.toc a.toc-fade { transition: background .9s ease, color .9s ease, transform .18s var(--ease); }
+.toc a.toc-fade::before { transition: transform .9s ease, opacity .9s ease; }
 .toc a[hidden] { display: none; }
 /* The numeral is a bare accent digit, not a boxed badge: this list runs to
    forty-odd rows on a long topic, and forty boxes down the right edge reads as
@@ -2351,7 +2378,7 @@ html[data-theme="dark"] .page-nav {
 .page-nav .pn-link:hover,
 .page-nav .pn-link:focus-visible {
   text-decoration: none;
-  border-color: rgba(16, 124, 65, .35);
+  border-color: rgba(30, 58, 138, .35);
   box-shadow: var(--pn-drop-hover);
   transform: translateY(-3px);
 }
@@ -2479,7 +2506,7 @@ body.focus-mode .sidebar-resizer {
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(16, 124, 65, 0.08);
+  box-shadow: 0 1px 2px rgba(30, 58, 138, 0.08);
   transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
   line-height: 1.4;
   max-width: 100%;
@@ -2490,7 +2517,7 @@ body.focus-mode .sidebar-resizer {
   color: var(--excel);
   border-color: var(--excel);
   transform: translateY(-1px);
-  box-shadow: 0 3px 10px rgba(16, 124, 65, 0.15);
+  box-shadow: 0 3px 10px rgba(30, 58, 138, 0.15);
 }
 
 .campusx-summary-btn:active {
@@ -3313,3 +3340,464 @@ html.theme-switching *::after {
 .sb-results { animation: none !important; }
 .topbar { transition: box-shadow 90ms linear !important; }
 html { scroll-behavior: auto; }
+
+/* ---------- glossary tooltips ---------- */
+/* A glossary term inside a spoken answer: dotted underline, focusable. */
+.term {
+  text-decoration: underline dotted;
+  text-decoration-color: color-mix(in srgb, var(--excel) 70%, transparent);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  cursor: help;
+  border-radius: 2px;
+}
+.term:hover { text-decoration-color: var(--excel); }
+.term:focus-visible { outline: 2px solid var(--excel); outline-offset: 1px; }
+.term-tip {
+  position: fixed; z-index: 1000;
+  max-width: min(20rem, calc(100vw - 16px));
+  padding: 0.5rem 0.6875rem;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--bg-elevated); color: var(--text);
+  box-shadow: var(--shadow-md);
+  font-size: 0.8125rem; line-height: 1.5; font-weight: 450;
+  text-align: left;
+  pointer-events: none;
+}
+.term-tip[hidden] { display: none; }
+@media print {
+  .term { text-decoration: none; }
+  .term-tip { display: none; }
+}
+
+/* ---------- quick recall ---------- */
+/* Plain cheat-sheet bullets near the top of the card body. Amber, so it reads
+   as a different kind of block from the green spoken answer. */
+.q-quick {
+  margin: 0 0 0.875rem; padding: 0.625rem 0.875rem 0.625rem 0.875rem;
+  border: 1px solid var(--border);
+  border-left: 0.1875rem solid var(--amber);
+  border-radius: var(--radius-sm);
+  background: var(--amber-soft);
+}
+.q-quick .slot-label { color: var(--amber); }
+.q-quick ul { margin: 0.25rem 0 0; padding-left: 1.125rem; }
+.q-quick li { margin: 0 0 0.1875rem; color: var(--text); line-height: 1.55; }
+.q-quick li:last-child { margin-bottom: 0; }
+.q-quick li::marker { color: var(--amber); }
+
+/* ---------- diagram kinds: compare / matrix / stack ---------- */
+.dg-cellbox rect { fill: var(--bg-elevated); stroke: var(--border); stroke-width: 1; }
+.dg-cell { fill: var(--text); font-size: 0.625rem; font-weight: 500; text-anchor: middle; }
+.dg-aspect { fill: var(--text-muted); font-size: 0.5625rem; font-weight: 700; text-anchor: end; letter-spacing: .02em; }
+.dg-colhead { fill: var(--text-secondary); font-size: 0.5625rem; font-weight: 700; text-anchor: middle; }
+.dg-rowhead { fill: var(--text-secondary); font-size: 0.5625rem; font-weight: 700; text-anchor: end; }
+.dg-axis { fill: var(--text-muted); font-size: 0.5625rem; font-weight: 700; text-anchor: middle; text-transform: uppercase; letter-spacing: .06em; }
+.dg-flowtext { fill: var(--text-muted); font-size: 0.59375rem; font-weight: 600; font-style: italic; }
+@media (max-width: 640px) {
+  .dg-narrow .dg-cell { font-size: 1.375rem; }
+  .dg-narrow .dg-aspect,
+  .dg-narrow .dg-colhead,
+  .dg-narrow .dg-rowhead,
+  .dg-narrow .dg-axis { font-size: 1.25rem; }
+  .dg-narrow .dg-flowtext { font-size: 1.3125rem; }
+}
+
+/* =========================================================================
+   BLUE THEME
+   Navy headings, a navy-blue accent and soft blue-grey surfaces, replacing
+   the Excel-green accent. Everything above reads these tokens, so this one
+   block re-themes the portal; delete it to go back to green. Amber (warn,
+   Quick recall) and red (bad) keep their meanings.
+   ========================================================================= */
+:root {
+  --bg: #f4f6fb;
+  --bg-subtle: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-solid: #ffffff;
+  --surface: #f6f8fd;
+  --surface-strong: #eef2fa;
+  --border: #e1e7f2;
+  --border-strong: #c7d3ea;
+  --border-soft: #e1e7f2;
+  --bg-sunken: #f6f8fd;
+  --text: #1d2433;
+  --text-secondary: #34405a;
+  --text-muted: #66748f;
+  --heading: #0f2350;
+
+  --accent: #1e3a8a;
+  --accent-hover: #172e6e;
+  --accent-strong: #172e6e;
+  --accent-soft: #eaf0fb;
+  --accent-ring: rgba(30, 58, 138, .22);
+  --excel: #1e3a8a;
+  --excel-soft: #eaf0fb;
+  --blue: #1e3a8a;  --blue-soft: #eaf0fb;
+
+  --shadow-sm: 0 1px 2px rgba(15, 35, 80, .05), 0 0.4375rem 1.375rem rgba(15, 35, 80, .04);
+  --shadow-md: 0 1px 2px rgba(15, 35, 80, .06), 0 0.625rem 1.75rem rgba(15, 35, 80, .06);
+  --shadow-lg: 0 2px 0.25rem rgba(15, 35, 80, .07), 0 1rem 2.375rem rgba(15, 35, 80, .08);
+}
+html[data-theme="dark"] {
+  /* Neutral dark greys - no blue cast on surfaces; only the accent is blue. */
+  --bg: #1b1b1b;
+  --bg-subtle: #232323;
+  --bg-elevated: #232323;
+  --bg-solid: #232323;
+  --bg-code: #161616;
+  --surface: #292929;
+  --surface-strong: #2f2f2f;
+  --border: #363636;
+  --border-strong: #454545;
+  --border-soft: #363636;
+  --bg-sunken: #292929;
+  --text: #e6e6e6;
+  --text-secondary: #bdbdbd;
+  --text-muted: #939393;
+  --text-inverse: #1b1b1b;
+  --heading: #ececec;
+
+  --accent: #7ea6ff;
+  --accent-hover: #9bbaff;
+  --accent-strong: #9bbaff;
+  --accent-soft: #1c2a4a;
+  --accent-ring: rgba(126, 166, 255, .25);
+  --excel: #7ea6ff;
+  --excel-soft: #1c2a4a;
+  --blue: #7ea6ff;  --blue-soft: #1c2a4a;
+}
+/* The spoken answer reads like the "cached" info banner: tinted panel, soft
+   blue border, navy label. */
+.q-say { border-color: #c8d5ee; }
+html[data-theme="dark"] .q-say { border-color: #3a3a3a; }
+:root { --sb-panel: rgba(255, 255, 255, .92); }
+html[data-theme="dark"] { --sb-panel: rgba(35, 35, 35, .9); }
+
+/* ---- RAG pipeline diagram (topic 05 intro) ----
+   The SVG carries only classes; every colour lives here so the drawing
+   follows the theme. Light values match the original artwork. */
+.rag-flow {
+  --rf-bg: #ffffff;
+  --rf-frame: #e5e7eb;
+  --rf-panel-a: #e8f4f8;
+  --rf-panel-b: #eaf3e6;
+  --rf-title: #111827;
+  --rf-phase: #1f2937;
+  --rf-box: #ffffff;
+  --rf-line: #374151;
+  --rf-label: #374151;
+  --rf-sub: #6b7280;
+  --rf-doc: #d1d5db;
+  --rf-db: #2563eb;
+  --rf-db-edge: #1e3a8a;
+  --rf-llm: #10b981;
+  --rf-llm-edge: #047857;
+  --rf-llm-text: #ffffff;
+  --rf-llm-sub: #ecfdf5;
+  --rf-head: #fcd34d;
+  --rf-head-edge: #b45309;
+  --rf-body: #3b82f6;
+  --rf-body-edge: #1e3a8a;
+  display: block;
+  font-family: var(--font-sans);
+  background: var(--rf-bg);
+  border: 1px solid var(--rf-frame);
+  border-radius: 12px;
+}
+html[data-theme="dark"] .rag-flow {
+  --rf-bg: var(--bg-elevated);
+  --rf-frame: var(--border);
+  --rf-panel-a: #1f2a2e;
+  --rf-panel-b: #222a20;
+  --rf-title: #f0f0f0;
+  --rf-phase: #e4e4e4;
+  --rf-box: #2b2b2b;
+  --rf-line: #a3a3a3;
+  --rf-label: #e0e0e0;
+  --rf-sub: #a3a3a3;
+  --rf-doc: #555555;
+  --rf-db: #2563eb;
+  --rf-db-edge: #93c5fd;
+  --rf-llm: #059669;
+  --rf-llm-edge: #34d399;
+  --rf-llm-text: #ffffff;
+  --rf-llm-sub: #d1fae5;
+  --rf-head: #fcd34d;
+  --rf-head-edge: #f59e0b;
+  --rf-body: #3b82f6;
+  --rf-body-edge: #93c5fd;
+}
+.rag-flow .rf-panel-a { fill: var(--rf-panel-a); }
+.rag-flow .rf-panel-b { fill: var(--rf-panel-b); }
+.rag-flow .rf-title { fill: var(--rf-title); }
+.rag-flow .rf-phase { fill: var(--rf-phase); }
+.rag-flow .rf-label { fill: var(--rf-label); }
+.rag-flow .rf-sub { fill: var(--rf-sub); }
+.rag-flow .rf-box { fill: var(--rf-box); stroke: var(--rf-line); stroke-width: 2; }
+.rag-flow .rf-edge { fill: none; stroke: var(--rf-line); stroke-width: 2; }
+.rag-flow .rf-arrowhead { fill: var(--rf-line); }
+.rag-flow .rf-doc-line { stroke: var(--rf-doc); stroke-width: 3; }
+.rag-flow .rf-db { fill: var(--rf-db); stroke: var(--rf-db-edge); stroke-width: 2; }
+.rag-flow .rf-db-ring { fill: none; stroke: var(--rf-db-edge); stroke-width: 2; }
+.rag-flow .rf-llm { fill: var(--rf-llm); stroke: var(--rf-llm-edge); stroke-width: 2; }
+.rag-flow .rf-llm-label { fill: var(--rf-llm-text); }
+.rag-flow .rf-llm-sub { fill: var(--rf-llm-sub); }
+.rag-flow .rf-user-head { fill: var(--rf-head); stroke: var(--rf-head-edge); stroke-width: 2; }
+.rag-flow .rf-user-body { fill: var(--rf-body); stroke: var(--rf-body-edge); stroke-width: 2; }
+
+/* Jump links (rail, search, #card-id) stop just below the sticky topbar
+   instead of hiding the card's first line underneath it. */
+.q-card { scroll-margin-top: calc(var(--header-h) + 0.875rem); }
+
+/* ---- Previous / Next cards: soft shadows ----
+   The old hover stacked a 12px-offset/32px-blur layer on a 4px/10px one; on a
+   card this wide their two lower edges read as horizontal bands. Layers now
+   stay close to the card (negative spread tucks the offset ones underneath)
+   at low opacity, so the lift is a gentle, even glow rather than lines. */
+.page-nav {
+  --pn-drop:
+    0 1px 2px rgba(15, 35, 80, .04),
+    0 2px 8px -2px rgba(15, 35, 80, .05);
+  --pn-drop-hover:
+    0 1px 2px rgba(15, 35, 80, .04),
+    0 4px 12px -4px rgba(15, 35, 80, .07),
+    0 10px 24px -10px rgba(15, 35, 80, .09);
+}
+html[data-theme="dark"] .page-nav {
+  --pn-drop:
+    0 1px 2px rgba(0, 0, 0, .25),
+    0 2px 8px -2px rgba(0, 0, 0, .25);
+  --pn-drop-hover:
+    0 1px 2px rgba(0, 0, 0, .28),
+    0 4px 12px -4px rgba(0, 0, 0, .34),
+    0 10px 24px -10px rgba(0, 0, 0, .40);
+}
+
+/* ---- Previous / Next cards: slow, fluid hover ----
+   Overrides the global 90ms linear card transition above, which made the
+   lift snap. A soft ease-out over ~0.5s, a 2px rise and a gentler shadow
+   keep it subtle; pressing still answers instantly. */
+.page-nav a,
+.page-nav .pn-link {
+  transition:
+    transform .55s cubic-bezier(.22, .61, .36, 1),
+    box-shadow .55s cubic-bezier(.22, .61, .36, 1),
+    border-color .45s ease,
+    background-color .45s ease;
+}
+.page-nav a:hover,
+.page-nav a:focus-visible,
+.page-nav .pn-link:hover,
+.page-nav .pn-link:focus-visible {
+  transform: translateY(-2px);
+}
+html[data-theme="dark"] .page-nav a:hover,
+html[data-theme="dark"] .page-nav a:focus-visible,
+html[data-theme="dark"] .page-nav .pn-link:hover,
+html[data-theme="dark"] .page-nav .pn-link:focus-visible {
+  border-color: var(--accent-ring);
+}
+.page-nav a:active,
+.page-nav .pn-link:active {
+  transform: translateY(0);
+  transition-duration: .12s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-nav a,
+  .page-nav .pn-link { transition-duration: .01ms; }
+  .page-nav a:hover,
+  .page-nav .pn-link:hover { transform: none; }
+}
+
+/* ---- Question card open/close ----
+   Height is animated in portal.js (setupQuestionCardMotion). The chevron and
+   number badge ease on a matching curve so the header turns with the card
+   rather than flicking over in 90ms. */
+.q-card .q-chev {
+  transition: transform .4s cubic-bezier(.22, 1, .36, 1),
+              background-color .3s ease, border-color .3s ease, color .3s ease;
+}
+.q-card .q-no {
+  transition: background-color .3s ease, border-color .3s ease, color .3s ease;
+}
+.q-card { transition: border-color .3s ease, box-shadow .35s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .q-card .q-chev, .q-card .q-no, .q-card { transition-duration: .01ms; }
+}
+
+/* ---- Question-list filter bar ----
+   The list's search input sits inside the .toc-filter pill, but the generic
+   .search-wrap input rule also gave it its own border and focus glow - a
+   ring inside the ring. The pill alone carries the focus state. */
+.search-wrap .toc-filter input,
+.search-wrap .toc-filter input:focus {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+}
+.search-wrap .toc-filter input::-webkit-search-decoration { -webkit-appearance: none; }
+
+/* Expand all / Collapse all - same height and ground as the filter pill. */
+.q-expand-all {
+  flex: none;
+  display: inline-flex; align-items: center; gap: 0.375rem;
+  height: 1.875rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font: 600 0.75rem/1 var(--font-sans);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color .25s ease, background-color .25s ease, color .25s ease;
+}
+.q-expand-all svg { flex: none; transition: transform .35s cubic-bezier(.22, 1, .36, 1); }
+.q-expand-all:hover { border-color: var(--border-strong); background: var(--surface); color: var(--text); }
+.q-expand-all:hover svg { transform: scaleY(1.12); }
+.q-expand-all:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.q-expand-all[data-state="collapse"] { color: var(--accent); border-color: var(--accent-ring); }
+.q-expand-all:disabled { opacity: .5; cursor: default; }
+html[data-reading-size] .q-expand-all { font-size: calc(0.75rem * var(--reading-scale)); }
+@media (max-width: 980px) {
+  /* The search box hides here; the button keeps its natural width. */
+  .list-filter-bar .q-expand-all { order: 10; }
+}
+
+/* ---- Themed dropdown (IR.enhanceSelect) ----
+   Replaces the OS popup of a native <select> so the list follows the theme.
+   The real select stays underneath, visually hidden, as the value store. */
+.dd { position: relative; display: inline-flex; flex: none; }
+.dd-native {
+  position: absolute !important; inset: 0;
+  width: 1px !important; height: 1px !important;
+  opacity: 0; pointer-events: none;
+}
+.dd-btn {
+  display: inline-flex; align-items: center; gap: 0.625rem;
+  width: 100%;
+  height: 1.875rem;
+  padding: 0 0.625rem 0 0.75rem;   /* caret gets its own breathing room */
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--text);
+  font: 500 0.75rem/1 var(--font-sans);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color .25s ease, background-color .25s ease, box-shadow .25s ease;
+}
+.dd-value { flex: 1; text-align: left; }
+.dd-caret {
+  flex: none; color: var(--text-muted);
+  transition: transform .3s cubic-bezier(.22, 1, .36, 1), color .25s ease;
+}
+.dd-btn:hover { border-color: var(--border-strong); background: var(--surface); }
+.dd-btn:hover .dd-caret { color: var(--text-secondary); }
+.dd-btn:focus-visible,
+.dd.is-open .dd-btn {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--bg-elevated);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.dd.is-open .dd-caret { transform: rotate(180deg); color: var(--accent); }
+
+.dd-menu {
+  position: absolute; left: 0; top: calc(100% + 0.375rem);
+  z-index: 60;
+  min-width: 100%;
+  max-height: 16rem; overflow-y: auto;
+  margin: 0; padding: 0.25rem;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 0.625rem;
+  background: var(--bg-elevated);
+  box-shadow: 0 1px 2px rgba(15, 35, 80, .05), 0 8px 24px -8px rgba(15, 35, 80, .16);
+  opacity: 0; visibility: hidden;
+  transform: translateY(-4px) scale(.98);
+  transform-origin: top left;
+  transition: opacity .14s ease, transform .14s ease, visibility 0s linear .14s;
+}
+html[data-theme="dark"] .dd-menu {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 10px 28px -8px rgba(0, 0, 0, .6);
+}
+.dd-menu:focus { outline: none; }
+.dd.is-open .dd-menu {
+  opacity: 1; visibility: visible;
+  transform: none;
+  transition: opacity .2s ease, transform .24s cubic-bezier(.22, 1, .36, 1), visibility 0s;
+}
+.dd.dd-up .dd-menu { top: auto; bottom: calc(100% + 0.375rem); transform-origin: bottom left; }
+.dd.dd-up:not(.is-open) .dd-menu { transform: translateY(4px) scale(.98); }
+
+.dd-opt {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 0.4375rem 0.5rem 0.4375rem 0.625rem;
+  border-radius: 0.4375rem;
+  color: var(--text-secondary);
+  font: 500 0.75rem/1.3 var(--font-sans);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color .12s ease, color .12s ease;
+}
+.dd-opt.is-active { background: var(--surface); color: var(--text); }
+.dd-opt[aria-selected="true"] { color: var(--accent); font-weight: 600; }
+.dd-check { flex: none; opacity: 0; }
+.dd-opt[aria-selected="true"] .dd-check { opacity: 1; }
+
+html[data-reading-size] .dd-btn,
+html[data-reading-size] .dd-opt { font-size: calc(0.75rem * var(--reading-scale)); }
+
+/* Inline variant: sits inside a chip ("Round any"), so no box of its own. */
+.dd-inline .dd-btn {
+  height: auto; padding: 0; gap: 0.25rem;
+  border: 0; background: transparent; box-shadow: none;
+  color: inherit; font: inherit; font-weight: 700;
+}
+.dd-inline .dd-btn:hover { background: transparent; }
+.dd-inline .dd-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; box-shadow: none; }
+.dd-inline.is-open .dd-btn { box-shadow: none; }
+.dd-inline .dd-menu { left: -0.5rem; }
+
+@media (max-width: 980px) {
+  .list-filter-bar .dd { flex: 1 1 8rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dd-menu, .dd.is-open .dd-menu, .dd-caret { transition-duration: .01ms !important; }
+}
+
+/* Page intro and body paragraphs use the full reading column. The column
+   itself (.content) already carries the left/right padding and the width
+   chosen in Display, so a per-paragraph 86ch cap only left a ragged gap. */
+.content > p,
+.content > ul,
+.content > ol,
+.lede,
+.content .lede { max-width: none; }
+/* Justified is now the default alignment (Display > Left still available);
+   the lede joins the answer text in the justified set. */
+@media (min-width: 861px) {
+  html[data-reading-align="justify"] .lede,
+  html[data-reading-align="justify"] .q-why,
+  html[data-reading-align="justify"] .q-numbers p,
+  html[data-reading-align="justify"] .q-wrong p { text-align: justify; text-justify: inter-word; }
+}
+
+/* ---- Off-screen cards cost nothing ----
+   content-visibility lets the browser skip layout and paint for cards outside
+   the viewport. With 60+ cards (many holding diagrams), this is what keeps
+   Expand all, and each card's height animation, from re-laying out the whole
+   list every frame. "auto" in the intrinsic size remembers each card's real
+   height once it has rendered, so the scrollbar settles as you read. */
+.q-list > .q-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 5rem;
+}
+@media print {
+  .q-list > .q-card { content-visibility: visible; }
+}

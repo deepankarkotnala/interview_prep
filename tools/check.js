@@ -18,7 +18,7 @@ var IR = global.window.IR;
 var REQUIRED = ["id", "q", "round", "level", "tags",
                 "why", "simple", "say", "numbers", "wrong", "follow"];
 var SAY_MIN = 50;   // below this the answer is too thin to carry a point
-var SAY_MAX = 85;   // above this you cannot deliver it without reading
+var SAY_MAX = 170;  // about a minute of speech; above this you cannot deliver it without reading
 
 var problems = [];
 var ids = {};
@@ -65,6 +65,26 @@ IR.topics.forEach(function (t) {
       }
     }
 
+    /* Diagram: optional; when present it must be a spec the renderer can draw. */
+    if (c.diagram !== undefined) {
+      var d = c.diagram, need = { lanes: "lanes", compare: "columns", matrix: "cells", stack: "layers" };
+      if (d.kind && !need[d.kind]) problems.push(where + ": diagram kind \"" + d.kind + "\" is unknown");
+      else if (!Array.isArray(d[need[d.kind] || "rows"]) || !d[need[d.kind] || "rows"].length) problems.push(where + ": diagram has no " + (need[d.kind] || "rows"));
+      if (!d.alt && !d.caption) problems.push(where + ": diagram needs alt or caption text");
+    }
+
+    /* Quick recall: optional, but when present it must stay a glanceable list. */
+    if (c.quick !== undefined) {
+      if (!Array.isArray(c.quick) || c.quick.length < 3 || c.quick.length > 5) {
+        problems.push(where + ": quick must be 3–5 bullets");
+      } else {
+        c.quick.forEach(function (b, i) {
+          var w = String(b).trim().split(/\s+/).length;
+          if (w > 15) problems.push(where + ": quick bullet " + (i + 1) + " is " + w + " words (max 15)");
+        });
+      }
+    }
+
     (c.round || []).forEach(function (r) {
       if (!IR.rounds.some(function (x) { return x.key === r; })) {
         problems.push(where + ": unknown round \"" + r + "\"");
@@ -96,7 +116,8 @@ IR.topics.forEach(function (t) {
         (g.lanes || []).forEach(function (l, i) {
           if (!l.label) problems.push(gw + ": lane " + i + " has no label");
         });
-      } else {
+      } else if (!g.kind) {
+        /* Flow diagrams only - compare/matrix/stack are checked further down. */
         if (!g.rows || !g.rows.length) { problems.push(gw + ": no rows"); return; }
         var seen = {};
         g.rows.forEach(function (row, r) {

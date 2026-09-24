@@ -37,7 +37,8 @@ external URL, so the guarantee cannot quietly rot. (Pages in `topics/` do use
 ├── data/
 │   ├── topics.js              topic registry + round and level vocabulary
 │   ├── q-NN-slug.js           the questions
-│   └── tracks.js              employer tracks: framing + card ids, no questions
+│   ├── tracks.js              employer tracks: framing + card ids, no questions
+│   └── glossary.js            term -> 1-2 line definition, shown as hover tooltips
 ├── tools/check.js             content + standalone validator, exits non-zero on failure
 ├── PLAN.md                    the plan, tweaked from the original
 └── README.md
@@ -47,11 +48,12 @@ external URL, so the guarantee cannot quietly rot. (Pages in `topics/` do use
 
 | Topic | Cards |
 | --- | ---: |
+| 00 Jev: System-1 decision models | 5 |
 | 01 LLM foundations | 20 |
 | 02 Transformers and attention | 16 |
 | 03 Prompting and structured output | 13 |
 | 04 Embeddings and vector databases | 13 |
-| 05 RAG | 58 |
+| 05 RAG | 64 |
 | 06 Advanced RAG | 24 |
 | 07 Agents | 42 |
 | 08 LangChain | 12 |
@@ -66,14 +68,14 @@ external URL, so the guarantee cannot quietly rot. (Pages in `topics/` do use
 | 16 ML fundamentals | 42 |
 | 17 Python and the coding round | 34 |
 | 18 System design, project story, HR | 28 |
-| **Total** | **398** |
+| **Total** | **412** |
 
 Plus **5 employer tracks** in `data/tracks.js` - each naming its ten
 most-likely questions in priority order and one worked 40-minute scenario.
 A track owns no questions of its own; it points at cards by id, and
 `tools/check.js` fails the build if any id no longer exists.
 
-All 19 topics are live. Wave history is in `PLAN.md` §8.
+All 20 topics are live. Wave history is in `PLAN.md` §8.
 
 ### 2026 role-scope refresh
 
@@ -127,10 +129,11 @@ automatically.
   level:   "5-10",                        // key from IR.levels
   tags:    ["rag", "chunking"],
   why:     "What the interviewer is really testing. One line.",
+  quick:   ["3–5 plain bullets, 4–12 words each.", "No jargon - a cheat sheet to glance at."],
   simple:  "Plain language. Short sentences. One analogy allowed.\n\nBlank line = new paragraph.",
   points:  ["Optional bullets"],
   code:    "Optional snippet",
-  say:     "The 55–75 words you actually say out loud. No analogies here.",
+  say:     "The 110–150 words you actually say out loud - flowing, conversational, one for-instance.",
   numbers: "One real figure, or say plainly that none applies.",
   wrong:   "The answer a real candidate gives that loses the offer.",
   follow:  "The next question."
@@ -166,15 +169,16 @@ Exits non-zero on failure, so it can gate a commit. It checks the things that
 actually go wrong when adding questions:
 
 - an empty slot on any card
-- a `say` that has quietly grown past 85 words - too long to deliver in one breath
+- a `say` that has quietly grown past 170 words - more than about a minute of speech
+- a `quick` list that is not 3–5 bullets, or has a bullet over 15 words
 - a duplicate card id
 - a round or level outside the vocabulary in `data/topics.js`
 - a live topic with no page in `topics/`, or no data file
 - an "if you only have one evening" shortlist pointing at a card that does not exist
 - an employer track naming a card id that no longer exists
 
-It does not check prose quality. The 55–75 word target for `say` is a guide; the
-validator only fails outside 50–85, so a deliberately tight or full answer passes.
+It does not check prose quality. The 110–150 word target for `say` is a guide; the
+validator only fails outside 50–170, so a deliberately tight or full answer passes.
 
 ## The two voices
 
@@ -183,9 +187,25 @@ Each card is written in two registers on purpose.
 **`simple`** is the teaching voice. Everyday words, short sentences, at most one
 concrete analogy. Read this until the mechanism is obvious.
 
-**`say`** is the interview voice. 55–75 words, no analogies, nothing you would
-stumble over. An analogy in the room reads as evasion; in a tutorial it reads as
-clarity. Same fact, different register.
+**`say`** is the interview voice: 110–150 words, about a minute of natural, flowing
+speech. It opens with a full sentence that answers the question in its own words
+(never a bare "No."), gives every point its reason in the same sentence ("Firstly,
+the cost would be very high, because..."), links sentences the way people talk
+(firstly, so, that's why, as a result), includes one concrete "for instance" from
+real work, and ends on a natural closing sentence rather than a stock phrase.
+Examples yes, analogies no - an analogy in the room reads as evasion; in a tutorial
+it reads as clarity. Same fact, different register.
+
+The first mention of any term in `data/glossary.js` inside a `say` is underlined
+automatically and shows its definition on hover, focus or tap. To add a tooltip,
+add the term there - never mark up the answer text itself.
+
+Every question title also has a small copy button beside its priority pill.
+
+**`quick`** is the Quick recall list shown first in every card: 3–5 bullets of 4–12
+everyday words each, no jargon, no formatting - what you glance at a minute before
+the interview to remember the answer.
+**`diagram`** is an optional "Picture it" drawing in the answer, written as a small JSON spec (never raw SVG) and drawn by `assets/portal.js` in both themes, with a stacked phone layout. Five kinds: a flow (`rows` + `edges`), `lanes` (a sequence), `compare` (side-by-side options), `matrix` (a 2x2 or 3x3 grid) and `stack` (layers). Colours carry one meaning everywhere: `accent` green = the core path, `warn` amber = watch out or your decision, `bad` red = failure, `muted` dashed = optional. Keep to about 7 boxes, labels of 1-4 words, and a caption with the one thing to remember. `tools/check.js` validates every spec.
 
 ## Sourcing
 
