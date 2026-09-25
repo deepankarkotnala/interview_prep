@@ -2467,6 +2467,32 @@
         try { history.replaceState(null, "", "#" + target.id); } catch (err) {}
       });
     });
+    /* Mobile auto-hide: a downward scroll slides the "Jump to section / question" bar away,
+       and the first pixel of upward scroll brings it back. Near the top of the
+       page it always shows. The class only has an effect at <=980px (CSS). */
+    (function () {
+      var mq = window.matchMedia ? window.matchMedia("(max-width: 980px)") : null;
+      var lastY = Math.max(0, window.scrollY || 0), down = 0, ticking = false, hidden = false;
+      function setHidden(h) {
+        if (h === hidden) return;
+        hidden = h;
+        rail.classList.toggle("toc-rail-hidden", h);
+        if (h) { nav.classList.remove("toc-open"); if (tocToggle) tocToggle.setAttribute("aria-expanded", "false"); }
+      }
+      function evaluate() {
+        ticking = false;
+        var max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        var y = Math.min(max, Math.max(0, window.scrollY || 0)); /* ignore iOS overscroll bounce */
+        var delta = y - lastY;
+        lastY = y;
+        if (mq && !mq.matches) { down = 0; setHidden(false); return; }
+        if (y <= 80 || delta < 0) { down = 0; setHidden(false); return; }
+        if (delta > 0) { down += delta; if (down > 12) setHidden(true); }
+      }
+      window.addEventListener("scroll", function () {
+        if (!ticking) { ticking = true; window.requestAnimationFrame(evaluate); }
+      }, { passive: true });
+    })();
   }
 
   /* ---------- sidebar & rail resizers ---------- */

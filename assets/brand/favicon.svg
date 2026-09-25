@@ -12,16 +12,39 @@
       <stop offset="0" stop-color="#3b82f6"/>
       <stop offset="1" stop-color="#8fbcff"/>
     </linearGradient>
+    <linearGradient id="band" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#bcd3fb"/>
+      <stop offset="1" stop-color="#e3edff"/>
+    </linearGradient>
   </defs>
-  <!-- icon variant: no text, so it stays legible at 16-32 px -->
-  <path d="M424 184 L492 256 L424 328 Z" fill="url(#arrow)" stroke="url(#arrow)" stroke-width="14" stroke-linejoin="round"/>
-  <path d="M290 48 L408 70 Q452 78 452 124 L452 388 Q452 434 408 442 L290 464 Z" fill="url(#side)"/>
-  <path d="M30 92 Q30 46 76 42 L266 26 Q316 22 316 72 L316 440 Q316 490 266 486 L76 470 Q30 466 30 420 Z"
-        fill="url(#front)" stroke="#b4c8ee" stroke-width="3"/>
-  <!-- big microphone on the door -->
-  <g fill="none" stroke="#1e3a8a" stroke-width="22" stroke-linecap="round">
-    <rect x="136" y="112" width="70" height="138" rx="35" fill="#1e3a8a" stroke="none"/>
-    <path d="M104 208 a67 67 0 0 0 134 0"/>
-    <path d="M171 278 V332 M126 340 H216"/>
+
+  <!-- soft ground shadow -->
+  <ellipse cx="248" cy="486" rx="196" ry="14" fill="#0f2350" opacity=".12"/>
+
+  <!-- arrow out of the room -->
+  <path d="M432 192 L488 256 L432 320 Z" fill="url(#arrow)" stroke="url(#arrow)" stroke-width="10" stroke-linejoin="round"/>
+
+  <!-- side panel (the room) -->
+  <path d="M296 58 L404 78 Q444 86 444 128 L444 398 Q444 440 404 448 L296 468 Z" fill="url(#side)"/>
+  <rect x="318" y="126" width="104" height="276" rx="18" fill="#08142f" opacity=".45"/>
+
+  <!-- microphone -->
+  <g fill="none" stroke="#c9dcff" stroke-width="7" stroke-linecap="round">
+    <rect x="360" y="152" width="22" height="40" rx="11" fill="#c9dcff" stroke="none"/>
+    <path d="M349 180 a22 22 0 0 0 44 0"/>
+    <path d="M371 202 V216 M358 218 H384"/>
   </g>
+
+  <!-- conversation band -->
+  <rect x="300" y="236" width="150" height="58" rx="6" fill="url(#band)"/>
+  <path d="M328 248 h30 a8 8 0 0 1 8 8 v12 a8 8 0 0 1 -8 8 h-18 l-9 8 v-8 h-3 a8 8 0 0 1 -8 -8 v-12 a8 8 0 0 1 8 -8 z" fill="#1e3a8a"/>
+  <path d="M380 256 h30 a8 8 0 0 1 8 8 v12 a8 8 0 0 1 -8 8 h-3 v8 l-9 -8 h-18 a8 8 0 0 1 -8 -8 v-12 a8 8 0 0 1 8 -8 z" fill="#3b82f6"/>
+
+  <!-- front panel (the door) -->
+  <path d="M38 98 Q38 58 78 54 L270 38 Q314 34 314 78 L314 438 Q314 482 270 478 L78 462 Q38 458 38 418 Z"
+        fill="url(#front)" stroke="#b4c8ee" stroke-width="2"/>
+  <path d="M54 104 Q54 74 84 71 L100 70 L100 446 L84 445 Q54 442 54 412 Z" fill="#ffffff" opacity=".45"/>
+
+  <text x="62" y="252" font-family="Segoe UI, Inter, Helvetica, Arial, sans-serif" font-size="46" font-weight="800" fill="#0f2350" letter-spacing="-1">Interview</text>
+  <text x="62" y="306" font-family="Segoe UI, Inter, Helvetica, Arial, sans-serif" font-size="46" font-weight="500" fill="#1e3a8a" letter-spacing="-.5">Portal</text>
 </svg>

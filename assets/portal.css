@@ -3303,10 +3303,12 @@ strong { font-weight: 600; }
 }
 
 @media (max-width: 980px) {
+  /* Scroll-down slides the "Jump to" bar up under the topbar and fades it;
+     any scroll-up brings it straight back (portal.js). */
   .toc-rail {
-    transition: opacity 100ms linear !important;
+    transition: transform 220ms cubic-bezier(.2, .8, .2, 1), opacity 180ms ease !important;
   }
-  .toc-rail.toc-rail-hidden { transform: none; }
+  .toc-rail.toc-rail-hidden { transform: translateY(-110%); opacity: 0; pointer-events: none; }
   .toc-list {
     transform: none;
     transition: opacity 100ms linear, visibility 0s linear 100ms !important;
