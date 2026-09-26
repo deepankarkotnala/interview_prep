@@ -2452,9 +2452,23 @@ html[data-theme="dark"] .page-nav {
   background: transparent;
   transition: background 0.15s ease;
 }
-.sidebar-resizer:hover, body.resizing-left .left-resizer, body.resizing-right .right-resizer {
+/* The 10px strip is only the grab area and stays transparent. What shows on
+   hover / drag is a 2px hairline down its centre, on the panel edge. */
+.sidebar-resizer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
   background: var(--accent);
-  opacity: 0.5;
+  opacity: 0;
+  transform: translateX(-50%);
+  transition: opacity 0.15s ease;
+}
+.sidebar-resizer:hover::after, .sidebar-resizer:focus-visible::after,
+body.resizing-left .left-resizer::after, body.resizing-right .right-resizer::after {
+  opacity: 0.55;
 }
 .left-resizer {
   left: calc(var(--sidebar-track, var(--sidebar-w)) - 0.3125rem);
