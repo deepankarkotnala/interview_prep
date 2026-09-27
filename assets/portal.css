@@ -3364,7 +3364,7 @@ html { scroll-behavior: auto; }
   text-decoration-color: color-mix(in srgb, var(--excel) 70%, transparent);
   text-decoration-thickness: 1.5px;
   text-underline-offset: 3px;
-  cursor: help;
+  cursor: pointer;
   border-radius: 2px;
 }
 .term:hover { text-decoration-color: var(--excel); }
