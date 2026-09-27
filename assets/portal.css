@@ -173,6 +173,7 @@ html[data-theme="dark"] {
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   background: var(--bg);
 }
 html[data-theme="dark"] { color-scheme: dark; }
@@ -726,11 +727,11 @@ body:not(.focus-mode) .reader-popover [data-reader-width] button[data-value="ful
 .reader-segment button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 /* The size choices are the same letter at five sizes - the control shows what
    it does rather than naming it. */
-.reader-segment .sz-1 { font-size: 0.6875rem; }
-.reader-segment .sz-2 { font-size: 0.78125rem; }
+.reader-segment .sz-1 { font-size: 0.625rem; }
+.reader-segment .sz-2 { font-size: 0.75rem; }
 .reader-segment .sz-3 { font-size: 0.875rem; }
-.reader-segment .sz-4 { font-size: 0.96875rem; }
-.reader-segment .sz-5 { font-size: 1.0625rem; }
+.reader-segment .sz-4 { font-size: 1.0625rem; }
+.reader-segment .sz-5 { font-size: 1.25rem; }
 .reader-reset {
   width: 100%; height: 1.875rem; margin-top: 0.75rem;
   border: 1px solid var(--border); border-radius: 0.5rem;
@@ -780,11 +781,11 @@ html[data-reading-size="l"]  { --reading-scale: 1.28; }
 html[data-reading-size="xl"] { --reading-scale: 1.42; }
 
 @media (max-width: 860px) {
-  html[data-reading-size="xs"] { --reading-scale: .82; }
-  html[data-reading-size="s"]  { --reading-scale: .90; }
+  html[data-reading-size="xs"] { --reading-scale: .66; }
+  html[data-reading-size="s"]  { --reading-scale: .82; }
   html[data-reading-size="m"]  { --reading-scale: 1.00; }
-  html[data-reading-size="l"]  { --reading-scale: 1.12; }
-  html[data-reading-size="xl"] { --reading-scale: 1.24; }
+  html[data-reading-size="l"]  { --reading-scale: 1.18; }
+  html[data-reading-size="xl"] { --reading-scale: 1.40; }
 }
 
 html[data-reading-size] {
@@ -861,13 +862,13 @@ html[data-reading-size] .q-title { font-size: calc(0.90625rem * var(--reading-sc
 html[data-reading-size] .q-no    { font-size: calc(0.6875rem * var(--reading-scale)); }
 html[data-reading-size] .q-chev  { font-size: calc(0.75rem * var(--reading-scale)); }
 html[data-reading-size] .q-meta span   { font-size: calc(0.65625rem * var(--reading-scale)); }
-html[data-reading-size] .slot-label    { font-size: calc(0.5625rem * var(--reading-scale)); }
+html[data-reading-size] .slot-label    { font-size: max(0.4375rem, calc(0.5625rem * var(--reading-scale))); }
 html[data-reading-size] .q-why         { font-size: var(--fs-base); }
 html[data-reading-size] .q-numbers,
 html[data-reading-size] .q-wrong,
 html[data-reading-size] .q-follow      { font-size: var(--fs-base); }
 html[data-reading-size] .q-follow-answer p { font-size: var(--fs-base); }
-html[data-reading-size] .slot-label-ans { font-size: calc(0.5625rem * var(--reading-scale)); }
+html[data-reading-size] .slot-label-ans { font-size: max(0.4375rem, calc(0.5625rem * var(--reading-scale))); }
 html[data-reading-size] .q-follow-toggle { font-size: calc(0.6875rem * var(--reading-scale)); }
 html[data-reading-size] .q-empty       { font-size: var(--fs-base); }
 html[data-reading-size] .note          { font-size: var(--fs-base); }
@@ -913,23 +914,12 @@ html[data-reading-width="default"] .content { max-width: 65rem; }
 html[data-reading-width="wide"] .content,
 html[data-reading-width="full"] body:not(.focus-mode) .content { max-width: 82.5rem; }
 
-/* Ragged-right is the default; justification is opt-in on desktop only. */
-@media (min-width: 861px) {
-  html[data-reading-align="justify"] .content > p,
-  html[data-reading-align="justify"] .content > ul li,
-  html[data-reading-align="justify"] .content .lede,
-  html[data-reading-align="justify"] .q-simple p,
-  html[data-reading-align="justify"] .q-say p { text-align: justify; text-justify: inter-word; }
-}
-
-@media (max-width: 860px) {
-  html[data-reading-align="justify"] .content p,
-  html[data-reading-align="justify"] .content li,
-  .content, .content p, .content li, .q-simple p, .q-say p, .card p, .tile p {
-    text-align: left !important;
-    text-justify: auto !important;
-  }
-}
+/* Ragged-right is the default; justification is opt-in on all viewports. */
+html[data-reading-align="justify"] .content > p,
+html[data-reading-align="justify"] .content > ul li,
+html[data-reading-align="justify"] .content .lede,
+html[data-reading-align="justify"] .q-simple p,
+html[data-reading-align="justify"] .q-say p { text-align: justify; text-justify: inter-word; }
 
 /* Visible to screen readers only - used for the Display panel's live region. */
 .sr-only {
@@ -1644,10 +1634,6 @@ tr:last-child td { border-bottom: 0; }
   :root {
     /* Touch targets drive the height here, not density. */
     --header-h: 3.125rem;
-    --fs-base: 0.90625rem;
-    --fs-h1: clamp(1.5rem, 6.1vw, 1.875rem);
-    --fs-h2: 1.21875rem;
-    --fs-h3: 0.9375rem;
     /* Density scaling is a desktop measure - it buys back screen on a wide
        canvas. A drawer is already sized as a fraction of the viewport, so
        shrinking it again only makes the tap targets smaller. Setting the
@@ -3798,12 +3784,10 @@ html[data-reading-size] .dd-opt { font-size: calc(0.75rem * var(--reading-scale)
 .content .lede { max-width: none; }
 /* Justified is now the default alignment (Display > Left still available);
    the lede joins the answer text in the justified set. */
-@media (min-width: 861px) {
-  html[data-reading-align="justify"] .lede,
-  html[data-reading-align="justify"] .q-why,
-  html[data-reading-align="justify"] .q-numbers p,
-  html[data-reading-align="justify"] .q-wrong p { text-align: justify; text-justify: inter-word; }
-}
+html[data-reading-align="justify"] .lede,
+html[data-reading-align="justify"] .q-why,
+html[data-reading-align="justify"] .q-numbers p,
+html[data-reading-align="justify"] .q-wrong p { text-align: justify; text-justify: inter-word; }
 
 /* ---- Off-screen cards cost nothing ----
    content-visibility lets the browser skip layout and paint for cards outside
