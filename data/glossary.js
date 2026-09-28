@@ -37,8 +37,6 @@ window.IR.glossary = {
   "context engineering": "Deciding exactly what information goes into the model's context for each step - and what stays out.",
   "system prompt": "The fixed instructions sent before the user's message that set the model's role, rules and format.",
 
-  "System-1|System 1": "Fast, instinctive decision-making (from psychology), as opposed to System 2: slow, step-by-step reasoning. A System-1 model like Jev returns quick typed decisions; an LLM is System 2.",
-  "RLCD": "Reinforcement Learning for Calibrated Decisions: TypeSafe AI's training method that rewards answers whose confidence matches how often they are right.",
 
   /* ---------- Transformers ---------- */
   "transformer": "The neural network architecture behind modern LLMs, built around attention.",
