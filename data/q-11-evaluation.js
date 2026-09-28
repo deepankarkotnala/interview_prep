@@ -939,7 +939,7 @@ window.IR.q["11-evaluation"] = {
       "points": [
         "Grade the environment outcome, not only what the agent claims in its final message.",
         "Keep the full trace or trajectory: model turns, tool calls, arguments, intermediate results and state changes.",
-        "Use deterministic graders where possible, model graders for nuance, and humans for calibration and high-value review.",
+        "Use deterministic graders where possible, model graders for subtle judgements, and humans for calibration and high-value review.",
         "Track efficiency too: turns, tool calls, tokens, latency and cost.",
         "Run multiple trials for important non-deterministic tasks.",
         "Turn solved capability cases and production failures into regression tests."
@@ -1026,7 +1026,7 @@ window.IR.q["11-evaluation"] = {
         "safety",
         "process"
       ],
-      "why": "Increasingly a named requirement in enterprise and BFSI JDs, and most candidates conflate it with ordinary testing.",
+      "why": "Increasingly a named requirement in enterprise and BFSI JDs, and most candidates mix it up with ordinary testing.",
       "quick": [
         "A red team tests what happens when someone tries to break it.",
         "Cover tricking it, leaking data, and dangerous agent actions.",
@@ -1072,7 +1072,7 @@ window.IR.q["11-evaluation"] = {
         "Measure extra steps and cost, but do not fail them.",
         "Exact path checks only suit narrow protocol tests."
       ],
-      "simple": "When an agent reaches the right outcome through a different tool path, it is usually not a failure. There is often more than one valid way to finish a task, so you grade the result and the rules that truly matter, not your favourite route.\n\nIt helps to grade in three layers. First the outcome: did the right change happen, and did the user get the right answer? Then the hard rules, where breaking one is a fail even if the outcome looks right. For example, a refund agent must verify identity before refunding and get approval before anything destructive, whatever order it does the rest in. Last comes efficiency, meaning extra tool calls, turns and tokens, which you measure but don't fail a correct run for.\n\nExact path matching only makes sense when the sequence is genuinely part of the contract. Otherwise it is too brittle, because it punishes valid alternatives.",
+      "simple": "When an agent reaches the right outcome through a different tool path, it is usually not a failure. There is often more than one valid way to finish a task, so you grade the result and the rules that truly matter, not your favourite route.\n\nIt helps to grade in three layers. First the outcome: did the right change happen, and did the user get the right answer? Then the hard rules, where breaking one is a fail even if the outcome looks right. For example, a refund agent must verify identity before refunding and get approval before anything destructive, whatever order it does the rest in. Last comes efficiency, meaning extra tool calls, turns and tokens, which you measure but don't fail a correct run for.\n\nExact path matching only makes sense when the sequence is genuinely part of the contract. Otherwise it is too strict, because it punishes valid alternatives.",
       "points": [
         "Prefer outcome checks over exact path matching.",
         "Hard-fail safety and business invariants such as approval, identity and permission rules.",
@@ -1102,7 +1102,7 @@ window.IR.q["11-evaluation"] = {
         ],
         "caption": "**Grade the destination and the traffic rules, not the route.** A different valid tool path is fine; breaking a hard rule is a fail."
       },
-      "say": "Usually not. I grade the result and the rules that truly matter, not my favourite route. There's often more than one valid way to finish a task, so I grade in three layers. The outcome comes first. Did the right change happen, and did the user get the right answer? Then the hard rules, where breaking one is a fail even if the outcome looks right. A refund agent must verify identity before refunding and get approval before anything destructive, whatever order it does the rest in. Last is efficiency, meaning extra tool calls, turns and tokens. I measure those so waste stays visible, but I don't fail a correct run for them. Exact path matching still makes sense for a narrow protocol test where the sequence is part of the contract. For measuring whether an agent can actually do the job, it's too brittle, because it punishes valid alternatives.",
+      "say": "Usually not. I grade the result and the rules that truly matter, not my favourite route. There's often more than one valid way to finish a task, so I grade in three layers. The outcome comes first. Did the right change happen, and did the user get the right answer? Then the hard rules, where breaking one is a fail even if the outcome looks right. A refund agent must verify identity before refunding and get approval before anything destructive, whatever order it does the rest in. Last is efficiency, meaning extra tool calls, turns and tokens. I measure those so waste stays visible, but I don't fail a correct run for them. Exact path matching still makes sense for a narrow protocol test where the sequence is part of the contract. For measuring whether an agent can actually do the job, it's too strict, because it punishes valid alternatives.",
       "numbers": "Track efficiency distributions such as median and p95 turns or tool calls rather than one magic maximum, then set hard limits only where cost, latency or safety requires them.",
       "wrong": "Failing every run that differs from the reference trace. That teaches the evaluation to prefer one implementation rather than measuring whether the agent solved the task safely and correctly.",
       "follow": "Which tool calls would you make mandatory in a refund-agent evaluation?",

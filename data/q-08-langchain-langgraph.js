@@ -117,7 +117,7 @@ window.IR.q["08-langchain-langgraph"] = {
       "simple": "A checkpointer saves the graph state after every node, keyed by a thread id. In memory for development, and in Postgres or Redis for production.\n\nIt sounds like a logging detail. It is actually what enables four things you cannot build without it.\n\nConversation memory across requests - the next message on the same thread resumes with all previous state, without you managing history yourself.\n\nHuman in the loop - a node can call `interrupt()`, return control to the application, and resume hours later when the approval arrives, because the state is durable.\n\nFault recovery - if a node crashes, you resume from the last checkpoint instead of re-running the whole expensive chain.\n\nTime travel - rewind to an earlier checkpoint and re-run from there with different input, which is the most useful debugging tool the framework has.",
       "points": [
         "Saves state after every node, keyed by thread id.",
-        "Cross-request memory without hand-rolled history.",
+        "Cross-request memory without writing your own history code.",
         "`interrupt()` plus durable state = human approval that can wait hours.",
         "Resume after a crash from the last node, not from the start.",
         "Time travel: rewind to a checkpoint and replay with different input.",
@@ -164,7 +164,7 @@ window.IR.q["08-langchain-langgraph"] = {
         "latency"
       ],
       "why": "Streaming is a hard requirement for chat UX and a real source of bugs, so it is a good discriminator.",
-      "simple": "There are two different things you might stream, and mixing them up is where the bugs come from.\n\nStreaming tokens means the words of the final answer appear as they are generated. That is what users think of as streaming, and it is what makes a five-second response feel acceptable.\n\nStreaming state means you emit an update after each node - \"searching documents\", \"reading three sources\", \"drafting\". For an agent, that is arguably more valuable, because during a long tool call there are no tokens at all, and a silent UI feels broken.\n\nA good agent UI does both: progress events for the loop, token streaming for the final answer.\n\nThe practical trap: anything that needs the whole output cannot stream. A structured-output parser that must see complete JSON will buffer everything. So if you promised streaming and your last node validates JSON, you have a design conflict to resolve, usually by streaming a summary field separately from the structured payload.",
+      "simple": "There are two different things you might stream, and mixing them up is where the bugs come from.\n\nStreaming tokens means the words of the final answer appear as they are generated. That is what users think of as streaming, and it is what makes a five-second response feel acceptable.\n\nStreaming state means you emit an update after each node - \"searching documents\", \"reading three sources\", \"drafting\". For an agent, that is probably even more valuable, because during a long tool call there are no tokens at all, and a silent UI feels broken.\n\nA good agent UI does both: progress events for the loop, token streaming for the final answer.\n\nThe practical trap: anything that needs the whole output cannot stream. A structured-output parser that must see complete JSON will buffer everything. So if you promised streaming and your last node validates JSON, you have a design conflict to resolve, usually by streaming a summary field separately from the structured payload.",
       "points": [
         "`stream_mode=\"messages\"` - tokens of the final answer.",
         "`stream_mode=\"updates\"` - one event per node, for progress UI.",
@@ -287,7 +287,7 @@ window.IR.q["08-langchain-langgraph"] = {
       ],
       "say": "When the abstraction costs more than it saves. A single prompt and one call does not need a dependency tree. Latency-critical paths do not want indirection. And if I need a provider feature the wrapper has not exposed, or debugging keeps taking me three layers into library internals, that is the signal. The split I usually end up with is the framework for orchestration and tracing, direct calls in the hot path.",
       "numbers": "No number applies. This answer is judged on whether the reasoning is concrete.",
-      "wrong": "\"LangChain is bloated, I always call the API directly.\" Equally unhelpful in the other direction. You then have to explain why you rebuilt checkpointing and tracing yourself.",
+      "wrong": "\"LangChain is too heavy, I always call the API directly.\" Equally unhelpful in the other direction. You then have to explain why you rebuilt checkpointing and tracing yourself.",
       "follow": "You dropped it in the hot path. What did you have to rebuild?"
     },
     {

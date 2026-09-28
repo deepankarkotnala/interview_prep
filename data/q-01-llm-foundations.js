@@ -238,7 +238,7 @@ window.IR.q["01-llm-foundations"] = {
         "Use low randomness for extraction, higher for drafting.",
         "Even the lowest setting can vary, so design for it."
       ],
-      "simple": "Two different answers to the same prompt are normal, because generation is sampling. At each step the model produces a probability for every possible next token, and a sampling step draws one. Since it is a draw, two runs can legitimately take different paths.\n\nTemperature controls how spread out those probabilities are. Low temperature sharpens them, so the top token nearly always wins and output repeats, while high temperature flattens them so output varies. Top-p is a separate knob that samples only from the smallest set of tokens whose probabilities add up to p. Common settings are near zero for extraction and around 0.7 for drafting.\n\nBut temperature zero is near-deterministic, not guaranteed, because GPU arithmetic, batching and model updates cause drift. For example, a test checking the exact wording of a classification can start failing now and then in CI. So you design for some variation rather than assume it away.",
+      "simple": "Two different answers to the same prompt are normal, because generation is sampling. At each step the model produces a probability for every possible next token, and a sampling step draws one. Since it is a draw, two runs can legitimately take different paths.\n\nTemperature controls how spread out those probabilities are. Low temperature sharpens them, so the top token nearly always wins and output repeats, while high temperature flattens them so output varies. Top-p is a separate setting that samples only from the smallest set of tokens whose probabilities add up to p. Common settings are near zero for extraction and around 0.7 for drafting.\n\nBut temperature zero is near-deterministic, not guaranteed, because GPU arithmetic, batching and model updates cause drift. For example, a test checking the exact wording of a classification can start failing now and then in CI. So you design for some variation rather than assume it away.",
       "points": [
         "Generation is sampling from a distribution, one token at a time.",
         "Temperature flattens or sharpens that distribution before sampling.",
@@ -275,7 +275,7 @@ window.IR.q["01-llm-foundations"] = {
           }
         ]
       },
-      "say": "Generation is sampling, so two runs of the same prompt can legitimately take different paths. At each step the model doesn't pick a word. It produces a probability for every possible next token, and a sampling step draws one. Temperature decides how spread out those probabilities are before the draw. Low temperature sharpens them, so the top token nearly always wins and output repeats. Higher temperature flattens them, so less likely tokens get a real chance and output varies. Top-p is a separate knob that keeps only the smallest set of likely tokens whose probabilities add up to p, and samples from those. My defaults are close to zero for extraction and classification, and around 0.7 for drafting. The thing juniors miss is that temperature zero is near-deterministic, not guaranteed. GPU arithmetic, batching and provider-side model updates still cause drift, which is how a test starts failing intermittently in CI. So I design for some variation rather than assume it away.",
+      "say": "Generation is sampling, so two runs of the same prompt can legitimately take different paths. At each step the model doesn't pick a word. It produces a probability for every possible next token, and a sampling step draws one. Temperature decides how spread out those probabilities are before the draw. Low temperature sharpens them, so the top token nearly always wins and output repeats. Higher temperature flattens them, so less likely tokens get a real chance and output varies. Top-p is a separate setting that keeps only the smallest set of likely tokens whose probabilities add up to p, and samples from those. My defaults are close to zero for extraction and classification, and around 0.7 for drafting. The thing juniors miss is that temperature zero is near-deterministic, not guaranteed. GPU arithmetic, batching and provider-side model updates still cause drift, which is how a test starts failing intermittently in CI. So I design for some variation rather than assume it away.",
       "numbers": "Common settings: 0–0.2 for extraction, classification and structured output; 0.7 for drafting and ideation. Set it explicitly - provider defaults differ, and some reasoning models do not accept a temperature setting at all.",
       "wrong": "\"Temperature 0 makes it deterministic.\" Nearly true, and the exception is exactly what bites you when the same test starts failing intermittently in CI.",
       "follow": "You need reproducible outputs for an audit. How do you get as close as possible?",
@@ -303,7 +303,7 @@ window.IR.q["01-llm-foundations"] = {
         "Top-p keeps likely words up to a set total, so it adapts.",
         "Tune only one, and leave the other at default."
       ],
-      "simple": "All three settings change the model's next-token probabilities before a token is picked. The model gives every token a raw score, called a logit, and softmax turns those scores into probabilities. Temperature reshapes those odds, while top-k and top-p cut off the unlikely tail.\n\nTemperature divides the logits before softmax. Below one, the top token dominates, and above one, unlikely tokens get a real chance. Top-k keeps a fixed number of candidates, say fifty, whether the model is sure or confused, so it is blunt. Top-p keeps the smallest set of tokens whose probabilities add up to p. For example, when the model is confident that set might be two tokens, and when it is unsure it might be forty. That adaptivity is why top-p largely replaced top-k. In practice you tune one knob and leave the other at its default, because they interact confusingly.",
+      "simple": "All three settings change the model's next-token probabilities before a token is picked. The model gives every token a raw score, called a logit, and softmax turns those scores into probabilities. Temperature reshapes those odds, while top-k and top-p cut off the unlikely tail.\n\nTemperature divides the logits before softmax. Below one, the top token dominates, and above one, unlikely tokens get a real chance. Top-k keeps a fixed number of candidates, say fifty, whether the model is sure or confused, so it is blunt. Top-p keeps the smallest set of tokens whose probabilities add up to p. For example, when the model is confident that set might be two tokens, and when it is unsure it might be forty. That adaptivity is why top-p largely replaced top-k. In practice you tune one setting and leave the other at its default, because they interact confusingly.",
       "points": [
         "Temperature rescales logits before softmax - sharpens or flattens.",
         "Top-k keeps a fixed number of candidates regardless of confidence.",
@@ -311,7 +311,7 @@ window.IR.q["01-llm-foundations"] = {
         "Top-p is adaptive to model confidence, which is why it won.",
         "Tune one, not both - they interact confusingly."
       ],
-      "say": "All three reshape the next-token distribution before a token is drawn. Temperature changes the odds, while top-k and top-p cut off the tail. The model gives every token in its vocabulary a raw score called a logit, and softmax turns those scores into probabilities. Temperature divides the logits before softmax. Below one, the gaps widen and the top token dominates. Above one, they shrink and unlikely tokens get a chance. At zero you just take the top token, which is greedy decoding. Top-k keeps a fixed number of candidates, say fifty, whether the model is sure or confused, so it's blunt. Top-p keeps the smallest set whose probabilities add up to p. When the model is confident that might be two tokens, and when it's unsure it might be forty. That adaptivity is why top-p largely replaced top-k. In practice I tune one knob and leave the other at its default, because they interact confusingly. Some newer APIs refuse both at once, and many reasoning models accept neither.",
+      "say": "All three reshape the next-token distribution before a token is drawn. Temperature changes the odds, while top-k and top-p cut off the tail. The model gives every token in its vocabulary a raw score called a logit, and softmax turns those scores into probabilities. Temperature divides the logits before softmax. Below one, the gaps widen and the top token dominates. Above one, they shrink and unlikely tokens get a chance. At zero you just take the top token, which is greedy decoding. Top-k keeps a fixed number of candidates, say fifty, whether the model is sure or confused, so it's blunt. Top-p keeps the smallest set whose probabilities add up to p. When the model is confident that might be two tokens, and when it's unsure it might be forty. That adaptivity is why top-p largely replaced top-k. In practice I tune one setting and leave the other at its default, because they interact confusingly. Some newer APIs refuse both at once, and many reasoning models accept neither.",
       "numbers": "Temperature 0 for extraction, classification and structured output. Around 0.7 with top-p 0.9 is a common creative default. Tuning both at once makes behaviour hard to reason about.",
       "wrong": "'Temperature controls creativity.' It describes the effect and not the mechanism, and the follow-up - how is top-p different? - needs the mechanism.",
       "follow": "You need deterministic JSON extraction. What do you set, and is that enough?",
@@ -474,21 +474,21 @@ window.IR.q["01-llm-foundations"] = {
         "Just asking for JSON in the prompt fails at scale.",
         "Use the provider's strict output mode that enforces your format.",
         "Still check every field, since valid does not mean correct.",
-        "Retry once with the error, then fail gracefully.",
+        "Retry once with the error, then fail safely.",
         "Log every failure, since a rising rate signals a change."
       ],
-      "simple": "Every real system has to parse what the model returns, and this is where demos often break. Just asking for JSON in the prompt works most of the time, but failures show up at scale: markdown fences, a trailing comma or a friendly sentence before the brace. For example, at 10,000 requests a day, a 1% failure rate means 100 broken responses every day.\n\nThe better approach is structured outputs, or schema-constrained decoding, which restricts the tokens the model may emit so the output matches your schema by construction. You still validate with something like Pydantic, because valid JSON is not correct JSON, and flat, simple schemas fail less often.\n\nFinally, you need a fallback. Retry once with the validation error fed back, then fail gracefully rather than retrying forever, and log every parse failure so a rising rate warns you of a change.",
+      "simple": "Every real system has to parse what the model returns, and this is where demos often break. Just asking for JSON in the prompt works most of the time, but failures show up at scale: markdown fences, a trailing comma or a friendly sentence before the brace. For example, at 10,000 requests a day, a 1% failure rate means 100 broken responses every day.\n\nThe better approach is structured outputs, or schema-constrained decoding, which restricts the tokens the model may emit so the output matches your schema by construction. You still validate with something like Pydantic, because valid JSON is not correct JSON, and flat, simple schemas fail less often.\n\nFinally, you need a fallback. Retry once with the validation error fed back, then fail safely rather than retrying forever, and log every parse failure so a rising rate warns you of a change.",
       "points": [
         "Prompt-and-parse is the weakest option. It fails at scale, not in testing.",
         "Use schema-constrained structured outputs, or tool calling with strict schemas; plain JSON mode does not enforce your schema.",
         "Validate with Pydantic regardless. Valid is not correct.",
-        "Retry once with the error message, then fail gracefully.",
+        "Retry once with the error message, then fail safely.",
         "Keep schemas flat and simple. Deep nesting raises the failure rate.",
         "Log every parse failure - a rising rate often signals a model, prompt or input change."
       ],
       "diagram": {
-        "alt": "The model generates schema-constrained output, which is validated with Pydantic; if valid it is used, and if invalid it retries once with the error, then fails gracefully.",
-        "caption": "**Constrain, then validate anyway.** Schema-constrained output beats prompt-and-parse, but valid is not correct: retry once with the error, then fail gracefully.",
+        "alt": "The model generates schema-constrained output, which is validated with Pydantic; if valid it is used, and if invalid it retries once with the error, then fails safely.",
+        "caption": "**Constrain, then validate anyway.** Schema-constrained output beats prompt-and-parse, but valid is not correct: retry once with the error, then fail safely.",
         "rows": [
           [
             {
@@ -522,7 +522,7 @@ window.IR.q["01-llm-foundations"] = {
           [
             {
               "id": "f",
-              "label": "Fail gracefully",
+              "label": "Fail safely",
               "note": "and log it",
               "accent": "bad"
             }
@@ -550,7 +550,7 @@ window.IR.q["01-llm-foundations"] = {
           }
         ]
       },
-      "say": "Use the provider's schema-constrained output, then validate in code anyway. Asking for JSON in the prompt and parsing whatever comes back works most of the time, and that's exactly the problem. At scale you get markdown fences, trailing commas and a chatty sentence before the opening brace. At ten thousand requests a day, a one percent failure rate is a hundred broken responses. Structured outputs, or tool calling with strict schemas switched on, restrict which tokens the model can emit, so the output matches the schema by construction. Plain JSON mode only promises valid JSON, not your schema. Even strict modes can stop early on a token limit or a refusal, so I still validate with Pydantic, because valid JSON can hold nonsense in a field. If validation fails, I retry once with the error fed back, then fail gracefully. A model that fails twice rarely succeeds on the fifth try. And I log every parse failure, because a rising rate usually means a model, prompt or input change.",
+      "say": "Use the provider's schema-constrained output, then validate in code anyway. Asking for JSON in the prompt and parsing whatever comes back works most of the time, and that's exactly the problem. At scale you get markdown fences, trailing commas and a chatty sentence before the opening brace. At ten thousand requests a day, a one percent failure rate is a hundred broken responses. Structured outputs, or tool calling with strict schemas switched on, restrict which tokens the model can emit, so the output matches the schema by construction. Plain JSON mode only promises valid JSON, not your schema. Even strict modes can stop early on a token limit or a refusal, so I still validate with Pydantic, because valid JSON can hold nonsense in a field. If validation fails, I retry once with the error fed back, then fail safely. A model that fails twice rarely succeeds on the fifth try. And I log every parse failure, because a rising rate usually means a model, prompt or input change.",
       "numbers": "Prompt-and-parse commonly fails a small but non-zero share of requests. At 10,000 requests a day even 1% is 100 broken responses - which is why schema-constrained output or tool calling should be the default for anything parsed at volume.",
       "wrong": "\"I ask for JSON and it works.\" It works in the notebook. The panel is asking about the tail - fences, trailing commas, truncation - and the follow-up will ask what happens to the 1% that fails.",
       "follow": "Your JSON is valid but a field contains a hallucinated ID. Now what?",
@@ -818,7 +818,7 @@ window.IR.q["01-llm-foundations"] = {
         "latency",
         "caching"
       ],
-      "why": "A direct cost lever that most candidates know exists and cannot say how to exploit.",
+      "why": "A direct way to cut cost that most candidates know exists and cannot say how to exploit.",
       "quick": [
         "The provider reuses work on a repeated start of the prompt.",
         "Reused text costs much less and answers start sooner.",
@@ -892,7 +892,7 @@ window.IR.q["01-llm-foundations"] = {
         "serving",
         "cost"
       ],
-      "why": "The main lever for self-hosting on affordable hardware, and the quality trade is what gets probed.",
+      "why": "The main technique for self-hosting on affordable hardware, and the quality trade is what gets probed.",
       "quick": [
         "Quantisation stores each weight with fewer bits.",
         "The model shrinks and needs much less GPU memory.",

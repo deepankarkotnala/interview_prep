@@ -281,7 +281,7 @@ window.IR.q["17-python-coding"] = {
     },
     {
       "id": "py-33",
-      "q": "List vs tuple vs set vs dict - when do you use each, and what are the mutability gotchas?",
+      "q": "List vs tuple vs set vs dict - when do you use each, and what are the mutability traps?",
       "round": [
         "screening",
         "tech1"
@@ -312,7 +312,7 @@ window.IR.q["17-python-coding"] = {
         "`[[]] * 3` and `b = a` alias; use a comprehension or `copy.deepcopy`.",
         "Dataclasses: `field(default_factory=list)` for mutable defaults."
       ],
-      "say": "I pick by what I need to do with the data. A list is ordered and changeable, which suits retrieved chunks, but a membership check scans every item, so it's O of n and gets slow on big lists. A tuple is fixed, so it fits records like a document id and score, and because it's hashable when its contents are, it can be a dict key. A set holds unique items with O of one average membership, ideal for deduplication and seen-checks. A dict gives fast lookup by key and has kept insertion order since 3.7. The gotcha I always raise is a mutable default argument. A default history list is created once, when the function is defined, so every call shares it and conversation history leaks between users. I default to None and create the list inside, or use default_factory in a dataclass. The related trap is aliasing. Assigning b equals a, or multiplying a nested list, copies nothing.",
+      "say": "I pick by what I need to do with the data. A list is ordered and changeable, which suits retrieved chunks, but a membership check scans every item, so it's O of n and gets slow on big lists. A tuple is fixed, so it fits records like a document id and score, and because it's hashable when its contents are, it can be a dict key. A set holds unique items with O of one average membership, ideal for deduplication and seen-checks. A dict gives fast lookup by key and has kept insertion order since 3.7. The trap I always raise is a mutable default argument. A default history list is created once, when the function is defined, so every call shares it and conversation history leaks between users. I default to None and create the list inside, or use default_factory in a dataclass. The related trap is aliasing. Assigning b equals a, or multiplying a nested list, copies nothing.",
       "numbers": "Membership in a list is O(n); in a set or dict it is O(1) on average. In a quick check, 10,000 lookups against a 100,000-item list took several seconds; against a set, about a millisecond.",
       "wrong": "\"Tuples are just faster lists.\" The real difference is immutability and hashability. And missing the mutable-default bug suggests you have never debugged shared state in a long-running service.",
       "follow": "Why can a tuple be a dict key but a list cannot?",
@@ -1675,7 +1675,7 @@ window.IR.q["17-python-coding"] = {
         "caption": "Vectorising and argpartition are **constant-factor wins**. Only an **index that skips most vectors** beats O(n), traded against measured recall."
       },
       "say": "I'd go in order of payoff, but only an index actually beats O of n. The biggest cost is the Python loop, so I vectorise first. I normalise vectors when they're stored, and scoring becomes one matrix-vector product, often around a hundred times faster. Next, I use argpartition to pick the top five instead of sorting two million scores. Both are constant-factor wins, though. Every query still touches every vector, and two million 768-dimension float32 vectors is about six gigabytes. To change the complexity I need an approximate nearest-neighbour index like HNSW, a graph that hops between close neighbours and searches in roughly logarithmic time. Approximate means it can miss a true neighbour. It typically holds recall above ninety-five percent, but I tune its ef setting against a measured recall target rather than guessing. I'd also fix the crash in the original, where a tied score makes sort compare document objects and raise a TypeError.",
-      "numbers": "Two million 768-dimension vectors is about 6 GB in float32. HNSW typically holds 95%+ recall at a fraction of the latency; ef is the knob that trades one for the other.",
+      "numbers": "Two million 768-dimension vectors is about 6 GB in float32. HNSW typically holds 95%+ recall at a fraction of the latency; ef is the setting that trades one for the other.",
       "wrong": "Jumping straight to 'use a vector database' without the arithmetic. It is often right, but stated without cost or recall it sounds like a memorised answer rather than a decision.",
       "follow": "Recall dropped to 85% and the product team noticed. What do you change?",
       "followAnswer": "First I confirm it against exact search on a labelled query set, so I know the index is the cause, not the embeddings or the data. Then I raise ef at query time, which buys recall with latency, and check p95. If that is not enough, I rebuild with a higher M or ef_construction, or fetch more candidates and rerank them exactly. I pick the setting that meets both targets."

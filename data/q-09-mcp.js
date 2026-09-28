@@ -101,7 +101,7 @@ window.IR.q["09-mcp"] = {
         "It pays off when many apps share the same tools.",
         "For one app and one service, call the API directly."
       ],
-      "simple": "You can always call an API directly, so the real question is when MCP adds something. With a direct integration, your application knows the endpoint and the request and response shapes in code, so it is one custom connection per service. With MCP, the client can list any server's tools in a common, model-friendly format, so the host doesn't need a bespoke adapter for every server.\n\nThe payoff comes with reuse. For example, if three teams' agents all need the ticket system, one MCP server serves all of them instead of three separate integrations. But for one service and one application you control end to end, a normal API call is often simpler, because MCP adds a server to deploy, secure and version. Either way, keeping the tool logic in plain functions makes wrapping them as a server cheap later.",
+      "simple": "You can always call an API directly, so the real question is when MCP adds something. With a direct integration, your application knows the endpoint and the request and response shapes in code, so it is one custom connection per service. With MCP, the client can list any server's tools in a common, model-friendly format, so the host doesn't need a custom adapter for every server.\n\nThe payoff comes with reuse. For example, if three teams' agents all need the ticket system, one MCP server serves all of them instead of three separate integrations. But for one service and one application you control end to end, a normal API call is often simpler, because MCP adds a server to deploy, secure and version. Either way, keeping the tool logic in plain functions makes wrapping them as a server cheap later.",
       "points": [
         "Direct API: application-specific integration; MCP: standard discoverable boundary.",
         "The host can list capabilities in a uniform model-friendly shape.",
@@ -143,7 +143,7 @@ window.IR.q["09-mcp"] = {
         ],
         "caption": "MCP pays off when **reuse and interoperability** are worth the extra protocol. The host still decides which listed capabilities the model ever sees."
       },
-      "say": "A direct API is one custom connection per service, while MCP gives many AI hosts one standard, discoverable way to reach many integrations. With a direct call, my code hard-wires the endpoint, the request shape and the response shape for that one service. With MCP, the host can list any server's tools, resources or prompts in a common format, so it doesn't need a bespoke adapter for each. Nothing magically lands in the model's prompt, though. The host still decides what to expose, when to refresh or cache the catalogue, and what the user is allowed to do. The payoff comes with reuse. If three teams' agents all need the ticket system, one MCP server serves all of them. For one service and one app I own end to end, I'd just call the API, because MCP adds a server to deploy, secure and version. I keep tool logic in plain functions either way, so wrapping it later is cheap.",
+      "say": "A direct API is one custom connection per service, while MCP gives many AI hosts one standard, discoverable way to reach many integrations. With a direct call, my code hard-wires the endpoint, the request shape and the response shape for that one service. With MCP, the host can list any server's tools, resources or prompts in a common format, so it doesn't need a custom adapter for each. Nothing magically lands in the model's prompt, though. The host still decides what to expose, when to refresh or cache the catalogue, and what the user is allowed to do. The payoff comes with reuse. If three teams' agents all need the ticket system, one MCP server serves all of them. For one service and one app I own end to end, I'd just call the API, because MCP adds a server to deploy, secure and version. I keep tool logic in plain functions either way, so wrapping it later is cheap.",
       "numbers": "No number applies. The payoff scales with the number of tools and consuming applications.",
       "wrong": "\"It's just a wrapper around APIs.\" It misses standard discovery across many hosts and servers, which is where the value is - and the follow-up will ask when that value is worth the extra protocol and security work.",
       "follow": "When would you not bother with MCP?",
@@ -228,7 +228,7 @@ window.IR.q["09-mcp"] = {
         "caption": "Say it as a control model: **model-controlled, application-controlled, user-controlled**. Side effects mean a tool; content the app already needs is a resource."
       },
       "say": "The difference is who's in control. Tools are model-controlled, resources are application-controlled and prompts are user-controlled. With tools, the model reads the list and decides to call one, like search tickets or create a record. Because the model decides, tools carry the risk, so their descriptions and input schemas have to be precise. Resources are data the server exposes, like a file or a database row, each named by a URI, and the host application decides when to fetch one into context. Prompts are templates the user picks on purpose, often as a slash command. The practical rule follows from that. Anything with side effects or cost is a tool, with a schema, validation and an approval path. Content the app already knows it needs should be a resource, which keeps it out of the model's choices and is cheaper and safer. Making everything a tool bloats the list and makes selection worse.",
-      "numbers": "If the host sends every tool definition on every turn - a common default - a bloated tool list costs tokens continuously and tends to worsen tool selection. Measure the serialised tool payload on your own server.",
+      "numbers": "If the host sends every tool definition on every turn - a common default - an overly long tool list costs tokens continuously and tends to worsen tool selection. Measure the serialised tool payload on your own server.",
       "wrong": "Describing all three as 'ways to give the model data'. It misses the control model, which is the entire point of the distinction.",
       "follow": "Your server exposes forty tools and the model keeps choosing badly. What do you change?",
       "followAnswer": "First I look in traces at which tools get confused with each other. Then I merge overlapping tools, split the server by task so a host loads only the relevant set, and move read-only content the app already knows it needs into resources. I rewrite descriptions to say when to use and when not to use each tool, and measure selection accuracy on a fixed test set before and after."
@@ -256,7 +256,7 @@ window.IR.q["09-mcp"] = {
         "Streamable HTTP suits remote servers shared by many users.",
         "The older HTTP plus SSE method is deprecated."
       ],
-      "simple": "A transport is how MCP messages travel between client and server, and the JSON is the same either way. There are two standard transports, stdio for local servers and Streamable HTTP for remote ones.\n\nWith stdio, the client starts the server as a child process on the same machine and they exchange messages over standard input and output. It is simple and fast, and the server reads credentials from environment variables. The server must write only protocol messages to stdout, so logs go to stderr. For example, a single stray print statement will corrupt the stream and break the connection.\n\nStreamable HTTP is for remote, shared servers, where every message is a POST to one endpoint and the server replies with JSON or a stream. Remote servers use OAuth. The rule of thumb is stdio for one developer's machine, and Streamable HTTP when many users share a server.",
+      "simple": "A transport is how MCP messages travel between client and server, and the JSON is the same either way. There are two standard transports, stdio for local servers and Streamable HTTP for remote ones.\n\nWith stdio, the client starts the server as a child process on the same machine and they exchange messages over standard input and output. It is simple and fast, and the server reads credentials from environment variables. The server must write only protocol messages to stdout, so logs go to stderr. For example, a single stray print statement will corrupt the stream and break the connection.\n\nStreamable HTTP is for remote, shared servers, where every message is a POST to one endpoint and the server replies with JSON or a stream. Remote servers use OAuth. The simple rule is stdio for one developer's machine, and Streamable HTTP when many users share a server.",
       "points": [
         "**stdio**: client launches the server as a subprocess; newline-delimited JSON-RPC over stdin/stdout.",
         "stdio: only MCP messages on stdout, logs on stderr; credentials come from the environment, not OAuth.",
@@ -267,12 +267,12 @@ window.IR.q["09-mcp"] = {
       ],
       "diagram": {
         "kind": "compare",
-        "alt": "The two MCP transports, stdio and Streamable HTTP, compared by where they run, how messages travel, how they authenticate and the common gotcha.",
+        "alt": "The two MCP transports, stdio and Streamable HTTP, compared by where they run, how messages travel, how they authenticate and the common trap.",
         "aspects": [
           "Runs",
           "Messages",
           "Auth",
-          "Gotcha"
+          "Trap"
         ],
         "columns": [
           {
@@ -479,7 +479,7 @@ window.IR.q["09-mcp"] = {
         "Mcp-Method and Mcp-Name headers make HTTP routing and policy enforcement easier.",
         "List responses carry TTL/scope cache hints; tools should be returned in a deterministic order.",
         "Multi Round-Trip Requests replace server-initiated requests; change notifications move to `subscriptions/listen`; SSE stream resumption is removed.",
-        "Extensions are first-class; Tasks and MCP Apps are important examples.",
+        "Extensions are fully supported; Tasks and MCP Apps are important examples.",
         "Roots, Sampling, Logging, legacy HTTP+SSE and Dynamic Client Registration (in favour of Client ID Metadata Documents) are deprecated for new implementations."
       ],
       "diagram": {

@@ -189,5 +189,22 @@ window.IR.glossary = {
   "GIL": "Python's Global Interpreter Lock: only one thread runs Python code at a time, so threads don't speed up CPU-heavy work.",
   "asyncio": "Python's library for running many I/O tasks concurrently on one thread using async and await.",
   "Pydantic": "A Python library that validates data against typed models. Often used to check LLM output.",
-  "LRU cache": "A cache that throws away the least recently used item when it is full."
+  "LRU cache": "A cache that throws away the least recently used item when it is full.",
+
+  /* ---------- plain-English helpers for common technical words ---------- */
+  "deterministic|near-deterministic": "Gives exactly the same output every time for the same input.",
+  "non-deterministic": "Can give a different output each time, even for the same input. LLMs usually behave this way.",
+  "stale": "Out of date - the data or index no longer matches the latest source.",
+  "churn": "How much something keeps changing: documents being added, edited or deleted, or (in business) customers leaving.",
+  "boilerplate": "Repeated standard text that adds no meaning, such as headers, footers, legal disclaimers or navigation menus.",
+  "provenance": "A record of where a piece of data came from, such as the source file and page number.",
+  "lineage": "A record of where data came from and every step that changed it on the way.",
+  "lossy": "Loses some detail in the process, like summarising a long text or compressing an image.",
+  "canonical": "The single official version that everything else points to.",
+  "tractable": "Manageable; possible to work through and solve in reasonable time.",
+  "blast radius": "How much damage one mistake or one compromised component can do.",
+  "graceful degradation|degrade gracefully|degrading gracefully": "When part of the system fails, it keeps working in a reduced way instead of crashing - for example, showing the source documents when the LLM is down.",
+  "spurious correlation": "Two things that move together by coincidence or because of a hidden third factor, not because one causes the other.",
+  "unbounded": "Has no upper limit, so it can grow or run without end.",
+  "silent failure|quiet failure|quiet retrieval failure|fails silently|fails quietly": "A failure that gives no error or warning. The system still returns an answer, so nobody notices it is wrong."
 };

@@ -1570,9 +1570,9 @@ window.IR.q["18-system-design"] = {
         "Share a number you will report on regularly.",
         "Say it before launch, not after something breaks."
       ],
-      "simple": "Expectation management is most of a senior role, and this question tests it quickly. A strong answer says what the system cannot do, why, and what you did about it, in plain words and without hedging.\n\nThe common mistake is softening a limitation into vagueness. \"The model may occasionally produce inaccurate results\" means nothing and gives you no cover later. For example, saying \"about one answer in twenty needs correction, which is why every response shows its source and a person approves anything that changes a record\" is concrete, and it pairs the limitation with the control you built, so it sounds like a design choice rather than an apology.\n\nThen give a number you will report on a schedule. And say it early, because a limitation disclosed before launch is a design decision, while the same one after an incident is a surprise.",
+      "simple": "Expectation management is most of a senior role, and this question tests it quickly. A strong answer says what the system cannot do, why, and what you did about it, in plain words and without softening it.\n\nThe common mistake is softening a limitation into vagueness. \"The model may occasionally produce inaccurate results\" means nothing and gives you no cover later. For example, saying \"about one answer in twenty needs correction, which is why every response shows its source and a person approves anything that changes a record\" is concrete, and it pairs the limitation with the control you built, so it sounds like a design choice rather than an apology.\n\nThen give a number you will report on a schedule. And say it early, because a limitation disclosed before launch is a design decision, while the same one after an incident is a surprise.",
       "points": [
-        "Concrete over hedged. A vague warning protects nobody.",
+        "Concrete over vague. A vague warning protects nobody.",
         "Pair the limitation with the control you built for it.",
         "Use their frame, not model vocabulary.",
         "Give a number you will report on, so it is monitored not just disclosed.",

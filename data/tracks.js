@@ -71,7 +71,7 @@ window.IR.tracks = [
     includes: "Walmart, Target, Lowe's, Tesco, Maersk, Flipkart, and other large retail, ecommerce, logistics, and supply-chain platforms.",
     grounding: "public JDs + the cost and latency constraints of consumer-scale traffic",
     skew:
-      "Cost per request at genuinely high volume - this is the track where token economics is a first-class interview subject rather than a footnote. Catalogue and product RAG, where the corpus is millions of short structured documents. Hard latency budgets, because the assistant sits in a purchase flow. Multilingual, because the customer base is. Caching at every layer.",
+      "Cost per request at genuinely high volume - this is the track where token economics is a main interview subject rather than a footnote. Catalogue and product RAG, where the corpus is millions of short structured documents. Hard latency budgets, because the assistant sits in a purchase flow. Multilingual, because the customer base is. Caching at every layer.",
     rounds:
       "Usually four or five, with a strong design round focused on scale. Expect to be asked for numbers and to be pushed if you cannot produce them.",
     watch:

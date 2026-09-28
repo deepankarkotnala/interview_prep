@@ -1155,7 +1155,7 @@ window.IR.q["06-advanced-rag"] = {
         "cost",
         "security"
       ],
-      "why": "Caching is the biggest cost lever and the easiest place to cause a data breach.",
+      "why": "Caching is the biggest way to cut cost and the easiest place to cause a data breach.",
       "quick": [
         "Caching the question's search numbers is safe if keyed by model version.",
         "Search and answer caches must include the user's permissions.",
@@ -1163,7 +1163,7 @@ window.IR.q["06-advanced-rag"] = {
         "Matching similar questions needs a strict similarity bar.",
         "The provider's own prompt reuse carries none of these risks."
       ],
-      "simple": "Caching is the biggest cost lever in a RAG pipeline, but each cache layer has its own trap, and the fix is always about what goes into the cache key.\n\nThe embedding cache is the safe one, keyed on the query text plus the embedding model version, so a model migration doesn't serve stale vectors. Retrieval and answer caches are where leaks happen. For example, if the key is just the question, a manager with wide HR access fills the cache, and a junior employee asking the same thing gets restricted results. So the user's entitlement set must go in the key.\n\nAnswer caches also go stale when a document changes, so their key needs a corpus version that ingestion bumps. Semantic caching of near-identical questions is riskier still, so set the similarity threshold high. Provider prompt caching avoids all this, because every answer is still generated fresh.",
+      "simple": "Caching is the biggest way to cut cost in a RAG pipeline, but each cache layer has its own trap, and the fix is always about what goes into the cache key.\n\nThe embedding cache is the safe one, keyed on the query text plus the embedding model version, so a model migration doesn't serve stale vectors. Retrieval and answer caches are where leaks happen. For example, if the key is just the question, a manager with wide HR access fills the cache, and a junior employee asking the same thing gets restricted results. So the user's entitlement set must go in the key.\n\nAnswer caches also go stale when a document changes, so their key needs a corpus version that ingestion bumps. Semantic caching of near-identical questions is riskier still, so set the similarity threshold high. Provider prompt caching avoids all this, because every answer is still generated fresh.",
       "points": [
         "Embedding cache: key on text + embedding model version.",
         "Retrieval and answer caches: the key must include the user's entitlement set.",

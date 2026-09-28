@@ -626,7 +626,7 @@ window.IR.q["12-llmops"] = {
         "Fallback model, different provider or region, evaluated in advance.",
         "Degrade honestly: retrieval results beat a spinner.",
         "Queue asynchronous work instead of holding requests open.",
-        "Track provider errors as a first-class SLO, separate from your own."
+        "Track provider errors as a separate SLO, separate from your own."
       ],
       "diagram": {
         "kind": "stack",
