@@ -10,11 +10,81 @@ window.IR.q["05-rag"] = {
   "evening": [
     "rag-05",
     "rag-17",
-    "rag-06",
+    "rag-22",
     "rag-27",
-    "rag-18"
+    "rag-40"
   ],
   "cards": [
+    {
+      "id": "rag-65",
+      "q": "Explain RAG in 30 seconds, as simply as you can.",
+      "round": [
+        "screening",
+        "tech1"
+      ],
+      "level": "3-5",
+      "priority": "high",
+      "tags": [
+        "rag",
+        "basics",
+        "analogy"
+      ],
+      "why": "The opener. Whether you can make RAG click for anyone in half a minute, before going deeper.",
+      "quick": [
+        "RAG = Retrieve information, Augment the prompt, Generate the answer.",
+        "Like an open-book exam: find the right pages, then answer.",
+        "Without RAG, the model answers only from its training.",
+        "Three reasons: private data, outdated knowledge, and hallucination.",
+        "It reduces hallucination, but does not completely remove it."
+      ],
+      "simple": "RAG stands for Retrieval-Augmented Generation. We first retrieve relevant information from our own data, then give it to an LLM so it can generate a more accurate answer. Think of it as an open-book exam. Without RAG, the model answers from what it learned in training, and with RAG it is handed the right pages first.\n\nWe need it because the model doesn't know our private data, its knowledge stops at a training cut-off, and it can hallucinate. For example, if an employee asks, 'How many days of paternity leave do we get?', the system searches the company's documents, sends only the top 5 to 10 chunks to the LLM with the question, and the model answers, 'Employees get 15 days.'\n\nSo remember Retrieve, Augment, Generate. RAG reduces hallucination, but it doesn't completely eliminate it.",
+      "points": [
+        "**Retrieve** - find the relevant pieces in our own documents.",
+        "**Augment** - add those pieces to the prompt, next to the question.",
+        "**Generate** - the LLM writes the answer using that context.",
+        "**Why we need it:** private data, outdated knowledge, and less hallucination."
+      ],
+      "diagram": {
+        "kind": "compare",
+        "alt": "A closed-book LLM answering from training memory compared with an open-book LLM using RAG, for the question about paternity leave.",
+        "caption": "**Closed book vs open book.** RAG hands the model the right pages before it answers: retrieve, augment, generate.",
+        "aspects": [
+          "Answers from",
+          "Private HR policy",
+          "Yesterday's update",
+          "Hallucination"
+        ],
+        "columns": [
+          {
+            "label": "Without RAG",
+            "note": "closed-book exam",
+            "accent": "warn",
+            "cells": [
+              "Training memory only",
+              "Does not know it",
+              "Stuck at training cut-off",
+              "Can guess confidently"
+            ]
+          },
+          {
+            "label": "With RAG",
+            "note": "open-book exam",
+            "accent": "accent",
+            "cells": [
+              "Top 5-10 retrieved chunks",
+              "Retrieved at runtime",
+              "Latest document version",
+              "Reduced, not removed"
+            ]
+          }
+        ]
+      },
+      "say": "RAG stands for retrieval-augmented generation. Before the LLM answers, we first retrieve the relevant information from our own data, add it to the prompt, and then let the model generate the answer from it. I think of it as an open-book exam. Without RAG, the model answers from memory. With RAG, it gets the right pages first. We need it for three reasons. The model doesn't know our private data, its knowledge stops at a training cut-off, and it can hallucinate. For example, if an employee asks how many days of paternity leave they get, the system finds that section of the HR policy, gives it to the model, and the model answers from it. One nuance I'd add is that RAG reduces hallucination, but it doesn't completely eliminate it.",
+      "numbers": "Typical flow: search thousands of documents, then send only the top 5–10 chunks to the LLM with the question.",
+      "wrong": "\"RAG means the model learns our documents.\" It does not. The model itself never changes - it is handed the relevant text at question time, every time.",
+      "follow": "Can you explain it even more simply, to someone non-technical?",
+      "followAnswer": "I'd say RAG is like giving the LLM an open book before asking it a question. The system first finds the relevant pages from our documents, gives those pages to the LLM, and the LLM uses them to answer. So it answers from our actual documents, not from memory."
+    },
     {
       "id": "rag-01",
       "q": "What is RAG and why do we need it?",
@@ -28,7 +98,7 @@ window.IR.q["05-rag"] = {
         "rag",
         "basics"
       ],
-      "why": "Whether you can explain your own system to a recruiter who is not technical. **Also asked as:** “Explain RAG in 30 seconds, as simply as you can.”",
+      "why": "Whether you can explain your own system to a recruiter who is not technical.",
       "quick": [
         "Search your own documents before the model answers.",
         "Send the best pieces to the model with the question.",
@@ -40,8 +110,7 @@ window.IR.q["05-rag"] = {
       "points": [
         "**Retrieve** - search your documents for the question.",
         "**Augment** - put the top pieces into the prompt as context.",
-        "**Generate** - the model answers from that context, and cites it.",
-        "**Why we need it:** private data, outdated knowledge, and less hallucination."
+        "**Generate** - the model answers from that context, and cites it."
       ],
       "diagram": {
         "kind": "lanes",
@@ -72,6 +141,123 @@ window.IR.q["05-rag"] = {
       "wrong": "\"RAG stops hallucination.\" It does not. It reduces one cause of hallucination. The model can still ignore the context, or the retrieval can hand it the wrong page confidently.",
       "follow": "Then why not just put the whole document in the context window?",
       "followAnswer": "For one small document, sometimes I do. But for a real corpus it fails on four things: cost, because I pay for every token on every request; latency; accuracy, since facts buried in the middle of a huge prompt get missed; and permissions, because I cannot paste documents a user is not allowed to see. Retrieval sends only the few relevant, permitted pieces."
+    },
+    {
+      "id": "rag-66",
+      "q": "Walk me through what happens in RAG - before and after the user asks a question.",
+      "round": [
+        "screening",
+        "tech1"
+      ],
+      "level": "3-5",
+      "priority": "high",
+      "tags": [
+        "rag",
+        "architecture",
+        "basics"
+      ],
+      "why": "Whether you can draw the two phases of RAG - indexing and querying - on a whiteboard from memory.",
+      "quick": [
+        "RAG has two phases: indexing first, then querying.",
+        "Indexing: extract text, chunk it, embed it, store in vector database.",
+        "Indexing happens ahead of time, before any user asks.",
+        "Query: embed the question, find similar chunks, send them to the LLM.",
+        "Use the same embedding model in both phases."
+      ],
+      "simple": "RAG works in two phases. Indexing happens before any user asks anything, and the query phase happens every time a user asks a question.\n\nIn indexing, we extract the text from our documents, split it into chunks and pass each chunk through an embedding model, which turns it into a list of numbers that represents its meaning. We store those embeddings in a vector database. In the query phase, the question is embedded with the same model, because different models give numbers that don't match. The database finds the most similar chunks, we keep the top 3 to 10, and send them to the LLM with the question.\n\nFor example, if someone asks how many days of paternity leave are available, the paternity leave chunk comes back and the LLM answers, 'Employees are eligible for 15 days.' But if a document was never indexed, or was chunked badly, the query phase cannot find it.",
+      "points": [
+        "**Indexing (ahead of time):** Documents → load / extract → chunking → embedding model → vector database.",
+        "**Query (every question):** Question → query embedding → retriever → vector database → relevant chunks.",
+        "**Generate:** prompt + retrieved context → LLM → answer.",
+        "Use the same embedding model for chunks and questions, or the numbers will not match."
+      ],
+      "diagram": {
+        "alt": "Documents are chunked and questions arrive separately; both pass through the same embedding model into the vector database, which returns the top chunks to the LLM with the question.",
+        "caption": "Chunks and questions meet in **the same embedding model**. Indexing fills the vector database ahead of time; each question searches it.",
+        "rows": [
+          [
+            {
+              "id": "docs",
+              "label": "Documents",
+              "note": "indexing, ahead of time"
+            },
+            {
+              "id": "q",
+              "label": "User question",
+              "note": "query, every time",
+              "accent": "accent"
+            }
+          ],
+          [
+            {
+              "id": "chunk",
+              "label": "Extract & chunk",
+              "note": "e.g. paternity leave para"
+            }
+          ],
+          [
+            {
+              "id": "emb",
+              "label": "Same embedding model",
+              "note": "384-1,536 numbers",
+              "accent": "warn"
+            }
+          ],
+          [
+            {
+              "id": "vdb",
+              "label": "Vector database",
+              "note": "store, then nearest search"
+            }
+          ],
+          [
+            {
+              "id": "top",
+              "label": "Top 3-10 chunks",
+              "note": "most similar in meaning"
+            }
+          ],
+          [
+            {
+              "id": "llm",
+              "label": "LLM answer",
+              "note": "question + chunks: 15 days",
+              "accent": "accent"
+            }
+          ]
+        ],
+        "edges": [
+          {
+            "from": "docs",
+            "to": "chunk"
+          },
+          {
+            "from": "chunk",
+            "to": "emb"
+          },
+          {
+            "from": "q",
+            "to": "emb"
+          },
+          {
+            "from": "emb",
+            "to": "vdb"
+          },
+          {
+            "from": "vdb",
+            "to": "top"
+          },
+          {
+            "from": "top",
+            "to": "llm"
+          }
+        ]
+      },
+      "say": "RAG has two phases. The first is indexing, which happens before any user asks anything. We take our documents, extract the text, split it into chunks, turn each chunk into an embedding, which is a list of numbers representing its meaning, and store those embeddings in a vector database. The second is the query phase. When a user asks, say, how many days of paternity leave they get, we embed the question with the same model, search the vector database for the most similar chunks, and keep the top few. Then we put the question and those chunks together in the prompt and send it to the LLM, which answers from that context. So indexing makes the documents searchable ahead of time, and querying finds the right pieces and hands them to the model.",
+      "numbers": "Usually the top 3–10 chunks go to the LLM. An embedding is commonly 384 to 1,536 numbers long.",
+      "wrong": "\"When the user asks, we send the documents to the LLM.\" We send only a few retrieved chunks, and the heavy work of chunking and embedding was already done ahead of time.",
+      "follow": "What happens when a document changes after it was indexed?",
+      "followAnswer": "We re-index just that document: delete its old chunks from the vector database, then extract, chunk, embed and store the new version. If we skip this, the retriever keeps returning the old text and the LLM confidently answers from an outdated policy."
     },
     {
       "id": "rag-02",
@@ -225,7 +411,7 @@ window.IR.q["05-rag"] = {
         "architecture",
         "debugging"
       ],
-      "why": "The spine question. If you can walk through both phases step by step, every later retrieval and debugging question has somewhere to land. **Also asked as:** “Walk me through what happens in RAG - before and after the user asks a question.”",
+      "why": "The spine question. If you can walk through both phases step by step, every later retrieval and debugging question has somewhere to land.",
       "quick": [
         "Two phases, prepare the documents, then answer each question.",
         "Load, clean, split and turn documents into numbers, then store them.",
@@ -239,8 +425,7 @@ window.IR.q["05-rag"] = {
         "Per question: embed the query, semantic search, optional rerank.",
         "Retrieved chunks + query = augmented prompt, then the LLM answers with citations.",
         "Use the same embedding model for chunks and queries.",
-        "Most steps fail silently - check retrieval before the prompt.",
-        "Indexing happens once, ahead of time; querying happens on every question."
+        "Most steps fail silently - check retrieval before the prompt."
       ],
       "say": "A RAG pipeline has two phases. The first is data ingestion, which runs ahead of time: we load documents from our sources, parse and clean the text, chunk it into small pieces, embed each chunk into a vector that captures its meaning, and store and index those vectors in a vector database with details like source and permissions. The second phase runs for every question: we embed the user's query with the same model, run a semantic search to retrieve the closest chunks, and often rerank them so the best few come first. We then combine the query and those chunks into an augmented prompt, and the LLM uses it to generate the final answer with citations. For instance, a question about the leave policy pulls that exact section into the prompt. Most steps fail quietly, so when an answer is wrong, I first check whether the right chunk was retrieved, before touching the prompt.",
       "numbers": "In practice most RAG quality problems are retrieval problems, not generation problems. Measure recall@k before touching the prompt.",
@@ -365,8 +550,161 @@ window.IR.q["05-rag"] = {
       "followAnswer": "I choose it by testing a shortlist on my own data rather than trusting a public leaderboard. The MTEB leaderboard helps me shortlist, but then I build fifty to a hundred real questions with the passages that answer them and compare recall at k. I also weigh language coverage, maximum input length against my chunk size, vector dimensions, which drive storage cost, plus latency, price and whether I can self-host. Switching later means re-embedding everything, so it's worth getting right."
     },
     {
+      "id": "rag-60",
+      "q": "How do chunking and top-k retrieval work?",
+      "round": [
+        "screening",
+        "tech1"
+      ],
+      "level": "3-5",
+      "priority": "high",
+      "tags": [
+        "rag",
+        "chunking",
+        "retrieval"
+      ],
+      "why": "Whether you understand the two settings that most affect what the model gets to see.",
+      "quick": [
+        "Split documents into small pieces before storing them.",
+        "Pieces too big mix topics, too small lose context.",
+        "Let pieces repeat a little at the edges.",
+        "Top-k means how many best pieces we send.",
+        "Test both settings on real questions, do not guess."
+      ],
+      "simple": "Chunking means splitting documents into small pieces before we embed them, because one embedding for a whole 50-page document is too blurry to match a specific question. If a chunk is too big, it mixes topics and wastes prompt space. If it is too small, it loses its context. For example, a line saying 'this limit is 5 days' is useless if the heading that says which limit got cut off. So we split along headings and paragraphs, with a small overlap between neighbouring chunks.\n\nTop-k is how many of the best-matching chunks we take from the search. If k is too small, the right chunk might be ranked sixth and never reach the model. If it is too large, the model gets flooded with noise. So a common pattern is to retrieve about 20, rerank, and send only the best 3 to 5, then tune both on real questions.",
+      "points": [
+        "Chunk along headings and paragraphs, with a small overlap.",
+        "Typical chunk size: a few hundred tokens.",
+        "Top-k balances missing the answer against flooding the prompt.",
+        "Retrieve wide, rerank, send narrow.",
+        "Tune both on a labelled set of real questions."
+      ],
+      "diagram": {
+        "kind": "matrix",
+        "alt": "A grid showing what goes wrong when chunk size or top-k is too small or too big.",
+        "caption": "**Both knobs fail in both directions.** Split on headings with small overlap, then retrieve wide, rerank and send narrow.",
+        "xLabel": "Setting",
+        "yLabel": "Knob",
+        "cols": [
+          "Too small",
+          "Too big"
+        ],
+        "rows": [
+          "Chunk size",
+          "Top-k"
+        ],
+        "cells": [
+          [
+            {
+              "label": "Loses context",
+              "note": "heading cut off",
+              "accent": "bad"
+            },
+            {
+              "label": "Blurry, mixed topics",
+              "note": "wastes prompt space",
+              "accent": "warn"
+            }
+          ],
+          [
+            {
+              "label": "Answer missed",
+              "note": "right chunk at rank 6",
+              "accent": "bad"
+            },
+            {
+              "label": "Drowns in noise",
+              "note": "model gets distracted",
+              "accent": "warn"
+            }
+          ]
+        ]
+      },
+      "say": "Chunking is how we split documents into small pieces before embedding them, because one embedding for a whole document is too blurry to match a specific question. The size matters in both directions. If chunks are too big, one chunk mixes several topics and wastes prompt space, and if they're too small, a chunk loses its context. For instance, a line saying the limit is five days is useless if the heading that says which limit got cut off. So I split along headings and paragraphs, with a small overlap between neighbouring chunks. Top-k is simply how many of the best-matching chunks we take from the search. If k is too small, the right chunk might sit at rank six and never reach the model, and if it's too large, the model drowns in noise. That's why I retrieve around twenty, rerank, and send the best three to five, and I tune both settings on real questions.",
+      "numbers": "Common starting points: chunks of 300–800 tokens with 10–15% overlap; retrieve 20, send 3–5.",
+      "wrong": "\"We use 500-character chunks with k equals 3 because that's the default.\" Defaults are a starting point - the right values come from testing on real questions.",
+      "follow": "How would you measure whether a new chunking strategy is actually better?",
+      "followAnswer": "I'd measure it on a fixed labelled set rather than eyeballing a few answers. I take fifty to a hundred real questions, each paired with the passage that answers it, build a separate index with the new strategy, and compare recall at k against the current one. Because chunk boundaries change, I match on the answer text rather than chunk IDs. Then I check answer quality, faithfulness, context size and latency, and keep the change only if it wins without hurting those."
+    },
+    {
+      "id": "rag-03",
+      "q": "How do you choose a chunking strategy?",
+      "round": [
+        "tech1"
+      ],
+      "level": "3-5",
+      "priority": "high",
+      "tags": [
+        "rag",
+        "chunking",
+        "ingestion"
+      ],
+      "why": "Whether you have ingested real messy documents or only clean text files.",
+      "quick": [
+        "Start from the document's own structure, not a copied setting.",
+        "Keep sections, contract clauses and code functions whole.",
+        "Search small pieces, then give the model the bigger section.",
+        "Handle tables and scanned pages in their own way.",
+        "Choose the final sizes by testing on real questions."
+      ],
+      "simple": "Chunking is really deciding what unit retrieval should hand back to the model. So I don't start with a setting copied from a tutorial, like 1000 characters with 200 overlap. I start with the structure of the documents and the questions users actually ask, because there is no universal chunk size.\n\nIf a document has meaningful boundaries, I keep them, like sections for manuals, clauses for contracts and functions for code, with paragraphs as the fallback for plain prose. For dense material, parent-child retrieval helps. For example, in a long leave policy, a small chunk about carry-forward rules gets matched precisely, but the model receives the whole section, so it also sees the conditions around that rule. Tables and scanned pages need their own path.\n\nOverlap is a tuning knob, not a law, because it protects facts on a boundary but creates duplicate hits. So I pick the final sizes by running evals on representative questions.",
+      "points": [
+        "Start from semantic or structural boundaries, not a fixed character count.",
+        "Use parent-child retrieval when small search units need larger answer context.",
+        "Handle tables, charts and scans according to their structure instead of forcing everything into prose chunks.",
+        "Overlap is optional and should be tuned against boundary loss and duplicate retrieval.",
+        "Pick the strategy with representative retrieval and answer evals."
+      ],
+      "diagram": {
+        "kind": "compare",
+        "alt": "Chunking strategy by document type: structured documents split on their sections, tables and scans get their own parsing path, and plain prose splits on paragraphs.",
+        "caption": "**Let the document's structure choose the chunk.** Keep real boundaries, give tables their own path, and let retrieval and answer evals set the sizes.",
+        "aspects": [
+          "Examples",
+          "Split on",
+          "Extra"
+        ],
+        "columns": [
+          {
+            "label": "Structured",
+            "note": "real boundaries",
+            "accent": "accent",
+            "cells": [
+              "Manuals, contracts, code",
+              "Sections, clauses, functions",
+              "Parent-child if dense"
+            ]
+          },
+          {
+            "label": "Tables and scans",
+            "note": "own path",
+            "accent": "warn",
+            "cells": [
+              "Tables people aggregate, scans",
+              "Parse as structured data",
+              "OCR only where needed"
+            ]
+          },
+          {
+            "label": "Plain prose",
+            "note": "fallback",
+            "cells": [
+              "Unstructured text",
+              "Paragraphs, then sentences",
+              "Overlap is a tuning knob"
+            ]
+          }
+        ]
+      },
+      "say": "I choose it from the structure of the documents and the questions users ask, not from a tutorial setting. Chunking decides what unit retrieval hands back, so wherever a document has meaningful boundaries I keep them. That means sections in manuals, clauses in contracts and functions or classes in code, with paragraphs and sentences as the fallback for plain prose. Dense policy documents often suit parent-child retrieval, where we search small pieces for precision and then give the model the larger section around the hit. Tables and scanned pages need their own path. A table people aggregate should be parsed as structured data, and OCR or vision goes only on the pages that need it. Overlap is a tuning knob rather than a rule, because it protects facts that cross a boundary but also creates duplicate hits and wastes context. The final sizes come from retrieval and answer evals on representative questions, not from copying one thousand and two hundred.",
+      "numbers": "There is no universal chunk size or overlap. Start with a reasonable few-hundred-token range for prose, then tune on your corpus using retrieval recall, answer quality, duplicate hits, context size and latency.",
+      "wrong": "\"I used RecursiveCharacterTextSplitter with 1000 and 200.\" That is a setting copied from tutorials, not a strategy. The interviewer wants to hear why that size suits your documents and how you checked it.",
+      "follow": "How would you chunk a 90-page scanned PDF with tables?",
+      "followAnswer": "First OCR with a layout-aware parser, keeping page numbers and a confidence score per page. Tables come out as whole units, stored as markdown or HTML, with a short text summary indexed next to them. The rest I chunk by the headings the parser recovers, with the heading path on each chunk. Then I spot-check low-confidence pages and a few table questions before indexing."
+    },
+    {
       "id": "rag-18",
-      "q": "How do you choose a chunking strategy? Fixed-size, recursive, semantic or document-aware - defend your default.",
+      "q": "Fixed-size, recursive, semantic or document-aware chunking - defend your default.",
       "round": [
         "tech1",
         "tech2"
@@ -378,7 +716,7 @@ window.IR.q["05-rag"] = {
         "chunking",
         "ingestion"
       ],
-      "why": "Whether you have a reasoned default or repeat whatever the tutorial used. **Also asked as:** “How do chunking and top-k retrieval work?” · “How do you choose a chunking strategy?”",
+      "why": "Whether you have a reasoned default or repeat whatever the tutorial used.",
       "quick": [
         "Default to recursive splitting by paragraph, line, then sentence.",
         "Use the document's own headings or clauses when they exist.",
@@ -393,10 +731,7 @@ window.IR.q["05-rag"] = {
         "Semantic chunking is expensive and rarely beats structure.",
         "Fixed-size only for uniform, structureless text.",
         "The right answer is measured on your eval set, not chosen by reputation.",
-        "**Late chunking** (Jina, 2024): run the whole document through a long-context embedding model first, then average the token vectors inside each chunk, so each chunk vector keeps the document's context. Worth testing when chunks say \"it\" or \"this clause\" and lose meaning alone.",
-        "Use parent-child retrieval when small search units need larger answer context.",
-        "Handle tables, charts and scans according to their structure instead of forcing everything into prose chunks.",
-        "Typical starting point for prose: a few hundred tokens with a small overlap - then tune (see the chunk size card)."
+        "**Late chunking** (Jina, 2024): run the whole document through a long-context embedding model first, then average the token vectors inside each chunk, so each chunk vector keeps the document's context. Worth testing when chunks say \"it\" or \"this clause\" and lose meaning alone."
       ],
       "diagram": {
         "kind": "compare",
@@ -448,7 +783,7 @@ window.IR.q["05-rag"] = {
     },
     {
       "id": "rag-19",
-      "q": "How do you pick chunk size and overlap - and evaluate a chunking strategy - without guessing?",
+      "q": "How do you pick chunk size and overlap without guessing?",
       "round": [
         "tech1"
       ],
@@ -459,7 +794,7 @@ window.IR.q["05-rag"] = {
         "chunking",
         "evaluation"
       ],
-      "why": "The anti-cargo-cult card. Everyone uses 1000/200 because a tutorial did. **Also asked as:** “How do you evaluate a text chunking strategy in RAG?”",
+      "why": "The anti-cargo-cult card. Everyone uses 1000/200 because a tutorial did.",
       "quick": [
         "The usual 1000 and 200 is just a tutorial default.",
         "Build 50 to 100 questions with their answer passages.",
@@ -473,9 +808,7 @@ window.IR.q["05-rag"] = {
         "Build 50–100 question-passage pairs and sweep configurations.",
         "Measure recall@k; pick the configuration that wins.",
         "Dense reference favours small chunks; narrative favours large.",
-        "Overlap above ~20% buys duplication, not recall.",
-        "Keep the embedding model, retriever, top-k and questions identical across strategies, so only chunking changes.",
-        "Evaluate in order: did we find it (Recall@k, MRR), did we find enough (context recall), was it useful (context precision), was the answer good (correctness, faithfulness)."
+        "Overlap above ~20% buys duplication, not recall."
       ],
       "diagram": {
         "kind": "lanes",
@@ -640,6 +973,76 @@ window.IR.q["05-rag"] = {
       "followAnswer": "First I measure where the time goes, because generation usually dominates. Then I stream the answer, cut the chunks sent to the model from ten to about four, and skip query rewriting when the question already stands alone. For the reranker I use a small model on twenty candidates, or drop it if the eval shows little gain. Caching repeated questions helps too."
     },
     {
+      "id": "rag-22",
+      "q": "Your retriever returns the right chunk at rank 8. The LLM misses it. Fix it.",
+      "round": [
+        "tech2"
+      ],
+      "level": "5-10",
+      "priority": "high",
+      "tags": [
+        "rag",
+        "debugging",
+        "reranking"
+      ],
+      "why": "A precise diagnostic. Retrieval worked, so the fix is downstream - and knowing that saves you tuning the wrong stage.",
+      "quick": [
+        "Search worked, so the problem is position, not finding.",
+        "Models miss text buried in the middle of the prompt.",
+        "Add a careful second sort to move it to the top.",
+        "Send only the best three to five pieces.",
+        "Add this question to your tests so the fix stays."
+      ],
+      "simple": "This is a good failure to get, because retrieval worked. The right chunk was found, and the model just did not use it. The cause is position. Models attend most reliably to the beginning and end of their context and less to the middle, which is called the lost-in-the-middle effect. So rank 8 out of 10 sits right in the weak zone.\n\nThe first fix is a reranker. A cross-encoder reads the question and each candidate together, so it would likely move that chunk to the top. The second fix is to cut k, retrieving 20 to 50 candidates but passing only 3 to 5, because fewer, better chunks usually beat many noisy ones. If we must pass many, we put the strongest at the start and end.\n\nFor example, if the missed chunk held the refund rule for damaged items, we add that query to the eval set, so a later change cannot quietly undo the fix.",
+      "points": [
+        "Retrieval succeeded - the failure is position, not recall.",
+        "Lost-in-the-middle: models attend to the ends, not the middle.",
+        "A cross-encoder reranker is the direct fix for ordering.",
+        "Fewer chunks often beats more - cut k.",
+        "Add the query to the eval set so the fix is protected."
+      ],
+      "diagram": {
+        "kind": "compare",
+        "alt": "Before and after fixing a chunk retrieved at rank 8: reranking moves it to the top and fewer chunks are passed.",
+        "caption": "**Retrieval worked; position failed.** Models read the ends best, so rerank the right chunk to the top and pass fewer, better chunks.",
+        "aspects": [
+          "Right chunk at",
+          "Chunks passed",
+          "Where it sits",
+          "Model"
+        ],
+        "columns": [
+          {
+            "label": "Before",
+            "note": "lost in the middle",
+            "accent": "bad",
+            "cells": [
+              "Rank 8",
+              "10",
+              "The weak middle",
+              "Misses it"
+            ]
+          },
+          {
+            "label": "After rerank",
+            "note": "cross-encoder, cut k",
+            "accent": "accent",
+            "cells": [
+              "Rank 1",
+              "3-5",
+              "The start",
+              "Uses it"
+            ]
+          }
+        ]
+      },
+      "say": "That's actually useful news, because retrieval worked, so the problem is position, not recall. Models attend most reliably to the start and end of their context and less to the middle. That's the lost-in-the-middle effect, and newer models have reduced it without removing it. Rank 8 of 10 sits right in the weak zone, under seven chunks that scored higher but matter less. My first fix is a cross-encoder reranker, which reads the question and each candidate together and would likely lift that chunk to the top. Then I cut k, retrieving 20 to 50 candidates but passing only 3 to 5, because fewer, better chunks usually beat many noisy ones. If I really must pass many, I put the strongest at the start and end. What I wouldn't do is add a line telling the model to read carefully. And I'd put this query in the eval set so the next chunking change can't quietly undo the fix.",
+      "numbers": "Retrieve 20–50 candidates, rerank, pass 3–5. Reranking adds roughly 50–300 ms, depending on model size, hosting and candidate count.",
+      "wrong": "Rewriting the prompt to say 'read all the context carefully'. It does not address position, and it is the reflex fix that wastes a day.",
+      "follow": "Reranking added 200ms and your latency budget is gone. What else?",
+      "followAnswer": "Use a smaller reranker on fewer candidates, say twenty instead of fifty, or host it on a GPU. Cut k so the model reads less and starts answering sooner. Put the strongest chunks at the start and end of the context. And improve first-stage ranking with hybrid search or a better embedding model, so I only need to rerank low-confidence queries."
+    },
+    {
       "id": "rag-24",
       "q": "The user asks something the corpus does not cover. What should happen?",
       "round": [
@@ -746,7 +1149,7 @@ window.IR.q["05-rag"] = {
     },
     {
       "id": "rag-07",
-      "q": "Which metrics would you use to evaluate RAG?",
+      "q": "How do you evaluate a RAG system?",
       "round": [
         "tech1",
         "tech2"
@@ -758,7 +1161,7 @@ window.IR.q["05-rag"] = {
         "evaluation",
         "metrics"
       ],
-      "why": "Whether you can prove an improvement, or only claim one. **Also asked as:** “How do you evaluate a RAG system?” · “What metrics would you use?”",
+      "why": "Whether you can prove an improvement, or only claim one.",
       "quick": [
         "Test search and answer writing separately, then together.",
         "For search, check the right piece shows up near the top.",
@@ -772,10 +1175,7 @@ window.IR.q["05-rag"] = {
         "Generation: faithfulness and answer relevance, scored by a calibrated LLM judge.",
         "End to end: task success on a golden set reviewed by a domain expert.",
         "Online: thumbs, rephrase rate, citation clicks, escalation to human.",
-        "Every change is measured against the same frozen set, or the comparison means nothing.",
-        "System: p95 latency and cost per answer sit next to quality metrics.",
-        "Avoid BLEU/ROUGE for RAG - they reward word overlap, not grounded correctness.",
-        "Faithfulness is the primary answer-side metric - see the dedicated faithfulness card for how it is scored."
+        "Every change is measured against the same frozen set, or the comparison means nothing."
       ],
       "diagram": {
         "kind": "stack",
@@ -963,8 +1363,134 @@ window.IR.q["05-rag"] = {
       "followAnswer": "Not for recall - the right chunk is almost always there. The risk is noise: eight irrelevant chunks can distract the model, push the right one into the middle where it gets ignored, and cost tokens. So I keep the top 10 for recall, add a reranker, and pass only the best 3 to 5 to the model. Then I check that answer faithfulness actually goes up."
     },
     {
+      "id": "rag-62",
+      "q": "What metrics would you use?",
+      "round": [
+        "screening",
+        "tech1"
+      ],
+      "level": "5-10",
+      "priority": "high",
+      "tags": [
+        "rag",
+        "evaluation",
+        "metrics"
+      ],
+      "why": "Whether you can name the right metric for each part of the pipeline and explain it simply.",
+      "quick": [
+        "For search, is the right piece in the top results.",
+        "Also check how high the right piece is ranked.",
+        "For answers, is every claim backed by the found text.",
+        "Also check the answer actually addresses the question.",
+        "Track cost, speed and user feedback alongside."
+      ],
+      "simple": "The simplest way to choose RAG metrics is to group them by what they measure. For retrieval, the main number is recall@k, how often the correct chunk appears in the top k, alongside precision@k and MRR, which rewards the correct chunk for being near the top. Without labels, RAGAS gives context precision and recall using an LLM judge.\n\nFor the answer, the key metric is faithfulness, which checks whether every claim is backed by the retrieved text, so it is the main hallucination metric. We add answer relevance and refusal accuracy. For example, high answer relevance with low faithfulness means the model is answering helpfully but inventing details. A useful bar is recall@10 above 0.9 before tuning the prompt.\n\nAt the system level we track p95 latency and cost, plus user signals like thumbs down. We skip BLEU and ROUGE, because word overlap says nothing about truth.",
+      "points": [
+        "Retrieval: recall@k, precision@k, MRR, context precision and recall.",
+        "Generation: faithfulness, answer relevance, correct refusals.",
+        "System: p95 latency, cost per answer.",
+        "Users: thumbs down, rephrase rate, escalations.",
+        "Avoid BLEU/ROUGE for RAG."
+      ],
+      "say": "I group the metrics by what they measure, starting with retrieval, then the answer, then the system and users. For retrieval, my main number is recall at k, which is how often the correct chunk appears in the top k results, alongside precision at k and MRR, which rewards the correct chunk for being near the top. When I don't have labels, tools like RAGAS give context precision and context recall using an LLM judge. For the answer, I lead with faithfulness, meaning whether every claim is backed by the retrieved text, plus answer relevance and whether it correctly says I don't know when the documents don't cover the question. For instance, a high answer relevance with low faithfulness tells me the model is answering helpfully but inventing details. Finally, I track p95 latency, cost per answer and user signals like thumbs down. I avoid BLEU and ROUGE, because word overlap says nothing about truth.",
+      "numbers": "A useful bar: recall@10 above 0.9 before tuning the prompt, and faithfulness above 0.9 before launch.",
+      "wrong": "Leading with BLEU or ROUGE. They compare wording with a reference answer, and an answer can overlap heavily while containing a made-up number.",
+      "follow": "Calculate precision@5 and MRR for one example query.",
+      "followAnswer": "Say I retrieve five chunks for one question, and the relevant ones come back at ranks 2 and 4. Precision at 5 is relevant retrieved over k, so two out of five, which is 0.4. Reciprocal rank looks only at the first relevant hit, which is at rank 2, so it's one over two, or 0.5. MRR is that reciprocal rank averaged over all queries, so for a single query it's simply 0.5. Had the first hit been at rank 1, it would be 1.0."
+    },
+    {
+      "id": "rag-68",
+      "q": "How do you evaluate a text chunking strategy in RAG?",
+      "round": [
+        "tech1",
+        "tech2"
+      ],
+      "level": "3-5",
+      "priority": "high",
+      "tags": [
+        "rag",
+        "chunking",
+        "evaluation",
+        "metrics"
+      ],
+      "why": "Whether you judge chunking by what it does to retrieval and answers, not by gut feel or a tutorial default.",
+      "quick": [
+        "Do not judge chunking on its own; judge what it does to retrieval and answers.",
+        "Build 50 to 100 real questions with the expected answer and source section.",
+        "Run every strategy through the same embedding model, retriever and top-k.",
+        "Compare Recall@k, Precision@k and MRR first.",
+        "Then compare context recall, context precision, answer correctness and faithfulness."
+      ],
+      "simple": "Good chunking finds the right information, so the LLM gets the right context and gives a better answer. That is why we normally do not evaluate chunking on its own. We measure how each chunking strategy changes retrieval quality and the final answer.\n\nFirst, we build a small evaluation set of fifty to a hundred representative questions, each with the expected answer and, ideally, the source section. For example, \"What is the company's work-from-home policy?\" should come from HR_Policy.pdf, Section 4, Work From Home. Then we run the same questions through each strategy, for example fixed 500-token chunks, 500 tokens with overlap, recursive chunking and heading-based chunking, keeping the embedding model, retrieval method and top-k the same.\n\nWe check retrieval first. Recall@k asks whether the right chunk appeared in the top k: if it is in the top 5 for 90 of 100 questions, Recall@5 is 90%. Precision@k asks how many retrieved chunks are relevant: 2 of the top 5 is 40%. MRR asks how high the first correct chunk sits: rank 1 scores 1.0, rank 2 scores 0.5, rank 5 scores 0.2, averaged across questions.\n\nThen we check the context and the answer. Context precision asks whether the retrieved text is relevant, so casual-leave or remote-work chunks for a maternity-leave question are noise. Context recall asks whether it holds everything needed: if the answer needs both the leave length and the HR notification rule, finding only one is incomplete. Finally we score the answer for correctness, relevance, completeness, faithfulness and citation accuracy. Ragas and DeepEval can automate parts of this.\n\nThere is no universally best chunk size. What works for legal documents may behave differently on tables, code, PDFs or technical docs, so the evaluation set must look like our real documents and questions.",
+      "points": [
+        "Chunking is judged by retrieval and answer quality, not in isolation.",
+        "Eval set: 50-100 representative questions with expected answer and source section.",
+        "Same embedding model, retriever, top-k and questions for every strategy.",
+        "Order: did we find it (Recall@k, Precision@k, MRR), did we find enough (context recall), was it useful (context precision), was the answer good (correctness, faithfulness).",
+        "No universally best chunk size; the eval set must match your documents."
+      ],
+      "diagram": {
+        "kind": "compare",
+        "alt": "Illustrative scorecard comparing three chunking strategies on Recall@5, Precision@5, MRR, context recall, answer correctness and faithfulness.",
+        "caption": "**Compare strategies on one scorecard.** Illustrative numbers only: B finds the most, C is the most precise and faithful. Keep the embedding model, retriever, top-k and questions identical.",
+        "aspects": [
+          "Recall@5",
+          "Precision@5",
+          "MRR",
+          "Context recall",
+          "Answer correctness",
+          "Faithfulness"
+        ],
+        "columns": [
+          {
+            "label": "Strategy A",
+            "note": "e.g. fixed 500-token",
+            "accent": "warn",
+            "cells": [
+              "82%",
+              "61%",
+              "0.71",
+              "79%",
+              "84%",
+              "91%"
+            ]
+          },
+          {
+            "label": "Strategy B",
+            "note": "e.g. recursive",
+            "accent": "accent",
+            "cells": [
+              "94%",
+              "78%",
+              "0.86",
+              "92%",
+              "93%",
+              "95%"
+            ]
+          },
+          {
+            "label": "Strategy C",
+            "note": "e.g. heading-based",
+            "cells": [
+              "91%",
+              "83%",
+              "0.82",
+              "90%",
+              "91%",
+              "96%"
+            ]
+          }
+        ]
+      },
+      "say": "I wouldn't evaluate chunking in isolation, because good chunking only matters if it finds the right information and the LLM gives a better answer. I'd create a representative evaluation set of fifty to a hundred questions, each with the expected answer and source section, like the work-from-home question mapping to Section 4 of the HR policy. Then I run different chunking strategies, say fixed 500 tokens, 500 with overlap, recursive and heading-based, through the same embedding and retrieval pipeline with the same top-k. I compare retrieval metrics first: Recall at k, meaning did the right chunk show up in the top k; Precision at k, meaning how many of the retrieved chunks are relevant; and MRR, meaning how high the first correct chunk sits. Then end-to-end metrics: context recall, context precision, answer correctness and faithfulness, partly automated with Ragas or DeepEval. I put all of it on one scorecard. And there's no universally best chunk size, so the eval set has to look like our real documents and questions.",
+      "numbers": "50-100 eval questions. Recall@5 = 90% means the right chunk was in the top 5 for 90 of 100 questions. Precision@5 = 2/5 = 40%. MRR: rank 1 = 1.0, rank 2 = 0.5, rank 5 = 0.2.",
+      "wrong": "\"We use 500-token chunks with overlap because that works best.\" There is no universal best; without an eval set and the same pipeline for every strategy, the claim cannot be checked.",
+      "follow": "Strategy B has the best recall, but Strategy C has better precision and faithfulness. Which do you ship?",
+      "followAnswer": "It depends on the failure that hurts the product more, but I lean to the strategy with better answer correctness and faithfulness, because users see the answer, not the recall. Here B wins correctness and C wins precision and faithfulness by small margins, so I would look at the misses by category. If C's gap is missing context, a reranker or small-to-big retrieval can close it; if B's gap is noise, reranking and a tighter top-k can close that. I keep the eval set fixed and rerun before deciding."
+    },
+    {
       "id": "rag-33",
-      "q": "What is faithfulness, and how do you measure whether an answer is grounded in the retrieved context?",
+      "q": "How do you measure whether the answer is actually grounded in the retrieved context?",
       "round": [
         "tech2"
       ],
@@ -975,15 +1501,15 @@ window.IR.q["05-rag"] = {
         "faithfulness",
         "evaluation"
       ],
-      "why": "Faithfulness is the metric that separates a demo from a system you can defend. **Also asked as:** “How do you measure whether the answer is actually grounded in the retrieved context?” · “What is groundedness?”",
+      "why": "Faithfulness is the metric that separates a demo from a system you can defend.",
       "quick": [
         "Check each claim in the answer is backed by found text.",
         "This checks support, not whether the answer is true.",
         "Split the answer into single claims and judge each one.",
         "The score is backed claims divided by all claims.",
-        "Ragas or DeepEval score it in code; validate on ~50 hand-checked answers."
+        "Test the AI grader on about 50 hand-checked answers first."
       ],
-      "simple": "Groundedness, also called faithfulness, asks a narrow question: is every claim in the answer supported by the retrieved context? It does not ask whether the answer is correct, because an answer can be faithful to a policy document that is itself out of date.\n\nThe standard method breaks the answer into single claims, and a judge model says whether the context supports each one. The score is supported claims divided by total claims. Judging a whole paragraph gives a mushy verdict, while per-claim scoring shows exactly which sentence was invented. We also check the judge against about fifty hand-labelled answers before trusting it.\n\nThe useful part is the diagnostic pairing. For example, if the bot quotes last year's leave policy faithfully, the answer is faithful but wrong, so retrieval found the wrong document. If faithfulness is low, the model is inventing despite good context, so the fix is on the generation side.\n\nIn practice we rarely build this from scratch. LLM evaluation libraries already do the claim splitting and per-claim judging: **Ragas** (faithfulness metric), **DeepEval** (faithfulness metric, with a reason for each failed claim and pass/fail tests in CI) and **TruLens** (groundedness). Observability tools such as **Langfuse** and **Arize Phoenix** can run the same judges on logged production traces. We supply the question, the answer, the retrieved chunks and a judge LLM, and get a score from 0 to 1. For cheap checks on all traffic, a small NLI or hallucination-detection model such as **Vectara HHEM** labels each claim as supported or not. Humans only label the fifty or so answers used to validate the judge, not every answer.",
+      "simple": "Groundedness, also called faithfulness, asks a narrow question: is every claim in the answer supported by the retrieved context? It does not ask whether the answer is correct, because an answer can be faithful to a policy document that is itself out of date.\n\nThe standard method breaks the answer into single claims, and a judge model says whether the context supports each one. The score is supported claims divided by total claims. Judging a whole paragraph gives a mushy verdict, while per-claim scoring shows exactly which sentence was invented. We also check the judge against about fifty hand-labelled answers before trusting it.\n\nThe useful part is the diagnostic pairing. For example, if the bot quotes last year's leave policy faithfully, the answer is faithful but wrong, so retrieval found the wrong document. If faithfulness is low, the model is inventing despite good context, so the fix is on the generation side.",
       "points": [
         "Faithfulness asks if claims are supported, not if they are true.",
         "Decompose into atomic claims - paragraph-level judging is mush.",
@@ -1035,7 +1561,7 @@ window.IR.q["05-rag"] = {
         "debugging",
         "evaluation"
       ],
-      "why": "The core senior question. Whether you debug systematically or change the prompt and hope. **Also asked as:** “How would you improve a RAG system?” · “If you could only fix one thing in a badly performing RAG system, what would you check first?”",
+      "why": "The core senior question. Whether you debug systematically or change the prompt and hope.",
       "quick": [
         "First check if search found the right text at all.",
         "If not, fix how documents are split and searched.",
@@ -1049,9 +1575,7 @@ window.IR.q["05-rag"] = {
         "**Step 2** - for each, check: was the correct chunk retrieved at all?",
         "**Step 3** - retrieval failures: check ingestion quality, chunk boundaries, metadata filters, query phrasing, embedding model, and whether a keyword term needed lexical search.",
         "**Step 4** - generation failures: check prompt instructions, position of context, conflicting chunks, and whether the model was told it may say \"not in the documents\".",
-        "**Step 5** - fix one thing, re-run the labelled set, keep the change only if recall@k or answer accuracy moved.",
-        "**If you can fix only one thing:** check whether the correct chunk was retrieved at all. It splits the problem in two in about twenty minutes, and the usual root cause is chunking separating the answer from its context.",
-        "Tuning order once retrieval is diagnosed: chunking → embeddings → hybrid search → reranking → prompt, measuring before and after each change."
+        "**Step 5** - fix one thing, re-run the labelled set, keep the change only if recall@k or answer accuracy moved."
       ],
       "diagram": {
         "alt": "Debugging a RAG app: collect failing queries, check whether the correct chunk was retrieved, go to retrieval fixes if not or generation fixes if so, then change one thing and re-run the labelled set.",
@@ -1136,7 +1660,7 @@ window.IR.q["05-rag"] = {
         "prompting",
         "debugging"
       ],
-      "why": "Whether you can debug the second half of the pipeline, which most candidates never reach. **Also asked as:** “Your retriever returns the right chunk at rank 8. The LLM misses it. Fix it.”",
+      "why": "Whether you can debug the second half of the pipeline, which most candidates never reach.",
       "quick": [
         "The right text arrives, so look at the answer step.",
         "Old and new versions clash, so add dates and pick one.",
@@ -1149,15 +1673,122 @@ window.IR.q["05-rag"] = {
         "Conflicting versions → add dates, instruct which version wins, deduplicate.",
         "Lost in the middle → rerank and put best chunk first, cut context size.",
         "No refusal path → explicitly allow \"not in the provided documents\".",
-        "Multi-hop question → query decomposition or an agentic retrieval loop.",
-        "Right chunk at rank 8 but missed → a position problem, not recall: a cross-encoder reranker moves it to the top, and cutting k often helps more than adding chunks.",
-        "Add every fixed failure to the eval set so the fix stays protected."
+        "Multi-hop question → query decomposition or an agentic retrieval loop."
       ],
       "say": "Then the right text is reaching the prompt, so the bug is on the generation side, and there are four usual causes. The first is conflicting chunks. If the old and new leave policies both come back, the model may pick the old one, so I add dates to the metadata, tell the model which version wins, and deduplicate. Next is position. A fact buried in the middle of a long context gets missed, so I rerank, put the best chunk first and keep the context tight. Then there's a prompt that never lets the model say it doesn't know, so it invents something. An explicit not-in-the-documents instruction usually cuts confident wrong answers noticeably. Last is a question that needs facts from two documents, which no single chunk answers. That's really retrieval design, so I'd use query decomposition or an agentic retrieval loop. What I wouldn't do first is buy a bigger model, because it's expensive and hides the real defect.",
       "numbers": "Adding an explicit refusal instruction typically cuts confident-wrong answers noticeably. Measure it - track your unsupported-answer rate before and after.",
       "wrong": "\"I'd switch to a bigger model.\" Sometimes true, usually expensive, and it hides the real defect. Diagnose before you upgrade.",
       "follow": "How do you detect that an answer was not supported by the retrieved context?",
       "followAnswer": "I split the answer into single claims and check each one against the retrieved chunks, using an LLM judge or a smaller entailment model. The score is supported claims over total claims. Alongside that I verify every citation points to a chunk that was actually retrieved. I validate the judge against human labels first, then run it on a sample of live traffic."
+    },
+    {
+      "id": "rag-67",
+      "q": "How would you improve a RAG system?",
+      "round": [
+        "tech1",
+        "tech2"
+      ],
+      "level": "3-5",
+      "priority": "high",
+      "tags": [
+        "rag",
+        "retrieval",
+        "reranking",
+        "evaluation"
+      ],
+      "why": "Whether you know which parts of RAG you can tune, and check them in a sensible order.",
+      "quick": [
+        "Check each part: retrieval, chunking, embeddings, reranking, prompt, evaluation.",
+        "Most problems start with retrieval fetching the wrong chunks.",
+        "Bad chunks lead to bad retrieval, so check chunking early.",
+        "A reranker picks the best 5 out of the top 20.",
+        "Measure on real questions before and after every change."
+      ],
+      "simple": "The best way to improve a RAG system is to walk through the pipeline in order rather than guessing. Every stage feeds the next, so a problem early on can't be fixed later.\n\nFirst check retrieval, because if the right chunk never reaches the LLM, nothing else can fix the answer. Then check chunking, since bad chunks lead to bad retrieval. For example, if a chunk separates a number from its heading, the search cannot find it. Next check that the embedding model understands our domain terms. Then add reranking, retrieving about 20 candidates and letting a reranker pick the best 3 to 5. Finally, make sure the prompt says to answer only from the context and to say 'I don't know' otherwise.\n\nUnderneath all of it sits evaluation. We keep real questions with known answers and measure before and after every change, so each change is judged by evidence, not opinion.",
+      "points": [
+        "**Retrieval** - are we fetching the right chunks at all?",
+        "**Chunking** - are we splitting documents properly? Bad chunks lead to bad retrieval.",
+        "**Embeddings** - is the embedding model a good fit for our domain?",
+        "**Reranking** - retrieve the top 20, rerank, send the best 5.",
+        "**Prompt** - answer only from the context, and say \"I don't know\" otherwise.",
+        "**Evaluation** - are the answers actually correct? Measure before and after every change."
+      ],
+      "diagram": {
+        "kind": "stack",
+        "alt": "Checklist for improving RAG, checked in pipeline order: retrieval, chunking, embeddings, reranking and prompt, with evaluation underneath all of them.",
+        "caption": "**Check in pipeline order, and measure, don't guess.** If the right chunk never reaches the LLM, nothing lower down can fix the answer.",
+        "top": "wrong answer?",
+        "bottom": "measure before and after every change",
+        "layers": [
+          {
+            "label": "Retrieval",
+            "note": "right chunk fetched at all?",
+            "accent": "accent"
+          },
+          {
+            "label": "Chunking",
+            "note": "number kept with its heading?"
+          },
+          {
+            "label": "Embeddings",
+            "note": "model knows our domain terms?"
+          },
+          {
+            "label": "Reranking",
+            "note": "top 20 in, best 3-5 out"
+          },
+          {
+            "label": "Prompt",
+            "note": "context only, else I don't know"
+          },
+          {
+            "label": "Evaluation",
+            "note": "real questions, known answers",
+            "accent": "warn"
+          }
+        ]
+      },
+      "say": "I'd go through the pipeline part by part. First retrieval, because if the right chunk never reaches the model, nothing else can fix the answer. Then chunking, since bad chunks, like a number split from its heading, lead straight to bad retrieval. Then the embedding model, to check it actually understands our domain. Next I'd add reranking. We retrieve wide, say the top twenty, and a reranker picks the best five for the LLM. Then the prompt, making sure it tells the model to answer only from the context and to say it doesn't know when the answer isn't there. And underneath all of it is evaluation. I keep a set of real questions with known answers and measure before and after every change, so I know a change actually helped rather than guessing.",
+      "numbers": "Common starting point: retrieve 20 candidates, rerank, send 3–5 chunks to the LLM.",
+      "wrong": "\"I'd switch to a bigger LLM.\" If retrieval hands the model the wrong chunks, a bigger model just writes a more fluent wrong answer.",
+      "follow": "How do you know whether a change actually improved the system?",
+      "followAnswer": "I keep a fixed evaluation set of real questions with known answers and the chunks that contain them. For each change I measure retrieval - is the right chunk in the top k - and answer quality - is it correct and supported by the context. If the numbers don't move, the change didn't help, however good it felt."
+    },
+    {
+      "id": "rag-40",
+      "q": "If you could only fix one thing in a badly performing RAG system, what would you check first?",
+      "round": [
+        "tech1",
+        "tech2"
+      ],
+      "level": "5-10",
+      "priority": "high",
+      "tags": [
+        "rag",
+        "debugging",
+        "prioritisation"
+      ],
+      "why": "Forces prioritisation. The answer reveals whether you have actually debugged one of these.",
+      "quick": [
+        "First check if the right text was found at all.",
+        "Read what came back for about 20 failing questions.",
+        "If it is missing, no prompt or model change helps.",
+        "Search problems are far more common than answer problems.",
+        "The usual cause is a value split from its heading."
+      ],
+      "simple": "If I could fix only one thing, I would check whether the correct chunk was in the retrieved context at all. The model can only answer from what it is given, so if the right chunk never reached it, no prompt, better model or temperature change will help.\n\nSo I take about twenty failing queries and read what was retrieved. If the answer was not there, the problem is retrieval, so I look at chunking, embeddings, query phrasing or filters. If it was there, retrieval is cleared, and I look at ranking, k, the prompt or the model. For example, if the retrieved chunk holds the notice period but has lost its heading, the fix is chunking, not the prompt.\n\nI lead with this because retrieval is by far the more common failure, and the check needs only reading. Teams skip it because prompts feel editable and retrieval feels like plumbing.",
+      "points": [
+        "Check first whether the correct chunk was retrieved at all.",
+        "It splits the problem in two in about twenty minutes.",
+        "Retrieval is the more common failure by a wide margin.",
+        "Teams skip it because prompts feel more editable than plumbing.",
+        "The usual root cause is chunking separating answer from context."
+      ],
+      "say": "Whether the correct chunk was retrieved at all, because that one check splits the problem in two. I take about twenty failing queries and just read what came back. If the answer isn't in the context, no prompt, model or temperature change can help, so I go to chunking, embeddings, query phrasing or filters. If it is there, retrieval is cleared and I look at ranking position, k, the prompt and the model. I lead with this for two reasons. Retrieval is by far the more common failure, and the check needs no infrastructure, just reading. It's also the step teams skip, because prompts feel editable and retrieval feels like plumbing. Push me for the most common root cause underneath and it's chunking that separated an answer from what makes it findable, like a value split from its heading. So my habit is never to debug RAG end to end. Split retrieval from generation first.",
+      "numbers": "Twenty failing queries is usually enough to see the pattern. Most RAG quality problems resolve to retrieval rather than generation.",
+      "wrong": "'I would improve the prompt.' It is the most common instinct and it is the wrong first move - you may be instructing a model that never received the answer.",
+      "follow": "You check and the right chunk was there every time. Where do you go next?",
+      "followAnswer": "Then retrieval is fine and I move to generation. I look at where the right chunk sits in the prompt, because a fact buried in the middle gets missed, and whether conflicting or outdated chunks sit beside it. Then the prompt: does it allow 'not found' and require citations? Finally I test other models on the same fixed context to see whether the generator is the weak link."
     },
     {
       "id": "rag-15",
@@ -1227,6 +1858,42 @@ window.IR.q["05-rag"] = {
       "wrong": "\"We have an eval suite, so we catch hallucinations.\" Eval suites cover the queries you thought of. Production is the ones you did not.",
       "follow": "Your groundedness checker is itself an LLM. Who checks it?",
       "followAnswer": "Humans, on a schedule. I build a labelled set of fifty to a hundred answers with known supported and unsupported claims, and measure the checker's agreement before trusting it. Then each week I review a sample of its verdicts, especially where it disagrees with user feedback. I re-run that calibration whenever the checker model or its prompt changes, because its accuracy can shift silently."
+    },
+    {
+      "id": "rag-63",
+      "q": "What is observability in an LLM application?",
+      "round": [
+        "screening",
+        "tech1"
+      ],
+      "level": "3-5",
+      "priority": "high",
+      "tags": [
+        "rag",
+        "observability",
+        "llmops"
+      ],
+      "why": "Whether you know that a fast, error-free LLM app can still be giving wrong answers.",
+      "quick": [
+        "Record enough to explain any single answer later.",
+        "Log the question, the found text, the prompt and the answer.",
+        "Time and cost each step separately.",
+        "Add quality scores and user feedback to each record.",
+        "An app can look healthy and still answer wrongly."
+      ],
+      "simple": "Observability in an LLM application means recording enough about every request that we can explain any single answer later, especially a bad one. Normal monitoring tells us whether the system is up and fast, but an LLM app can be fast and error-free and still give confidently wrong answers.\n\nSo for every request we record a trace, a step-by-step record of the question, the retrieved chunks with their scores, the exact final prompt, the answer and citations, the model version, and each step's time and cost. We also run quality checks on a sample and link user feedback, like thumbs down, to the exact trace.\n\nFor example, when an employee says the bot gave the wrong leave entitlement, we open that trace and see straight away whether search missed the document or the model ignored it. The trade-off is storage, so we keep every failed trace and sample the rest.",
+      "points": [
+        "Trace every request step by step.",
+        "Record question, retrieved chunks and scores, final prompt, answer, model version.",
+        "Per-step latency and cost.",
+        "Sampled quality scores plus user feedback, linked to traces.",
+        "Healthy dashboards do not mean correct answers."
+      ],
+      "say": "Observability in an LLM application means recording enough about every request that we can explain any single answer later, especially a bad one. Normal monitoring tells us whether the system is up and fast, but an LLM app can be fast and error-free while still giving confidently wrong answers, so we need more than that. For every request I record a trace, which includes the question, the retrieved chunks with their scores, the exact final prompt, the answer with its citations, the model version, and the time and cost of each step. On top of that, I run quality checks on a sample of answers and attach user feedback, like thumbs down or rephrased questions, to the exact trace. For instance, when a user complains about one answer, I open its trace and can see immediately whether search missed the right document or the model ignored it. Tools like Langfuse or LangSmith make this straightforward.",
+      "numbers": "Keep 100% of traces for failed or thumbs-down requests; sample the rest if storage cost matters.",
+      "wrong": "\"We monitor latency and errors.\" That watches the server, not the answers - every dashboard can be green while users get wrong answers.",
+      "follow": "What exactly would you put in a trace?",
+      "followAnswer": "I'd put every step of the request in it, so I can replay any answer later. That means a request ID, the user and their permission groups, the original question and any rewritten query, the filters applied, and the retrieved chunk IDs with scores before and after reranking. Then the exact final prompt, the model name and version, settings like temperature, the answer with its citations, and tokens, latency and cost per step. User feedback and quality scores attach to the same trace ID."
     },
     {
       "id": "rag-35",
@@ -1585,7 +2252,7 @@ window.IR.q["05-rag"] = {
         "tuning",
         "cost"
       ],
-      "why": "A single number that trades recall, noise, latency and cost. There is a measurable optimum and most teams never look for it. **Also asked as:** “How does top-k retrieval work?”",
+      "why": "A single number that trades recall, noise, latency and cost. There is a measurable optimum and most teams never look for it.",
       "quick": [
         "More chunks make it likelier the answer is there.",
         "But extra chunks add noise, cost and slower answers.",
@@ -1995,7 +2662,7 @@ window.IR.q["05-rag"] = {
         "trust",
         "compliance"
       ],
-      "why": "Regulated employers will not ship a system whose answers cannot be traced. **Also asked as:** “How do you cite at sentence level rather than document level?”",
+      "why": "Regulated employers will not ship a system whose answers cannot be traced.",
       "quick": [
         "Keep the source file, page and section on every piece.",
         "Label each piece with an ID in the prompt.",
@@ -2078,13 +2745,7 @@ window.IR.q["05-rag"] = {
       "numbers": "Citation validity should be checked on 100% of responses, not sampled. It is a cheap string check, not a model call.",
       "wrong": "\"The model returns the sources in its answer.\" Only if you validate them. Unvalidated citations are a compliance incident waiting to happen.",
       "follow": "What do you do when the model cites a document that says the opposite?",
-      "followAnswer": "That's a citation that exists but doesn't support the claim, so a string check won't catch it and I need a support check. For each claim, a judge or entailment model compares the sentence with the cited chunk and labels it supported, unsupported or contradicted. A contradicted claim is dropped, or the answer is flagged and regenerated, never shown as sourced. Then I read the trace to see why, often an old and new version retrieved together or a misread negation, and add the case to the eval set.",
-      "points": [
-        "Keep source file, page and section on every chunk, and label each chunk with an ID in the prompt.",
-        "Ask the model to cite the ID after each claim; check every cited ID was really retrieved, on every answer.",
-        "**Sentence level:** document-level citation shifts verification onto the reader. Post-hoc attribution checks each sentence against its cited chunk and exposes unsupported ones.",
-        "Span highlighting needs chunk start and end character offsets stored at ingestion - otherwise it means reprocessing the whole corpus."
-      ]
+      "followAnswer": "That's a citation that exists but doesn't support the claim, so a string check won't catch it and I need a support check. For each claim, a judge or entailment model compares the sentence with the cited chunk and labels it supported, unsupported or contradicted. A contradicted claim is dropped, or the answer is flagged and regenerated, never shown as sourced. Then I read the trace to see why, often an old and new version retrieved together or a misread negation, and add the case to the eval set."
     },
     {
       "id": "rag-26",
@@ -2169,7 +2830,7 @@ window.IR.q["05-rag"] = {
         "monitoring",
         "production"
       ],
-      "why": "Whether you can tell a retrieval failure from a generation failure after launch, when there is no answer key. **Also asked as:** “What is observability in an LLM application?”",
+      "why": "Whether you can tell a retrieval failure from a generation failure after launch, when there is no answer key.",
       "quick": [
         "Log every request, from the question to the cited answer.",
         "Search trouble shows as low scores and more I-don't-know replies.",
@@ -2183,9 +2844,7 @@ window.IR.q["05-rag"] = {
         "Retrieval signals: low top scores, rising \"I don't know\" rate, stale or wrong-type chunks.",
         "Generation signals: sampled faithfulness and citation checks with an LLM judge.",
         "User signals: thumbs down, rephrasing, escalation. System signals: per-stage latency, cost, index freshness.",
-        "Alert on changes, and feed bad traces back into the eval set.",
-        "Healthy dashboards (fast, no errors) do not mean correct answers - observability means being able to explain any single answer later.",
-        "Keep 100% of traces for failed or thumbs-down requests; sample the rest if storage cost matters."
+        "Alert on changes, and feed bad traces back into the eval set."
       ],
       "diagram": {
         "kind": "compare",
@@ -3207,6 +3866,41 @@ window.IR.q["05-rag"] = {
       "wrong": "Aggressive dedup on text similarity alone. It silently merges regional policy variants that differ in exactly the number the user asked about.",
       "follow": "Two chunks are 99% identical but one limit differs. How does your dedup handle it?",
       "followAnswer": "It keeps both, because that difference is the answer. My dedup never merges on text similarity alone. Before treating two chunks as duplicates, I compare their metadata, such as region, product, version and effective date, and if any of those differ they stay separate. I also check whether the differing tokens are numbers, dates or amounts, and if so I don't merge. At query time, a filter on the user's region picks the right one, and if both come back, the prompt labels each by scope."
+    },
+    {
+      "id": "rag-32",
+      "q": "How do you cite at sentence level rather than document level?",
+      "round": [
+        "tech2"
+      ],
+      "level": "5-10",
+      "priority": "low",
+      "tags": [
+        "rag",
+        "citations",
+        "compliance"
+      ],
+      "why": "What regulated buyers actually demand. 'Source: policy.pdf' is not a citation they will accept.",
+      "quick": [
+        "Pointing to a whole PDF makes the reader do the checking.",
+        "Number the pieces and have the model cite after each claim.",
+        "Then check each sentence against the piece it cites.",
+        "Save exact text positions when loading, to highlight sentences.",
+        "One click should open the source with the sentence highlighted."
+      ],
+      "simple": "A citation like \"Source: policy.pdf\" pointing at a 200-page PDF isn't really a citation, because it moves all the checking onto the reader. So the goal is to tie every sentence of the answer to a specific chunk and verify that link.\n\nThe cheap way is to number the chunks in the prompt and ask the model to put a marker after every claim. But the markers are self-reported, so the model can attach one to the wrong claim. That's why I add post-hoc attribution: we split the answer into sentences and check each one against its chunk using entailment or similarity. For example, if a sentence says the claim limit is 50,000 rupees and no chunk supports it, we flag or drop it.\n\nThe highest level is highlighting the exact span in the source, which needs character offsets stored at ingestion. Then one click lands on the highlighted sentence, which earns a compliance team's trust.",
+      "points": [
+        "Document-level citation shifts verification onto the reader.",
+        "Inline markers are cheap but self-reported and need checking.",
+        "Post-hoc attribution is computed, and it exposes unsupported sentences.",
+        "Span highlighting needs character offsets stored at ingestion.",
+        "Verify every citation - an unverified one looks authoritative and misleads."
+      ],
+      "say": "Each sentence of the answer gets tied to a specific chunk, and then I verify that link, because pointing at a 200-page PDF just moves the checking work onto the reader. The cheap way is numbering the chunks in the prompt and asking for a marker after every claim, which I map back to sources. Those markers are self-reported, so the model can pin one to the wrong claim. That's why I add post-hoc attribution. I split the answer into sentences and check each against its chunk with entailment or similarity. It's computed rather than trusted, and a sentence nothing supports is exactly where a hallucination lives. An unverified citation is worse than none, because it looks authoritative. Highlighting the exact span needs character offsets saved at ingestion, and adding them later means reprocessing the whole corpus, so I store them up front. The payoff is one-click verification, where clicking a citation lands on the highlighted sentence. That single interaction is what earns a compliance team's trust.",
+      "numbers": "Store chunk start and end offsets at ingestion. Without them, span-level citation requires reprocessing the entire corpus.",
+      "wrong": "Returning the source filenames beneath the answer and calling it cited. A compliance reviewer will ask which sentence, and there is no answer.",
+      "follow": "The model cites a chunk that does not support the claim. How do you catch it?",
+      "followAnswer": "I check every claim against the chunk it cites rather than trusting the marker. After generation I split the answer into sentences, pair each with its cited chunk, and run an entailment model or small judge that labels it supported or not. It's cheap enough to run on most traffic. An unsupported sentence loses its citation, gets regenerated with a stricter instruction, or the whole answer is flagged for review. I track the unsupported-citation rate as a metric, and validate the checker against hand-labelled examples first."
     },
     {
       "id": "rag-21",

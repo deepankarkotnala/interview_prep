@@ -8,7 +8,7 @@ window.IR.q["06-advanced-rag"] = {
   "grounding": "public JDs naming advanced RAG techniques + their measured costs",
   "evening": [
     "ar-01",
-    "ar-15",
+    "ar-03",
     "ar-05",
     "ar-07",
     "ar-09"
@@ -28,7 +28,7 @@ window.IR.q["06-advanced-rag"] = {
         "query-rewriting",
         "retrieval"
       ],
-      "why": "The cheapest advanced technique, and the one most candidates skip past. **Also asked as:** “Multi-query, RAG-Fusion, step-back, decomposition and routing - compare the query transformation techniques.”",
+      "why": "The cheapest advanced technique, and the one most candidates skip past.",
       "quick": [
         "Query rewriting turns a messy message into a clear search.",
         "It resolves follow-ups, adds other wordings, or splits questions.",
@@ -43,9 +43,7 @@ window.IR.q["06-advanced-rag"] = {
         "Decomposition - split a compound question into separate searches.",
         "Every rewrite adds latency to every query unless you gate it.",
         "Gate on first-pass retrieval quality (a reranker score beats raw cosine), so you only pay when retrieval was weak.",
-        "Use a small fast model here. This step does not need your best one.",
-        "**Match technique to failure:** multi-query / RAG-Fusion (merge with RRF) when one wording misses the chunk; step-back when the question is too specific; decomposition for multi-part questions; routing to pick the right index; HyDE when questions and answers look different.",
-        "RRF uses k = 60 by convention: score = Σ 1 / (60 + rank). Multi-query usually uses 3–5 variants, searched in parallel."
+        "Use a small fast model here. This step does not need your best one."
       ],
       "diagram": {
         "alt": "Query rewriting flow: always resolve references, retrieve, and expand the query only when the reranker score is weak.",
@@ -162,7 +160,7 @@ window.IR.q["06-advanced-rag"] = {
         "retrieval",
         "reranking"
       ],
-      "why": "Whether you understand the speed-versus-accuracy trade-off behind every retrieval stack. **Also asked as:** “A reranker only reorders what retrieval found. What can it fix, what can't it, and how many candidates should it see?”",
+      "why": "Whether you understand the speed-versus-accuracy trade-off behind every retrieval stack.",
       "quick": [
         "The difference is when the question and document meet.",
         "A bi-encoder turns each into numbers separately, fast but rough.",
@@ -175,9 +173,7 @@ window.IR.q["06-advanced-rag"] = {
         "**Bi-encoder:** separate encoding, one vector each, pre-computed - fast, less precise. First-stage retrieval.",
         "**Cross-encoder:** query + document together, one score - most accurate, slow, nothing pre-computed. Reranking.",
         "**ColBERT:** one vector per token, MaxSim scoring - more precise than a bi-encoder, much cheaper than a cross-encoder, but a far bigger index.",
-        "Standard pipeline: bi-encoder + BM25 → cross-encoder rerank on the top 20–100.",
-        "A reranker fixes ranking, not recall: if the right chunk is not in the candidates, it cannot help.",
-        "Size N from first-stage recall@20/50/100 - rerank where recall flattens. Latency scales with N."
+        "Standard pipeline: bi-encoder + BM25 → cross-encoder rerank on the top 20–100."
       ],
       "diagram": {
         "kind": "compare",
@@ -229,6 +225,103 @@ window.IR.q["06-advanced-rag"] = {
       "wrong": "\"Use a cross-encoder for retrieval because it is more accurate.\" You cannot score 10 million documents with a cross-encoder on every query - it is a reranker, not a retriever.",
       "follow": "Why can't we pre-compute cross-encoder scores?",
       "followAnswer": "Because the score depends on the query and the document together, and we do not know the query in advance. A bi-encoder can pre-compute because each document vector does not depend on the query. With a cross-encoder, every new query creates new pairs, so the model has to run again for each candidate."
+    },
+    {
+      "id": "ar-03",
+      "q": "A reranker only reorders what retrieval found. What can it fix, what can't it, and how many candidates should it see?",
+      "round": [
+        "tech1",
+        "tech2"
+      ],
+      "level": "5-10",
+      "priority": "high",
+      "tags": [
+        "advanced-rag",
+        "reranking",
+        "cross-encoder"
+      ],
+      "why": "The mechanism is covered in the RAG reranking card and the bi-encoder / cross-encoder card here; this checks whether you know its limits and how to size it.",
+      "quick": [
+        "A reranker fixes the order, not what was found.",
+        "It can move a found piece from eighth place to first.",
+        "It cannot rescue a piece that search never found.",
+        "Check how often search finds the answer at 20, 50 and 100.",
+        "Rerank the smallest number where gains stop, often about 50."
+      ],
+      "simple": "A reranker fixes the order, not the haul. It is usually a cross-encoder that reads the question and each candidate together, so it judges relevance far better than the embedding model, but it can only promote a chunk the first stage already found.\n\nFor example, if the right policy clause was retrieved but came back eighth, the reranker moves it to the top. What it cannot fix is a chunk that was never retrieved, because of bad chunking, a missing document or a question that needs two lookups. Those are recall problems, fixed upstream.\n\nSizing matters because each candidate is a separate model pass, and reranking 20 to 50 typically adds about 50 to 300 milliseconds. So measure first-stage recall at 20, 50 and 100, and rerank the smallest number where recall stops rising. If recall@100 is still low, stop tuning the reranker and fix retrieval.",
+      "points": [
+        "Bi-encoder: separate encodings, precomputable, fast, less precise.",
+        "Cross-encoder: joint encoding of the pair, precise, nothing precomputable.",
+        "Therefore two stages - recall cheaply, then reorder precisely.",
+        "Size N from first-stage recall@20/50/100 - rerank where recall flattens. Latency scales with N.",
+        "It fixes ranking, not recall. If the right chunk was not in the fifty, it cannot help."
+      ],
+      "diagram": {
+        "alt": "A missed chunk never reaches the reranker; the reranker only reorders the first-stage top 50 into a top 5.",
+        "rows": [
+          [
+            {
+              "id": "c",
+              "label": "Corpus"
+            }
+          ],
+          [
+            {
+              "id": "m",
+              "label": "Missed chunk",
+              "note": "recall problem",
+              "accent": "bad"
+            },
+            {
+              "id": "f",
+              "label": "First stage",
+              "note": "top 50 = the haul"
+            }
+          ],
+          [
+            {
+              "id": "r",
+              "label": "Reranker",
+              "note": "reorders only",
+              "accent": "warn"
+            }
+          ],
+          [
+            {
+              "id": "t",
+              "label": "Top 5 to model",
+              "accent": "accent"
+            }
+          ]
+        ],
+        "edges": [
+          {
+            "from": "c",
+            "to": "f",
+            "label": "retrieved"
+          },
+          {
+            "from": "c",
+            "to": "m",
+            "label": "not found"
+          },
+          {
+            "from": "f",
+            "to": "r"
+          },
+          {
+            "from": "r",
+            "to": "t",
+            "label": "8th to 1st"
+          }
+        ],
+        "caption": "A reranker **fixes the order, not the haul**. If the right chunk is not in the candidates, fix retrieval upstream."
+      },
+      "say": "A reranker fixes the order, not the haul, because it can only promote chunks the first stage already returned. It's usually a cross-encoder that reads the question and each chunk together, so it judges relevance much better than embeddings do. Say the right policy clause came back eighth and the model never used it. The reranker moves it to the top, and that's exactly the problem it solves. What it can't fix is a chunk that was never retrieved, whether from bad chunking, a missing document, an exact code the embeddings blurred, or a question needing two lookups. Those are recall problems, and they're fixed upstream. To size it, I measure first-stage recall at 20, 50 and 100 and rerank the smallest number where recall stops climbing, since every candidate is another model pass. Fifty is a common default. If recall at 100 is still low, I stop tuning the reranker and go fix retrieval.",
+      "numbers": "Reranking 20–50 candidates typically adds about 50–300 ms, depending on model size, hosting and candidate count. Reranking 200 adds roughly proportionally more, usually for diminishing returns.",
+      "wrong": "\"A reranker will fix our accuracy,\" with no mention of recall. The follow-up gives a low recall@50 and asks whether it helps - and it cannot, because it only reorders what was retrieved.",
+      "follow": "Recall@50 is 0.7. Does a reranker help you?",
+      "followAnswer": "Only for the 70% of questions where the right chunk is in the fifty - it can move that chunk to the top. For the other 30% it can do nothing, because it never sees the right chunk. So I check recall at 100 or 200 first. If it barely rises, the problem is retrieval itself - chunking, hybrid search, query rewriting or the embedding model - and I fix that first."
     },
     {
       "id": "ar-16",
@@ -389,7 +482,7 @@ window.IR.q["06-advanced-rag"] = {
         "architecture",
         "cost"
       ],
-      "why": "The buzzword of the moment. The panel is checking whether you can bound it. **Also asked as:** “Retrieval is now a tool the agent calls. What changes, and when is agentic RAG the wrong choice?”",
+      "why": "The buzzword of the moment. The panel is checking whether you can bound it.",
       "quick": [
         "Agentic RAG lets the model decide when and where to search.",
         "It helps multi-step questions, many sources and self-correction.",
@@ -404,10 +497,7 @@ window.IR.q["06-advanced-rag"] = {
         "Multiplies latency and cost - several calls where there was one.",
         "Cap retrieval loops at two or three. Uncapped, it is a runaway.",
         "Route simple questions past it. Most traffic does not need it.",
-        "Needs tracing, or you cannot explain why one answer was slow and wrong.",
-        "Design the retrieval tool: clear name and description, useful filters, compact results with sources.",
-        "Budget max steps, tokens and time, and evaluate the path, not only the answer.",
-        "Wrong choice for simple lookups, tight latency or cost, and processes that must be predictable - route instead. A fixed pipeline answers in ~1–3 s; an agent loop commonly takes 3–10 calls and 5–30 s."
+        "Needs tracing, or you cannot explain why one answer was slow and wrong."
       ],
       "diagram": {
         "alt": "A router sends simple questions down cheap single-shot RAG and multi-step questions to a capped agent loop.",
@@ -479,6 +569,41 @@ window.IR.q["06-advanced-rag"] = {
       "wrong": "\"We made our RAG agentic to improve quality.\" Without the cap, the routing and the cost comparison, the follow-up - which questions needed it, and at what cost - has no answer ready.",
       "follow": "How do you decide which questions take the cheap path?",
       "followAnswer": "A router in front. Usually a small, fast model or a trained classifier labels the question as a simple lookup, multi-step, or out of scope. Simple questions go straight to one retrieval and one answer. I also use a runtime signal: if the first retrieval scores well on the reranker, answer directly; if not, escalate to the agent loop. And I evaluate the router on its own labelled set."
+    },
+    {
+      "id": "ar-17",
+      "q": "Retrieval is now a tool the agent calls. What changes, and when is agentic RAG the wrong choice?",
+      "round": [
+        "tech2",
+        "manager"
+      ],
+      "level": "5-10",
+      "priority": "high",
+      "tags": [
+        "advanced-rag",
+        "agents",
+        "trade-offs"
+      ],
+      "why": "Whether you can design retrieval for an agent loop, and still say no to an agent when a simple pipeline is enough.",
+      "quick": [
+        "The model chooses whether, what and how often to search.",
+        "Give the search tool a clear name and description.",
+        "Allow useful filters and return short results with sources.",
+        "Set limits on steps, cost and time, and check the path.",
+        "For simple lookups, a fixed pipeline is faster and cheaper."
+      ],
+      "simple": "In classic RAG, retrieval is a fixed step, so we always search once and then answer. In agentic RAG, search becomes one tool the model can call zero, one or five times, alongside tools like SQL or web search, like a researcher who decides what to look up and looks again when something is missing.\n\nThat changes what you design. The tool needs a clear name and description, because that is all the model decides from. For example, 'search_hr_policies: searches company HR documents; use for leave, benefits and conduct questions' works far better than 'search docs'. You also need stopping rules, such as a step limit and a token budget, and evaluation that checks the path.\n\nBut an agent loop commonly takes 5 to 30 seconds against about 1 to 3 for a fixed pipeline. So simple lookups belong in a fixed pipeline, and a router sends only multi-step questions to the agent.",
+      "points": [
+        "Retrieval becomes a tool call: the model chooses whether, what and how often to search.",
+        "Design the tool: clear name and description, useful filters, compact results with sources.",
+        "Add budgets - max steps, tokens, time - and evaluate the path, not only the answer.",
+        "Wrong for simple lookups, tight latency or cost, and processes that must be predictable - route instead."
+      ],
+      "say": "Once retrieval is a tool, the model chooses whether, what and how often to search, so the tool itself becomes something you design. The name and description matter most, because they're all the model decides from. Search HR policies, for leave, benefits and conduct questions, beats a vague search docs. Then come inputs and outputs. Can the agent filter by year or department, and does it get back compact, labelled results with sources it can reason about? It also needs stopping rules on steps, tokens and time, or it keeps searching. And evaluation moves from the final answer to the path, meaning did it search for the right thing, and how many times. The senior part is knowing when not to do this. For simple lookups like what's the notice period, tight latency or cost, or processes that must be auditable, a fixed hybrid-search pipeline with a reranker is faster, cheaper and easier to debug. I route only the multi-step questions to the agent.",
+      "numbers": "A fixed pipeline usually answers in about 1–3 s with one LLM call; an agent loop commonly makes 3–10 calls and takes 5–30 s. Cap retrieval at two or three calls for most questions, as in the agentic RAG card, with a slightly higher overall step budget when other tools are involved.",
+      "wrong": "\"Agentic RAG is the modern way, so we use it for everything.\" You multiply latency and cost for questions a single search already answers, and you lose predictability.",
+      "follow": "The agent keeps calling search with almost the same query. How do you fix it?",
+      "followAnswer": "First I look at what the tool returns - usually the results don't tell the agent anything new, so it retries. I make results clearer, with sources, and return an explicit 'no results for this filter' message. Then I add guards: block near-duplicate queries, cap the number of search calls, and tell the agent to answer or say it could not find it once the budget is used."
     },
     {
       "id": "ar-14",
@@ -597,7 +722,7 @@ window.IR.q["06-advanced-rag"] = {
         "knowledge-graph",
         "trade-off"
       ],
-      "why": "A depth question where the honest answer - usually no - scores higher than enthusiasm. **Also asked as:** “When would you use a knowledge graph instead of a vector store?”",
+      "why": "A depth question where the honest answer - usually no - scores higher than enthusiasm.",
       "quick": [
         "GraphRAG maps people, things and their links from documents.",
         "It answers questions that connect facts across many documents.",
@@ -612,10 +737,7 @@ window.IR.q["06-advanced-rag"] = {
         "Ingestion cost is high - model passes over the whole corpus (LazyGraphRAG-style variants cut this).",
         "Extraction errors compound. A wrong graph is worse than none.",
         "Adds a second datastore to operate and keep in sync.",
-        "For lookup-style questions, plain RAG plus reranking wins outright.",
-        "Vector search answers similarity; a graph answers connection. The giveaway is multi-hop traversal - the answer lives between chunks.",
-        "Real fits: ownership chains, supply-chain impact, fraud rings. Entity resolution (ACME Ltd = Acme Limited) is the hidden, ongoing cost.",
-        "Default to vectors plus metadata filtering; escalate on a demonstrated failure. Hybrid is common: graph for traversal, vectors for node text."
+        "For lookup-style questions, plain RAG plus reranking wins outright."
       ],
       "say": "GraphRAG extracts entities and relationships into a knowledge graph and retrieves over that, and on most projects I wouldn't build it. It does answer a class of question chunk retrieval can't. Which suppliers are affected by this regulation, and through which contracts, needs facts connected across many documents. Microsoft's version also clusters the graph into communities and pre-summarises each, so whole-corpus theme questions get answered. The costs are large, though. Ingestion means model calls over every chunk plus a summary per community, a real bill to price before proposing it. The graph needs upkeep as documents change, and extraction errors compound into a wrong graph, which is worse than none. You're also running a second datastore. Lighter variants like LazyGraphRAG defer most of the LLM work to query time, which brings indexing cost down to about that of plain vector RAG. So I build it only for genuinely relational questions on a fairly stable corpus. For what does the policy say about X, plain RAG with a reranker wins.",
       "numbers": "Full GraphRAG makes one or more model calls per chunk at ingestion, plus a summary call per community. On a large corpus that is a substantial one-time bill - price it before proposing it. Microsoft reports LazyGraphRAG's indexing cost as roughly that of plain vector RAG.",
@@ -692,6 +814,40 @@ window.IR.q["06-advanced-rag"] = {
       "wrong": "Listing every technique you know. The question is about prioritisation, and an unordered list answers a different one.",
       "follow": "You added three techniques and quality is flat. What went wrong?",
       "followAnswer": "Usually they were added without diagnosing which stage was failing, or all at once, so their effects cancelled out or hid each other - or the eval set does not contain the failing questions. I go back to the baseline, measure recall, ranking and faithfulness separately, then add one technique at a time on the same eval set, keeping only those that move their target metric within budget."
+    },
+    {
+      "id": "ar-20",
+      "q": "Multi-query, RAG-Fusion, step-back, decomposition and routing - compare the query transformation techniques.",
+      "round": [
+        "tech2"
+      ],
+      "level": "5-10",
+      "priority": "medium",
+      "tags": [
+        "advanced-rag",
+        "query-transformation"
+      ],
+      "why": "Whether you can match a query technique to a failure, rather than listing buzzwords.",
+      "quick": [
+        "Match each technique to the failure it fixes.",
+        "Multi-query searches several wordings, RAG-Fusion merges them by rank.",
+        "Step-back also searches a broader question to find the rule.",
+        "Decomposition splits multi-part questions, routing picks where to look.",
+        "Each adds a model call, so add only what tests justify."
+      ],
+      "simple": "The user's question is often not the best search query, so query transformation changes it before we search. The easiest way to compare the techniques is by the failure each one fixes.\n\nRewriting turns a messy follow-up into a clean standalone question. Multi-query writes a few versions of the question and searches them in parallel, and RAG-Fusion merges those lists with reciprocal rank fusion, so chunks near the top of several lists win. Step-back prompting handles a question that is too specific. For example, 'can I claim a taxi at 11 pm after a client dinner in Pune?' also gets searched as 'what is the late-night travel expense policy?'. Decomposition splits a multi-part question into sub-questions, and routing decides where to look first.\n\nAlmost every technique adds an LLM call, so add only the one that fixes the failure you actually measured.",
+      "points": [
+        "Rewriting → follow-up and messy questions.",
+        "Multi-query / RAG-Fusion (merge with RRF) → one wording misses the chunk.",
+        "Step-back → too specific; also retrieve the general rule.",
+        "Decomposition → multi-part or comparison questions.",
+        "Routing → pick the right index or tool. HyDE → questions and answers look different."
+      ],
+      "say": "The clean way to compare them is by the failure each one fixes, because stacking them all just multiplies latency. Rewriting handles a messy follow-up like what about for interns, turning it into a standalone question. Multi-query helps when one wording misses the chunk, so the model writes three to five variants and we search them in parallel. RAG-Fusion is multi-query with a proper merge, reciprocal rank fusion, which sums one over sixty plus the rank across the lists. Chunks near the top of several lists win, and ranks are used because BM25 and cosine scores aren't on the same scale. Step-back handles a question that's too specific. A late taxi claim after a client dinner also gets searched as the late-night travel policy, which finds the general rule. Decomposition splits multi-part questions, and routing picks the right index or tool, like HR documents versus a SQL database. Almost all of them add an LLM call, so I add only the one that fixes a failure the eval showed.",
+      "numbers": "RRF uses k = 60 by convention: score = Σ 1 / (60 + rank). Multi-query usually uses 3–5 variants, searched in parallel.",
+      "wrong": "Listing all seven and saying \"we used them all\". Stacking them multiplies latency and cost, and you can no longer tell which one actually helped.",
+      "follow": "Why does RRF use the rank instead of the similarity scores?",
+      "followAnswer": "Because scores from different searches are not on the same scale - a BM25 score of 12 and a cosine similarity of 0.8 cannot be added in any meaningful way, and even two vector searches can have different score ranges. Ranks are always comparable. RRF simply rewards documents that show up near the top in many lists, which is simple and robust."
     },
     {
       "id": "ar-19",
@@ -1036,6 +1192,83 @@ window.IR.q["06-advanced-rag"] = {
       "wrong": "\"Context windows are big now, so CAG replaces RAG.\" It only holds for small, static, unpermissioned corpora, and the follow-ups on updates and access control have no answer.",
       "follow": "The FAQ you cached changes twice a day. Does CAG still work?",
       "followAnswer": "Yes, if the prompt is structured for it. Each change means rebuilding the cache once, which is cheap at twice a day. I put the stable instructions first and the FAQ after, version the FAQ, and warm the new cache when it is published. It stops working when changes are constant or different users need different content - then I retrieve instead."
+    },
+    {
+      "id": "ar-13",
+      "q": "When would you use a knowledge graph instead of a vector store?",
+      "round": [
+        "tech2"
+      ],
+      "level": "5-10",
+      "priority": "medium",
+      "tags": [
+        "advanced-rag",
+        "knowledge-graph",
+        "graphrag",
+        "trade-off",
+        "architecture"
+      ],
+      "why": "Appears in JDs and gets asked as a choice question. The trap is enthusiasm - most candidates should argue against it.",
+      "quick": [
+        "A vector store finds similar text, a knowledge graph finds connections.",
+        "Use a graph when the relationship itself is the answer.",
+        "Good fits are ownership chains, supply chains and fraud rings.",
+        "Merging duplicate names is hard and never fully done.",
+        "Default to a vector store, add a graph after a proven failure."
+      ],
+      "simple": "Vector search and a knowledge graph answer different kinds of questions. Vector search is good at similarity, as in 'find text about this topic'. A graph is good at explicit relationships. For example, it can find who ultimately owns a company, or which suppliers sit two hops from a sanctioned entity. That answer lives between chunks rather than inside one, so no amount of chunking recovers it.\n\nThe cost is where people underestimate it. You need a schema, entity extraction, update logic and, above all, entity resolution, which means deciding that ACME Ltd, Acme Limited and ACME LTD. are one node. That is never fully solved, so a graph is a data engineering programme, not a feature you add in a sprint.\n\nSo the sensible default is vector or keyword retrieval with good metadata filtering. Add a graph only after a real relationship question fails with ordinary retrieval, usually as a hybrid with vector search.",
+      "points": [
+        "Vector search answers similarity. A graph answers connection.",
+        "The giveaway is multi-hop traversal - the answer lives between chunks, not inside one.",
+        "Real fits: ownership chains, supply-chain impact, fraud rings, interaction networks.",
+        "The cost is entity extraction and entity resolution, which are genuinely hard and ongoing.",
+        "It is a data engineering programme, not a feature you add in a sprint.",
+        "Default to vectors plus metadata filtering; escalate on a demonstrated failure.",
+        "Hybrid is common: graph for traversal, vectors for the text on each node."
+      ],
+      "diagram": {
+        "kind": "compare",
+        "alt": "Vector store and knowledge graph compared on what they answer, where the answer lives, examples, cost and default role.",
+        "aspects": [
+          "Answers",
+          "Answer lives",
+          "Example",
+          "Hidden cost",
+          "Role"
+        ],
+        "columns": [
+          {
+            "label": "Vector store",
+            "note": "plus metadata",
+            "accent": "accent",
+            "cells": [
+              "Similarity",
+              "Inside one chunk",
+              "Text about this topic",
+              "Chunking, embeddings",
+              "The default"
+            ]
+          },
+          {
+            "label": "Knowledge graph",
+            "note": "entities and links",
+            "accent": "warn",
+            "cells": [
+              "Connection, multi-hop",
+              "Between chunks",
+              "Who ultimately owns this?",
+              "Entity resolution, forever",
+              "Add on proven failure"
+            ]
+          }
+        ],
+        "caption": "**Vectors answer similarity; a graph answers connection.** Reach for a graph only when the relationship itself is the answer."
+      },
+      "say": "I'd reach for a knowledge graph when the relationship itself is the answer, and otherwise stay with a vector store plus good metadata. Vector search answers similarity, as in find text about this topic. A graph answers connection, like who ultimately owns this company, or which suppliers sit two hops from a sanctioned entity. That answer lives between chunks rather than inside one, so no amount of chunking recovers it. Good fits are ownership chains, supply-chain impact and fraud rings. The cost is where people underestimate it. You need a schema, entity extraction, update logic and entity resolution, which means deciding ACME Ltd, Acme Limited and ACME LTD are one node. That's never fully solved and needs ongoing stewardship. So a graph is a data engineering programme, not a feature you add in a sprint. I add one only after a real question fails with ordinary retrieval, and usually as a hybrid, where the graph finds the connected entities and vector search pulls the supporting text.",
+      "numbers": "Entity resolution is the hidden cost. Deciding that ACME Ltd, Acme Limited and ACME LTD. are one node is never fully solved and needs ongoing stewardship.",
+      "wrong": "'Graphs give richer context so they are better.' It skips the build and maintenance cost entirely, and the follow-up about entity resolution exposes that gap.",
+      "follow": "You have the graph. How do you actually feed a traversal result to the model?",
+      "followAnswer": "I turn it into compact text with provenance, never a raw graph dump. The traversal returns paths, like company A is owned by B, which is owned by C. I serialise each path as short statements or a small table, attach the source document behind each edge, then use vector search to pull supporting passages for the key nodes. The prompt tells the model to cite those edges and passages, and I cap paths by depth and count so the context stays small."
     },
     {
       "id": "ar-08",
