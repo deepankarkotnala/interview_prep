@@ -615,7 +615,12 @@
     function place() {
       var r = trigger.getBoundingClientRect();
       panel.style.top = Math.round(r.bottom + 8) + "px";
-      panel.style.right = Math.max(12, Math.round(window.innerWidth - r.right)) + "px";
+      var right = Math.max(12, Math.round(window.innerWidth - r.right));
+      var panelW = panel.offsetWidth || 360;
+      if (window.innerWidth - right < panelW + 12) {
+        right = Math.max(12, window.innerWidth - panelW - 12);
+      }
+      panel.style.right = right + "px";
     }
 
     function open(v) {

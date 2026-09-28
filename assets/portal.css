@@ -674,7 +674,7 @@ body.is-scrolled .topbar {
    panel. Coordinates come from portal.js, measured off the trigger. */
 .reader-popover {
   position: fixed; top: 3.75rem; right: 1rem; z-index: 120;
-  width: min(20rem, calc(100vw - 1.25rem));
+  width: min(22.5rem, calc(100vw - 1.25rem));
   padding: 0.875rem 0.9375rem 0.9375rem;
   border: 1px solid var(--border); border-radius: 0.75rem;
   background: var(--bg-elevated);
@@ -699,7 +699,7 @@ body.is-scrolled .topbar {
   border-top: 1px solid var(--border);
 }
 .reader-row:first-of-type { border-top: 0; padding-top: 0; }
-.reader-row > span { flex: none; color: var(--text-secondary); font-size: 0.78125rem; font-weight: 600; }
+.reader-row > span { flex: none; color: var(--text-secondary); font-size: 0.78125rem; font-weight: 600; white-space: nowrap; }
 /* Below this the column is the viewport, so the measure cannot change. Hiding
    the row rather than disabling it keeps the panel honest: a control that can
    do nothing is not shown. */
@@ -713,6 +713,7 @@ body:not(.focus-mode) .reader-popover [data-reader-width] button[data-value="ful
   display: inline-flex; gap: 2px; padding: 2px;
   border: 1px solid var(--border); border-radius: 0.5rem;
   background: var(--surface);
+  flex-shrink: 0;
 }
 .reader-segment button {
   min-width: 1.75rem; height: 1.625rem; padding: 0 0.375rem;
@@ -720,6 +721,7 @@ body:not(.focus-mode) .reader-popover [data-reader-width] button[data-value="ful
   color: var(--text-secondary); background: transparent;
   font: 600 0.71875rem/1 var(--font-sans, inherit);
   cursor: pointer;
+  white-space: nowrap;
   transition: color .14s ease, background .14s ease;
 }
 .reader-segment button:hover { color: var(--text); background: var(--bg-elevated); }

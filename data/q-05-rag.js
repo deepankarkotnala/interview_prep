@@ -1946,6 +1946,80 @@ window.IR.q["05-rag"] = {
       "followAnswer": "A single similarity search often finds only one of them. So I add structure: store a light dependency map - which function calls or imports which - and after retrieving the best function, I also pull in its callers and callees. For bigger questions, an agent loop that can search, open a file and search again works better than one retrieval."
     },
     {
+      "id": "rag-65",
+      "q": "How do you chunk and retrieve tabular data in RAG?",
+      "round": [
+        "tech1",
+        "tech2"
+      ],
+      "level": "5-10",
+      "priority": "medium",
+      "tags": [
+        "rag",
+        "chunking",
+        "tables",
+        "tabular-data",
+        "structured-data",
+        "sql"
+      ],
+      "why": "Whether you know that naive text splitters destroy 2D table structures, and how to separate row-level retrieval from structured aggregations. **Also asked as:** “How do you handle tables in RAG?”, “How do you chunk a large CSV or financial table without losing column headers?”",
+      "quick": [
+        "Never split tables with a character-count splitter.",
+        "Keep small tables intact as a single chunk.",
+        "Split large tables by rows and repeat column headers.",
+        "Linearize rows into natural sentences for better embedding similarity.",
+        "Route calculations to Text-to-SQL or pandas, not vector retrieval."
+      ],
+      "simple": "Tables are two-dimensional structures where meaning depends on relationships between column headers and cell values. Blindly running a character-based text splitter cuts rows in half, strips the header row from subsequent chunks, and leaves values like \"12L\" or \"Delhi\" completely orphaned and ambiguous to both the embedding model and the generator.\n\nHandling tables reliably follows three distinct strategies depending on size and query intent. For small tables (under 15–20 rows), keep the entire table intact as one Markdown or HTML chunk to preserve all row-column relationships. For large tables, chunk by groups of rows (5 to 15 rows per chunk) and prepend the full column header row to every single chunk so every slice remains self-contained. For dense semantic lookup, linearize individual rows into natural-language sentences—such as \"Amit is an employee in Engineering located in Delhi with a salary of 12L\"—because embedding models match prose queries like \"Who earns 12 lakh in Delhi?\" far better than raw pipe-delimited syntax.\n\nThe most important architectural principle is separating retrieval from computation. Vector similarity search is designed for entity and row lookup, not math. If a user asks for an average salary, a total sum, or top-ranked items, retrieving top-k row chunks will return incomplete data and cause the LLM to hallucinate calculations. In production, route analytical questions to Text-to-SQL or a pandas dataframe operation, and reserve vector RAG for qualitative, descriptive lookup.",
+      "points": [
+        "**Small tables (<20 rows):** Keep the entire table intact as one chunk; do not slice it.",
+        "**Large tables:** Group by 5–15 rows and repeat the column header row in every single chunk.",
+        "**Row linearization:** Convert rows into natural prose ('Amit works in Engineering...') for higher embedding similarity.",
+        "**Retrieval vs computation:** Use vector search for entity lookup; route aggregations (sums, averages, sorting) to Text-to-SQL or pandas."
+      ],
+      "code": "/* Strategy 1 & 2: Row-group Markdown chunk with repeated header */\n| Employee | Department  | Salary | Location  |\n|----------|-------------|--------|-----------|\n| Amit     | Engineering | 12L    | Delhi     |\n| Priya    | Engineering | 15L    | Bangalore |\n\n/* Strategy 3: Row linearization for dense vector embeddings */\nconst rowSentence = `${row.Employee} is an employee in the ${row.Department} ` +\n  `department based in ${row.Location} with an annual salary of ${row.Salary}.`;\n\n/* Strategy 4: Routing analytical questions to SQL instead of vector search */\n// \"What is the average salary in Engineering?\"\n// Vector search returns partial rows (fails); SQL executes across 100% of data:\nconst sql = \"SELECT AVG(salary) FROM employees WHERE department = 'Engineering';\";",
+      "diagram": {
+        "kind": "compare",
+        "alt": "Naive text chunking vs table-aware chunking and SQL routing in RAG",
+        "caption": "Never cut across rows or lose headers: **keep small tables whole, repeat headers on row groups, and route aggregations to SQL**.",
+        "aspects": [
+          "Chunk boundary",
+          "Header row",
+          "Row retrieval",
+          "Aggregations (avg/sum)"
+        ],
+        "columns": [
+          {
+            "label": "Naive text splitter",
+            "note": "character count",
+            "accent": "bad",
+            "cells": [
+              "Splits inside cells or rows",
+              "Lost after chunk 1",
+              "Values orphaned (no context)",
+              "Hallucinates on partial rows"
+            ]
+          },
+          {
+            "label": "Table-aware RAG",
+            "note": "row-group + SQL router",
+            "accent": "accent",
+            "cells": [
+              "Intact table or row groups",
+              "Repeated in every chunk",
+              "Linearized sentences for embeddings",
+              "Routed to SQL or pandas dataframe"
+            ]
+          }
+        ]
+      },
+      "say": "I never apply generic character splitters to tables. A table has two-dimensional relationships: if you slice it at arbitrary token boundaries, you lose the column headers and orphan the cell values in subsequent chunks. For small tables under fifteen rows, I keep the entire table intact as one chunk. For large tables, I split by groups of rows, but crucially, I repeat the column headers in every chunk so each slice remains self-contained. For semantic lookup, linearizing rows into natural sentences—like 'Amit works in Engineering in Delhi earning 12 lakh'—yields much higher embedding similarity than raw markdown syntax. But the critical architectural insight is separating retrieval from computation. Vector search is great for locating rows, but terrible at math. If a query requires averages, sums, or sorting, I route it to Text-to-SQL or a pandas dataframe instead of relying on vector retrieval.",
+      "numbers": "Small tables (<15–20 rows, ~400 tokens) stay as 1 chunk. Large tables split into 5–15 row chunks with headers prepended. Row linearization increases embedding recall by 25–40% on entity queries compared to raw pipe-delimited markdown.",
+      "wrong": "\"Treat tables like markdown paragraphs with standard RecursiveCharacterTextSplitter, or ask the vector DB to calculate the average salary from retrieved chunks.\" It loses headers across chunk splits, and vector top-k can never aggregate across an entire table.",
+      "follow": "How do you handle a PDF table that spans across three consecutive pages with merged cells and subtotals?",
+      "followAnswer": "For multi-page tables, page-level text extraction fails because each page slice is incomplete and headers disappear after page one. I use layout-aware parsers like Table Transformer, Docling, or Azure Document Intelligence to detect table bounding boxes across page breaks and reconstruct the unified table structure first. I unmerge hierarchical headers into flat composite keys, strip running headers and page-break artifacts, and remove intermediate subtotal rows so they don't corrupt vector search or SQL queries. Then I store the clean structured table into a relational SQLite/Postgres table for analytics, and index row-group chunks with table-level summary metadata for semantic RAG."
+    },
+    {
       "id": "rag-04",
       "q": "How do you handle tables, scanned PDFs and diagrams in ingestion?",
       "round": [
