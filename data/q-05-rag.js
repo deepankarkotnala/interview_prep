@@ -395,8 +395,8 @@ window.IR.q["05-rag"] = {
         "The right answer is measured on your eval set, not chosen by reputation.",
         "**Late chunking** (Jina, 2024): run the whole document through a long-context embedding model first, then average the token vectors inside each chunk, so each chunk vector keeps the document's context. Worth testing when chunks say \"it\" or \"this clause\" and lose meaning alone.",
         "Use parent-child retrieval when small search units need larger answer context.",
-        "Handle tables, charts and scans according to their structure instead of forcing everything into prose chunks.",
-        "Typical starting point for prose: a few hundred tokens with a small overlap - then tune (see the chunk size card)."
+        "Handle tables, charts and scans according to their structure instead of forcing everything into plain-text chunks.",
+        "Typical starting point for normal paragraph text: a few hundred tokens with a small overlap - then tune (see the chunk size card)."
       ],
       "diagram": {
         "kind": "compare",
@@ -444,7 +444,7 @@ window.IR.q["05-rag"] = {
       "numbers": "Semantic chunking roughly doubles ingestion cost. Document-aware splitting usually gives a bigger retrieval gain for none of that overhead.",
       "wrong": "Listing all four neutrally with no default. The question asked you to defend one, and neutrality reads as never having chosen.",
       "follow": "Your corpus is 50,000 scanned invoices with no headings. Now what?",
-      "followAnswer": "Invoices are not prose, so I would not chunk them like prose. After OCR, I extract fields - vendor, invoice number, date, amount, line items - into a table, and answer totals and filters with SQL over it. For free-text questions I keep one small chunk per invoice with those fields as metadata, plus hybrid search, because users search by exact invoice numbers."
+      "followAnswer": "Invoices are not normal paragraph text, so I would not chunk them like paragraphs. After OCR, I extract fields - vendor, invoice number, date, amount, line items - into a table, and answer totals and filters with SQL over it. For free-text questions I keep one small chunk per invoice with those fields as metadata, plus hybrid search, because users search by exact invoice numbers."
     },
     {
       "id": "rag-19",
@@ -3379,7 +3379,7 @@ window.IR.q["05-rag"] = {
       },
       "say": "I'd route each file by type to its own parser, and every parser outputs the same normalised document. That contract is the real design. It holds the text, the section path, a source ID, the page or sheet reference and permissions, so chunking never needs to know the original format. Each format fails differently. PDFs need OCR, reading-order recovery and table handling. Word has good heading structure, but tracked changes and comments need a deliberate decision. Images get OCR or a vision caption, with a pointer back to the original. Excel and CSV are a decision rather than a parse. If users will add up numbers, the table goes into a database or query engine. If rows are mostly descriptive, each row can become a document. It all runs from a queue, idempotent on a content hash so re-runs create no duplicates, and failed files land in a dead-letter queue instead of vanishing. I track parse quality per format, and characters per page catches OCR that silently produced nothing.",
       "numbers": "Track parse-failure rate by format instead of assuming a universal percentage. Characters-per-page is a cheap early warning that OCR silently produced nothing.",
-      "wrong": "\"I'd use a loader that handles all formats.\" It parses everything and understands nothing - Excel becomes prose, tables dissolve, and the failures are silent rather than loud.",
+      "wrong": "\"I'd use a loader that handles all formats.\" It parses everything and understands nothing - Excel becomes a wall of plain text, tables dissolve, and the failures are silent rather than loud.",
       "follow": "The same contract exists as a PDF and a Word file, both ingested. What happens at retrieval?",
       "followAnswer": "Without dedup, both copies get retrieved, so they fill two or more slots with the same clauses and push out other useful evidence. If they're slightly different versions, the model may also blend them. So at ingestion I normalise the text and compare hashes or MinHash signatures, keep one canonical copy and record the other as an alternate source for citations. If they differ, version metadata or modified dates decide which is current, and at query time MMR catches any duplicates that slipped through."
     },

@@ -495,7 +495,7 @@ window.IR.q["08-langchain"] = {
       "simple": "The best way to test a LangChain or LangGraph application is in layers, because most of it is ordinary software. The biggest layer is unit tests with the model faked. Every node is just a function from state to a state update, so you substitute a fake chat model that returns scripted responses and stub the tools. For example, you can script the fake model to request a refund tool and check that the graph routes to the approval node and stops cleanly. These tests run in milliseconds on every commit, and you assert on routing and state, not wording.\n\nAbove that sits a small set of integration tests against a real model, checking output structure. Then comes evaluation on a golden set, which is a score tracked over time with a threshold that blocks a release. If every test needs an API key, the fast mocked layer is missing.",
       "points": [
         "Fake the model and stub the tools. Nodes then become deterministic functions of state - test them in milliseconds.",
-        "Assert on routing, reducers, error paths and termination, not on model prose.",
+        "Assert on routing, reducers, error paths and termination, not on the model's exact wording.",
         "Integration tests: small, real model, assert structure not wording.",
         "Golden-set evaluation as a scored gate, not a boolean test.",
         "Explicitly test that the step limit fires and that every edge is reachable."

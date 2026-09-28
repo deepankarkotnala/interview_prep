@@ -195,7 +195,7 @@ window.IR.q["08-langchain-langgraph"] = {
       "simple": "Split it into layers, because most of the application is ordinary software and should be tested as such.\n\nUnit tests with the model faked. Every node is a function from state to state. Substitute a fake model that returns a fixed response, and now you can test routing, reducers, parsing, error handling and termination deterministically, in milliseconds, on every commit. This is the majority of your tests and most teams skip it.\n\nIntegration tests against a real model, on a small set, run less often, checking the shape of the output rather than exact wording.\n\nEvaluation on a golden set - this is not a pass-or-fail test, it is a score you track over time, with a threshold that blocks the release if quality drops.\n\nPlus the specific things that break: tool schema validation, that every conditional edge has a reachable path, and that step limits actually fire.",
       "points": [
         "Fake the model. Nodes are pure functions of state - test them deterministically.",
-        "Assert on routing, reducers, error paths and termination, not on model prose.",
+        "Assert on routing, reducers, error paths and termination, not on the model's exact wording.",
         "Integration tests: small, real model, assert structure not wording.",
         "Golden-set evaluation as a scored gate, not a boolean test.",
         "Explicitly test that the step limit fires and that every edge is reachable."

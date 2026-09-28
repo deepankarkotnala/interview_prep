@@ -57,7 +57,7 @@ window.IR.tracks = [
         "**Requirements first.** Who the users are, what decisions the answers feed, retention obligations, and whether inference may leave the approved processing region. That last answer changes the design.",
         "**Route, do not blend.** \"How many transactions breached the threshold last quarter\" is SQL. \"What does our policy say about breaches\" is retrieval. Say the routing decision out loud - it is the mark.",
         "**Text-to-SQL safely.** Read-only connection, schema in context, a column allowlist, a statement validator, a row limit and a statement timeout. Generated SQL is untrusted input.",
-        "**Citations and provenance.** Every claim carries its source; every number carries whether it came from the warehouse or from prose. Mark the difference explicitly - the warehouse number is exact and the prose is not.",
+        "**Citations and provenance.** Every claim carries its source; every number carries whether it came from the warehouse or from generated text. Mark the difference explicitly - the warehouse number is exact and the generated text is not.",
         "**Deterministic fallback.** When the model is unavailable or the retrieval score collapses, return the top matching documents and say the assistant could not answer. Never degrade silently into a guess.",
         "**Governance artefacts.** Pinned model version, prompt in version control, an evaluation gate that blocks release on a quality drop, and a stored history of every golden-set run with its date and versions. That history is what an auditor actually asks for.",
         "**Rollback story.** Model version, prompt and index each roll back independently, because they fail independently."
@@ -84,7 +84,7 @@ window.IR.tracks = [
         "**Do the arithmetic out loud.** 3,000 rpm is 50 rps. At a naive 2,500 input tokens per request that is 125,000 tokens a second - price it, and the number itself makes the case for what follows.",
         "**The 800 ms budget rules things out.** A reranker at 200 ms may not fit. A generation-based query rewrite certainly does not. Say what you are cutting and why, before designing what stays.",
         "**Hybrid search is not optional.** SKU codes and part numbers are exact strings that embeddings blur. BM25 plus dense, fused with reciprocal rank fusion.",
-        "**Route by intent.** Most catalogue traffic is lookup, not reasoning - serve it from retrieval plus a template, with no generation at all. Reserve the model for the minority that needs prose. This is the single largest cost decision.",
+        "**Route by intent.** Most catalogue traffic is lookup, not reasoning - serve it from retrieval plus a template, with no generation at all. Reserve the model for the minority that needs written text. This is the single largest cost decision.",
         "**Cache in layers.** Provider prompt caching on the stable prefix, an embedding cache, and an exact-match answer cache for the head of the query distribution - which in retail is very heavy. Keys include locale and any entitlement.",
         "**Multilingual honestly.** Measure token use, retrieval quality and latency by locale instead of assuming one language behaves like another. Cross-language retrieval needs a multilingual embedding model, tested per language, not assumed.",
         "**Then state the guardrail metrics:** cost per request, p95, and quality per language - because an average hides the language that is failing."

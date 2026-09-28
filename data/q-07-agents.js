@@ -1554,7 +1554,7 @@ window.IR.q["07-agents"] = {
       ],
       "why": "A concrete checklist question. A complete answer shows you have operated agents; gaps show up quickly in the follow-ups.",
       "quick": [
-        "Success comes from a structured finish tool, not prose.",
+        "Success comes from a structured finish tool, not free-form text.",
         "Cap steps, cost and total time, all three.",
         "Stop when the same call repeats three times.",
         "Give the model a clear way to give up.",
@@ -1562,13 +1562,13 @@ window.IR.q["07-agents"] = {
       ],
       "simple": "An agent without explicit stop rules runs until something else breaks, so it needs several independent ones. The first is success, ideally signalled by a structured finish tool. Then there are three hard limits: max steps, typically 10 to 25 for a scoped task, a token budget, since one huge tool result can cost as much as many steps, and a wall-clock limit matched to the caller's timeout.\n\nNext comes no-progress detection. For example, if the agent calls get_order with the same order ID three times, you hash the call and stop on the repeat. The model should also be allowed to give up and say it can't finish, and a user cancel stops the loop. When any rule fires, return partial results, log which rule fired, and alert if limit stops become common, because that usually means the task is badly scoped.",
       "points": [
-        "Success via a structured finish tool, not prose detection.",
+        "Success via a structured finish tool, not by reading free-form text.",
         "Max steps, max cost and max wall-clock time - all three.",
         "No-progress detection on repeated identical calls.",
         "An explicit give-up path the model is encouraged to use.",
         "Log which condition fired; alert if limit stops become common."
       ],
-      "say": "I use several independent stop rules, because any single one can be slipped past. Success comes first, signalled by the model calling a structured finish tool rather than prose I have to detect. Then there are hard limits on steps, cost and wall-clock time. Cost needs its own cap because one huge tool result can cost as much as many normal steps, and time matters because the caller's timeout won't wait. Next is no-progress detection, which catches the most common real loop. I hash each call with its arguments, and the same call repeating means stop. Repeated failures of one tool also end the run. The model gets an explicit give-up path it's encouraged to use, and a user cancelling stops the loop instead of burning tokens. Whichever rule fires, the agent returns partial results and I log which one it was. If limit stops become common, the task is usually badly scoped.",
+      "say": "I use several independent stop rules, because any single one can be slipped past. Success comes first, signalled by the model calling a structured finish tool rather than free-form text I have to interpret. Then there are hard limits on steps, cost and wall-clock time. Cost needs its own cap because one huge tool result can cost as much as many normal steps, and time matters because the caller's timeout won't wait. Next is no-progress detection, which catches the most common real loop. I hash each call with its arguments, and the same call repeating means stop. Repeated failures of one tool also end the run. The model gets an explicit give-up path it's encouraged to use, and a user cancelling stops the loop instead of burning tokens. Whichever rule fires, the agent returns partial results and I log which one it was. If limit stops become common, the task is usually badly scoped.",
       "numbers": "Typical caps: 10–25 steps for a scoped task, a per-run token budget, and a wall-clock limit matched to the caller's timeout. Long-horizon coding or research agents legitimately run far longer, so they lean on cost budgets and progress checks rather than a small step cap.",
       "wrong": "'I set max iterations.' It is necessary and nowhere near sufficient - it does not bound cost, time, or the loop that repeats the same call until the cap.",
       "follow": "Your agent hits the step limit on 20% of runs. What does that tell you?",
@@ -1805,7 +1805,7 @@ window.IR.q["07-agents"] = {
         "Dropping failed attempts makes the agent repeat them.",
         "Pin rules word for word and summarise from the original."
       ],
-      "simple": "Context compaction means summarising old history so a long-running agent doesn't run out of room. When the history passes around 60 to 70 percent of the window, you replace older turns and tool output with a short summary. You keep the original goal word for word, the decisions, constraints found along the way and outstanding work, while bulky tool output and retries can go.\n\nThe danger is a summary that quietly drops something that still matters, and the most damaging case is a lost constraint, because constraints are said once and matter forever. For example, step three finds the customer is in Karnataka, so prices must include GST, but the summary treats that as background and step thirty gives a wrong number. So you pin the goal and hard constraints outside the summarised part, and keep exact IDs in structured fields rather than prose.",
+      "simple": "Context compaction means summarising old history so a long-running agent doesn't run out of room. When the history passes around 60 to 70 percent of the window, you replace older turns and tool output with a short summary. You keep the original goal word for word, the decisions, constraints found along the way and outstanding work, while bulky tool output and retries can go.\n\nThe danger is a summary that quietly drops something that still matters, and the most damaging case is a lost constraint, because constraints are said once and matter forever. For example, step three finds the customer is in Karnataka, so prices must include GST, but the summary treats that as background and step thirty gives a wrong number. So you pin the goal and hard constraints outside the summarised part, and keep exact IDs in structured fields rather than free-form text.",
       "points": [
         "Summarise older history to stay inside the window.",
         "Keep goal, decisions, constraints, outstanding work and references.",
@@ -1825,7 +1825,7 @@ window.IR.q["07-agents"] = {
           },
           {
             "label": "Exact IDs, amounts, dates",
-            "note": "structured fields, not prose",
+            "note": "structured fields, not free text",
             "accent": "accent"
           },
           {
@@ -1850,8 +1850,8 @@ window.IR.q["07-agents"] = {
         ],
         "caption": "Compaction fails quietly when it drops **a constraint said once that matters forever**. Pin the goal and constraints outside the summarised part."
       },
-      "say": "Compaction replaces older history with a summary so a long-running agent doesn't run out of room. It goes wrong when the summary drops something that was said once and still matters. When history passes a threshold, I keep the original goal word for word, the decisions and why, constraints found along the way, open work, and references to stored results. Bulky tool output, superseded reasoning and retries can go. The most damaging loss is a constraint. Say step three finds the customer is in Karnataka, so prices must include GST. The summary treats that as background, and step thirty quotes a wrong number. Dropping failed attempts is nearly as bad, because the agent tries them again and loops. Exact IDs and amounts blur into vague prose too. So I pin the goal and hard constraints outside the summarised part, keep identifiers in structured fields, and summarise from the original history, not the last summary.",
-      "numbers": "Compact at around 60–70% of the window, so there is room for the next step. Keep identifiers in structured fields rather than in prose.",
+      "say": "Compaction replaces older history with a summary so a long-running agent doesn't run out of room. It goes wrong when the summary drops something that was said once and still matters. When history passes a threshold, I keep the original goal word for word, the decisions and why, constraints found along the way, open work, and references to stored results. Bulky tool output, superseded reasoning and retries can go. The most damaging loss is a constraint. Say step three finds the customer is in Karnataka, so prices must include GST. The summary treats that as background, and step thirty quotes a wrong number. Dropping failed attempts is nearly as bad, because the agent tries them again and loops. Exact IDs and amounts blur into vague wording too. So I pin the goal and hard constraints outside the summarised part, keep identifiers in structured fields, and summarise from the original history, not the last summary.",
+      "numbers": "Compact at around 60–70% of the window, so there is room for the next step. Keep identifiers in structured fields rather than in free-form text.",
       "wrong": "Summarising the previous summary each time. Quality degrades compounding, and by the tenth compaction the state block is vague enough to be useless.",
       "follow": "Your agent keeps retrying something it already failed. What is wrong with your compaction?",
       "followAnswer": "My compaction is dropping failed attempts as noise. The summary keeps what worked and throws away what didn't, so the agent no longer knows that approach was already ruled out and tries it again. I fix it by keeping a structured list of attempted approaches with the reason each failed, pinned outside the summarised part. I also check that I summarise from the original history, since summarising a summary loses these details quickly. Then I add a replay test for that case."
@@ -2381,10 +2381,10 @@ window.IR.q["07-agents"] = {
         "Pass big results by reference to shared storage.",
         "Log every handoff, and prefer fewer handoffs."
       ],
-      "simple": "Every handoff between agents loses information. Agent A passes on a summary, and agent B works only from that summary, so it can't recover what was dropped. This is where multi-agent systems fail most often, and what usually gets lost is rules found along the way, approaches already ruled out and exact identifiers.\n\nThe fix is to make the handoff a contract rather than prose, like a proper shift handover with a filled-in form. A structured payload with fixed fields for the goal, rules, exact IDs and what was already tried forces the important things through. For example, a customer ID that becomes \"the customer\" in prose can no longer be used as a tool argument. Large results go into shared storage and travel as a key, and you log every handoff. The cheapest fix, though, is simply fewer handoffs.",
+      "simple": "Every handoff between agents loses information. Agent A passes on a summary, and agent B works only from that summary, so it can't recover what was dropped. This is where multi-agent systems fail most often, and what usually gets lost is rules found along the way, approaches already ruled out and exact identifiers.\n\nThe fix is to make the handoff a contract rather than a free-form note, like a proper shift handover with a filled-in form. A structured payload with fixed fields for the goal, rules, exact IDs and what was already tried forces the important things through. For example, a customer ID that becomes \"the customer\" in a written summary can no longer be used as a tool argument. Large results go into shared storage and travel as a key, and you log every handoff. The cheapest fix, though, is simply fewer handoffs.",
       "points": [
         "Every handoff is lossy compression; failures cluster at the seams.",
-        "Use a structured payload, not a prose summary.",
+        "Use a structured payload, not a free-text summary.",
         "Include constraints, exact facts, and what was already ruled out.",
         "Pass references to shared storage rather than inline results.",
         "Log every handoff - it is where multi-agent bugs are found."
@@ -2421,11 +2421,11 @@ window.IR.q["07-agents"] = {
         ],
         "caption": "Hand over **a filled-in form, not a loose summary** - like a shift handover. Log every payload, and remember the cheapest fix is fewer handoffs."
       },
-      "say": "Make the handoff a structured contract, not a prose summary, like a proper shift handover. Every handoff loses something, and it's where multi-agent systems fail most often, because the receiving agent only sees what it was given and can't recover what was dropped. What usually goes missing is rules found along the way, approaches already ruled out, exact identifiers and the reason behind a decision. A summariser doesn't know what the next agent will need, so fixed fields force those through. Take a customer ID that becomes the customer in prose. The next agent can no longer use it as a tool argument. Large results go into shared storage and travel as a key, and the receiving agent returns a structured result too. I log every handoff payload, because that's where I find what was lost when an answer goes wrong. Honestly, the cheapest fix for handoff loss is fewer handoffs.",
+      "say": "Make the handoff a structured contract, not a free-text summary, like a proper shift handover. Every handoff loses something, and it's where multi-agent systems fail most often, because the receiving agent only sees what it was given and can't recover what was dropped. What usually goes missing is rules found along the way, approaches already ruled out, exact identifiers and the reason behind a decision. A summariser doesn't know what the next agent will need, so fixed fields force those through. Take a customer ID that becomes \"the customer\" in a written summary. The next agent can no longer use it as a tool argument. Large results go into shared storage and travel as a key, and the receiving agent returns a structured result too. I log every handoff payload, because that's where I find what was lost when an answer goes wrong. Honestly, the cheapest fix for handoff loss is fewer handoffs.",
       "numbers": "Pass large results by reference to shared storage, not inline. Log handoff payloads - they are the only place cross-agent context loss is visible.",
       "wrong": "Passing a natural-language summary between agents. It silently drops constraints and prior attempts, and the receiving agent repeats work already ruled out.",
       "follow": "Agent B redoes something A already tried. Which field was missing?",
-      "followAnswer": "The missing field is the list of what was already tried and ruled out. A prose summary usually keeps the conclusion and drops the dead ends, so agent B sees the problem fresh and repeats A's work. I add a required attempted-approaches field to the handoff schema, each with its outcome and the reason it failed. I confirm it by checking the logged handoff payload for that run, then add the case as a test so the field stays populated."
+      "followAnswer": "The missing field is the list of what was already tried and ruled out. A free-text summary usually keeps the conclusion and drops the dead ends, so agent B sees the problem fresh and repeats A's work. I add a required attempted-approaches field to the handoff schema, each with its outcome and the reason it failed. I confirm it by checking the logged handoff payload for that run, then add the case as a test so the field stays populated."
     },
     {
       "id": "ag-29",

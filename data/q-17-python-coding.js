@@ -559,7 +559,7 @@ window.IR.q["17-python-coding"] = {
       },
       "say": "I write a forgiving parser that tries the cheap options first. Step one is json.loads on the whole text, which often just works. If that fails, I look for a fenced block with a regex and parse what's inside, using the DOTALL flag since the JSON spans several lines. The last fallback takes everything from the first opening brace to the last closing brace, and I find that closing brace with rfind from the end, so a nested object isn't cut short. If all three fail, I raise an error that includes the start of the raw text, because debugging without it is guesswork. After parsing, I still validate the fields with Pydantic. But this is a safety net, not the design. Without structured output, fences can show up in a small share of replies even when you ask it not to, and at a million calls a month even one percent is ten thousand failures. Structured output is the real fix.",
       "numbers": "Without structured output, fence-wrapping can show up in a small share of responses even with an explicit instruction not to. At a million calls a month, even 1% is ten thousand failures.",
-      "wrong": "json.loads(response) with no try/except. It passes the demo; the first fenced or prose-wrapped response in production raises an unhandled exception, and the follow-up asks what the user sees then.",
+      "wrong": "json.loads(response) with no try/except. It passes the demo; the first fenced or text-wrapped response in production raises an unhandled exception, and the follow-up asks what the user sees then.",
       "follow": "It parses now but a required field is missing. Where does that get caught?",
       "followAnswer": "In schema validation, straight after parsing. I load the parsed dict into a Pydantic model, so a missing or wrongly typed field raises a ValidationError that names exactly which fields failed. I send that error back to the model as one bounded retry. If it still fails, I log the raw output and return a clear fallback, instead of passing half-filled data downstream."
     },
@@ -776,7 +776,7 @@ window.IR.q["17-python-coding"] = {
       "numbers": "Keep the mocked suite fast enough to run on every commit - seconds, not minutes. If it needs an API key it will get skipped.",
       "wrong": "\"You cannot really test LLM code because it is non-deterministic.\" Only the model call is. Everything around it is ordinary software, and this answer says you did not try.",
       "follow": "Your fake returns valid JSON. What bug does that hide?",
-      "followAnswer": "It hides every parsing and recovery bug. Real models sometimes return fenced JSON, prose around the JSON, output cut off at the token limit, or a missing field. If the fake is always perfect, the error-handling code never runs in tests. So I keep fixtures of realistic bad outputs, ideally copied from production logs, and test that each one is handled."
+      "followAnswer": "It hides every parsing and recovery bug. Real models sometimes return fenced JSON, extra text around the JSON, output cut off at the token limit, or a missing field. If the fake is always perfect, the error-handling code never runs in tests. So I keep fixtures of realistic bad outputs, ideally copied from production logs, and test that each one is handled."
     },
     {
       "id": "py-20",
@@ -1712,7 +1712,7 @@ window.IR.q["17-python-coding"] = {
       ],
       "say": "Split into sentences first, then pack whole sentences up to a token budget. Half a sentence has muddled meaning and embeds badly, and model limits are in tokens, not characters. So I add sentences to the current chunk until the next one would go over, then start a new chunk carrying the last sentence across as overlap. The case most people miss is one sentence longer than the whole budget. A table row or a long legal clause can never fit, so without a guard you either drop it or loop forever. My fallback force-splits it word by word. There's a subtle Python trap too. Slicing from minus zero returns the whole list, so an overlap of zero needs its own branch or it silently keeps everything. I count with the real tokeniser and use a proper sentence splitter, because a regex breaks on abbreviations. Around five hundred tokens is a sensible default, though splitting on headings usually matters more than tuning.",
       "numbers": "500 tokens with one sentence of overlap is a reasonable default. Structure-aware splitting on headings usually beats any tuning of these numbers.",
-      "wrong": "Splitting on the full stop with no guard for the oversized sentence. It works on prose and breaks on the first document containing a table.",
+      "wrong": "Splitting on the full stop with no guard for the oversized sentence. It works on normal paragraphs and breaks on the first document containing a table.",
       "follow": "The document is a contract with numbered clauses. Does your chunker still make sense?",
       "followAnswer": "Only partly. Clauses are the natural unit, so I split on the clause numbering first and keep each clause whole where it fits. Each chunk gets its clause number and section heading as a prefix and as metadata, so it can be cited. Contracts cross-reference a lot - 'subject to clause 4.2' - so I store those links and can fetch the referenced clause alongside."
     },
