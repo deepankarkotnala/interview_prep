@@ -365,6 +365,128 @@ window.IR.q["05-rag"] = {
       "followAnswer": "I choose it by testing a shortlist on my own data rather than trusting a public leaderboard. The MTEB leaderboard helps me shortlist, but then I build fifty to a hundred real questions with the passages that answer them and compare recall at k. I also weigh language coverage, maximum input length against my chunk size, vector dimensions, which drive storage cost, plus latency, price and whether I can self-host. Switching later means re-embedding everything, so it's worth getting right."
     },
     {
+      "id": "rag-66",
+      "q": "Why use a vector database instead of a traditional database? Can't a normal database store and index embeddings too?",
+      "round": [
+        "screening",
+        "tech1",
+        "tech2"
+      ],
+      "level": "3-5",
+      "priority": "high",
+      "tags": [
+        "rag",
+        "vector-database",
+        "indexing",
+        "hnsw",
+        "postgres"
+      ],
+      "why": "Whether you understand that the difference is the search, not the storage: finding the nearest vectors needs a special kind of index. **Also asked as:** “If we store embeddings as numbers, a traditional database can store them too. Why do we need a vector database specifically?” · “Indexing is also available in a traditional database, so why a vector database?”",
+      "quick": [
+        "Any database can store an embedding as a list of numbers.",
+        "The hard part is finding the nearest ones among millions.",
+        "B-tree indexes handle exact matches and ranges, not 'closest in meaning'.",
+        "Without a vector index, every row is compared: slow at scale.",
+        "HNSW finds close vectors by checking only a tiny fraction."
+      ],
+      "simple": "Storing embeddings is easy. A 1,536-number embedding is just an array, and PostgreSQL, SQL Server or almost any database can keep it in a column. The difference isn't storage. It's the question we ask: \"which of these million vectors are closest to this one?\" That's a similarity search, and ordinary database indexes weren't built for it.\n\nA traditional index, such as a B-tree, works like a phone book sorted by one key. It's excellent for exact matches (customer_id = 42), ranges (created after 2024) and sorting. But an embedding has 1,536 numbers, and \"closest\" depends on all of them together, so there is no single order to sort by. Two vectors can match on the first number and be far apart overall. So without a vector index, the database has to compare the question with every row. For 1 million vectors that's about 1.5 billion multiplications per question: seconds, not milliseconds, and slower with every document added.\n\nA vector index is built for exactly this. HNSW links each vector to its close neighbours in a graph, so a search hops towards the closest ones and checks only a few thousand vectors, at the cost of very occasionally missing the exact best match. Vector databases add similarity functions, filters that work inside the vector search, compression to save memory, and scaling across machines. The line is blurring, though: PostgreSQL with pgvector, Elasticsearch, MongoDB and others now include vector indexes. So the real question is \"do I need an approximate nearest-neighbour index?\", not \"do I need a separate product?\".",
+      "diagram": {
+        "kind": "compare",
+        "alt": "A traditional B-tree index compared with a vector index such as HNSW: the question each answers, how it finds data, its speed on a million vectors, and typical uses.",
+        "caption": "**Storing vectors is easy; finding the nearest ones is the problem.** A B-tree sorts one value; an HNSW graph hops between neighbours.",
+        "aspects": [
+          "Answers",
+          "How it finds data",
+          "1M vectors, one query",
+          "Used for"
+        ],
+        "columns": [
+          {
+            "label": "Traditional index",
+            "note": "B-tree",
+            "cells": [
+              "Equal to, between, sorted by",
+              "Walks a tree sorted on one key",
+              "Must scan every row: seconds",
+              "IDs, dates, names"
+            ]
+          },
+          {
+            "label": "Vector index",
+            "note": "HNSW",
+            "accent": "accent",
+            "cells": [
+              "Closest in meaning",
+              "Hops through a graph of neighbours",
+              "Checks a few thousand: milliseconds",
+              "Semantic search, RAG"
+            ]
+          }
+        ]
+      },
+      "say": "Storing embeddings isn't the problem. Any database can keep 1,536 numbers in a column. The problem is the search. In RAG we ask which of millions of vectors are closest to the question's vector. A traditional index, like a B-tree, is built for exact matches, ranges and sorting on one value. An embedding has 1,536 numbers and closeness depends on all of them together, so there's nothing to sort by. Without a vector index, the database compares the question with every row. For a million vectors that's about one and a half billion multiplications per question, so seconds instead of milliseconds. A vector index like HNSW links each vector to its neighbours, so a search checks only a few thousand. The nuance is that traditional databases are catching up. Postgres with pgvector and Elasticsearch both have HNSW now. So what we really need is an approximate nearest-neighbour index, not necessarily a separate product.",
+      "numbers": "1M vectors × 1,536 dimensions is about 1.5 billion multiply-adds per brute-force query and about 6 GB of raw data. HNSW typically answers in milliseconds with 95-99% of exact recall. Under about 100,000 vectors, brute force is often fast enough.",
+      "wrong": "\"Traditional databases can't store vectors.\" They can. What they can't do without a vector index is find the nearest ones quickly.",
+      "follow": "When would you just use PostgreSQL with pgvector?",
+      "followAnswer": "When the app's data already lives in Postgres and the corpus is moderate, up to a few million vectors. Then one database gives transactions, joins, permissions and vector search together, with nothing extra to run. I'd choose a search engine like Elasticsearch, or a dedicated vector store, for strong keyword-plus-vector hybrid search, very large scale or high query volume."
+    },
+    {
+      "id": "rag-67",
+      "q": "Can Elasticsearch be used as a vector database? How would you create the index so retrieval is fast, and which library would you use?",
+      "round": [
+        "tech1",
+        "tech2"
+      ],
+      "level": "5-10",
+      "priority": "high",
+      "tags": [
+        "rag",
+        "elasticsearch",
+        "vector-database",
+        "indexing",
+        "hnsw"
+      ],
+      "why": "Whether you know Elasticsearch's vector features in practice: the mapping choices, the tuning that makes it fast, and the client you use.",
+      "quick": [
+        "Yes: since version 8, Elasticsearch has HNSW vector search built in.",
+        "Map a dense_vector field: dimensions, similarity and HNSW settings.",
+        "Metadata as keyword fields, used as filters inside the kNN search.",
+        "Speed: quantise vectors, keep them in memory, merge segments after loading.",
+        "Library: the official elasticsearch Python client, with its bulk helpers."
+      ],
+      "simple": "Yes. Elasticsearch stores embeddings in a dense_vector field, and since version 8 it builds an HNSW index on them (through Lucene, the search library underneath), so it does fast approximate nearest-neighbour search. It also keeps its classic keyword search, so one query can combine both, which is why many teams use it for RAG.\n\nCreating the index is mostly the mapping, which is the index's schema. The **text** field holds the chunk text for keyword search. The **embedding** field is a dense_vector with dims matching the embedding model (1,536 for text-embedding-3-small), a similarity (cosine, or dot_product when vectors are normalised, which is slightly faster), and HNSW settings. m sets how many neighbours each vector links to, and ef_construction sets how carefully the graph is built. Metadata such as department, document type and access group are **keyword** fields, so they can filter inside the vector search instead of throwing results away afterwards.\n\nWhat makes retrieval fast in practice:\n- **Quantise:** int8_hnsw stores each number in one byte instead of four, so the vector index fits in memory. This is the biggest factor, because HNSW slows sharply when it has to read from disk.\n- **Merge segments:** load with the bulk API, then force-merge into a few segments, since each segment has its own HNSW graph to search.\n- **Size shards sensibly:** every shard is searched, so too many small shards add work.\n- **Tune num_candidates:** more candidates means better recall but slower search.\n\nFor code, use the official elasticsearch Python client, with AsyncElasticsearch inside async web apps and helpers.bulk for loading. LangChain's ElasticsearchStore is fine for a quick start, but the raw client gives full control of the mapping and the hybrid query.",
+      "code": "from elasticsearch import Elasticsearch, helpers\n\nes = Elasticsearch(ES_URL, api_key=API_KEY)  # AsyncElasticsearch in FastAPI\n\nes.indices.create(\n    index=\"docs\",\n    settings={\"number_of_shards\": 2, \"number_of_replicas\": 1},\n    mappings={\"properties\": {\n        # BM25 keyword search\n        \"text\": {\"type\": \"text\"},\n        # vectors: normalised, so dot_product; int8 = 4x less memory\n        \"embedding\": {\n            \"type\": \"dense_vector\", \"dims\": 1536,\n            \"similarity\": \"dot_product\",\n            \"index_options\": {\"type\": \"int8_hnsw\",\n                              \"m\": 16, \"ef_construction\": 100},\n        },\n        # metadata for filters and citations\n        \"department\": {\"type\": \"keyword\"},\n        \"access_group\": {\"type\": \"keyword\"},\n        \"page\": {\"type\": \"integer\"},\n    }},\n)\n\ndocs = ({\"_index\": \"docs\", \"_id\": c[\"id\"], **c} for c in chunks)\nhelpers.bulk(es, docs)\n# fewer segments = fewer HNSW graphs to search\nes.indices.forcemerge(index=\"docs\", max_num_segments=5)\n\nallowed = {\"terms\": {\"access_group\": user_groups}}\nhits = es.search(\n    index=\"docs\", size=30,\n    query={\"bool\": {\"must\": {\"match\": {\"text\": question}},\n                    \"filter\": allowed}},\n    # the filter sits inside kNN, so all 30 hits are allowed\n    knn={\"field\": \"embedding\", \"query_vector\": question_vector,\n         \"k\": 30, \"num_candidates\": 200, \"filter\": allowed},\n    # merge BM25 and kNN results by rank\n    rank={\"rrf\": {}},\n)",
+      "diagram": {
+        "kind": "lanes",
+        "alt": "Building a fast Elasticsearch vector index: define the mapping, bulk-load the chunks, force-merge segments, then search with kNN, BM25 and filters together.",
+        "caption": "**Fast retrieval is decided at index time.** Quantised vectors that fit in memory, few segments, and filters inside the kNN search.",
+        "lanes": [
+          {
+            "label": "Mapping",
+            "note": "dense_vector, int8_hnsw",
+            "accent": "accent"
+          },
+          {
+            "label": "Bulk load",
+            "note": "helpers.bulk"
+          },
+          {
+            "label": "Force-merge",
+            "note": "fewer HNSW graphs"
+          },
+          {
+            "label": "Hybrid search",
+            "note": "kNN + BM25 + filters"
+          }
+        ]
+      },
+      "say": "Yes. Since version 8, Elasticsearch builds an HNSW index on dense_vector fields, so it does fast approximate nearest-neighbour search, and it keeps keyword search, so one query can do both. Creating the index is mainly the mapping. The embedding field is a dense_vector with dims matching the model, dot_product similarity on normalised vectors, and HNSW settings: m for how many neighbours each vector links to, and ef_construction for how carefully the graph is built. Metadata like department and access group are keyword fields, so they filter inside the kNN search. For speed, the biggest win is int8 quantisation, which cuts vector memory by four so the index stays in RAM. I'd also bulk-load, force-merge into a few segments afterwards, avoid too many shards and tune num_candidates. For code, I use the official elasticsearch Python client, with its bulk helpers and async client, rather than a framework wrapper, so I control the mapping.",
+      "numbers": "1M vectors × 1,536 dimensions: about 6 GB as float32, about 1.5 GB with int8 quantisation. Common starting settings: m = 16, ef_construction = 100, k = 20-50, num_candidates = 100-200.",
+      "wrong": "\"Elasticsearch needs a plugin or a separate vector database for embeddings.\" Since version 8, dense_vector with HNSW is built in. Adding a second store means two indexes and two permission models to keep in sync.",
+      "follow": "Why filter inside the kNN search rather than afterwards?",
+      "followAnswer": "If you filter after the vector search, you might find the 30 nearest chunks, discover 25 belong to another department or a restricted group, and be left with 5, or none. Filtering inside the kNN search makes HNSW consider only allowed vectors, so you still get 30 good candidates. It's also safer for permissions, because restricted chunks are never candidates at all."
+    },
+    {
       "id": "rag-18",
       "q": "How do you choose a chunking strategy? Fixed-size, recursive, semantic or document-aware - defend your default.",
       "round": [

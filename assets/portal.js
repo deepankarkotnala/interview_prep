@@ -317,11 +317,17 @@
          'aria-label="Search results"></div>';
 
     h += '<div data-nav-groups>';
+    /* The story page sits above everything, unnumbered: it is the reading that
+       gives every numbered topic a place in one timeline. */
+    h += '<div class="nav-group"><div class="nav-label">Read first</div>' +
+         '<a class="nav-link nav-story" href="' + base + 'story.html"' +
+         (page === "story" ? ' aria-current="page"' : "") + '>' +
+         '<span class="nav-chev" aria-hidden="true">✦</span>' +
+         '<span>The story of AI</span></a></div>';
     h += '<div class="nav-group"><div class="nav-label">Start here</div>';
     [["index.html", "Home", "home", "⌂"],
      ["rounds.html", "By interview round", "rounds", "↗"],
-     ["tracks.html", "By employer type", "tracks", "⌘"],
-     ["rehearsal.html", "Rehearsal room", "rehearsal", "◌"]].forEach(function (r) {
+     ["tracks.html", "By employer type", "tracks", "⌘"]].forEach(function (r) {
       h += '<a class="nav-link" href="' + base + r[0] + '"' +
            (page === r[2] ? ' aria-current="page"' : "") + '>' +
            '<span class="nav-chev" aria-hidden="true">' + r[3] + '</span>' +
@@ -609,7 +615,28 @@
           btns[i].classList.toggle("active", on);
           btns[i].setAttribute("aria-pressed", on ? "true" : "false");
         }
+        moveThumb(panel.querySelector("[data-reader-" + g + "]"));
       });
+    }
+    /* One highlight per segment that slides to the active button, instead of
+       each button painting its own background - the choice visibly moves. */
+    function moveThumb(seg) {
+      var thumb = seg.querySelector(".reader-thumb");
+      if (!thumb) {
+        thumb = document.createElement("span");
+        thumb.className = "reader-thumb";
+        thumb.setAttribute("aria-hidden", "true");
+        seg.insertBefore(thumb, seg.firstChild);
+      }
+      var act = seg.querySelector("button.active");
+      if (!act) { thumb.style.opacity = "0"; return; }
+      thumb.style.opacity = "";
+      thumb.style.width = act.offsetWidth + "px";
+      thumb.style.transform = "translateX(" + act.offsetLeft + "px)";
+      /* Place it without sliding the first time, then let later moves glide. */
+      if (!seg.classList.contains("thumb-ready")) {
+        requestAnimationFrame(function () { seg.classList.add("thumb-ready"); });
+      }
     }
 
     function place() {
@@ -677,7 +704,7 @@
     document.addEventListener("keydown", function (ev) {
       if (ev.key === "Escape" && isOpen()) { open(false); trigger.focus(); }
     });
-    window.addEventListener("resize", function () { if (isOpen()) place(); });
+    window.addEventListener("resize", function () { if (isOpen()) { place(); refresh(); } });
     window.addEventListener("scroll", function () { if (isOpen()) place(); }, { passive: true });
     document.addEventListener("ir-focus-change", function () {
       settings = readReading();
@@ -1892,7 +1919,17 @@
     var empty = el("div", "q-empty", "No questions match your filter.");
     empty.hidden = true;
 
+    /* Optional `section` on a card: a sub-heading is drawn wherever it changes,
+       so a long bank reads in chapters. Headings sit between cards in the same
+       list; filter() hides them while any filter is active, because a heading
+       over a scattered handful of matches would mislabel them. */
+    var sections = [];
     cards.forEach(function (c, i) {
+      if (c.section && c.section !== (cards[i - 1] || {}).section) {
+        var sh = el("h2", "q-section-head", fmt(c.section));
+        list.appendChild(sh);
+        sections.push(sh);
+      }
       list.appendChild(renderCard(c, i, opts));
     });
 
@@ -1918,6 +1955,8 @@
       });
       count.textContent = shown + " " + (shown === 1 ? "question" : "questions");
       empty.hidden = shown !== 0;
+      var filtered = !!(q || r || (prioSel && prioSel.value));
+      sections.forEach(function (sh) { sh.hidden = filtered; });
     }
 
     function visibleCards() {
@@ -2206,6 +2245,36 @@
     if (key === "19-langgraph" || key === "08-langchain-langgraph") {
       setupCampusXSummary(host);
     }
+  }
+
+  /* ---------- page bootstrap: story ----------
+     data/story.js holds one narrative in chapters. Each chapter becomes an h2
+     (so the right rail builds itself), prose gets glossary tooltips through
+     paras() - scoped terms use the "riq" prefix - and an optional diagram
+     reuses the card renderer. */
+  function bootStory() {
+    var st = IR.story;
+    var head = document.querySelector("[data-story-head]");
+    var host = document.querySelector("[data-story-body]");
+    if (!st || !host) return;
+    document.title = "The story of AI - Interview Room";
+    if (head) {
+      head.innerHTML =
+        '<div class="eyebrow">Read first · the whole field as one story</div>' +
+        '<h1>' + esc(st.title) + '</h1>' +
+        '<p class="lede">' + fmt(st.lede) + '</p>' +
+        '<div class="chip-row"><span class="chip is-accent">' + st.chapters.length +
+        ' chapters</span><span class="chip">About 35 minutes to read</span>' +
+        '<span class="chip">Dates checked against the original papers</span></div>';
+    }
+    host.innerHTML = st.chapters.map(function (ch, i) {
+      return '<section class="story-chapter">' +
+        '<div class="story-era">' + esc(ch.era) + '</div>' +
+        '<h2>' + esc(ch.title) + '</h2>' +
+        '<div class="story-body">' + paras(ch.body, true, "story-" + i) + '</div>' +
+        (ch.diagram ? renderDiagram(ch.diagram) : "") +
+        '</section>';
+    }).join("");
   }
 
   /* ---------- page bootstrap: index ---------- */
@@ -2582,9 +2651,9 @@
   /* ---------- page navigation (prev / next) ---------- */
   var ROUTE_PAGES = [
     { page: "home",      href: "index.html",     label: "Home" },
+    { page: "story",     href: "story.html",     label: "The story of AI" },
     { page: "rounds",    href: "rounds.html",    label: "By interview round" },
-    { page: "tracks",    href: "tracks.html",    label: "By employer type" },
-    { page: "rehearsal", href: "rehearsal.html", label: "Rehearsal room" }
+    { page: "tracks",    href: "tracks.html",    label: "By employer type" }
   ];
 
   function getSequence() {
@@ -2684,7 +2753,7 @@
       var nextDir = "Next →";
       if (current.page === "home") {
         nextDir = "Start here →";
-      } else if (current.page === "rehearsal") {
+      } else if (current.page === "tracks") {
         nextDir = "Start topics →";
       } else if (i === seq.length - 1) {
         nextDir = "Finish →";
@@ -2698,6 +2767,242 @@
 
   IR.buildPager = buildPager;
 
+  /* ---------- question popup card ----------
+     A plain click on a link to a question on another page (topics/KEY.html#id)
+     opens that card in a panel instead of navigating away: a side panel on wide
+     screens, a bottom sheet on phones. The link keeps its real href, so
+     Ctrl/Cmd/Shift/middle-click still opens a new tab. Data for a topic that
+     this page didn't load is fetched on demand. Back closes the panel,
+     Esc closes it, and arrows step through the links of the same list. */
+  function setupCardDrawer() {
+    if (setupCardDrawer.done) return;
+    setupCardDrawer.done = true;
+
+    var root = el("div", "cd-root");
+    root.hidden = true;
+    root.innerHTML =
+      '<div class="cd-backdrop" data-cd-close></div>' +
+      '<section class="cd-panel" role="dialog" aria-modal="true" aria-labelledby="cd-title" tabindex="-1">' +
+        '<div class="cd-grip" aria-hidden="true"><span></span></div>' +
+        '<header class="cd-head">' +
+          '<span class="cd-topic" id="cd-title"></span>' +
+          '<div class="cd-tools">' +
+            '<button type="button" class="cd-btn" data-cd-prev aria-label="Previous question">' +
+              '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>' +
+            '<span class="cd-pos" aria-live="polite"></span>' +
+            '<button type="button" class="cd-btn" data-cd-next aria-label="Next question">' +
+              '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>' +
+            '<a class="cd-btn cd-open" data-cd-open target="_blank" rel="noopener" aria-label="Open on its topic page in a new tab" title="Open on its topic page">' +
+              '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg></a>' +
+            '<button type="button" class="cd-btn" data-cd-close aria-label="Close">' +
+              '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>' +
+          '</div>' +
+        '</header>' +
+        '<div class="cd-scroll"><div class="cd-body"></div></div>' +
+      '</section>';
+    document.body.appendChild(root);
+
+    var panel = root.querySelector(".cd-panel");
+    var scroller = root.querySelector(".cd-scroll");
+    var body = root.querySelector(".cd-body");
+    var topicEl = root.querySelector(".cd-topic");
+    var posEl = root.querySelector(".cd-pos");
+    var prevBtn = root.querySelector("[data-cd-prev]");
+    var nextBtn = root.querySelector("[data-cd-next]");
+    var openLink = root.querySelector("[data-cd-open]");
+    var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    var list = [], index = 0, isOpen = false, pushed = false, lastFocus = null, closeTimer = null;
+    var loading = {};
+
+    /* topics/KEY.html#id on a page other than the current topic page */
+    function target(a) {
+      if (!a || !a.getAttribute) return null;
+      var raw = a.getAttribute("href") || "";
+      var m = raw.match(/(?:^|\/)topics\/([0-9]{2}-[a-z0-9-]+)\.html#([A-Za-z0-9_-]+)$/) ||
+              (document.body.getAttribute("data-page") === "topic" &&
+               raw.match(/^()([0-9]{2}-[a-z0-9-]+)\.html#([A-Za-z0-9_-]+)$/));
+      if (!m) return null;
+      var key = m.length === 4 ? m[2] : m[1], id = m.length === 4 ? m[3] : m[2];
+      if (key === document.body.getAttribute("data-topic")) return null;
+      return { key: key, id: id, href: a.href };
+    }
+
+    function loadTopic(key, done) {
+      if (IR.q && IR.q[key]) return done();
+      if (loading[key]) return loading[key].push(done);
+      loading[key] = [done];
+      var s = document.createElement("script");
+      s.src = depth() + "data/q-" + key + ".js";
+      s.onload = s.onerror = function () {
+        var cbs = loading[key] || []; delete loading[key];
+        cbs.forEach(function (f) { f(); });
+      };
+      document.head.appendChild(s);
+    }
+
+    function topicOf(key) {
+      return (IR.topics || []).filter(function (t) { return t.num + "-" + t.slug === key; })[0];
+    }
+
+    function build(t) {
+      var set = IR.q && IR.q[t.key];
+      var i = -1, c = null;
+      (set && set.cards || []).some(function (x, k) { if (x.id === t.id) { c = x; i = k; return true; } });
+      if (!c) return null;
+      var d = renderCard(c, i, {});
+      var wrap = el("article", "cd-card");
+      var title = d.querySelector(".q-title");
+      var head = el("div", "cd-card-head");
+      head.appendChild(el("span", "q-no", String(i + 1).padStart(2, "0")));
+      head.appendChild(title);
+      wrap.appendChild(head);
+      wrap.appendChild(d.querySelector(".q-body"));
+      return wrap;
+    }
+
+    function paint(done) {
+      var t = list[index];
+      var topic = topicOf(t.key);
+      topicEl.textContent = topic ? (topic.num + " · " + topic.title) : "";
+      openLink.href = t.href;
+      var many = list.length > 1;
+      prevBtn.hidden = nextBtn.hidden = posEl.hidden = !many;
+      prevBtn.disabled = index === 0;
+      nextBtn.disabled = index === list.length - 1;
+      posEl.textContent = (index + 1) + " / " + list.length;
+      loadTopic(t.key, function () {
+        var card = build(t);
+        if (!card) { window.location.href = t.href; return; }
+        body.innerHTML = "";
+        body.appendChild(card);
+        scroller.scrollTop = 0;
+        if (done) done();
+      });
+    }
+
+    function swap(step) {
+      var n = index + step;
+      if (n < 0 || n >= list.length) return;
+      index = n;
+      if (reduce) return paint();
+      body.classList.add(step > 0 ? "is-out-left" : "is-out-right");
+      setTimeout(function () {
+        paint(function () {
+          body.classList.remove("is-out-left", "is-out-right");
+          body.classList.add(step > 0 ? "is-in-right" : "is-in-left");
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () { body.classList.remove("is-in-right", "is-in-left"); });
+          });
+        });
+      }, 140);
+    }
+
+    function open(items, at) {
+      list = items; index = at;
+      clearTimeout(closeTimer);
+      lastFocus = document.activeElement;
+      paint(function () {
+        if (isOpen) return;
+        isOpen = true;
+        root.hidden = false;
+        document.documentElement.classList.add("cd-lock");
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () { root.classList.add("is-open"); panel.focus({ preventScroll: true }); });
+        });
+        if (!pushed) { history.pushState({ cdOpen: true }, ""); pushed = true; }
+      });
+    }
+
+    function finishClose() {
+      isOpen = false;
+      root.classList.remove("is-open");
+      panel.style.transform = "";
+      document.documentElement.classList.remove("cd-lock");
+      closeTimer = setTimeout(function () { root.hidden = true; body.innerHTML = ""; }, reduce ? 0 : 340);
+      if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+    }
+
+    function close() {
+      if (!isOpen) return;
+      if (pushed) { history.back(); } else { finishClose(); }
+    }
+
+    window.addEventListener("popstate", function () {
+      if (pushed) { pushed = false; if (isOpen) finishClose(); }
+    });
+
+    /* Intercept plain clicks on question links anywhere on the page. */
+    document.addEventListener("click", function (e) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target.closest ? e.target.closest("a[href]") : null;
+      if (!a || root.contains(a) || a.target === "_blank") return;
+      var t = target(a);
+      if (!t) return;
+      e.preventDefault();
+      var scope = a.closest("ol, ul, .sb-results, .note, .card-grid") || a.parentNode;
+      var items = [], at = 0;
+      [].forEach.call(scope.querySelectorAll("a[href]"), function (x) {
+        var tx = target(x);
+        if (!tx) return;
+        if (x === a) at = items.length;
+        items.push(tx);
+      });
+      if (!items.length) { items = [t]; at = 0; }
+      open(items, at);
+    });
+
+    root.addEventListener("click", function (e) {
+      if (e.target.closest("[data-cd-close]")) { e.preventDefault(); close(); }
+    });
+    prevBtn.addEventListener("click", function () { swap(-1); });
+    nextBtn.addEventListener("click", function () { swap(1); });
+
+    document.addEventListener("keydown", function (e) {
+      if (!isOpen) return;
+      if (e.key === "Escape") { e.preventDefault(); close(); return; }
+      var typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target || {}).tagName || "");
+      if (!typing && e.key === "ArrowLeft") { swap(-1); }
+      else if (!typing && e.key === "ArrowRight") { swap(1); }
+      else if (e.key === "Tab") {
+        var f = [].filter.call(panel.querySelectorAll("a[href], button:not([disabled]), summary, [tabindex]:not([tabindex='-1'])"),
+          function (x) { return x.offsetParent !== null && !x.hidden; });
+        if (!f.length) return;
+        var first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && (document.activeElement === first || document.activeElement === panel)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    });
+
+    /* Phones: drag the sheet down by its handle or header to close it. */
+    var startY = null, lastY = 0, startT = 0;
+    function sheet() { return window.matchMedia("(max-width: 720px)").matches; }
+    function onStart(e) {
+      if (!sheet() || e.target.closest("button, a")) return;
+      startY = lastY = e.touches[0].clientY; startT = Date.now();
+      panel.classList.add("is-dragging");
+    }
+    function onMove(e) {
+      if (startY === null) return;
+      lastY = e.touches[0].clientY;
+      var dy = Math.max(0, lastY - startY);
+      panel.style.transform = "translateY(" + dy + "px)";
+    }
+    function onEnd() {
+      if (startY === null) return;
+      var dy = lastY - startY, v = dy / Math.max(1, Date.now() - startT);
+      startY = null;
+      panel.classList.remove("is-dragging");
+      if (dy > 120 || v > 0.6) { close(); } else { panel.style.transform = ""; }
+    }
+    [root.querySelector(".cd-grip"), root.querySelector(".cd-head")].forEach(function (h) {
+      h.addEventListener("touchstart", onStart, { passive: true });
+      h.addEventListener("touchmove", onMove, { passive: true });
+      h.addEventListener("touchend", onEnd);
+      h.addEventListener("touchcancel", onEnd);
+    });
+  }
+
   /* ---------- main boot sequence ---------- */
   function boot() {
     IR.initTheme();
@@ -2709,6 +3014,7 @@
     else if (page === "home") bootIndex();
     else if (page === "rounds") bootRounds();
     else if (page === "tracks") bootTracks();
+    else if (page === "story") bootStory();
 
     buildRail();
     buildPager();
@@ -2719,6 +3025,7 @@
     initResizers();
     initScrollState();
     setupTips();
+    setupCardDrawer();
 
     document.dispatchEvent(new CustomEvent("ir:ready"));
   }

@@ -15,7 +15,7 @@
 <meta name="description" content="Current GenAI, AI and ML interview questions for senior engineer roles in India, answered in simple language, with the exact words to say in the room.">
 <!-- theme before first paint, so dark mode does not flash white -->
 <script>(function(){try{var d=document.documentElement;var t=localStorage.getItem("ir.theme")||"light";d.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==="dark"?"#1b1b1b":"#f4f6fb";var r={};try{r=JSON.parse(localStorage.getItem("ir.reading"))||{};}catch(e){}var dz=matchMedia("(max-width:860px)").matches?"m":"s";d.setAttribute("data-reading-size",["xs","s","m","l","xl"].indexOf(r.size)<0?dz:r.size);var isF=localStorage.getItem("ir.focus")==="true";var defW=isF?"default":"wide";var wPref=isF?r.focusWidth:r.width;d.setAttribute("data-reading-width",["default","wide","full"].indexOf(wPref)<0?defW:wPref);d.setAttribute("data-reading-align",r.align==="left"?"left":"justify");}catch(e){}})();</script>
-<link rel="stylesheet" href="assets/portal.css?v=21">
+<link rel="stylesheet" href="assets/portal.css?v=24">
 <script defer src="data/topics.js"></script>
 <script defer src="data/q-01-llm-foundations.js"></script>
 <script defer src="data/q-02-transformers.js"></script>
@@ -36,9 +36,10 @@
 <script defer src="data/q-17-python-coding.js"></script>
 <script defer src="data/q-18-system-design.js"></script>
 <script defer src="data/q-19-langgraph.js"></script>
+<script defer src="data/q-00-rag-internal.js"></script>
 <script defer src="data/search-index.js"></script>
-<script defer src="data/glossary.js?v=2"></script>
-<script defer src="assets/portal.js?v=25"></script>
+<script defer src="data/glossary.js?v=10"></script>
+<script defer src="assets/portal.js?v=30"></script>
 </head>
 <body data-page="home">
 <a class="skip" href="#main">Skip to content</a>
@@ -74,10 +75,17 @@
 
       <h2>Three ways in</h2>
       <div class="card-grid">
+        <a class="tile" href="story.html">
+          <span class="tile-num">READ FIRST</span>
+          <h3>The story of AI</h3>
+          <p>From least squares in 1805 to transformers, ChatGPT, RAG, MCP and teams of agents,
+             told as one story. Read it once and every topic below has a place to sit.</p>
+          <div class="tile-foot">Read the story →</div>
+        </a>
         <a class="tile" href="#topics">
           <span class="tile-num">ROUTE 01</span>
           <h3>By topic</h3>
-          <p>Eighteen subjects, GenAI first. Use this when you know which area you are weak in.</p>
+          <p>Twenty subjects, starting with the internal question bank (topic 00), then GenAI. Use this when you know which area you are weak in.</p>
           <div class="tile-foot">Jump to the topic list ↓</div>
         </a>
         <a class="tile" href="rounds.html">
@@ -93,13 +101,6 @@
           <p>A healthcare payer, a bank and a services firm interview the same role very
              differently. Five tracks for what each one presses on.</p>
           <div class="tile-foot">See the five tracks →</div>
-        </a>
-        <a class="tile" href="rehearsal.html">
-          <span class="tile-num">ROUTE 04</span>
-          <h3>Rehearsal room</h3>
-          <p>A timer, a random question, and a record of what you have delivered out loud
-             without notes. This is the part most people skip.</p>
-          <div class="tile-foot">Start rehearsing →</div>
         </a>
       </div>
 

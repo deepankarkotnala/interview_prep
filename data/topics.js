@@ -7,6 +7,13 @@
 window.IR = window.IR || {};
 
 window.IR.topics = [
+  /* Numbered 00 so the internal question bank reads as the starting point,
+     ahead of topic 01. The sidebar and home grid render this array in order. */
+  { num: "00", slug: "rag-internal",
+    title: "RAG Internal Interview QnA",
+    blurb: "Internal question bank merged from the Claude and ChatGPT lists: your 34 core questions first, then every follow-up in learning order, from AI/ML history to RAG, agents and deployment. Near-duplicates share one answer.",
+    status: "live" },
+
   { num: "01", slug: "llm-foundations",
     title: "LLM foundations",
     blurb: "Tokens, context windows, sampling, why the same prompt gives two answers, and what actually happens at inference time.",
