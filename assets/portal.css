@@ -953,6 +953,9 @@ html[data-reading-width="full"] body:not(.focus-mode) .content { max-width: 82.5
 html[data-reading-align="justify"] .content > p,
 html[data-reading-align="justify"] .content > ul li,
 html[data-reading-align="justify"] .content .lede,
+html[data-reading-align="justify"] .story-body p,
+html[data-reading-align="justify"] .story-body li,
+html[data-reading-align="justify"] .story-body .q-quote,
 html[data-reading-align="justify"] .q-simple p,
 html[data-reading-align="justify"] .q-say p { text-align: justify; text-justify: inter-word; }
 
@@ -3820,9 +3823,14 @@ html[data-reading-size] .dd-opt { font-size: calc(0.75rem * var(--reading-scale)
 /* Justified is now the default alignment (Display > Left still available);
    the lede joins the answer text in the justified set. */
 html[data-reading-align="justify"] .lede,
+html[data-reading-align="justify"] .story-body p,
+html[data-reading-align="justify"] .story-body li,
+html[data-reading-align="justify"] .story-body .q-quote,
 html[data-reading-align="justify"] .q-why,
 html[data-reading-align="justify"] .q-numbers p,
-html[data-reading-align="justify"] .q-wrong p { text-align: justify; text-justify: inter-word; }
+html[data-reading-align="justify"] .q-wrong p,
+html[data-reading-align="justify"] .q-follow-q,
+html[data-reading-align="justify"] .q-follow-answer p { text-align: justify; text-justify: inter-word; }
 
 /* ---- Off-screen cards cost nothing ----
    content-visibility lets the browser skip layout and paint for cards outside
@@ -3891,6 +3899,9 @@ html[data-reading-align="justify"] .q-wrong p { text-align: justify; text-justif
 .story-chapter > h2 { margin-top: 0; }
 .story-body p, .story-body li { line-height: 1.75; }
 .story-body .q-quote { margin: 1.25rem 0; }
+html[data-reading-align="justify"] .story-body p,
+html[data-reading-align="justify"] .story-body li,
+html[data-reading-align="justify"] .story-body .q-quote { text-align: justify; text-justify: inter-word; }
 .story-chapter .q-diagram { margin-top: 1.5rem; }
 .nav-story .nav-chev { color: var(--accent); }
 
