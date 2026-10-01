@@ -2262,7 +2262,7 @@
       head.innerHTML =
         '<div class="eyebrow">Read first · the whole field as one story</div>' +
         '<h1>' + esc(st.title) + '</h1>' +
-        '<p class="lede">' + fmt(st.lede) + '</p>' +
+        (st.lede ? '<p class="lede">' + fmt(st.lede) + '</p>' : '') +
         '<div class="chip-row"><span class="chip is-accent">' + st.chapters.length +
         ' chapters</span><span class="chip">About 35 minutes to read</span>' +
         '<span class="chip">Dates checked against the original papers</span></div>';

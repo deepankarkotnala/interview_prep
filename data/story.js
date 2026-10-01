@@ -12,7 +12,6 @@ window.IR = window.IR || {};
 
 window.IR.story = {
   title: "The story of AI: from counting data to teams of agents",
-  lede: "One story instead of three hundred answers. It runs from the first statisticians fitting lines to data, through machine learning, neural networks and the transformer, to ChatGPT, RAG, MCP and teams of AI agents. Each chapter explains what problem people had, what they invented to solve it, and what new problem that created. Read it once from top to bottom before the question banks, and every topic afterwards will have a place to sit. Hover or tap an underlined word for a plain meaning.",
   chapters: [
 
 {
