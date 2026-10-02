@@ -317,13 +317,6 @@
          'aria-label="Search results"></div>';
 
     h += '<div data-nav-groups>';
-    /* The story page sits above everything, unnumbered: it is the reading that
-       gives every numbered topic a place in one timeline. */
-    h += '<div class="nav-group"><div class="nav-label">Read first</div>' +
-         '<a class="nav-link nav-story" href="' + base + 'story.html"' +
-         (page === "story" ? ' aria-current="page"' : "") + '>' +
-         '<span class="nav-chev" aria-hidden="true">✦</span>' +
-         '<span>The story of AI</span></a></div>';
     h += '<div class="nav-group"><div class="nav-label">Start here</div>';
     [["index.html", "Home", "home", "⌂"],
      ["rounds.html", "By interview round", "rounds", "↗"],
@@ -2247,35 +2240,6 @@
     }
   }
 
-  /* ---------- page bootstrap: story ----------
-     data/story.js holds one narrative in chapters. Each chapter becomes an h2
-     (so the right rail builds itself), prose gets glossary tooltips through
-     paras() - scoped terms use the "riq" prefix - and an optional diagram
-     reuses the card renderer. */
-  function bootStory() {
-    var st = IR.story;
-    var head = document.querySelector("[data-story-head]");
-    var host = document.querySelector("[data-story-body]");
-    if (!st || !host) return;
-    document.title = "The story of AI - Interview Room";
-    if (head) {
-      head.innerHTML =
-        '<div class="eyebrow">Read first · the whole field as one story</div>' +
-        '<h1>' + esc(st.title) + '</h1>' +
-        (st.lede ? '<p class="lede">' + fmt(st.lede) + '</p>' : '') +
-        '<div class="chip-row"><span class="chip is-accent">' + st.chapters.length +
-        ' chapters</span><span class="chip">About 35 minutes to read</span>' +
-        '<span class="chip">Dates checked against the original papers</span></div>';
-    }
-    host.innerHTML = st.chapters.map(function (ch, i) {
-      return '<section class="story-chapter">' +
-        '<div class="story-era">' + esc(ch.era) + '</div>' +
-        '<h2>' + esc(ch.title) + '</h2>' +
-        '<div class="story-body">' + paras(ch.body, true, "story-" + i) + '</div>' +
-        (ch.diagram ? renderDiagram(ch.diagram) : "") +
-        '</section>';
-    }).join("");
-  }
 
   /* ---------- page bootstrap: index ---------- */
   function bootIndex() {
@@ -2651,7 +2615,6 @@
   /* ---------- page navigation (prev / next) ---------- */
   var ROUTE_PAGES = [
     { page: "home",      href: "index.html",     label: "Home" },
-    { page: "story",     href: "story.html",     label: "The story of AI" },
     { page: "rounds",    href: "rounds.html",    label: "By interview round" },
     { page: "tracks",    href: "tracks.html",    label: "By employer type" }
   ];
@@ -3014,7 +2977,6 @@
     else if (page === "home") bootIndex();
     else if (page === "rounds") bootRounds();
     else if (page === "tracks") bootTracks();
-    else if (page === "story") bootStory();
 
     buildRail();
     buildPager();

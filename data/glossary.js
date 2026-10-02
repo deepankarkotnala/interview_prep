@@ -373,8 +373,7 @@ window.IR.glossary = {
   "rolling deployment|rolling update": "Replacing old pods with new ones a few at a time, so the app stays up during an update.",
   "CrashLoopBackOff": "A Kubernetes status meaning a container keeps crashing on start, so Kubernetes waits longer between restarts.",
   "ImagePullBackOff": "A Kubernetes status meaning it can't download the container image, often a wrong name, tag or registry login.",
-  /* The story of AI (story.html, prefix "story"). Ordinary or MCP-specific words are
-     scoped to the story so they never show this meaning elsewhere. */
+  /* Classical ML & Deep Learning foundational terms */
   "least squares": "Fitting a line by making the squared gaps between the line and the data points as small as possible. Published by Legendre in 1805.",
   "ANOVA|analysis of variance": "A statistical test for whether the averages of several groups really differ, or only look different by chance. Developed by R. A. Fisher.",
   "hypothesis testing": "Assume nothing is going on, then check how surprising the data would be if that were true. Very surprising data suggests a real effect.",
@@ -397,19 +396,6 @@ window.IR.glossary = {
   "AutoGPT": "A 2023 open-source experiment that let an LLM pursue goals on its own in a loop. It showed both the promise and the problems of agents.",
   "Agentic AI Foundation": "A Linux Foundation body, formed in December 2025, that governs open agent standards including MCP.",
   "Agent2Agent protocol|Agent2Agent": "Google's open standard (April 2025) that lets AI agents from different vendors find each other and hand off tasks. Known as A2A.",
-  "regression": { tip: "Predicting a number, such as a price or a pressure, from other numbers.", only: ["story"] },
-  "classification": { tip: "Predicting a category, such as spam or not spam, or which type of fault.", only: ["story"] },
-  "correlation": { tip: "A single number for how strongly two things move together, from -1 to +1.", only: ["story"] },
-  "machine learning": { tip: "Computers learning patterns from examples, instead of following rules a person wrote by hand.", only: ["story"] },
-  "sequence": { tip: "Data where order matters, such as the words in a sentence or readings over time.", only: ["story"] },
-  "gates": { tip: "In an LSTM, small learned switches that decide what to forget, what to store and what to output at each step.", only: ["story"] },
-  "RAG": { tip: "Retrieval-augmented generation: search your own documents first, then give the best passages to the model to answer from.", only: ["story"] },
-  "host": { tip: "In MCP, the AI application the user works in, such as a chat app, a code editor or an agent.", only: ["story"] },
-  "client": { tip: "In MCP, the part inside the host that holds a connection to one MCP server.", only: ["story"] },
-  "server": { tip: "In MCP, a small program that wraps a real system, such as a database, and offers its tools and data in a standard way.", only: ["story"] },
-  "tools": { tip: "Actions a model can ask your code to run, such as a search or a database query. In MCP, one of three things a server offers.", only: ["story"] },
-  "resources": { tip: "In MCP, data a server makes available for the application to read, such as a file or a record.", only: ["story"] },
-  "prompts": { tip: "In MCP, ready-made prompt templates a server can offer to the application.", only: ["story"] },
   /* RAG Internal Interview QnA: terms from chapters 4-35 */
   "encoder-only": "A transformer that keeps only the encoder half, reading text in both directions. Used for understanding, embeddings and reranking, e.g. BERT.",
   "decoder-only": "A transformer that keeps only the masked decoder half and predicts the next token. The design behind GPT, LLaMA and most chat LLMs.",
