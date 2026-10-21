@@ -1,45 +1,22 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
+<!-- head:start -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#f4f6fb">
-  <link rel="icon" type="image/svg+xml" href="assets/brand/favicon.svg?v=8">
-  <link rel="icon" type="image/png" sizes="32x32" href="assets/brand/favicon-32.png?v=8">
-  <link rel="icon" type="image/png" href="assets/brand/interview-room-favicon.png?v=8">
-  <link rel="shortcut icon" href="assets/brand/favicon.ico?v=8">
-  <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png?v=9">
+<link rel="icon" type="image/svg+xml" href="assets/brand/favicon.svg?v=40">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/brand/favicon-32.png?v=8">
+<link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png?v=9">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Interview Room">
+<script>(function(){try{var d=document.documentElement;var t=localStorage.getItem("ir.theme")||"light";d.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==="dark"?"#1b1b1b":"#f4f6fb";var r={};try{r=JSON.parse(localStorage.getItem("ir.reading"))||{};}catch(e){}var dz=matchMedia("(max-width:860px)").matches?"m":"s";d.setAttribute("data-reading-size",["xs","s","m","l","xl"].indexOf(r.size)<0?dz:r.size);var isF=localStorage.getItem("ir.focus")==="true";var defW=isF?"default":"wide";var wPref=isF?r.focusWidth:r.width;d.setAttribute("data-reading-width",["default","wide","full"].indexOf(wPref)<0?defW:wPref);d.setAttribute("data-reading-align",r.alignSet&&r.align==="justify"?"justify":"left");}catch(e){}})();</script>
+<link rel="stylesheet" href="assets/portal.css?v=40">
+<script defer src="data/topics.js?v=40"></script>
+<script defer src="assets/portal.js?v=40"></script>
+<!-- head:end -->
 <title>By employer type | Interview Room</title>
-<meta name="description" content="The same GenAI role interviews differently at a healthcare payer, a bank, a retailer, a product company and a services firm. Five tracks, each with its ten most likely questions and a worked scenario.">
-<script>(function(){try{var d=document.documentElement;var t=localStorage.getItem("ir.theme")||"light";d.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==="dark"?"#1b1b1b":"#f4f6fb";var r={};try{r=JSON.parse(localStorage.getItem("ir.reading"))||{};}catch(e){}var dz=matchMedia("(max-width:860px)").matches?"m":"s";d.setAttribute("data-reading-size",["xs","s","m","l","xl"].indexOf(r.size)<0?dz:r.size);var isF=localStorage.getItem("ir.focus")==="true";var defW=isF?"default":"wide";var wPref=isF?r.focusWidth:r.width;d.setAttribute("data-reading-width",["default","wide","full"].indexOf(wPref)<0?defW:wPref);d.setAttribute("data-reading-align",r.align==="left"?"left":"justify");}catch(e){}})();</script>
-<link rel="stylesheet" href="assets/portal.css?v=24">
-<script defer src="data/topics.js"></script>
-<script defer src="data/q-01-llm-foundations.js"></script>
-<script defer src="data/q-02-transformers.js"></script>
-<script defer src="data/q-03-prompting.js"></script>
-<script defer src="data/q-04-embeddings.js"></script>
-<script defer src="data/q-05-rag.js"></script>
-<script defer src="data/q-06-advanced-rag.js"></script>
-<script defer src="data/q-07-agents.js"></script>
-<script defer src="data/q-08-langchain.js"></script>
-<script defer src="data/q-09-mcp.js"></script>
-<script defer src="data/q-10-fine-tuning.js"></script>
-<script defer src="data/q-11-evaluation.js"></script>
-<script defer src="data/q-12-llmops.js"></script>
-<script defer src="data/q-13-guardrails.js"></script>
-<script defer src="data/q-14-cost-latency.js"></script>
-<script defer src="data/q-15-cloud.js"></script>
-<script defer src="data/q-16-ml-fundamentals.js"></script>
-<script defer src="data/q-17-python-coding.js"></script>
-<script defer src="data/q-18-system-design.js"></script>
-<script defer src="data/q-19-langgraph.js"></script>
-<script defer src="data/q-00-rag-internal.js"></script>
-<script defer src="data/tracks.js"></script>
-<script defer src="data/search-index.js"></script>
-<script defer src="data/glossary.js?v=10"></script>
-<script defer src="assets/portal.js?v=30"></script>
+<meta name="description" content="How healthcare, banking, retail, product, services and Indian product companies interview for the same GenAI role differently.">
 </head>
 <body data-page="tracks">
 <a class="skip" href="#main">Skip to content</a>
@@ -50,7 +27,7 @@
     <main class="content" id="main">
 
       <div class="page-head">
-        <div class="eyebrow">Route 03</div>
+        <div class="eyebrow">Browse</div>
         <h1>By employer type</h1>
         <p class="lede">
           The job title is the same. The interview is not. What a company sells decides which
@@ -58,10 +35,6 @@
           expensive preparation mistake there is. Each track below gives the round structure,
           the ten questions most likely in that context, and one worked forty-minute scenario.
         </p>
-        <div class="chip-row">
-          <span class="chip">Five tracks</span>
-          <span class="chip">Company names are examples of the type, not sources</span>
-        </div>
       </div>
 
       <div class="note is-warn">
@@ -72,16 +45,7 @@
         presses on. That inference is sound. A leaked question list would not be.
       </div>
 
-      <nav class="chip-row" aria-label="Jump to a track">
-        <a class="chip is-accent" href="#track-healthcare">Healthcare</a>
-        <a class="chip is-accent" href="#track-banking">Banking</a>
-        <a class="chip is-accent" href="#track-retail">Retail</a>
-        <a class="chip is-accent" href="#track-product">Product</a>
-        <a class="chip is-accent" href="#track-services">Services</a>
-      </nav>
-
       <div data-tracks-body></div>
-
     </main>
   </div>
 </div>

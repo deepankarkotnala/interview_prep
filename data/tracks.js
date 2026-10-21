@@ -143,5 +143,41 @@ window.IR.tracks = [
         "**Then say what you would reuse** - accelerators, an existing evaluation harness - because that is the economics of this business and they are listening for it."
       ]
     }
+  },
+
+  {
+    "key": "india-product",
+    "label": "Indian product companies and startups",
+    "includes": "Flipkart, Swiggy, Zomato, Razorpay, PhonePe, CRED, Meesho, Freshworks, Zoho and fast-growing AI-first startups.",
+    "grounding": "public job descriptions + the cost, language and network realities of Indian consumer-scale products + the Indian regulators that apply (DPDP, RBI, CERT-In)",
+    "skew": "Cost per request in rupees at consumer volume, and the arithmetic to back it. Users who write Hinglish and regional languages in Latin script, and who often prefer voice. Patchy networks and entry-level phones. Payments and fintech constraints - RBI payment data stays in India, CERT-In's six-hour incident clock, and DPDP obligations arriving in 2027. And a real coding or build round, because these teams expect engineers to ship.",
+    "rounds": "Usually four to five: a recruiter screen, a coding or live build round (sometimes a take-home), a GenAI or system design round at consumer scale, a hiring manager round about ownership and impact, and HR. Startups may compress this into two or three longer conversations with founders or senior engineers.",
+    "watch": "Every design answer should carry a number and a language. Saying \"we would measure it per language and per channel, in rupees per resolved conversation\" before being asked changes the tone of the round. Assuming English-only users, or quoting dollar prices without converting to cost per conversation, reads as someone who has not built for this market.",
+    "ten": [
+      "in-11",
+      "cl-15",
+      "cl-14",
+      "rag-30",
+      "in-15",
+      "cl-06",
+      "in-01",
+      "in-14",
+      "py-36",
+      "sd-36"
+    ],
+    "scenario": {
+      "title": "Worked scenario - 40 minutes",
+      "prompt": "Design a support assistant for a consumer payments app with 20 million monthly users, answering in Hindi, English, Hinglish and Tamil, in-app and on a messaging channel, including questions about failed transactions and refunds.",
+      "moves": [
+        "**Requirements first.** Which intents dominate - failed payment, refund status, KYC - and which actions the assistant may take versus only explain. Peak volume, languages by share, channels, and today's cost and resolution time per ticket, because that is the baseline.",
+        "**Data boundary before architecture.** Transaction data is payment system data, so inference, traces, caches and conversation memory stay in Indian regions. Say this early - it rules out half the tooling choices.",
+        "**Route by intent, not everything through the LLM.** Refund status is an API lookup plus a template in the user's language. Reserve generation for explanations and policy questions. This is the largest cost lever.",
+        "**Language handling.** Detect script and language per message, keep the original, search with transliterated and rewritten variants, fuse with RRF, and reply in the user's register. Budget tokens per language, because Indic scripts can cost several times more.",
+        "**Do the rupee arithmetic out loud.** Conversations per month times turns times tokens per turn by language, priced at current rates and converted to rupees per resolved conversation. Compare with the human cost per ticket.",
+        "**Design for the network.** Server-side state, idempotency keys on any action, resumable streaming, short answers first, and SMS confirmations for anything involving money.",
+        "**Safety and incidents.** Mask identifiers before the model sees them, human handoff for disputes, and a runbook that files with CERT-In within six hours if the assistant ever exposes another user's data.",
+        "**Evaluation and what you left out.** A golden set sliced by language and script, reviewed by native speakers, gating every release. Leave voice for phase two - and say why: speech recognition on amounts and account numbers needs its own evaluation."
+      ]
+    }
   }
 ];

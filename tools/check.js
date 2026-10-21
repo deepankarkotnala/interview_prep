@@ -14,6 +14,13 @@ var root = path.join(__dirname, "..");
 global.window = {};
 require(path.join(root, "data/topics.js"));
 var IR = global.window.IR;
+require(path.join(root, "data/tags.js"));
+require(path.join(root, "data/sources.js"));
+var TAGS = IR.tags || {};
+var SOURCES = IR.sources || {};
+var warnings = [];
+var allCards = [];
+var NOW = new Date();
 
 var REQUIRED = ["id", "q", "round", "level", "tags",
                 "why", "simple", "say", "numbers", "wrong", "follow"];
@@ -55,6 +62,28 @@ IR.topics.forEach(function (t) {
       if (!v || (Array.isArray(v) && !v.length)) problems.push(where + ": missing " + f);
     });
 
+    allCards.push({ c: c, where: where });
+    (c.tags || []).forEach(function (t) {
+      if (!TAGS[t]) problems.push(where + ": tag \"" + t + "\" is not in data/tags.js");
+    });
+    (c.deeper || []).forEach(function (sid) {
+      if (!SOURCES[sid]) problems.push(where + ": deeper source \"" + sid + "\" is not in data/sources.js");
+    });
+    if (c.check) {
+      var k = c.check;
+      if (!k.q || !Array.isArray(k.options) || k.options.length < 3 || k.options.length > 4) problems.push(where + ": check needs q and 3-4 options");
+      else if (typeof k.answer !== "number" || k.answer < 0 || k.answer >= k.options.length) problems.push(where + ": check.answer is not a valid option index");
+      if (!k.why) problems.push(where + ": check is missing why");
+    }
+    if (c["try"] && (!c["try"].title || !Array.isArray(c["try"].steps) || !c["try"].steps.length)) problems.push(where + ": try needs a title and steps");
+    if (c.verified !== undefined && !/^20\d\d-(0[1-9]|1[0-2])$/.test(c.verified)) problems.push(where + ": verified must look like 2026-10");
+    /* Prices and model names go stale. Warn (not fail) when a card states one
+       and has not been re-checked in six months. */
+    if (/\$\s?\d|\u20b9\s?\d|per million|GPT-\d|Claude \d|Gemini \d|Llama \d/i.test((c.numbers || "") + " " + (c.say || ""))) {
+      var vm = /^(\d{4})-(\d{2})$/.exec(c.verified || "");
+      var age = vm ? (NOW.getFullYear() - +vm[1]) * 12 + (NOW.getMonth() + 1 - +vm[2]) : 99;
+      if (age > 6) warnings.push(where + ": states a price or model name and " + (vm ? "was last checked " + c.verified : "has never been checked"));
+    }
     if (ids[c.id]) problems.push(where + ": duplicate id, also in " + ids[c.id]);
     ids[c.id] = key;
 
@@ -175,6 +204,30 @@ IR.topics.forEach(function (t) {
   console.log("  " + key + " - " + set.cards.length + " cards");
 });
 
+/* Cross-links must point at cards that exist - a dead link reads as a bug. */
+allCards.forEach(function (x) {
+  var c = x.c;
+  ["builds", "next", "alsoIn"].forEach(function (f) {
+    (c[f] || []).forEach(function (id) {
+      if (id === c.id) problems.push(x.where + ": " + f + " points at itself");
+      else if (!ids[id]) problems.push(x.where + ": " + f + " points at missing card \"" + id + "\"");
+    });
+  });
+  if (c.dupOf && !ids[c.dupOf]) problems.push(x.where + ": dupOf points at missing card \"" + c.dupOf + "\"");
+});
+
+/* Orphans: a data file or page that no topic lists is invisible but still shipped. */
+var liveKeys = {};
+IR.topics.forEach(function (t) { liveKeys[t.num + "-" + t.slug] = 1; });
+fs.readdirSync(path.join(root, "data")).forEach(function (n) {
+  var m = /^q-(.+)\.js$/.exec(n);
+  if (m && !liveKeys[m[1]]) problems.push("data/" + n + ": orphan - not listed in data/topics.js (move it to _archive/)");
+});
+fs.readdirSync(path.join(root, "topics")).forEach(function (n) {
+  var m = /^(.+)\.html$/.exec(n);
+  if (m && !liveKeys[m[1]]) problems.push("topics/" + n + ": orphan - not listed in data/topics.js");
+});
+
 console.log("\n" + total + " cards across " +
             IR.topics.filter(function (t) { return t.status === "live"; }).length +
             " live topics");
@@ -217,21 +270,26 @@ if (fs.existsSync(tracksFile)) {
    file escapes. */
 var OFFENDERS = [
   [/\.\.\/\.\.\//, "path climbs above the portal root (../../)"],
-  [/https?:\/\/(?!(?:www\.)?w3\.org|schema\.org)/, "external URL - vendor the asset instead"]
+  /* localhost, .example and {templated} URLs are code samples, not assets. */
+  [/https?:\/\/(?!(?:www\.)?w3\.org|schema\.org|localhost|127\.0\.0\.1|169\.254\.169\.254|[^\s"']*\.example\b|[^\s"']*\{)/, "external URL - vendor the asset instead"]
 ];
 function scan(dir) {
   fs.readdirSync(dir).forEach(function (name) {
     var p = path.join(dir, name);
     if (fs.statSync(p).isDirectory()) {
-      if (name !== "node_modules") scan(p);
+      if (name !== "node_modules" && name !== "_archive") scan(p);
       return;
     }
     if (!/\.(html|css|js)$/.test(name)) return;
     if (p === path.join(root, "tools", "check.js")) return;   // this file names the patterns
+    /* The reading list is the one place links out are allowed: they are
+       followed by the reader, never loaded by the page. */
+    var isSources = p === path.join(root, "data", "sources.js");
     var text = fs.readFileSync(p, "utf8");
     var rel = path.relative(root, p).replace(/\\/g, "/");
     var atRoot = !rel.includes("/");
-    OFFENDERS.forEach(function (o) {
+    OFFENDERS.forEach(function (o, oi) {
+      if (isSources && oi === 1) return;
       if (o[0].test(text)) problems.push(rel + ": " + o[1]);
     });
     /* A root-level file has nothing above it that belongs to this portal. */
@@ -277,6 +335,26 @@ scan(root);
       + " removed) - run: node tools/build-search-index.js");
   }
 })();
+
+(function checkCatalog() {
+  var cf = path.join(root, "data/catalog.js");
+  if (!fs.existsSync(cf)) { problems.push("data/catalog.js is missing - run: node tools/build-search-index.js"); return; }
+  require(cf);
+  var rows = (global.window.IR.catalog || {}).cards || [];
+  var have = {};
+  rows.forEach(function (r) { have[r[0]] = r; });
+  var stale = allCards.filter(function (x) {
+    var r = have[x.c.id];
+    return !r || r[2] !== x.c.q || (r[6] || null) !== (x.c.dupOf || null);
+  });
+  if (stale.length || rows.length !== allCards.length) problems.push("data/catalog.js is out of date - run: node tools/build-search-index.js");
+})();
+
+if (warnings.length) {
+  console.log("\n" + warnings.length + " warning(s) - time-sensitive facts to re-check:");
+  warnings.slice(0, 15).forEach(function (w) { console.log("  " + w); });
+  if (warnings.length > 15) console.log("  ... and " + (warnings.length - 15) + " more");
+}
 
 if (problems.length) {
   console.log("\n" + problems.length + " problem(s):");

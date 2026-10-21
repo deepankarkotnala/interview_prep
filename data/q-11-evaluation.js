@@ -27,8 +27,7 @@ window.IR.q["11-evaluation"] = {
       "priority": "high",
       "tags": [
         "evaluation",
-        "basics",
-        "metrics"
+        "llmops"
       ],
       "why": "The opening question of the whole topic. It reveals in thirty seconds whether you have shipped.",
       "quick": [
@@ -84,7 +83,31 @@ window.IR.q["11-evaluation"] = {
       "numbers": "A common starting point is around 100 golden cases. With only a few dozen, run-to-run noise can be as large as the change you are trying to measure, so report variance as well as the average.",
       "wrong": "\"We test it manually before release.\" Honest, but the follow-up is how you compare two versions or prove a change broke nothing - and manual spot checks cannot answer either.",
       "follow": "Where does that golden set come from?",
-      "followAnswer": "Mostly from production: real user queries sampled across the traffic we serve, plus every failure anyone reported. A domain expert writes or approves the correct answers, not the engineer. I deliberately add edge cases, adversarial inputs and questions that should get 'I don't know'. Before launch, with no traffic yet, I start from expert-written questions and support tickets, then swap in real queries as they arrive."
+      "followAnswer": "Mostly from production: real user queries sampled across the traffic we serve, plus every failure anyone reported. A domain expert writes or approves the correct answers, not the engineer. I deliberately add edge cases, adversarial inputs and questions that should get 'I don't know'. Before launch, with no traffic yet, I start from expert-written questions and support tickets, then swap in real queries as they arrive.",
+      "builds": [
+        "llm-05"
+      ],
+      "next": [
+        "ev-02",
+        "ev-07",
+        "ev-03"
+      ],
+      "deeper": [
+        "hamel-evals",
+        "huyen-ai-engineering"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "A new prompt scores 3 points higher on the golden set, but after release the thumbs-down and rephrase rates both rise. What do you conclude?",
+        "options": [
+          "Trust the golden set - online signals are too noisy to act on.",
+          "The golden set does not cover what users are asking now; mine the failing conversations into new cases.",
+          "Roll back the golden set to the previous version.",
+          "Ignore it until you have labelled production data."
+        ],
+        "answer": 1,
+        "why": "Offline tests catch breakage on known cases; online signals show whether real users were helped. When they disagree, the test set has drifted from real traffic, so the failing conversations become new golden cases. Dismissing either kind of evidence is the mistake."
+      }
     },
     {
       "id": "ev-02",
@@ -97,8 +120,7 @@ window.IR.q["11-evaluation"] = {
       "priority": "high",
       "tags": [
         "evaluation",
-        "dataset",
-        "process"
+        "testing"
       ],
       "why": "Everyone agrees you need one. Few candidates can describe getting one built.",
       "quick": [
@@ -121,7 +143,31 @@ window.IR.q["11-evaluation"] = {
       "numbers": "100 cases to start, 300–500 for a mature system. Roughly 10–15% should be unanswerable, or you will never detect a model that stopped refusing.",
       "wrong": "\"We generated the test set with an LLM.\" Useful for scale, dangerous alone - the model generates the questions it is already good at, and your scores go up while quality does not.",
       "follow": "How do you keep it from going stale as the product changes?",
-      "followAnswer": "I keep feeding it from production. Every month I sample fresh real queries, and every confirmed failure from feedback or incidents becomes a new case. I compare the topic mix of the set with live traffic and fill the gaps. Old cases are never edited in place: if a policy change alters the right answer, I retire the case and add a new version, so older runs stay comparable."
+      "followAnswer": "I keep feeding it from production. Every month I sample fresh real queries, and every confirmed failure from feedback or incidents becomes a new case. I compare the topic mix of the set with live traffic and fill the gaps. Old cases are never edited in place: if a policy change alters the right answer, I retire the case and add a new version, so older runs stay comparable.",
+      "builds": [
+        "ev-01"
+      ],
+      "next": [
+        "ev-03",
+        "ev-06",
+        "ev-10"
+      ],
+      "deeper": [
+        "hamel-evals",
+        "eugeneyan-patterns"
+      ],
+      "check": {
+        "kind": "which-fails",
+        "q": "Your golden set has 200 cases, all of them answerable from the corpus. Which regression will it never catch?",
+        "options": [
+          "Latency growing past the budget.",
+          "Retrieval recall dropping on answerable questions.",
+          "JSON parse failures in the answer format.",
+          "The model no longer saying 'I don't know' and inventing answers when the corpus has none."
+        ],
+        "answer": 3,
+        "why": "Without unanswerable cases, nothing in the set rewards an honest refusal, so a model that starts inventing looks fine. Keep roughly 10-15% unanswerable. The other regressions show up on answerable cases or in ordinary metrics."
+      }
     },
     {
       "id": "ev-03",
@@ -133,9 +179,8 @@ window.IR.q["11-evaluation"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "evaluation",
         "llm-judge",
-        "bias"
+        "evaluation"
       ],
       "why": "Everyone uses judges now. The senior signal is knowing where they lie to you.",
       "quick": [
@@ -219,7 +264,42 @@ window.IR.q["11-evaluation"] = {
       "numbers": "Calibrate on 100–200 human-labelled examples. Recheck agreement quarterly, and after any judge-model version change.",
       "wrong": "\"We use GPT to score the outputs, it gives about 0.9.\" A number with no calibration behind it. The obvious follow-up - how do you know the judge is right - needs agreement with human labels to answer.",
       "follow": "Your judge scores 0.9 and users are complaining. What is happening?",
-      "followAnswer": "Either the judge is wrong or it is measuring something users do not care about. First I check calibration: does it still agree with human labels, especially after any judge model change? Then I read the complaint cases - often the answers are faithful but unhelpful, too long or slow, which the rubric never scored. The fix is usually a new rubric criterion plus the real complaints added to the set."
+      "followAnswer": "Either the judge is wrong or it is measuring something users do not care about. First I check calibration: does it still agree with human labels, especially after any judge model change? Then I read the complaint cases - often the answers are faithful but unhelpful, too long or slow, which the rubric never scored. The fix is usually a new rubric criterion plus the real complaints added to the set.",
+      "builds": [
+        "ev-02"
+      ],
+      "next": [
+        "ev-04",
+        "ev-05",
+        "ev-15"
+      ],
+      "deeper": [
+        "llm-judge",
+        "g-eval"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "A pairwise judge prefers answer A over B 70% of the time. You swap the order so B comes first, and now it prefers whichever answer is first 68% of the time. What is going on?",
+        "options": [
+          "A is genuinely better, and the swap confirms it.",
+          "Verbosity bias - the longer answer wins.",
+          "Self-preference - the judge likes its own style.",
+          "Position bias - judge both orders and only count verdicts that agree."
+        ],
+        "answer": 3,
+        "why": "If the winner follows the slot rather than the content, the judge is reacting to position. Running both orders and keeping consistent verdicts (or calling the rest a tie) removes it. Verbosity and self-preference are real biases but would not flip with order."
+      },
+      "try": {
+        "title": "Catch position bias in a local judge",
+        "minutes": 20,
+        "steps": [
+          "Pull a small model with Ollama and write five questions, each with two answers of similar quality.",
+          "Ask the model to pick the better answer with A first, then again with the two answers swapped.",
+          "Count how often the verdict follows the content versus the slot.",
+          "Observe that a small judge often prefers the first position; then make one answer clearly wrong and check the judge still catches it in both orders."
+        ],
+        "code": "import ollama\n\nPROMPT = \"Question: {q}\\nAnswer 1: {a}\\nAnswer 2: {b}\\nWhich answer is better? Reply with only 1 or 2.\"\n\ndef judge(q, a, b, model=\"llama3.2:3b\"):\n    r = ollama.chat(model=model, options={\"temperature\": 0},\n                    messages=[{\"role\": \"user\", \"content\": PROMPT.format(q=q, a=a, b=b)}])\n    return r[\"message\"][\"content\"].strip()[:1]\n\nq = \"What does a KV cache store?\"\nx = \"Keys and values from earlier tokens, so they are not recomputed.\"\ny = \"The attention keys and values of past tokens, reused at each decode step.\"\nprint(\"x first:\", judge(q, x, y), \" y first:\", judge(q, y, x))"
+      }
     },
     {
       "id": "ev-04",
@@ -233,7 +313,7 @@ window.IR.q["11-evaluation"] = {
       "tags": [
         "evaluation",
         "rag",
-        "metrics"
+        "llm-judge"
       ],
       "why": "rag-07 covers the full RAG evaluation design. This checks the next layer: sorting metrics by which half of the pipeline they test and how they are scored, and knowing which can run on every commit.",
       "quick": [
@@ -298,7 +378,32 @@ window.IR.q["11-evaluation"] = {
       "numbers": "Useful bar: recall@10 above 0.90 before touching the prompt, and faithfulness above 0.90 before launch. Set your own thresholds from your own data.",
       "wrong": "Naming BLEU or ROUGE. They compare word overlap with a reference answer, which says little about groundedness in open-ended generation - the follow-up about where the reference answers come from exposes that (see ev-11).",
       "follow": "Faithfulness is 0.95 but users say the answers are useless. Explain.",
-      "followAnswer": "Faithfulness only says the answer is supported by the retrieved context, not that it answers the question. So either retrieval brought back related but wrong chunks and the model summarised them faithfully, or the answer is safe but vague. I check context recall and answer relevance on the complaint cases, then read them. Usually the fix is in retrieval, not in the prompt."
+      "followAnswer": "Faithfulness only says the answer is supported by the retrieved context, not that it answers the question. So either retrieval brought back related but wrong chunks and the model summarised them faithfully, or the answer is safe but vague. I check context recall and answer relevance on the complaint cases, then read them. Usually the fix is in retrieval, not in the prompt.",
+      "builds": [
+        "rag-07",
+        "rag-46"
+      ],
+      "next": [
+        "ev-18",
+        "rag-33",
+        "ev-06"
+      ],
+      "deeper": [
+        "ragas",
+        "ragas-docs"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "Which of these RAG metrics can run on every commit with no model calls at all?",
+        "options": [
+          "Faithfulness of the answer to the retrieved context.",
+          "Recall@k against a labelled set of relevant chunks.",
+          "Answer relevance to the question.",
+          "Context precision scored by an LLM judge."
+        ],
+        "answer": 1,
+        "why": "Recall@k is plain arithmetic once you have question-to-chunk labels, so it is fast, free and deterministic. Faithfulness, answer relevance and judged context precision each need a model to read text, which costs time and money and needs calibrating."
+      }
     },
     {
       "id": "ev-18",
@@ -311,9 +416,8 @@ window.IR.q["11-evaluation"] = {
       "priority": "high",
       "tags": [
         "evaluation",
-        "hallucination",
-        "faithfulness",
-        "metrics"
+        "llm-judge",
+        "rag"
       ],
       "why": "One of the most-asked GenAI questions. The mark is separating 'not supported by the source' from 'not true in the world', and turning either into a number.",
       "quick": [
@@ -366,7 +470,44 @@ window.IR.q["11-evaluation"] = {
       "numbers": "No universal acceptable rate - it depends on the stakes. Report both the share of claims that are unsupported and the share of answers with at least one, and keep roughly 10-15% unanswerable questions in the set so abstention is measured too.",
       "wrong": "\"We ask the model to rate its own confidence.\" Stated confidence is poorly calibrated, and the model that invented a fact will often defend it. You need an independent check against a source.",
       "follow": "The answer is faithful to the context, but the context itself is out of date. Is that a hallucination?",
-      "followAnswer": "Not by the faithfulness definition - the model did what we asked. But to the user it is still a wrong answer, so it is a factual failure caused by our data, not the model. I catch it with freshness metadata on documents, a check that answers cite the latest version, and eval cases for recently changed policies. The fix belongs in ingestion, not in the prompt."
+      "followAnswer": "Not by the faithfulness definition - the model did what we asked. But to the user it is still a wrong answer, so it is a factual failure caused by our data, not the model. I catch it with freshness metadata on documents, a check that answers cite the latest version, and eval cases for recently changed policies. The fix belongs in ingestion, not in the prompt.",
+      "builds": [
+        "llm-05",
+        "rag-33"
+      ],
+      "next": [
+        "rag-15",
+        "ev-03",
+        "ev-04"
+      ],
+      "deeper": [
+        "ragas",
+        "ragas-docs"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "You check 100 answers containing 400 claims in total. 20 claims are unsupported by the context, spread across 15 answers. What are the claim-level and answer-level unsupported rates?",
+        "options": [
+          "20% and 15%",
+          "5% and 15%",
+          "5% and 20%",
+          "15% and 5%"
+        ],
+        "answer": 1,
+        "why": "Claim-level is 20 of 400 = 5%. Answer-level is answers with at least one unsupported claim, 15 of 100 = 15%. Report both: the answer-level rate is what users feel, because one invented date spoils an otherwise good answer."
+      },
+      "try": {
+        "title": "Label claims with an NLI model",
+        "minutes": 20,
+        "steps": [
+          "Install `sentence-transformers` and load a small NLI cross-encoder as in the starter code.",
+          "Write a short context paragraph and an answer with three claims, one of them unsupported (for example a wrong date).",
+          "Score each claim sentence against the context and read the contradiction, entailment and neutral scores.",
+          "Observe which claims come out as entailment and which as neutral or contradiction, then compute the claim-level and answer-level rates.",
+          "Rephrase a supported claim heavily and observe whether the checker still accepts it - this is why you calibrate against humans."
+        ],
+        "code": "from sentence_transformers import CrossEncoder\n\nnli = CrossEncoder(\"cross-encoder/nli-deberta-v3-small\")\nlabels = [\"contradiction\", \"entailment\", \"neutral\"]\n\ncontext = \"Refunds are allowed within 30 days of purchase. Shipping fees are not refunded.\"\nclaims = [\"You can get a refund within 30 days.\",\n          \"Shipping fees are refunded in full.\",\n          \"Refunds are processed within 5 working days.\"]\n\nscores = nli.predict([(context, c) for c in claims])\nfor c, s in zip(claims, scores):\n    print(labels[s.argmax()], \"|\", c)"
+      }
     },
     {
       "id": "ev-11",
@@ -379,9 +520,7 @@ window.IR.q["11-evaluation"] = {
       "priority": "high",
       "tags": [
         "evaluation",
-        "metrics",
-        "theory",
-        "judgement"
+        "ml-basics"
       ],
       "why": "Asked by name in almost every evaluation round. The mark is not the definition - it is knowing they mostly do not apply to what you build.",
       "quick": [
@@ -405,7 +544,42 @@ window.IR.q["11-evaluation"] = {
       "numbers": "If you do use ROUGE in CI, treat it as a regression tripwire rather than a quality score - watch for sudden drops, do not chase the absolute number.",
       "wrong": "Listing all three confidently as your RAG evaluation plan. The follow-up - where do the reference answers come from, and what does word overlap say about grounding - exposes that they do not fit the task.",
       "follow": "You have no reference answers and no budget for human labelling. What is your first metric?",
-      "followAnswer": "Faithfulness for anything grounded, because it needs no reference answer - a judge checks each claim against the retrieved context. For retrieval I generate questions from chunks, so I know which chunk should come back, and measure recall at k with no human labels. Then I find whatever small budget I can to label fifty cases and check the judge, because an unchecked judge is a guess."
+      "followAnswer": "Faithfulness for anything grounded, because it needs no reference answer - a judge checks each claim against the retrieved context. For retrieval I generate questions from chunks, so I know which chunk should come back, and measure recall at k with no human labels. Then I find whatever small budget I can to label fifty cases and check the judge, because an unchecked judge is a guess.",
+      "builds": [
+        "ev-04"
+      ],
+      "next": [
+        "ev-05",
+        "ev-18",
+        "ev-03"
+      ],
+      "deeper": [
+        "g-eval",
+        "huyen-ai-engineering"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "Reference: 'Refunds are allowed within 30 days.' Answer A: 'Refunds are allowed within 90 days.' Answer B: 'You can get your money back up to a month after purchase.' Which one does ROUGE score higher?",
+        "options": [
+          "B, because it is factually correct.",
+          "A, because it shares almost every word despite the wrong number.",
+          "They score the same, since both are one sentence.",
+          "Neither - ROUGE detects the factual error and penalises A."
+        ],
+        "answer": 1,
+        "why": "ROUGE counts overlapping words with the reference, so A matches nearly everything and B, correctly reworded, matches little. That is exactly why overlap metrics mislead on open-ended GenAI answers and why RAG uses faithfulness instead."
+      },
+      "try": {
+        "title": "Watch ROUGE reward the wrong answer",
+        "minutes": 10,
+        "steps": [
+          "Install `rouge-score` and run the starter code.",
+          "Observe that the wrong 90-day answer scores higher than the correct paraphrase.",
+          "Optionally install `bert-score` and score the same pair, and observe that the gap narrows but the wrong answer still scores well.",
+          "Write down one task where ROUGE would still be a reasonable tripwire, such as summaries checked against real reference summaries."
+        ],
+        "code": "from rouge_score import rouge_scorer\n\nref = \"Refunds are allowed within 30 days.\"\nwrong = \"Refunds are allowed within 90 days.\"\nright = \"You can get your money back up to a month after purchase.\"\n\nsc = rouge_scorer.RougeScorer([\"rouge1\", \"rougeL\"], use_stemmer=True)\nfor name, ans in [(\"wrong\", wrong), (\"right\", right)]:\n    s = sc.score(ref, ans)\n    print(name, {k: round(v.fmeasure, 2) for k, v in s.items()})"
+      }
     },
     {
       "id": "ev-15",
@@ -418,9 +592,8 @@ window.IR.q["11-evaluation"] = {
       "priority": "high",
       "tags": [
         "evaluation",
-        "tooling",
-        "ragas",
-        "frameworks"
+        "llm-judge",
+        "testing"
       ],
       "why": "Almost every GenAI job description names one of these. The panel wants to hear that you understand what the tool computes, not just that you installed it.",
       "quick": [
@@ -444,7 +617,32 @@ window.IR.q["11-evaluation"] = {
       "numbers": "No universal number. A practical check: before trusting a framework's judged metric, have humans label 50–100 of the same answers and confirm the tool agrees with them most of the time.",
       "wrong": "\"We use Ragas, so our evaluation is covered.\" A tool computes scores. It does not give you a representative test set, correct labels or a judge you have checked.",
       "follow": "Ragas says faithfulness is 0.92. How do you know that number is right?",
-      "followAnswer": "I don't, until I check it. I take fifty to a hundred answers, have a domain expert mark each claim as supported or not, and compare with the tool's verdicts - raw agreement plus something like Cohen's kappa. I read the disagreements to see whether the judge is too lenient on paraphrase or misses wrong numbers. Then I pin the judge model and re-check after any library or judge change."
+      "followAnswer": "I don't, until I check it. I take fifty to a hundred answers, have a domain expert mark each claim as supported or not, and compare with the tool's verdicts - raw agreement plus something like Cohen's kappa. I read the disagreements to see whether the judge is too lenient on paraphrase or misses wrong numbers. Then I pin the judge model and re-check after any library or judge change.",
+      "builds": [
+        "ev-03",
+        "ev-04"
+      ],
+      "next": [
+        "ev-06",
+        "ev-03",
+        "ops-12"
+      ],
+      "deeper": [
+        "ragas-docs",
+        "promptfoo"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Ragas faithfulness rose from 0.84 to 0.91 the week you upgraded the Ragas library and switched the judge model. The application did not change. What is the right reading?",
+        "options": [
+          "The scores are not comparable; re-score the old outputs with the new setup before claiming anything.",
+          "The application improved, so report the gain.",
+          "Faithfulness is deterministic, so the change must be real.",
+          "Revert the application to last week's build."
+        ],
+        "answer": 0,
+        "why": "A framework's faithfulness score is an LLM judge behind a fixed prompt. Change the judge or the library and the ruler changes, so scores move with no change in the app. Pin both, and compare only runs scored by the same setup."
+      }
     },
     {
       "id": "ev-06",
@@ -456,9 +654,8 @@ window.IR.q["11-evaluation"] = {
       "priority": "high",
       "tags": [
         "evaluation",
-        "ci",
         "llmops",
-        "process"
+        "testing"
       ],
       "why": "Whether evaluation is a practice in your team or a slide.",
       "quick": [
@@ -507,7 +704,43 @@ window.IR.q["11-evaluation"] = {
       "numbers": "Fifty cases per PR is usually a few minutes and a few dollars - cheap enough that nobody argues, large enough to catch a real regression.",
       "wrong": "\"We run evals before major releases.\" Then a prompt change ships untested, and prompt changes are where regressions come from.",
       "follow": "The eval blocks a release the business wants today. What do you do?",
-      "followAnswer": "I look at what failed before arguing. If it is a real regression in something users hit, I show the examples and the business decides with facts - perhaps shipping with that feature flagged off. If it is noise or a known flaky case, I re-run it and fix the test afterwards. What I never do is quietly lower the threshold; any override is recorded with a named approver."
+      "followAnswer": "I look at what failed before arguing. If it is a real regression in something users hit, I show the examples and the business decides with facts - perhaps shipping with that feature flagged off. If it is noise or a known flaky case, I re-run it and fix the test afterwards. What I never do is quietly lower the threshold; any override is recorded with a named approver.",
+      "builds": [
+        "ev-02",
+        "pr-04"
+      ],
+      "next": [
+        "ops-08",
+        "ev-17",
+        "cd-05"
+      ],
+      "deeper": [
+        "promptfoo",
+        "gh-actions"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Your full 400-case eval takes 40 minutes and real money per run, and engineers have started skipping it. What is the best fix?",
+        "options": [
+          "Make it mandatory on every commit anyway.",
+          "Replace it with manual spot checks before releases.",
+          "Tier it: mocked checks per commit, about 50 real cases on prompt PRs, the full set before release and nightly.",
+          "Run the full set once a quarter."
+        ],
+        "answer": 2,
+        "why": "Tiers match cost to frequency, so the cheap checks always run and the expensive ones run where they matter. Forcing the full suite on every commit is what got it skipped; manual checks and quarterly runs let prompt regressions ship untested."
+      },
+      "try": {
+        "title": "Compare two prompts with promptfoo",
+        "minutes": 20,
+        "steps": [
+          "Install Node.js, pull a small model with Ollama, and save the starter config as `promptfooconfig.yaml`.",
+          "Run `npx promptfoo@latest eval` and then `npx promptfoo@latest view` to see both prompts side by side.",
+          "Observe which test cases each prompt passes and fails, rather than only the totals.",
+          "Add one case that the better prompt fails, re-run, and observe how a single case moves a small suite's pass rate."
+        ],
+        "code": "prompts:\n  - 'Answer in one sentence: {{question}}'\n  - 'You are a support agent. Answer in one sentence and say \"I do not know\" if unsure: {{question}}'\nproviders:\n  - ollama:chat:llama3.2:3b\ntests:\n  - vars: { question: 'What is the capital of France?' }\n    assert:\n      - type: icontains\n        value: Paris\n  - vars: { question: 'What is our refund window for order 88123?' }\n    assert:\n      - type: icontains\n        value: know"
+      }
     },
     {
       "id": "ev-10",
@@ -520,8 +753,7 @@ window.IR.q["11-evaluation"] = {
       "priority": "high",
       "tags": [
         "evaluation",
-        "debugging",
-        "judgement"
+        "debugging"
       ],
       "why": "A diagnostic scenario. It tests whether you understand the limits of your own measurements.",
       "quick": [
@@ -544,7 +776,32 @@ window.IR.q["11-evaluation"] = {
       "numbers": "Always slice quality metrics by language, document type and user segment. A 0.9 average routinely hides a 0.6 segment, and that segment is the one complaining.",
       "wrong": "\"The users do not understand what the system can do.\" It may even be partly true, but the interviewer wants a diagnosis of your measurement, and this answer skips it.",
       "follow": "How would you stop your eval set drifting away from production again?",
-      "followAnswer": "Make refreshing it a routine, not a project. Every month, sample new real queries into the set and add every confirmed complaint as a case. Track the topic and language mix of the set against live traffic, so gaps show up on a dashboard. Keep a held-out slice nobody tunes against. And after each release, compare online metrics with offline scores, so a gap between them is noticed early."
+      "followAnswer": "Make refreshing it a routine, not a project. Every month, sample new real queries into the set and add every confirmed complaint as a case. Track the topic and language mix of the set against live traffic, so gaps show up on a dashboard. Keep a held-out slice nobody tunes against. And after each release, compare online metrics with offline scores, so a gap between them is noticed early.",
+      "builds": [
+        "ev-01",
+        "ev-02"
+      ],
+      "next": [
+        "ev-07",
+        "ops-07",
+        "ev-16"
+      ],
+      "deeper": [
+        "hamel-evals",
+        "eugeneyan-patterns"
+      ],
+      "check": {
+        "kind": "spot-the-bug",
+        "q": "Overall faithfulness on the golden set is 0.91, yet complaints come mostly from Hindi-speaking users. The team proposes re-running the overall eval with more cases. What analysis would actually expose the problem?",
+        "options": [
+          "Re-run the overall eval three times and average.",
+          "Add more English cases to tighten the average.",
+          "Raise the sampling temperature to diversify answers.",
+          "Slice the score by language - a 0.91 average can hide a much lower Hindi segment."
+        ],
+        "answer": 3,
+        "why": "Averages hide failing groups. Slicing by language, document type and user segment shows where quality really sits. More English cases or repeated overall runs only make the misleading average more precise; temperature has nothing to do with it."
+      }
     },
     {
       "id": "ev-05",
@@ -556,8 +813,7 @@ window.IR.q["11-evaluation"] = {
       "priority": "medium",
       "tags": [
         "evaluation",
-        "subjective",
-        "rubric"
+        "llm-judge"
       ],
       "why": "Summarisation, drafting and creative tasks are common, and most candidates have only evaluated extraction.",
       "quick": [
@@ -641,7 +897,31 @@ window.IR.q["11-evaluation"] = {
       "numbers": "Pairwise win rate against the current production version is the cleanest release signal. Decide the bar before the test and check the win rate is distinguishable from 50% at your sample size - a tie can still be worth shipping if the new version is cheaper or faster.",
       "wrong": "\"Subjective tasks cannot really be evaluated.\" The follow-up is how you would compare two summary prompts, and decomposing into checkable properties plus pairwise comparison is the answer it is looking for.",
       "follow": "How do you stop the judge just preferring the longer summary?",
-      "followAnswer": "I control for length in the design and then check the judge for it. A hard length limit is checked in code first, and the rubric says plainly that length isn't a merit, that padding counts against an answer and that coverage of key points is what matters. I shuffle the order in every pair. Then I measure the bias directly, comparing the judge's picks with human picks on pairs of different lengths, and if it still favours longer ones, I compare length-matched pairs."
+      "followAnswer": "I control for length in the design and then check the judge for it. A hard length limit is checked in code first, and the rubric says plainly that length isn't a merit, that padding counts against an answer and that coverage of key points is what matters. I shuffle the order in every pair. Then I measure the bias directly, comparing the judge's picks with human picks on pairs of different lengths, and if it still favours longer ones, I compare length-matched pairs.",
+      "builds": [
+        "ev-03"
+      ],
+      "next": [
+        "ev-17",
+        "ev-08",
+        "ev-03"
+      ],
+      "deeper": [
+        "llm-judge",
+        "g-eval"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "A new summary prompt wins 54 of 100 shuffled pairwise comparisons against production. What can you conclude about quality?",
+        "options": [
+          "It is clearly better - it won the majority.",
+          "It is worse, because it lost 46 times.",
+          "You need 1-to-10 scores instead of pairwise results.",
+          "54% on 100 pairs is within noise of 50% (about plus or minus 10 points), so it is not shown to be better."
+        ],
+        "answer": 3,
+        "why": "With 100 pairs the standard error of a win rate near 50% is about 5 points, so a 95% interval spans roughly 44-64%. A tie can still justify shipping if the new prompt is cheaper or faster - but not a quality claim."
+      }
     },
     {
       "id": "ev-17",
@@ -654,9 +934,8 @@ window.IR.q["11-evaluation"] = {
       "priority": "medium",
       "tags": [
         "evaluation",
-        "non-determinism",
-        "variance",
-        "statistics"
+        "sampling",
+        "testing"
       ],
       "why": "Whether you trust a single run. Many reported 'improvements' are just noise.",
       "quick": [
@@ -707,7 +986,43 @@ window.IR.q["11-evaluation"] = {
       "numbers": "With 50 cases, each case is worth 2 percentage points - so a 2-point 'win' can be one lucky answer. Repeat runs 3–5 times and report the average and the range.",
       "wrong": "\"The new prompt scored 84 against 82, so it is better.\" On one run each, a gap that small is often within normal run-to-run noise.",
       "follow": "Your agent passes a task 4 times out of 5. Is it ready to ship?",
-      "followAnswer": "Not on that number alone. Four out of five might be fine for a draft a human reviews and unacceptable for an agent that moves money or talks to customers unsupervised. So I look at what happens on the failing run. Does it fail safely, by asking or escalating, or does it do something wrong? Five trials is also a tiny sample, so I run more and check how often it succeeds every time on the important cases. Harmless, caught failures can ship behind a guard."
+      "followAnswer": "Not on that number alone. Four out of five might be fine for a draft a human reviews and unacceptable for an agent that moves money or talks to customers unsupervised. So I look at what happens on the failing run. Does it fail safely, by asking or escalating, or does it do something wrong? Five trials is also a tiny sample, so I run more and check how often it succeeds every time on the important cases. Harmless, caught failures can ship behind a guard.",
+      "builds": [
+        "llm-03",
+        "ev-02"
+      ],
+      "next": [
+        "ev-08",
+        "ag-09",
+        "ev-06"
+      ],
+      "deeper": [
+        "hamel-evals",
+        "huyen-ai-engineering"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "On 40 test cases, prompt A scores 80% and prompt B scores 85%, one run each. What does that tell you?",
+        "options": [
+          "B is 5 points better, so ship it.",
+          "Each case is worth 2.5 points, so B's lead is two cases - likely noise until repeated runs and a fixed-versus-broken count say otherwise.",
+          "Nothing at all can be learned from 40 cases.",
+          "A is better, because smaller sets favour the stronger prompt."
+        ],
+        "answer": 1,
+        "why": "One flipped case moves a 40-case score by 2.5 points, so a two-case gap can come from sampling alone. Repeat each version 3-5 times to see the noise floor and count which cases each fixed and broke. Small sets are noisy, not useless."
+      },
+      "try": {
+        "title": "See how test-set size changes the noise",
+        "minutes": 10,
+        "steps": [
+          "Run the starter code, which simulates a system with a true pass rate of 82% evaluated five times.",
+          "Observe the spread of scores with 30 cases compared with 300 cases.",
+          "Compare that spread with a claimed 2-point improvement and decide which set size could detect it.",
+          "Change the true pass rate to 0.84 for a second system and observe how often one run of 30 cases ranks the two the wrong way round."
+        ],
+        "code": "import numpy as np\n\nrng = np.random.default_rng(0)\ntrue_rate = 0.82\nfor n in (30, 300):\n    runs = rng.binomial(n, true_rate, size=5) / n * 100\n    print(f\"{n:>3} cases:\", np.round(runs, 1), \"range\", round(runs.max() - runs.min(), 1))\n\n# how often does a worse system win a single 30-case run?\na = rng.binomial(30, 0.82, 10_000)\nb = rng.binomial(30, 0.84, 10_000)\nprint(\"worse system wins or ties:\", round(np.mean(a >= b) * 100, 1), \"%\")"
+      }
     },
     {
       "id": "ev-16",
@@ -719,9 +1034,7 @@ window.IR.q["11-evaluation"] = {
       "priority": "medium",
       "tags": [
         "evaluation",
-        "conversation",
-        "multi-turn",
-        "chatbot"
+        "memory"
       ],
       "why": "Most eval sets are one question, one answer. Real chat products fail on turn four.",
       "quick": [
@@ -744,7 +1057,32 @@ window.IR.q["11-evaluation"] = {
       "numbers": "Start with 30–50 multi-turn scenarios of 3–6 turns each. Run simulated-user scenarios at least three times each - one run of a conversation between two models tells you little.",
       "wrong": "\"We evaluate each question independently.\" That misses the failures users actually hit: forgetting context, resolving \"it\" to the wrong thing, and contradicting an earlier answer.",
       "follow": "Your simulated user is too polite and never tests edge cases. How do you fix that?",
-      "followAnswer": "I give the simulator a harder brief and check that it follows it. Each scenario gets a persona and a goal plus behaviours to show, like changing its mind, giving partial information, correcting the bot or getting impatient, and a rule not to accept vague answers. I seed those edge cases from real chat logs where users struggled. Then I review a sample of simulated conversations and track coverage of each behaviour, so an overly polite simulator shows up as a gap rather than a pass."
+      "followAnswer": "I give the simulator a harder brief and check that it follows it. Each scenario gets a persona and a goal plus behaviours to show, like changing its mind, giving partial information, correcting the bot or getting impatient, and a rule not to accept vague answers. I seed those edge cases from real chat logs where users struggled. Then I review a sample of simulated conversations and track coverage of each behaviour, so an overly polite simulator shows up as a gap rather than a pass.",
+      "builds": [
+        "ev-02",
+        "rag-25"
+      ],
+      "next": [
+        "ev-05",
+        "ev-17",
+        "ev-13"
+      ],
+      "deeper": [
+        "hamel-evals",
+        "langsmith"
+      ],
+      "check": {
+        "kind": "which-fails",
+        "q": "You evaluate a chatbot by replaying logged conversations, keeping the earlier turns fixed from the log and grading only the final reply. Which failure can this setup not reveal?",
+        "options": [
+          "A wrong refund amount in the final reply.",
+          "A rude or off-brand tone in the final reply.",
+          "The bot's own earlier mistake compounding, such as resolving 'the second one' against a list it got wrong.",
+          "A final reply that ignores a correction the user made two turns earlier."
+        ],
+        "answer": 2,
+        "why": "Fixed history comes from the log, not from the bot under test, so its own earlier errors never happen and cannot compound. Scripted scenarios or simulated users let the bot generate every turn. The other failures are visible in the final reply."
+      }
     },
     {
       "id": "ev-07",
@@ -756,9 +1094,8 @@ window.IR.q["11-evaluation"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
+        "observability",
         "evaluation",
-        "monitoring",
-        "production",
         "llmops"
       ],
       "why": "Whether you have operated one, where you have no labels and no reproducibility.",
@@ -806,7 +1143,32 @@ window.IR.q["11-evaluation"] = {
       "numbers": "Sample 1–5% of traffic for automated quality checks. As a starting point, alert on a 10–20% day-over-day shift in any quality proxy, then tune to your traffic's normal variance.",
       "wrong": "\"Latency, errors and uptime.\" That monitors the service, not the model. A GenAI system can be perfectly healthy and completely wrong.",
       "follow": "Refusal rate dropped 30% overnight. Walk me through your investigation.",
-      "followAnswer": "I treat it as a possible regression before a win. First, what changed overnight: a deploy, a prompt edit, a provider model update, an ingestion run or a shift in traffic. Then I slice the drop by feature, language and question type to find where it sits. Next I read a sample of questions that used to be refused and see what they get now. If they're grounded answers, fine. If the model is inventing, I roll back and add those cases to the golden set."
+      "followAnswer": "I treat it as a possible regression before a win. First, what changed overnight: a deploy, a prompt edit, a provider model update, an ingestion run or a shift in traffic. Then I slice the drop by feature, language and question type to find where it sits. Next I read a sample of questions that used to be refused and see what they get now. If they're grounded answers, fine. If the model is inventing, I roll back and add those cases to the golden set.",
+      "builds": [
+        "ev-01",
+        "ops-11"
+      ],
+      "next": [
+        "rag-54",
+        "ops-05",
+        "ev-08"
+      ],
+      "deeper": [
+        "huyen-llm-production",
+        "evidently"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "Your assistant's 'I don't know' rate drops 30% overnight with no deploy, while error rate and latency are flat. What is the most worrying explanation?",
+        "options": [
+          "Users have learned to ask better questions.",
+          "Latency improved, so fewer requests timed out into refusals.",
+          "Nothing - a lower refusal rate always means better answers.",
+          "Something changed in the model or the corpus and it may now be inventing answers instead of declining."
+        ],
+        "answer": 3,
+        "why": "A sudden move in a quality proxy with healthy system metrics points at a silent change - a provider update, a re-ingested corpus or a prompt tweak. Fewer refusals can mean more invention, so check sampled groundedness before celebrating. That is why you alert on change, not thresholds."
+      }
     },
     {
       "id": "ev-08",
@@ -819,8 +1181,8 @@ window.IR.q["11-evaluation"] = {
       "priority": "medium",
       "tags": [
         "evaluation",
-        "ab-testing",
-        "experimentation"
+        "ml-basics",
+        "cost"
       ],
       "why": "The bridge between engineering and business impact, which is what a hiring manager is listening for.",
       "quick": [
@@ -871,7 +1233,32 @@ window.IR.q["11-evaluation"] = {
       "numbers": "Shadow-run on 5–10% of traffic before any user-visible split. Set a daily spend cap on the experiment arm before it starts.",
       "wrong": "\"We show both answers and let users pick.\" That is a preference test, not an A/B test, and it changes the product while measuring it.",
       "follow": "B wins on quality and costs three times more. What do you recommend?",
-      "followAnswer": "It depends on whether the quality gain is worth three times the cost in business terms. I set the value of the improvement, say extra tickets resolved times what each one saves, against the added cost per request at our real volume. If it pays, we ship B. Often the better answer is routing, sending only the hard queries to B and keeping A for the rest, or testing a cheaper model with B's prompt. I present the trade with numbers and let the business decide."
+      "followAnswer": "It depends on whether the quality gain is worth three times the cost in business terms. I set the value of the improvement, say extra tickets resolved times what each one saves, against the added cost per request at our real volume. If it pays, we ship B. Often the better answer is routing, sending only the hard queries to B and keeping A for the rest, or testing a cheaper model with B's prompt. I present the trade with numbers and let the business decide.",
+      "builds": [
+        "ml-25",
+        "ev-01"
+      ],
+      "next": [
+        "ev-09",
+        "ev-17",
+        "ops-08"
+      ],
+      "deeper": [
+        "huyen-ai-engineering",
+        "eugeneyan-patterns"
+      ],
+      "check": {
+        "kind": "spot-the-bug",
+        "q": "To get an even split quickly, the team randomises the A/B assignment on every request of a chat assistant. What is wrong?",
+        "options": [
+          "Nothing - per-request randomisation gives the most even split.",
+          "One user sees both versions within a conversation, so the experience is inconsistent and outcomes cannot be attributed to a version.",
+          "Per-request assignment adds too much latency.",
+          "It should be split by time of day instead."
+        ],
+        "answer": 1,
+        "why": "Business outcomes such as resolution happen per user or per conversation, so assignment must be sticky per user. Mixing versions mid-conversation contaminates both arms. Splitting by time of day confounds the result with traffic mix."
+      }
     },
     {
       "id": "ev-09",
@@ -884,9 +1271,8 @@ window.IR.q["11-evaluation"] = {
       "priority": "medium",
       "tags": [
         "evaluation",
-        "business",
-        "story",
-        "roi"
+        "project-story",
+        "trade-offs"
       ],
       "why": "The hiring manager's real question. Technical metrics do not fund a second phase.",
       "quick": [
@@ -908,7 +1294,30 @@ window.IR.q["11-evaluation"] = {
       "numbers": "Use your real figures - baseline, after, sample size, run cost per month. A specific modest number is far more credible than a round large one.",
       "wrong": "\"It saved a lot of manual effort.\" No baseline, no number, no attribution. It reads as a project you did not measure.",
       "follow": "What did not work, and what did that cost you?",
-      "followAnswer": "I'd give a real one, with what it cost and what we changed. A typical example is measuring success with a judge score first. It looked good while handling time barely moved, because agents didn't trust the answers and rechecked everything. That cost us a few weeks and some credibility with the sponsor. We switched to a metric the business already tracked and added citations so agents could verify quickly. The lesson I took was to agree the business metric before building."
+      "followAnswer": "I'd give a real one, with what it cost and what we changed. A typical example is measuring success with a judge score first. It looked good while handling time barely moved, because agents didn't trust the answers and rechecked everything. That cost us a few weeks and some credibility with the sponsor. We switched to a metric the business already tracked and added citations so agents could verify quickly. The lesson I took was to agree the business metric before building.",
+      "builds": [
+        "ev-08"
+      ],
+      "next": [
+        "sd-04",
+        "ev-08",
+        "sd-05"
+      ],
+      "deeper": [
+        "huyen-ai-engineering"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "A hiring manager asks what your GenAI project delivered. Which answer lands best?",
+        "options": [
+          "It saved a lot of manual effort across the team.",
+          "Faithfulness reached 0.94 on our golden set.",
+          "Users loved it and adoption grew quickly.",
+          "Handling time fell 12% against a same-period control group; a process change overlapped, so I credit part of it, net of monthly running cost."
+        ],
+        "answer": 3,
+        "why": "It names a business metric with a baseline, a fair comparison, honest attribution and cost - all things a manager can defend upwards. A model score means nothing to a budget holder, and vague effort or adoption claims sound unmeasured."
+      }
     },
     {
       "id": "ev-13",
@@ -921,11 +1330,9 @@ window.IR.q["11-evaluation"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "evaluation",
         "agents",
-        "trajectory",
-        "tools",
-        "regression"
+        "evaluation",
+        "testing"
       ],
       "why": "ag-09 and ag-31 cover agent metrics and trajectory scoring. This is the harness question: a controlled environment, verifying the real end state, and mixing graders - because final-text scoring can say success when the tool calls were unsafe, wasteful or wrong.",
       "quick": [
@@ -1009,7 +1416,32 @@ window.IR.q["11-evaluation"] = {
       "numbers": "There is no universal trial count. Use more repeated trials for high-variance or high-risk cases, and report both pass rate and the number of trials so the score is interpretable.",
       "wrong": "Grading only the final answer. An agent can produce a polished confirmation after calling the wrong tool, changing the wrong record or failing to change anything at all.",
       "follow": "The agent gets the right outcome but uses a different tool sequence from your reference solution. Do you fail it?",
-      "followAnswer": "No, not if the outcome is right and the hard rules were respected. A reference solution shows one valid route, not the only one. I check the end state in the system first, then the invariants, like identity verified before a refund or approval before anything destructive. If both pass, it's a pass, and any extra or different calls show up in the efficiency metrics instead. I'd only fail it when the sequence itself is part of the contract, like a mandated compliance order."
+      "followAnswer": "No, not if the outcome is right and the hard rules were respected. A reference solution shows one valid route, not the only one. I check the end state in the system first, then the invariants, like identity verified before a refund or approval before anything destructive. If both pass, it's a pass, and any extra or different calls show up in the efficiency metrics instead. I'd only fail it when the sequence itself is part of the contract, like a mandated compliance order.",
+      "builds": [
+        "ag-09",
+        "ag-31"
+      ],
+      "next": [
+        "ev-14",
+        "ag-30",
+        "ev-17"
+      ],
+      "deeper": [
+        "anthropic-agents",
+        "hamel-evals"
+      ],
+      "check": {
+        "kind": "spot-the-bug",
+        "q": "An agent eval asks an LLM judge: 'Did the agent's final message confirm the booking?' Pass rate is 96%. What is the flaw?",
+        "options": [
+          "The judge model is too small for this task.",
+          "The pass rate is too high to be believable.",
+          "It grades what the agent claims, not what changed - query the sandbox booking system for the reservation.",
+          "It should grade the agent's reasoning instead of the message."
+        ],
+        "answer": 2,
+        "why": "An agent can write a polished confirmation after calling the wrong tool or changing nothing. The real test is the end state in the system of record, checked by code. A judge on the message, or on the reasoning, still grades words rather than outcomes."
+      }
     },
     {
       "id": "ev-12",
@@ -1020,11 +1452,9 @@ window.IR.q["11-evaluation"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
+        "security",
         "evaluation",
-        "red-team",
-        "guardrails",
-        "safety",
-        "process"
+        "guardrails"
       ],
       "why": "Increasingly a named requirement in enterprise and BFSI JDs, and most candidates mix it up with ordinary testing.",
       "quick": [
@@ -1048,7 +1478,32 @@ window.IR.q["11-evaluation"] = {
       "numbers": "Indirect injection through an ingested document is the one to demonstrate. If your corpus accepts user-uploaded files, that is a live path from an attacker into your model's instructions.",
       "wrong": "Describing it as running the guardrail test suite again. That is testing your known controls, which is the opposite of looking for the unknown ones.",
       "follow": "Red teaming found a jailbreak you cannot fully fix. Do you launch?",
-      "followAnswer": "Not automatically. It depends on severity and exposure, measured against the threshold we agreed before testing began. If the jailbreak produces something embarrassing but low harm, I can launch with layered mitigations, meaning input and output filters, monitoring and alerts on that pattern, rate limits, and a documented accepted risk with a named owner. If it lets someone extract other users' data or trigger a harmful action, it blocks launch, and I remove the tool or permission until it's contained."
+      "followAnswer": "Not automatically. It depends on severity and exposure, measured against the threshold we agreed before testing began. If the jailbreak produces something embarrassing but low harm, I can launch with layered mitigations, meaning input and output filters, monitoring and alerts on that pattern, rate limits, and a documented accepted risk with a named owner. If it lets someone extract other users' data or trigger a harmful action, it blocks launch, and I remove the tool or permission until it's contained.",
+      "builds": [
+        "gr-01",
+        "pr-06"
+      ],
+      "next": [
+        "gr-07",
+        "gr-02",
+        "ev-06"
+      ],
+      "deeper": [
+        "owasp-llm",
+        "mitre-atlas"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "You are red teaming an HR assistant that indexes CVs uploaded by applicants. Which attack path do teams most often forget to test?",
+        "options": [
+          "A user typing 'ignore your instructions' into the chat box.",
+          "Role-play jailbreaks asking for harmful content.",
+          "Instructions hidden inside an uploaded CV that later gets retrieved into the prompt.",
+          "Very long inputs that exceed the context window."
+        ],
+        "answer": 2,
+        "why": "Indirect injection arrives through the corpus, not the chat box, so it bypasses input filters and reaches the model looking like normal content. Direct injection and jailbreaks are usually tested; the ingestion path is the one people miss."
+      }
     },
     {
       "id": "ev-14",
@@ -1059,10 +1514,8 @@ window.IR.q["11-evaluation"] = {
       "level": "5-10",
       "priority": "low",
       "tags": [
-        "evaluation",
         "agents",
-        "trajectory",
-        "judgement"
+        "evaluation"
       ],
       "why": "A modern agent-eval judgement question: do you verify safety and outcomes without overfitting the grader to one exact path?",
       "quick": [
@@ -1106,7 +1559,31 @@ window.IR.q["11-evaluation"] = {
       "numbers": "Track efficiency distributions such as median and p95 turns or tool calls rather than one magic maximum, then set hard limits only where cost, latency or safety requires them.",
       "wrong": "Failing every run that differs from the reference trace. That teaches the evaluation to prefer one implementation rather than measuring whether the agent solved the task safely and correctly.",
       "follow": "Which tool calls would you make mandatory in a refund-agent evaluation?",
-      "followAnswer": "Only the ones that protect the customer and the company. Identity verification before any refund action. A lookup of the order and the refund policy, so eligibility and the amount come from the system, not the model. An approval step when the amount crosses the threshold. And the refund call itself, followed by a check that it succeeded before telling the customer. Order is mandatory only between those, verify before refunding and approve before executing. How it searches or phrases things stays free."
+      "followAnswer": "Only the ones that protect the customer and the company. Identity verification before any refund action. A lookup of the order and the refund policy, so eligibility and the amount come from the system, not the model. An approval step when the amount crosses the threshold. And the refund call itself, followed by a check that it succeeded before telling the customer. Order is mandatory only between those, verify before refunding and approve before executing. How it searches or phrases things stays free.",
+      "builds": [
+        "ev-13"
+      ],
+      "next": [
+        "ag-31",
+        "ag-30",
+        "ag-12"
+      ],
+      "deeper": [
+        "anthropic-agents",
+        "hamel-evals"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Reference path for a refund agent: look up order, verify identity, refund. Run 1 verifies identity, looks up the order, then refunds. Run 2 refunds, then verifies identity. Both end with the right refund. How do you grade them?",
+        "options": [
+          "Pass both - the outcome is what matters.",
+          "Fail both - neither matched the reference path.",
+          "Pass run 2 only, because it was faster.",
+          "Pass run 1, fail run 2 - identity before refund is a hard rule; the order of other steps is not."
+        ],
+        "answer": 3,
+        "why": "Grade the outcome, then the hard rules, then efficiency. Run 1 is a valid alternative route; run 2 broke a safety rule even though the end state looks right. Exact path matching would wrongly fail run 1."
+      }
     }
   ]
 };

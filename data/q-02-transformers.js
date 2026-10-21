@@ -27,10 +27,7 @@ window.IR.q["02-transformers"] = {
       "priority": "high",
       "tags": [
         "transformers",
-        "rnn",
-        "lstm",
-        "basics",
-        "history"
+        "deep-learning"
       ],
       "why": "Whether you know the two concrete problems the transformer solved - parallel training and long-range memory - rather than just 'attention is better'.",
       "quick": [
@@ -88,7 +85,35 @@ window.IR.q["02-transformers"] = {
       "numbers": "The original paper (Vaswani et al., 2017) reported state-of-the-art translation quality at a fraction of the training cost of the best recurrent and convolutional models. In attention, any two tokens are one step apart; in an RNN, the path is as long as the distance between them.",
       "wrong": "\"Transformers are just more accurate.\" It misses the actual reason they won - parallel training on GPUs - and cannot explain why recurrent-style state-space models are being revisited for long context.",
       "follow": "If transformers are so good, why are people building state-space models like Mamba?",
-      "followAnswer": "Because attention cost grows with the square of the length, and the KV cache grows with every token. State-space models keep a fixed-size state, so their cost is linear in length and memory stays flat during generation. The catch is that a fixed state can struggle to recall exact details from far back. So the practical direction is hybrids: mostly linear-time layers, with some full attention layers mixed in."
+      "followAnswer": "Because attention cost grows with the square of the length, and the KV cache grows with every token. State-space models keep a fixed-size state, so their cost is linear in length and memory stays flat during generation. The catch is that a fixed state can struggle to recall exact details from far back. So the practical direction is hybrids: mostly linear-time layers, with some full attention layers mixed in.",
+      "builds": [
+        "ml-15"
+      ],
+      "next": [
+        "tf-01",
+        "tf-07",
+        "ml-42"
+      ],
+      "alsoIn": [
+        "riq-a01",
+        "riq-0307"
+      ],
+      "deeper": [
+        "attention",
+        "d2l"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "What was the main practical reason transformers displaced RNNs for large language models?",
+        "options": [
+          "They have more parameters in each layer.",
+          "Attention cost grows linearly with length, unlike RNNs.",
+          "They no longer need any information about word order.",
+          "Dropping recurrence let a whole sequence train in parallel on GPUs, with any two tokens one step apart."
+        ],
+        "answer": 3,
+        "why": "An RNN must compute step 49 before step 50, so it cannot use GPU parallelism across a sequence, and distant information fades. Attention removes that chain. The catch is quadratic, not linear, cost in length, and transformers still need positional information."
+      }
     },
     {
       "id": "tf-01",
@@ -100,8 +125,7 @@ window.IR.q["02-transformers"] = {
       "priority": "high",
       "tags": [
         "transformers",
-        "attention",
-        "basics"
+        "llm-basics"
       ],
       "why": "The standard opener. It checks whether you understand the mechanism or memorised the phrase.",
       "quick": [
@@ -152,7 +176,45 @@ window.IR.q["02-transformers"] = {
       "numbers": "Attention is O(n²) in sequence length. Doubling the input roughly quadruples the attention-score compute. At short lengths the linear feed-forward layers still dominate total cost; the quadratic term takes over as context grows long - which is why long context is expensive rather than merely large.",
       "wrong": "\"It lets the model focus on important words.\" A description of the effect with none of the mechanism. The interviewer is asking for query, key and value.",
       "follow": "So what happens to cost when I double the context length?",
-      "followAnswer": "The attention-score part roughly quadruples, because every token is compared with every other one - n squared. But not everything is quadratic. The feed-forward layers and projections grow linearly, and at short lengths they dominate, so total compute grows by less than four times. The KV cache memory doubles. And on an API, the input-token bill simply doubles."
+      "followAnswer": "The attention-score part roughly quadruples, because every token is compared with every other one - n squared. But not everything is quadratic. The feed-forward layers and projections grow linearly, and at short lengths they dominate, so total compute grows by less than four times. The KV cache memory doubles. And on an API, the input-token bill simply doubles.",
+      "builds": [
+        "tf-16"
+      ],
+      "next": [
+        "tf-09",
+        "tf-10",
+        "tf-02"
+      ],
+      "alsoIn": [
+        "riq-0404"
+      ],
+      "deeper": [
+        "attention",
+        "3b1b-attention"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "In self-attention, what is the output vector for one token?",
+        "options": [
+          "A weighted mix of all value vectors, with weights from its query-key scores.",
+          "The similarity score between its query and the most relevant key.",
+          "The key vector of the single most attended token.",
+          "The plain average of all the input embeddings."
+        ],
+        "answer": 0,
+        "why": "Query-key scores pass through softmax to become weights, and those weights blend the value vectors. The scores are only an intermediate step, and the blend is weighted by relevance, so it is neither one token's vector nor a plain average."
+      },
+      "try": {
+        "title": "Build one attention head in numpy",
+        "minutes": 20,
+        "steps": [
+          "Run the starter code and look at the 5 by 5 weight matrix.",
+          "Observe that each row sums to 1 and everything above the diagonal is zero because of the causal mask.",
+          "Remove the mask lines, shuffle the rows of `X` with `X[[2,0,4,1,3]]`, and observe that the outputs are the same vectors in shuffled order - attention alone is order-blind.",
+          "Double `n` to 10 and note that the score matrix has four times as many entries - the quadratic cost."
+        ],
+        "code": "import numpy as np\nnp.random.seed(0)\nn, d, dk = 5, 16, 8\nX = np.random.randn(n, d)\nWq, Wk, Wv = (np.random.randn(d, dk) / np.sqrt(d) for _ in range(3))\nQ, K, V = X @ Wq, X @ Wk, X @ Wv\nscores = Q @ K.T / np.sqrt(dk)\nmask = np.triu(np.ones((n, n)), k=1).astype(bool)\nscores[mask] = -np.inf\nW = np.exp(scores - scores.max(axis=1, keepdims=True))\nW /= W.sum(axis=1, keepdims=True)\nout = W @ V\nprint(np.round(W, 2))\nprint(\"row sums:\", W.sum(axis=1), \"output shape:\", out.shape)"
+      }
     },
     {
       "id": "tf-15",
@@ -164,9 +226,7 @@ window.IR.q["02-transformers"] = {
       "priority": "high",
       "tags": [
         "transformers",
-        "architecture",
-        "basics",
-        "layer-norm"
+        "deep-learning"
       ],
       "why": "Whether you can draw the block you keep referring to - attention, feed-forward, residuals and normalisation - and say what each part is for.",
       "quick": [
@@ -225,7 +285,35 @@ window.IR.q["02-transformers"] = {
       "numbers": "In a standard dense block with a 4× wide feed-forward layer, attention has about 4·d² parameters and the FFN about 8·d², so the FFN holds roughly two thirds. Llama 3 8B, for example, stacks 32 blocks with a model dimension of 4096.",
       "wrong": "\"It's just attention layers stacked.\" Leaving out the feed-forward network, residuals and normalisation misses where most parameters live and why deep stacks train at all.",
       "follow": "Why do modern models put the layer norm before each sublayer instead of after?",
-      "followAnswer": "Pre-norm keeps the residual path clean: the raw signal flows straight through every block, and only the branch input is normalised. That keeps gradients well-behaved in very deep stacks, so training is more stable and needs less careful learning-rate warm-up. The original post-norm design can match or beat it when it trains, but it is fragile at depth, so large models standardised on pre-norm."
+      "followAnswer": "Pre-norm keeps the residual path clean: the raw signal flows straight through every block, and only the branch input is normalised. That keeps gradients well-behaved in very deep stacks, so training is more stable and needs less careful learning-rate warm-up. The original post-norm design can match or beat it when it trains, but it is fragile at depth, so large models standardised on pre-norm.",
+      "builds": [
+        "tf-01"
+      ],
+      "next": [
+        "ml-41",
+        "tf-06",
+        "tf-11"
+      ],
+      "alsoIn": [
+        "riq-0403",
+        "riq-0410"
+      ],
+      "deeper": [
+        "attention",
+        "karpathy-gpt"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "In a dense transformer block with model dimension d and a feed-forward layer 4x wide, roughly what share of the block's parameters sit in the feed-forward network?",
+        "options": [
+          "About one third.",
+          "About half.",
+          "About two thirds.",
+          "Over 95 percent."
+        ],
+        "answer": 2,
+        "why": "Attention has four d-by-d projections, about 4d squared parameters, while the feed-forward layer has two d-by-4d matrices, about 8d squared. That is 8 of 12, roughly two thirds. Assuming attention dominates the parameter count is the common mistake."
+      }
     },
     {
       "id": "tf-02",
@@ -237,8 +325,7 @@ window.IR.q["02-transformers"] = {
       "priority": "high",
       "tags": [
         "transformers",
-        "positional-encoding",
-        "mechanism"
+        "llm-basics"
       ],
       "why": "A neat check. It has a clean answer, and not knowing it means the attention answer was memorised.",
       "quick": [
@@ -260,7 +347,34 @@ window.IR.q["02-transformers"] = {
       "numbers": "No number applies. Context-extension methods scale RoPE's frequency base - that is the setting, if the follow-up goes there.",
       "wrong": "\"Positional encoding tells the model the position of each word.\" True and circular. The question is why attention needs telling, and the answer is that it is order-blind by construction.",
       "follow": "How do models get extended from 8k to 128k context?",
-      "followAnswer": "Mostly by rescaling RoPE. Position interpolation or YaRN adjusts the rotation frequencies so longer positions map into the range the model saw in training. Then a short continued-training run on long documents teaches the model to use that range. Serving needs memory help too - grouped-query attention, FlashAttention, a paged KV cache. And I test recall across the whole window rather than trusting the advertised number."
+      "followAnswer": "Mostly by rescaling RoPE. Position interpolation or YaRN adjusts the rotation frequencies so longer positions map into the range the model saw in training. Then a short continued-training run on long documents teaches the model to use that range. Serving needs memory help too - grouped-query attention, FlashAttention, a paged KV cache. And I test recall across the whole window rather than trusting the advertised number.",
+      "builds": [
+        "tf-01"
+      ],
+      "next": [
+        "tf-14",
+        "tf-07"
+      ],
+      "alsoIn": [
+        "riq-a02",
+        "riq-0501"
+      ],
+      "deeper": [
+        "rope",
+        "attention"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "Remove all positional information from a transformer encoder (no causal mask), then reorder the words in the input. What happens to each word's output vector?",
+        "options": [
+          "The outputs become random noise.",
+          "Each word gets exactly the vector it had before, just in a new position - order is invisible.",
+          "The model raises an error about sequence order.",
+          "The outputs change slightly because attention reads left to right."
+        ],
+        "answer": 1,
+        "why": "Without positions, attention compares every token with every other in a way that ignores order, so reordering the input just reorders the same outputs. Attention has no built-in left-to-right reading, which is exactly why position must be injected."
+      }
     },
     {
       "id": "tf-04",
@@ -272,8 +386,8 @@ window.IR.q["02-transformers"] = {
       "priority": "high",
       "tags": [
         "transformers",
-        "architecture",
-        "models"
+        "embeddings",
+        "reranking"
       ],
       "why": "It explains why you use different models for embeddings and for generation.",
       "quick": [
@@ -335,7 +449,36 @@ window.IR.q["02-transformers"] = {
       "numbers": "No number applies. The architectural distinction is the answer.",
       "wrong": "\"Decoder-only models are just newer and better.\" They are better at generation. For embedding and reranking, BERT-style encoders remain strong and cheap, and decoder-based embedders only work well after contrastive fine-tuning - so the training objective, not recency, decides.",
       "follow": "So which architecture is your reranker, and why?",
-      "followAnswer": "A cross-encoder. It reads the query and each candidate document together in one pass, so attention can compare them word by word - that is why it beats comparing two separate embeddings. Classic rerankers are BERT-style encoders because they are small and fast; newer strong ones are often fine-tuned decoder LLMs. I pick by the measured quality gain against my latency budget."
+      "followAnswer": "A cross-encoder. It reads the query and each candidate document together in one pass, so attention can compare them word by word - that is why it beats comparing two separate embeddings. Classic rerankers are BERT-style encoders because they are small and fast; newer strong ones are often fine-tuned decoder LLMs. I pick by the measured quality gain against my latency budget.",
+      "builds": [
+        "tf-01"
+      ],
+      "next": [
+        "ar-15",
+        "em-01",
+        "rag-58"
+      ],
+      "alsoIn": [
+        "riq-a01",
+        "riq-0402",
+        "riq-0603"
+      ],
+      "deeper": [
+        "bert",
+        "illustrated-transformer"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "You need a cheap model that scores how relevant a document is to a query, for reranking. Which is the natural fit?",
+        "options": [
+          "Raw hidden states from a decoder-only chat model, since newer is better.",
+          "An encoder-decoder, since translation-style generation helps ranking.",
+          "A bidirectional encoder used as a cross-encoder, so every token sees the whole query and document.",
+          "Any architecture works the same - the training objective never matters."
+        ],
+        "answer": 2,
+        "why": "Relevance scoring benefits from every token seeing the full query-document pair, which a bidirectional encoder gives cheaply. Raw chat-model states make poor scores without contrastive or ranking training - the objective matters as much as architecture."
+      }
     },
     {
       "id": "tf-03",
@@ -347,10 +490,9 @@ window.IR.q["02-transformers"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "transformers",
-        "kv-cache",
+        "inference",
         "serving",
-        "memory"
+        "transformers"
       ],
       "why": "The single most operationally useful thing in this topic. It explains your concurrency limit.",
       "quick": [
@@ -403,7 +545,34 @@ window.IR.q["02-transformers"] = {
       "numbers": "KV cache size ≈ 2 × layers × kv_heads × head_dim × sequence_length × batch × bytes_per_value (worked example in tf-12). Quantising the cache to 8-bit (FP8 or INT8) roughly halves it against FP16.",
       "wrong": "\"It caches the previous responses.\" That is a response cache, an entirely different thing at a different layer. This confusion is common and very visible.",
       "follow": "You need more concurrent users on the same GPU. What do you change?",
-      "followAnswer": "Shrink the cache per request, or waste less of it. Use a model with grouped-query attention, quantise the KV cache to FP8, cap context length and trim long prompts, and turn on prefix caching so shared prefixes are stored once. Make sure the server uses paged attention and continuous batching. Quantising the weights also frees memory for cache. Then load-test against the p95 latency I can accept."
+      "followAnswer": "Shrink the cache per request, or waste less of it. Use a model with grouped-query attention, quantise the KV cache to FP8, cap context length and trim long prompts, and turn on prefix caching so shared prefixes are stored once. Make sure the server uses paged attention and continuous batching. Quantising the weights also frees memory for cache. Then load-test against the p95 latency I can accept.",
+      "builds": [
+        "tf-01"
+      ],
+      "next": [
+        "tf-12",
+        "tf-11",
+        "cl-11"
+      ],
+      "alsoIn": [
+        "riq-0808"
+      ],
+      "deeper": [
+        "paged-attention",
+        "vllm"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "A teammate says: 'The KV cache stores previous answers, so repeated questions are fast.' What is it actually?",
+        "options": [
+          "Stored keys and values for earlier tokens of the current sequence, so decode does not recompute them.",
+          "A response cache keyed on a hash of the prompt.",
+          "A copy of the model weights held in faster memory.",
+          "A store of document embeddings used for retrieval."
+        ],
+        "answer": 0,
+        "why": "The KV cache lives inside one request's generation: each new token reuses earlier tokens' keys and values instead of recomputing them. A response cache is an application-level layer that returns whole stored answers - a different thing entirely."
+      }
     },
     {
       "id": "tf-05",
@@ -415,10 +584,9 @@ window.IR.q["02-transformers"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "transformers",
         "latency",
         "inference",
-        "serving"
+        "transformers"
       ],
       "why": "A latency question with a mechanism answer. It is the bridge from architecture to operations.",
       "quick": [
@@ -472,7 +640,32 @@ window.IR.q["02-transformers"] = {
       "numbers": "Time to first token is the one users feel. As a rough guide, around a second feels responsive and several seconds of blank screen feels broken - set the real target from your own users and product.",
       "wrong": "\"The model warms up.\" There is no warm-up in the request. The two-phase explanation is the actual mechanism, and it points to different fixes.",
       "follow": "Your p95 time to first token is 4 seconds. What do you look at?",
-      "followAnswer": "First I split it into queueing time and actual prefill. If requests are waiting, it is capacity or batching - add replicas, rebalance load, or tune the server's batch limits. If prefill itself is slow, I look at prompt size: too many retrieved chunks, long history, large tool definitions. Then prompt caching for the stable prefix. With a reasoning model, thinking time delays the first visible token too."
+      "followAnswer": "First I split it into queueing time and actual prefill. If requests are waiting, it is capacity or batching - add replicas, rebalance load, or tune the server's batch limits. If prefill itself is slow, I look at prompt size: too many retrieved chunks, long history, large tool definitions. Then prompt caching for the stable prefix. With a reasoning model, thinking time delays the first visible token too.",
+      "builds": [
+        "tf-03",
+        "llm-14"
+      ],
+      "next": [
+        "cl-10",
+        "cl-02",
+        "llm-15"
+      ],
+      "deeper": [
+        "vllm",
+        "huyen-ai-engineering"
+      ],
+      "check": {
+        "kind": "which-fails",
+        "q": "p95 time to first token is 4 seconds, while decode speed is normal. Which is the least useful thing to investigate first?",
+        "options": [
+          "Prompt length and how many retrieved chunks are stuffed in.",
+          "Queueing time before the request starts on the GPU.",
+          "Prompt cache hit rate on the stable prefix.",
+          "The model's decode tokens per second."
+        ],
+        "answer": 3,
+        "why": "Time to first token is set by queueing and prefill, which scale with prompt size and are helped by caching. Decode speed only matters after the first token appears, and it is already normal here."
+      }
     },
     {
       "id": "tf-06",
@@ -485,9 +678,8 @@ window.IR.q["02-transformers"] = {
       "priority": "high",
       "tags": [
         "transformers",
-        "moe",
-        "architecture",
-        "cost"
+        "serving",
+        "open-weights"
       ],
       "why": "Currency. Several current frontier and open models are MoE, and it explains their odd cost profile.",
       "quick": [
@@ -568,9 +760,33 @@ window.IR.q["02-transformers"] = {
       },
       "say": "An MoE model swaps each layer's single feed-forward network for many smaller experts, and a router sends each token to only a few. So the model holds a huge number of parameters but uses a small fraction per token. DeepSeek-V3 activates about 37 billion of its 671 billion, and gpt-oss-120b about 5 billion of 117 billion. The attraction is quality well above a dense model of the same active size, at roughly that smaller model's compute per token. Qwen3's MoE models, Llama 4 and Mixtral use the same idea. The operational catch is memory. Every expert has to stay loaded, because the router might pick any of them, so you get cheap compute and expensive memory. For self-hosting I size hardware on total parameters, not active ones, and expect throughput to be less predictable since routing can be uneven. One myth to avoid is that experts are topic specialists. There's no legal expert. Routing is learned per token and tracks patterns, not subjects.",
       "numbers": "The active fraction varies widely - DeepSeek-V3 activates about 37B of 671B parameters per token, Mixtral 8x7B about 13B of 47B, and gpt-oss-120b about 5B of 117B. Size self-hosted hardware on total parameters; the active count only tells you about compute.",
+      "verified": "2026-10",
       "wrong": "\"It picks the best expert for the topic.\" Routing is learned and per-token, not semantic - there is no medical expert and legal expert. That framing invites a correction.",
       "follow": "How does that change your hardware choice if you self-host?",
-      "followAnswer": "I size memory for total parameters, so a model with a small active count can still need several GPUs just to hold the weights - quantisation helps a lot here. Then I plan for expert parallelism, spreading experts across GPUs, which needs a fast interconnect such as NVLink. At high batch sizes most experts get used anyway, so the compute saving is real, but memory is the constraint."
+      "followAnswer": "I size memory for total parameters, so a model with a small active count can still need several GPUs just to hold the weights - quantisation helps a lot here. Then I plan for expert parallelism, spreading experts across GPUs, which needs a fast interconnect such as NVLink. At high batch sizes most experts get used anyway, so the compute saving is real, but memory is the constraint.",
+      "builds": [
+        "tf-15"
+      ],
+      "next": [
+        "cl-08",
+        "llm-12"
+      ],
+      "deeper": [
+        "switch-moe",
+        "mixtral"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "You self-host a mixture-of-experts model with about 117B total parameters and about 5B active per token. What do you size GPU memory for?",
+        "options": [
+          "About 5B parameters, since only active ones are used per token.",
+          "All 117B, because the router may send any token to any expert.",
+          "The average of total and active parameters.",
+          "Only the router and shared attention layers."
+        ],
+        "answer": 1,
+        "why": "Routing is decided per token at run time, so every expert must stay loaded. The active count tells you compute per token, not memory. That is the MoE profile: cheap compute, expensive memory."
+      }
     },
     {
       "id": "tf-10",
@@ -581,9 +797,8 @@ window.IR.q["02-transformers"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "attention",
-        "theory",
-        "training"
+        "transformers",
+        "deep-learning"
       ],
       "why": "A small detail with a real reason. It separates people who read the paper from people who read a blog summary.",
       "quick": [
@@ -636,7 +851,44 @@ window.IR.q["02-transformers"] = {
       "numbers": "At d_k = 64, unscaled scores have a standard deviation around 8 - enough for softmax to saturate. Scaling brings it back to roughly 1.",
       "wrong": "'To keep the numbers small.' It is the right instinct with no mechanism, and the reason it matters is gradients, not numerical size.",
       "follow": "What does this have in common with the temperature parameter?",
-      "followAnswer": "They are the same operation, dividing the logits by a constant before softmax. Sampling temperature divides the output logits, so a value above one flattens the distribution and below one sharpens it. Dividing by the square root of d_k is a fixed temperature inside every attention head, chosen from the statistics so scores keep a standard deviation around one. The difference is purpose. I tune sampling temperature for variety, while the attention scaling stays fixed to keep softmax out of saturation and gradients flowing."
+      "followAnswer": "They are the same operation, dividing the logits by a constant before softmax. Sampling temperature divides the output logits, so a value above one flattens the distribution and below one sharpens it. Dividing by the square root of d_k is a fixed temperature inside every attention head, chosen from the statistics so scores keep a standard deviation around one. The difference is purpose. I tune sampling temperature for variety, while the attention scaling stays fixed to keep softmax out of saturation and gradients flowing.",
+      "builds": [
+        "tf-01"
+      ],
+      "next": [
+        "tf-09",
+        "llm-11"
+      ],
+      "alsoIn": [
+        "riq-0405"
+      ],
+      "deeper": [
+        "attention",
+        "d2l"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "In a model with d_k = 64, someone removes the division by the square root of d_k. What happens during training?",
+        "options": [
+          "Attention becomes uniform across all tokens.",
+          "Nothing - the model simply learns smaller weights.",
+          "Softmax saturates on the top score, gradients become tiny and learning stalls.",
+          "Memory use quadruples."
+        ],
+        "answer": 2,
+        "why": "Unscaled dot products have a standard deviation around 8 at d_k = 64, so softmax puts nearly all weight on one token and its gradient approaches zero. That is the opposite of uniform attention, and memory is unaffected."
+      },
+      "try": {
+        "title": "Watch softmax saturate without scaling",
+        "minutes": 10,
+        "steps": [
+          "Run the starter code with numpy.",
+          "Observe that the raw score standard deviation grows with the square root of d_k, while scaled scores stay near 1.",
+          "Observe the mean top probability: unscaled at d_k = 512 it sits close to 1, meaning one token takes almost all the attention.",
+          "Relate it to temperature: dividing logits by a number above 1 flattens the distribution in exactly the same way."
+        ],
+        "code": "import numpy as np\nrng = np.random.default_rng(0)\nfor dk in [4, 64, 512]:\n    q = rng.standard_normal((1000, dk))\n    k = rng.standard_normal((1000, 10, dk))\n    s = np.einsum(\"nd,nkd->nk\", q, k)\n    for name, scale in [(\"raw\", 1.0), (\"scaled\", np.sqrt(dk))]:\n        z = s / scale\n        p = np.exp(z - z.max(1, keepdims=True))\n        p /= p.sum(1, keepdims=True)\n        print(f\"d_k={dk:3} {name:6} score std={z.std():5.1f} mean top prob={p.max(1).mean():.2f}\")"
+      }
     },
     {
       "id": "tf-09",
@@ -647,9 +899,8 @@ window.IR.q["02-transformers"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "attention",
         "transformers",
-        "whiteboard"
+        "deep-learning"
       ],
       "why": "The whiteboard question. Tracking dimensions end to end proves you understand the mechanism rather than the metaphor.",
       "quick": [
@@ -711,7 +962,31 @@ window.IR.q["02-transformers"] = {
       "numbers": "d_head is d_model divided by the head count. The (seq, seq) matrix is what makes attention quadratic in sequence length.",
       "wrong": "Describing attention as 'tokens looking at each other' with no shapes. The follow-up asks for dimensions, and that is where it falls apart.",
       "follow": "Where exactly does the causal mask go, and what breaks if you apply it after softmax?",
-      "followAnswer": "Before softmax. You add minus infinity to the scores above the diagonal, so those positions become exactly zero after softmax and each row still sums to one. If you instead zero them after softmax, the rows no longer sum to one. If you forget the mask, training leaks future tokens: the loss looks great and generation fails."
+      "followAnswer": "Before softmax. You add minus infinity to the scores above the diagonal, so those positions become exactly zero after softmax and each row still sums to one. If you instead zero them after softmax, the rows no longer sum to one. If you forget the mask, training leaks future tokens: the loss looks great and generation fails.",
+      "builds": [
+        "tf-01",
+        "tf-10"
+      ],
+      "next": [
+        "tf-11",
+        "tf-13"
+      ],
+      "deeper": [
+        "karpathy-gpt",
+        "illustrated-transformer"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "10 tokens, d_model = 512, 8 heads. What are the shapes of one head's attention-weight matrix and of its output?",
+        "options": [
+          "64 by 64 weights; 10 by 512 output.",
+          "10 by 64 weights; 10 by 10 output.",
+          "512 by 512 weights; 10 by 64 output.",
+          "10 by 10 weights; 10 by 64 output."
+        ],
+        "answer": 3,
+        "why": "Each head works in 512 / 8 = 64 dimensions, so Q, K and V are 10 by 64. Q times K transposed is 10 by 10 - every token against every token - and multiplying by V gives 10 by 64. Heads are joined back to 10 by 512 only afterwards."
+      }
     },
     {
       "id": "tf-11",
@@ -722,9 +997,9 @@ window.IR.q["02-transformers"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "attention",
-        "kv-cache",
-        "serving"
+        "transformers",
+        "serving",
+        "inference"
       ],
       "why": "A concrete architecture evolution driven entirely by a serving constraint. It ties theory to production cost.",
       "quick": [
@@ -789,7 +1064,30 @@ window.IR.q["02-transformers"] = {
       "numbers": "32 query heads with 8 KV groups is a common configuration - roughly 4× cache reduction, so up to roughly 4× the concurrent requests on the same hardware when KV memory is the limit.",
       "wrong": "Describing them as three equally valid options. GQA won for a specific reason, and not knowing that reason is the gap the question probes.",
       "follow": "Your KV cache is still the bottleneck after GQA. What else can you do?",
-      "followAnswer": "Quantise the cache to FP8 or INT8, which roughly halves it. Make sure paged attention and prefix caching are on, so memory is not wasted and shared prefixes are stored once. Cap context length and trim prompts. Offload cold cache to CPU memory if the server supports it. Or pick a model with sliding-window layers or latent attention. Beyond that, it is more GPUs."
+      "followAnswer": "Quantise the cache to FP8 or INT8, which roughly halves it. Make sure paged attention and prefix caching are on, so memory is not wasted and shared prefixes are stored once. Cap context length and trim prompts. Offload cold cache to CPU memory if the server supports it. Or pick a model with sliding-window layers or latent attention. Beyond that, it is more GPUs.",
+      "builds": [
+        "tf-03"
+      ],
+      "next": [
+        "tf-12",
+        "cl-11"
+      ],
+      "deeper": [
+        "gqa",
+        "mqa"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "A model has 32 query heads. Switching from multi-head attention to grouped-query attention with 8 KV heads changes the KV cache how?",
+        "options": [
+          "About 8 times smaller.",
+          "About 4 times smaller.",
+          "About 32 times smaller.",
+          "Unchanged, because only query heads were altered."
+        ],
+        "answer": 1,
+        "why": "The cache stores keys and values per KV head, so it scales with KV heads: 32 down to 8 is a factor of 4. Eight times would mean 4 KV heads, and 32 times is multi-query attention with a single KV head."
+      }
     },
     {
       "id": "tf-12",
@@ -800,9 +1098,9 @@ window.IR.q["02-transformers"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "kv-cache",
         "serving",
-        "capacity"
+        "inference",
+        "transformers"
       ],
       "why": "A capacity-planning question. Being able to compute this live is what turns a GPU-sizing conversation from a guess into a plan.",
       "quick": [
@@ -824,7 +1122,43 @@ window.IR.q["02-transformers"] = {
       "numbers": "Roughly 0.5 MB per token for a 7B model at FP16 with MHA; about 0.125 MB with 8-group GQA. Model weights are ~2 bytes per parameter.",
       "wrong": "Sizing a GPU by model weights alone. It is the most common capacity-planning error and it shows up as far lower concurrency than expected.",
       "follow": "You have an 80 GB GPU and a 7B model. How many 8k-context users can you serve?",
-      "followAnswer": "Weights take about 14 GB at FP16. I leave roughly 10 percent headroom for activations and the runtime, so about 58 GB is left for cache. With full multi-head attention at about 4 GB per 8k conversation, that is around 14 users. With an 8-KV-head GQA model it is about 1 GB each, so around 58. An FP8 cache roughly doubles either number."
+      "followAnswer": "Weights take about 14 GB at FP16. I leave roughly 10 percent headroom for activations and the runtime, so about 58 GB is left for cache. With full multi-head attention at about 4 GB per 8k conversation, that is around 14 users. With an 8-KV-head GQA model it is about 1 GB each, so around 58. An FP8 cache roughly doubles either number.",
+      "builds": [
+        "tf-03",
+        "tf-11"
+      ],
+      "next": [
+        "cl-08",
+        "cl-11",
+        "llm-12"
+      ],
+      "deeper": [
+        "gqa",
+        "paged-attention"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "A Llama-2-7B-shaped model: 32 layers, 32 KV heads, head size 128, FP16. Roughly how much KV cache does one 8,000-token conversation need?",
+        "options": [
+          "About 14 GB.",
+          "About 0.5 GB.",
+          "About 40 GB.",
+          "About 4 GB."
+        ],
+        "answer": 3,
+        "why": "2 x 32 x 32 x 128 x 2 bytes is about 0.5 MB per token, so 8,000 tokens is about 4 GB. 14 GB is the weights, and 40 GB is ten such users. Sizing a GPU from weights alone is the classic mistake."
+      },
+      "try": {
+        "title": "KV cache calculator from real configs",
+        "minutes": 15,
+        "steps": [
+          "Run the starter code; it downloads public `config.json` files from Hugging Face and applies the KV formula.",
+          "Observe that the grouped-query model needs a fraction of the cache per token compared with the full multi-head one.",
+          "Compute how many 8k-token conversations fit on an 80 GB GPU for each, after subtracting about 2 bytes per parameter for weights.",
+          "Change `bytes_per` to 1 to model an FP8 cache and observe capacity roughly double."
+        ],
+        "code": "import json, urllib.request\n\ndef kv_per_token(repo, bytes_per=2):\n    url = f\"https://huggingface.co/{repo}/resolve/main/config.json\"\n    c = json.load(urllib.request.urlopen(url))\n    heads = c[\"num_attention_heads\"]\n    kv = c.get(\"num_key_value_heads\") or heads\n    head_dim = c.get(\"head_dim\") or c[\"hidden_size\"] // heads\n    return 2 * c[\"num_hidden_layers\"] * kv * head_dim * bytes_per, c, kv\n\nfor repo in [\"Qwen/Qwen2.5-7B-Instruct\", \"microsoft/Phi-3-mini-4k-instruct\"]:\n    b, c, kv = kv_per_token(repo)\n    print(f\"{repo}: layers={c['num_hidden_layers']} kv_heads={kv} \"\n          f\"{b/1e6:.3f} MB/token, {b*8000/1e9:.2f} GB per 8k conversation\")"
+      }
     },
     {
       "id": "tf-07",
@@ -835,10 +1169,9 @@ window.IR.q["02-transformers"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
+        "context-engineering",
         "transformers",
-        "long-context",
-        "attention",
-        "advanced"
+        "inference"
       ],
       "why": "A depth question that separates people who track the field from people who read one blog post.",
       "quick": [
@@ -862,7 +1195,36 @@ window.IR.q["02-transformers"] = {
       "numbers": "Grouped-query attention cuts KV cache by the query-to-KV head ratio - commonly 4× to 8×. That is one of the main reasons long context became servable.",
       "wrong": "\"They use sparse attention.\" One of four mechanisms, and stopping there misses grouped-query attention, which did more for serving cost than sparsity did.",
       "follow": "Given that, would you use a 200k context or retrieval?",
-      "followAnswer": "Retrieval by default for a large or changing corpus: it is cheaper and faster per query, keeps per-document access control, and gives citations. I would use long context when the task needs a whole document at once - reviewing one long contract, say - and the set is small. Often both: retrieve the few relevant documents, then pass them in full rather than as tiny chunks."
+      "followAnswer": "Retrieval by default for a large or changing corpus: it is cheaper and faster per query, keeps per-document access control, and gives citations. I would use long context when the task needs a whole document at once - reviewing one long contract, say - and the set is small. Often both: retrieve the few relevant documents, then pass them in full rather than as tiny chunks.",
+      "builds": [
+        "tf-01",
+        "tf-02"
+      ],
+      "next": [
+        "tf-13",
+        "rag-02",
+        "tf-14"
+      ],
+      "alsoIn": [
+        "riq-0411",
+        "riq-0506"
+      ],
+      "deeper": [
+        "lost-in-middle",
+        "flash-attention"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Your model supports a 1M-token context. Should you paste a 900-page contract set into every query instead of using retrieval?",
+        "options": [
+          "Usually not: you pay for every token, latency rises, and facts mid-context are used less reliably.",
+          "Yes - if it fits in the window, recall is guaranteed.",
+          "No - long-context attention is approximate, so answers will be wrong.",
+          "Yes - FlashAttention makes long context free."
+        ],
+        "answer": 0,
+        "why": "Supporting a long context is not using it well: mid-context recall is weaker, and every token costs money and prefill time. FlashAttention is exact but still quadratic in compute, and long-context attention is not inherently approximate."
+      }
     },
     {
       "id": "tf-13",
@@ -873,8 +1235,8 @@ window.IR.q["02-transformers"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "attention",
-        "optimisation",
+        "transformers",
+        "inference",
         "serving"
       ],
       "why": "Commonly named and rarely understood. The key insight is that it is exact, not approximate.",
@@ -934,7 +1296,29 @@ window.IR.q["02-transformers"] = {
       "numbers": "Memory goes from quadratic to linear in sequence length. Compute remains quadratic - FlashAttention is an IO optimisation, not an algorithmic one.",
       "wrong": "Calling it an approximate or sparse attention method. It is exact, and that distinction is the entire reason it was adopted universally.",
       "follow": "If compute is still quadratic, how do models handle a million-token context?",
-      "followAnswer": "By combining several things: FlashAttention for memory, grouped-query or latent attention to shrink the cache, sliding-window or linear-time layers so most layers are not quadratic, and RoPE scaling for positions. Serving also splits very long sequences across GPUs. Even then it is expensive and slow, and recall in the middle can weaken, so retrieval is usually still cheaper."
+      "followAnswer": "By combining several things: FlashAttention for memory, grouped-query or latent attention to shrink the cache, sliding-window or linear-time layers so most layers are not quadratic, and RoPE scaling for positions. Serving also splits very long sequences across GPUs. Even then it is expensive and slow, and recall in the middle can weaken, so retrieval is usually still cheaper.",
+      "builds": [
+        "tf-01"
+      ],
+      "next": [
+        "tf-07",
+        "cl-11"
+      ],
+      "deeper": [
+        "flash-attention"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "Which statement about FlashAttention is true?",
+        "options": [
+          "It approximates attention by skipping low-scoring tokens.",
+          "It makes attention compute grow linearly with sequence length.",
+          "It computes exact attention in tiles, cutting memory traffic, while compute stays quadratic.",
+          "It only speeds up training, not inference."
+        ],
+        "answer": 2,
+        "why": "FlashAttention produces the same numbers as standard attention; it just never writes the full score matrix to slow GPU memory. Extra memory becomes linear, but the arithmetic is still quadratic - it is an IO optimisation, not sparse or approximate attention."
+      }
     },
     {
       "id": "tf-14",
@@ -945,9 +1329,8 @@ window.IR.q["02-transformers"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "positional-encoding",
-        "long-context",
-        "transformers"
+        "transformers",
+        "context-engineering"
       ],
       "why": "Explains how context-length extension is even possible, which is a live production concern.",
       "quick": [
@@ -1013,7 +1396,33 @@ window.IR.q["02-transformers"] = {
       "numbers": "Position interpolation and YaRN scale RoPE angles to extend a 4k-trained model to 32k or beyond with a short fine-tune rather than a retrain.",
       "wrong": "'RoPE is just better positional encoding.' The follow-up is why, and relative-distance-from-rotation plus interpolability is the answer.",
       "follow": "How would you extend a model trained at 8k to handle 64k?",
-      "followAnswer": "Apply RoPE scaling - YaRN, or a larger RoPE base - so 64k positions map into the angle range the model already knows. Then continue training briefly on long documents, mixed with normal-length data so short-context quality does not drop. Check that serving can hold a 64k KV cache. Then test with needle-in-a-haystack and, more importantly, real long-document tasks at different depths."
+      "followAnswer": "Apply RoPE scaling - YaRN, or a larger RoPE base - so 64k positions map into the angle range the model already knows. Then continue training briefly on long documents, mixed with normal-length data so short-context quality does not drop. Check that serving can hold a 64k KV cache. Then test with needle-in-a-haystack and, more importantly, real long-document tasks at different depths.",
+      "builds": [
+        "tf-02"
+      ],
+      "next": [
+        "tf-07",
+        "tf-13"
+      ],
+      "alsoIn": [
+        "riq-0505"
+      ],
+      "deeper": [
+        "rope",
+        "alibi"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "Why can a RoPE model be stretched from 4k to 32k context with a short fine-tune, while a model with learned absolute positions cannot?",
+        "options": [
+          "RoPE has no length limit at all, so no fine-tune is ever needed.",
+          "Rotation angles are continuous and can be scaled down, while a learned table has no vector past its trained length.",
+          "Learned positions are already relative, so they cannot be extended.",
+          "RoPE removes attention's quadratic cost."
+        ],
+        "answer": 1,
+        "why": "RoPE encodes position as a continuous rotation, so interpolation methods shrink the angles and a short fine-tune adapts the model. A learned table simply has no entry for position 5,000. RoPE still needs that fine-tune and does not change attention's cost."
+      }
     },
     {
       "id": "tf-08",
@@ -1026,8 +1435,7 @@ window.IR.q["02-transformers"] = {
       "priority": "low",
       "tags": [
         "transformers",
-        "judgement",
-        "practical"
+        "trade-offs"
       ],
       "why": "Sometimes asked directly, sometimes implied. The honest answer is more impressive than either extreme.",
       "quick": [
@@ -1049,7 +1457,28 @@ window.IR.q["02-transformers"] = {
       "numbers": "No number applies. Calibration is what is being marked.",
       "wrong": "Either extreme. \"It's essential\" invites precise follow-ups on shapes and memory; \"it's irrelevant\" says you cannot reason about serving cost.",
       "follow": "Fine - then explain why our inference bill jumped when we increased retrieved chunks.",
-      "followAnswer": "Because every extra chunk adds input tokens, and we pay for every one on every call. Going from five chunks to twenty chunks of around 500 tokens each adds thousands of tokens per request, often more than the question and answer combined, so input cost multiplies. It also lengthens prefill, so time to first token rises. I would measure answer quality at different chunk counts, rerank to keep the best few, and keep the stable instructions ahead of the retrieved context so they can be cached."
+      "followAnswer": "Because every extra chunk adds input tokens, and we pay for every one on every call. Going from five chunks to twenty chunks of around 500 tokens each adds thousands of tokens per request, often more than the question and answer combined, so input cost multiplies. It also lengthens prefill, so time to first token rises. I would measure answer quality at different chunk counts, rerank to keep the best few, and keep the stable instructions ahead of the retrieved context so they can be cached.",
+      "next": [
+        "rag-34",
+        "tf-03",
+        "cl-01"
+      ],
+      "deeper": [
+        "illustrated-transformer",
+        "huyen-ai-engineering"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "An interviewer asks: 'Do you need transformer internals to build GenAI applications?' Which answer lands best?",
+        "options": [
+          "'Essential - I could implement any current model from scratch.'",
+          "'Not at all - the APIs abstract all of that away.'",
+          "'Only researchers need it.'",
+          "'Not for most application work, but I know enough to reason about context cost, KV memory and slow first tokens.'"
+        ],
+        "answer": 3,
+        "why": "The calibrated answer shows where internals matter - cost, memory and latency - without overclaiming. 'Essential' invites precise follow-ups on shapes and memory, and 'not at all' signals you cannot explain why the bill jumped when more chunks were added."
+      }
     }
   ]
 };

@@ -24,8 +24,8 @@ window.IR.q["19-langgraph"] = {
       "priority": "high",
       "tags": [
         "langgraph",
-        "architecture",
-        "trade-off"
+        "langchain",
+        "trade-offs"
       ],
       "why": "Whether you pick the tool for the control flow you actually need.",
       "quick": [
@@ -108,9 +108,34 @@ window.IR.q["19-langgraph"] = {
       },
       "say": "They aren't rivals, because they sit at different levels. LangChain's create_agent already runs on LangGraph underneath. For a fixed data-flow pipeline, LCEL is still a good fit. It can sequence steps, run independent branches in parallel and route conditionally, so a branch alone is no reason to build a graph. I reach for a StateGraph directly when the workflow needs explicit, durable orchestration. That means state that must survive between steps, cycles with custom exit rules, pause and resume for a human, recovery after a failure, or exact control over which node runs next. An approval workflow that waits hours for a manager and has to survive a crash is the clear case. The mistake I'd avoid is reaching for the graph for its own sake. Use the highest-level abstraction that expresses the flow clearly, so LCEL for pipelines, create_agent for the normal tool loop, and StateGraph for custom durable control.",
       "numbers": "No number applies. The decision is about control flow, durability and how much orchestration you actually need.",
+      "verified": "2026-10",
       "wrong": "Saying LCEL is only a straight line, or saying every branch requires LangGraph. LCEL supports parallel and conditional composition; LangGraph is about durable, stateful orchestration and custom control.",
       "follow": "Show me what the state object looks like for a RAG agent.",
-      "followAnswer": "A typed dictionary with four fields. messages, with the add_messages reducer so turns append. docs, the retrieved chunks for the current question, replaced on each retrieval rather than accumulated. retries, an integer counter so the rewrite loop has an exit. And answer, the final text with citations. I keep large raw documents out of state and store ids instead, so checkpoints stay small."
+      "followAnswer": "A typed dictionary with four fields. messages, with the add_messages reducer so turns append. docs, the retrieved chunks for the current question, replaced on each retrieval rather than accumulated. retries, an integer counter so the rewrite loop has an exit. And answer, the final text with citations. I keep large raw documents out of state and store ids instead, so checkpoints stay small.",
+      "builds": [
+        "lg-02"
+      ],
+      "next": [
+        "lg-04",
+        "lg-05",
+        "lg-18"
+      ],
+      "deeper": [
+        "langgraph-docs",
+        "langchain-docs"
+      ],
+      "check": {
+        "kind": "which-fails",
+        "q": "Which requirement, on its own, is NOT a reason to move from an LCEL chain to a StateGraph?",
+        "options": [
+          "Pausing for a human approval that may take hours.",
+          "Running two retrievers in parallel and branching on question type.",
+          "Resuming from the last completed step after a crash.",
+          "A loop with a custom exit rule and its own counters in state."
+        ],
+        "answer": 1,
+        "why": "LCEL already supports parallel branches and conditional routing. The graph earns its extra code with durable state, pauses, crash recovery and custom loops. Saying every branch needs LangGraph is the misconception this card targets."
+      }
     },
     {
       "id": "lg-04",
@@ -123,8 +148,7 @@ window.IR.q["19-langgraph"] = {
       "priority": "high",
       "tags": [
         "langgraph",
-        "state",
-        "reducers"
+        "python"
       ],
       "why": "The single most-misunderstood part of LangGraph, and easy to verify in one question.",
       "quick": [
@@ -174,7 +198,42 @@ window.IR.q["19-langgraph"] = {
       "numbers": "No number applies. This is a mechanism question - the code is the answer.",
       "wrong": "\"State is just a dictionary passed between nodes.\" True but incomplete. Without reducers you cannot explain what happens when two parallel nodes write to `messages` in the same step - with no reducer on that key, LangGraph rejects the conflicting updates with an error instead of merging them.",
       "follow": "Two nodes run in parallel and both write to the same key. What happens?",
-      "followAnswer": "If that key has no reducer, LangGraph raises an InvalidUpdateError, because it cannot know which value should win. With a reducer, both updates are merged in the same step - operator.add concatenates lists, add_messages appends messages. So for any key that parallel branches write, like collected search results, I attach a reducer on purpose and make sure the merge order does not matter."
+      "followAnswer": "If that key has no reducer, LangGraph raises an InvalidUpdateError, because it cannot know which value should win. With a reducer, both updates are merged in the same step - operator.add concatenates lists, add_messages appends messages. So for any key that parallel branches write, like collected search results, I attach a reducer on purpose and make sure the merge order does not matter.",
+      "builds": [
+        "lg-03"
+      ],
+      "next": [
+        "lg-16",
+        "lg-15",
+        "lg-19"
+      ],
+      "deeper": [
+        "langgraph-graph-api",
+        "langgraph-docs"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "State is `class S(TypedDict): messages: list`, with no reducer. A node returns `{\"messages\": [new_reply]}`. What does `messages` hold afterwards?",
+        "options": [
+          "Only `[new_reply]` - the default merge replaces the old value.",
+          "The old messages plus `new_reply`, because lists always append.",
+          "An error, because nodes must return the full state.",
+          "Two copies of the history."
+        ],
+        "answer": 0,
+        "why": "Without a reducer the update overwrites the key, which is why chat history appears to reset. Annotate the field with `add_messages` or `operator.add` to append. Nodes return partial updates, so that is not the error."
+      },
+      "try": {
+        "title": "Break and fix a reducer",
+        "minutes": 10,
+        "steps": [
+          "`pip install langgraph` and run the starter; observe an error because two parallel nodes write `log` with no reducer.",
+          "Change the field to `Annotated[list[str], operator.add]` and re-run; observe both entries kept.",
+          "Remove node `b` and its edges, drop the reducer, and invoke with `{\"log\": [\"old\"]}`; observe `old` being replaced.",
+          "Explain in one sentence why `add_messages` exists for chat history."
+        ],
+        "code": "import operator\nfrom typing import Annotated, TypedDict\nfrom langgraph.graph import StateGraph, START, END\n\nclass S(TypedDict):\n    log: list[str]  # try: Annotated[list[str], operator.add]\n\ndef a(s): return {\"log\": [\"a\"]}\ndef b(s): return {\"log\": [\"b\"]}\n\ng = StateGraph(S)\ng.add_node(\"a\", a)\ng.add_node(\"b\", b)\ng.add_edge(START, \"a\")\ng.add_edge(START, \"b\")\ng.add_edge(\"a\", END)\ng.add_edge(\"b\", END)\nprint(g.compile().invoke({\"log\": []}))"
+      }
     },
     {
       "id": "lg-15",
@@ -187,9 +246,7 @@ window.IR.q["19-langgraph"] = {
       "priority": "high",
       "tags": [
         "langgraph",
-        "tools",
-        "toolnode",
-        "routing"
+        "tools"
       ],
       "why": "The most common thing you build in LangGraph. Whether you can draw the loop is whether you have built one.",
       "quick": [
@@ -270,7 +327,42 @@ window.IR.q["19-langgraph"] = {
       "numbers": "No number applies. This is a wiring question - the graph is the answer.",
       "wrong": "Describing the loop but never mentioning `bind_tools`. It is the single most common reason a hand-built agent silently never calls a tool, and the natural follow-up - \"why does my agent never call a tool?\" - is exactly what it answers.",
       "follow": "Two tool calls come back in one message. What order do they run in?",
-      "followAnswer": "ToolNode runs them concurrently, so there is no guaranteed execution order - treat them as independent. Each result comes back as a ToolMessage carrying its tool_call_id, so the model can pair every result with its call. If one call depends on another, such as create then update, parallel execution is wrong: I tell the model to call them one at a time, or turn off parallel tool calls for that model."
+      "followAnswer": "ToolNode runs them concurrently, so there is no guaranteed execution order - treat them as independent. Each result comes back as a ToolMessage carrying its tool_call_id, so the model can pair every result with its call. If one call depends on another, such as create then update, parallel execution is wrong: I tell the model to call them one at a time, or turn off parallel tool calls for that model.",
+      "builds": [
+        "ag-14",
+        "lg-04"
+      ],
+      "next": [
+        "lg-14",
+        "ag-18",
+        "lg-12"
+      ],
+      "deeper": [
+        "langgraph-docs"
+      ],
+      "check": {
+        "kind": "spot-the-bug",
+        "q": "A hand-built agent has ToolNode and `tools_condition` wired correctly, but every question gets an instant guessed answer and the tool node never runs. The agent node calls `llm.invoke(state[\"messages\"])` where `llm = ChatOllama(model=...)`. What is missing?",
+        "options": [
+          "An edge from the tool node back to the agent.",
+          "A checkpointer.",
+          "A higher recursion limit.",
+          "`bind_tools` - the model was never told the tools exist, so it never emits a tool call."
+        ],
+        "answer": 3,
+        "why": "If the model is not bound to the tools, it never produces a tool call, so `tools_condition` always routes to END. A missing return edge would break the loop after the first tool call, not stop tool calls entirely."
+      },
+      "try": {
+        "title": "Wire the tool loop and break it on purpose",
+        "minutes": 20,
+        "steps": [
+          "`pip install langgraph langchain-ollama`, pull `qwen2.5:7b`, and run the starter; observe an AI tool call, a ToolMessage, then the final answer.",
+          "Remove `.bind_tools([get_weather])` and re-run; observe the model guessing with no tool call.",
+          "Ask two questions in one message (Chennai and Delhi) and observe one ToolMessage per call.",
+          "Remove the `tools -> agent` edge and observe the run ending on a ToolMessage with no answer."
+        ],
+        "code": "from langchain_core.tools import tool\nfrom langchain_ollama import ChatOllama\nfrom langgraph.graph import StateGraph, MessagesState, START\nfrom langgraph.prebuilt import ToolNode, tools_condition\n\n@tool\ndef get_weather(city: str) -> str:\n    \"\"\"Return today's weather for a city.\"\"\"\n    return f\"32C and humid in {city}\"\n\nllm = ChatOllama(model=\"qwen2.5:7b\").bind_tools([get_weather])\n\ndef agent(s: MessagesState):\n    return {\"messages\": [llm.invoke(s[\"messages\"])]}\n\ng = StateGraph(MessagesState)\ng.add_node(\"agent\", agent)\ng.add_node(\"tools\", ToolNode([get_weather]))\ng.add_edge(START, \"agent\")\ng.add_conditional_edges(\"agent\", tools_condition)\ng.add_edge(\"tools\", \"agent\")\nout = g.compile().invoke({\"messages\": [(\"user\", \"Weather in Chennai?\")]})\nfor m in out[\"messages\"]:\n    m.pretty_print()"
+      }
     },
     {
       "id": "lg-14",
@@ -284,8 +376,7 @@ window.IR.q["19-langgraph"] = {
       "tags": [
         "langgraph",
         "agents",
-        "prebuilt",
-        "judgement"
+        "langchain"
       ],
       "why": "Whether you reach for the abstraction that fits, or hand-build a loop the library already gives you - and whether you know the current API.",
       "quick": [
@@ -295,12 +386,37 @@ window.IR.q["19-langgraph"] = {
         "Build a StateGraph only when the flow stops being that loop.",
         "Rebuilding the ready-made loop by hand is wasted work."
       ],
-      "simple": "For a standard tool-calling agent, you use the prebuilt factory, because it already wires the whole loop. It calls the model, runs any tools it asks for, feeds the results back and repeats until the model answers. Rebuilding that by hand is work you didn't need to do. The current factory is create_agent from the langchain package, since the old create_react_agent was deprecated in LangGraph 1.0, and it adds middleware for things like tool approval or summarising long chats.\n\nYou drop to a hand-built StateGraph when the flow stops being that simple loop, such as extra state fields, steps that aren't model calls, or routing the model doesn't decide. For example, a refund agent where every refund must pass a fixed policy-check node before money moves needs a graph, because that step isn't the model's choice.",
-      "say": "I start with create_agent, because it already wires the standard loop. It calls the model, runs any tools it asks for, feeds the results back and repeats until the model answers without a tool call. The name matters because it moved. create_react_agent from langgraph.prebuilt is deprecated as of LangGraph 1.0, and the current factory is create_agent from the langchain package. It adds middleware, small hooks for things people used to hand-build, like approving tool calls, summarising long conversations or redacting PII. I drop to a hand-built StateGraph when the flow stops being that loop. Maybe I need state beyond the message list, steps that aren't model calls, routing the model didn't decide, or a loop with its own exit rule. A refund that must always pass a policy-check node is a good example. Rebuilding the prebuilt loop by hand isn't seniority, it's unneeded work. I leave the factory at the first requirement it can't express.",
+      "simple": "For a standard tool-calling agent, you use the prebuilt factory, because it already wires the whole loop. It calls the model, runs any tools it asks for, feeds the results back and repeats until the model answers. Rebuilding that by hand is work you didn't need to do. The current factory is create_agent from the langchain package, since the old create_react_agent was deprecated in LangGraph 1.0, and it adds middleware for things like tool approval, summarising long chats or running a fixed check before a tool call.\n\nYou drop to a hand-built StateGraph when the flow stops being that simple loop, such as extra state fields, steps that aren't model calls, or routing the model doesn't decide. For example, a refund flow that always runs a policy check, then branches to auto-approval or a manager's sign-off and tracks its own status fields, needs a graph, because those steps and routes aren't the model's choice. A single rule before one tool call, by contrast, still fits in middleware.",
+      "say": "I start with create_agent, because it already wires the standard loop. It calls the model, runs any tools it asks for, feeds the results back and repeats until the model answers without a tool call. The name matters because it moved. create_react_agent from langgraph.prebuilt is deprecated as of LangGraph 1.0, and the current factory is create_agent from the langchain package. It adds middleware, small hooks for things people used to hand-build, like approving tool calls, summarising long conversations, redacting PII or running a fixed check before a tool executes. I drop to a hand-built StateGraph when the flow stops being that loop. Maybe I need state beyond the message list, steps that aren't model calls, or routing the model didn't decide. A refund flow that always runs a policy check and then branches to auto-approval or a manager's sign-off is a good example. Rebuilding the prebuilt loop by hand isn't seniority, it's unneeded work.",
       "numbers": "No number applies. This is an API-choice question.",
+      "verified": "2026-10",
       "wrong": "\"I always build the graph myself for control.\" The follow-up will be why you rebuilt a loop the library already provides, and what your version does differently. The senior answer names the cheap default and the specific trigger for leaving it.",
       "follow": "What is the first requirement that makes you leave the prebuilt?",
-      "followAnswer": "Usually a fixed business step the model must not decide. For example, every refund has to pass a policy-check node before payment, whatever the model says. That is application-controlled routing, which the agent loop does not express. Other common triggers are state beyond messages, like a case record, or a multi-step approval. Until one of those appears, create_agent plus middleware is enough."
+      "followAnswer": "Usually a fixed business step the model must not decide. For example, every refund has to pass a policy-check node before payment, whatever the model says. That is application-controlled routing, which the agent loop does not express. Other common triggers are state beyond messages, like a case record, or a multi-step approval. Until one of those appears, create_agent plus middleware is enough.",
+      "builds": [
+        "lg-15"
+      ],
+      "next": [
+        "lg-21",
+        "lg-12",
+        "lg-17"
+      ],
+      "deeper": [
+        "langchain-docs",
+        "langgraph-docs"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "A tool-calling agent must run a fixed, deterministic policy check before its `issue_refund` tool executes. Nothing else about the loop changes. What is the simplest correct build?",
+        "options": [
+          "A hand-built StateGraph with a policy node.",
+          "create_agent with middleware that wraps the refund tool call and runs the check in code.",
+          "create_agent with a prompt telling the model to check policy first.",
+          "The old `create_react_agent` from `langgraph.prebuilt`."
+        ],
+        "answer": 1,
+        "why": "One rule around one tool call is what middleware is for: it runs in code every time and keeps the prebuilt loop. Move to a StateGraph when the flow needs its own steps, branches or state. A prompt is unenforced, and create_react_agent is deprecated."
+      }
     },
     {
       "id": "lg-05",
@@ -312,9 +428,7 @@ window.IR.q["19-langgraph"] = {
       "priority": "high",
       "tags": [
         "langgraph",
-        "checkpointer",
-        "persistence",
-        "human-in-loop"
+        "memory"
       ],
       "why": "Checkpointing is what makes production features possible. Candidates who only ran notebooks have never needed it.",
       "quick": [
@@ -367,7 +481,45 @@ window.IR.q["19-langgraph"] = {
       "numbers": "Measure checkpoint write latency and storage growth in your own deployment. Durability adds I/O on every step, so include it in the latency budget - or choose a lighter durability mode where losing a mid-run step is acceptable.",
       "wrong": "\"It saves the conversation.\" That is one use of four, and it misses the interrupt-and-resume story, which is the one regulated employers care about.",
       "follow": "Walk me through an approval flow where the human replies the next morning.",
-      "followAnswer": "The node calls interrupt with the proposed action. The checkpointer saves the thread, the run ends, and the app stores the thread id against a pending approval in a review queue. Nothing waits in memory. Next morning the reviewer approves; our API invokes the graph with Command resume on the same thread id. The node re-runs, receives the decision and continues, and the payment step is idempotent."
+      "followAnswer": "The node calls interrupt with the proposed action. The checkpointer saves the thread, the run ends, and the app stores the thread id against a pending approval in a review queue. Nothing waits in memory. Next morning the reviewer approves; our API invokes the graph with Command resume on the same thread id. The node re-runs, receives the decision and continues, and the payment step is idempotent.",
+      "builds": [
+        "lg-04"
+      ],
+      "next": [
+        "lg-06",
+        "lg-24",
+        "lg-19"
+      ],
+      "alsoIn": [
+        "riq-2605"
+      ],
+      "deeper": [
+        "langgraph-persistence",
+        "langgraph-docs"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "A 10-node research graph with a Postgres checkpointer crashes during node 9. You invoke again on the same thread ID with `None` as input. What happens?",
+        "options": [
+          "It restarts from node 1 and pays for every model call again.",
+          "It fails, because checkpoints are only for conversation memory.",
+          "It resumes from the last saved checkpoint, so nodes 1-8 are not re-run.",
+          "It returns the last answer from a previous thread."
+        ],
+        "answer": 2,
+        "why": "State is saved after each step, keyed by thread ID, so a run can continue from the last checkpoint. That fault recovery is one of four uses, alongside memory, human-in-the-loop and time travel; 'it just saves the chat' misses it."
+      },
+      "try": {
+        "title": "See threads and checkpoints with InMemorySaver",
+        "minutes": 10,
+        "steps": [
+          "Run the starter and observe thread `t1` accumulating turns across two invokes.",
+          "Observe thread `t2` starting empty - the checkpointer is scoped per thread.",
+          "Print `snap.next` and `snap.values` for each item in `get_state_history(cfg)` and observe one checkpoint per step.",
+          "Swap in a SQLite or Postgres saver and confirm the history survives a Python restart."
+        ],
+        "code": "import operator\nfrom typing import Annotated, TypedDict\nfrom langgraph.graph import StateGraph, START, END\nfrom langgraph.checkpoint.memory import InMemorySaver\n\nclass S(TypedDict):\n    turns: Annotated[list[str], operator.add]\n\ndef echo(s):\n    return {\"turns\": [f\"seen {len(s['turns'])} so far\"]}\n\ng = StateGraph(S)\ng.add_node(\"echo\", echo)\ng.add_edge(START, \"echo\")\ng.add_edge(\"echo\", END)\napp = g.compile(checkpointer=InMemorySaver())\n\ncfg = {\"configurable\": {\"thread_id\": \"t1\"}}\napp.invoke({\"turns\": [\"hi\"]}, cfg)\nprint(app.invoke({\"turns\": [\"again\"]}, cfg))\nprint(app.invoke({\"turns\": [\"hi\"]}, {\"configurable\": {\"thread_id\": \"t2\"}}))\nprint(len(list(app.get_state_history(cfg))), \"checkpoints on t1\")"
+      }
     },
     {
       "id": "lg-24",
@@ -381,8 +533,7 @@ window.IR.q["19-langgraph"] = {
       "tags": [
         "langgraph",
         "memory",
-        "store",
-        "checkpointer"
+        "privacy"
       ],
       "why": "Memory is one of the most asked agent topics. This checks whether you know which LangGraph piece holds which kind of memory.",
       "quick": [
@@ -442,7 +593,31 @@ window.IR.q["19-langgraph"] = {
       "numbers": "No universal number. Track how many memories you read per turn and how many tokens they add - retrieve a handful of relevant items, not the whole namespace.",
       "wrong": "\"The checkpointer gives the agent memory, so it remembers users.\" It remembers one thread. A returning user on a new thread gets nothing unless you add a cross-thread store.",
       "follow": "How do you stop one user's memories leaking into another user's conversation?",
-      "followAnswer": "The namespace is the boundary, so it must come from the authenticated user, never from the model or the request body. The server sets the user id in runtime context, code builds the namespace from it, and the agent's memory tools cannot choose a namespace themselves. I add a test that user A's search never returns user B's items, and I audit memory writes."
+      "followAnswer": "The namespace is the boundary, so it must come from the authenticated user, never from the model or the request body. The server sets the user id in runtime context, code builds the namespace from it, and the agent's memory tools cannot choose a namespace themselves. I add a test that user A's search never returns user B's items, and I audit memory writes.",
+      "builds": [
+        "lg-05",
+        "ag-22"
+      ],
+      "next": [
+        "ag-23",
+        "gr-03"
+      ],
+      "deeper": [
+        "langgraph-persistence",
+        "langgraph-docs"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "In thread `t1` a traveller says \"I always want aisle seats\". The app uses only a checkpointer. Next month they start a new conversation (thread `t2`) and ask to book a flight. Does the agent know the preference?",
+        "options": [
+          "Yes - the checkpointer stores all of a user's history.",
+          "Yes, if the same model is used.",
+          "Only if the Postgres checkpointer is used rather than in-memory.",
+          "No - the checkpointer is per thread; a cross-thread Store namespaced by user is needed for that."
+        ],
+        "answer": 3,
+        "why": "Checkpoints are short-term memory for one thread, whatever the backend. Long-term facts belong in the Store under a user namespace, written deliberately and scoped so they cannot leak between users."
+      }
     },
     {
       "id": "lg-06",
@@ -455,8 +630,7 @@ window.IR.q["19-langgraph"] = {
       "priority": "high",
       "tags": [
         "langgraph",
-        "human-in-loop",
-        "interrupt",
+        "agents",
         "compliance"
       ],
       "why": "The concrete version of the previous question - and the feature regulated employers ask for by name.",
@@ -468,11 +642,6 @@ window.IR.q["19-langgraph"] = {
         "The step reruns from the top, so actions must be safe twice."
       ],
       "simple": "Human approval in LangGraph works by letting a node pause itself. You put an interrupt call inside the node that needs a decision. When execution reaches it, LangGraph pauses, the checkpointer saves the state, and the caller shows the payload to a reviewer.\n\nThe reviewer can approve, reject or edit. Later, maybe the next morning, the application resumes the thread with a Command carrying the decision, which becomes the return value of the interrupt call. Because the state is saved, no process has to stay alive during the wait.\n\nThere's one trap. On resume, the node runs again from its first line, so anything before the interrupt runs twice, and side effects belong after it. For example, if a payments node sends a notification email before the interrupt, the customer gets that email twice. The final action should also be safe to run twice.",
-      "say": "You put an interrupt call inside the node that needs the decision, and the checkpointer does the waiting. When the run reaches interrupt, LangGraph pauses and saves the thread's state. The caller gets the interrupt payload back and shows it to a reviewer in a web page, a chat message or an approval queue. The reviewer approves, rejects or sends back edited data. Later, maybe the next morning, the application resumes the same thread with Command and a resume value, and that value becomes interrupt's return value. No request stays open and no process has to stay alive. The trap is that on resume the node re-runs from its first line, not from the interrupt. Anything before it runs twice, so side effects go after the interrupt or in the next node. I also make the final action idempotent, so a duplicate approval can't send the same payment twice. That beats a static interrupt_before breakpoint, which is mainly a debugging tool.",
-      "numbers": "No number applies, but do track reviewer turnaround time and the edit rate. A near-zero edit rate means the review is a rubber stamp.",
-      "wrong": "Using a prompt like 'ask for confirmation' as the approval mechanism. A prompt cannot durably pause execution, enforce who approves, or prevent a duplicate side effect.",
-      "follow": "How do you make sure two reviewers do not approve the same action twice?",
-      "followAnswer": "Two layers. First, the approval record lives in our database with a clear state - pending, approved, rejected - and approving is a conditional update that only succeeds from pending, so the second reviewer sees 'already decided'. Second, the side effect carries an idempotency key, such as the case id plus the action, so even a duplicate resume cannot send the payment twice.",
       "points": [
         "Call `interrupt()` inside the node that needs the human decision.",
         "Persist state with a production checkpointer and a stable thread id.",
@@ -515,6 +684,47 @@ window.IR.q["19-langgraph"] = {
           }
         ],
         "caption": "**The checkpointer does the waiting**: no open request, no live process. On resume the node **re-runs from the top**, so side effects go after interrupt()."
+      },
+      "say": "You put an interrupt call inside the node that needs the decision, and the checkpointer does the waiting. When the run reaches interrupt, LangGraph pauses and saves the thread's state. The caller gets the interrupt payload back and shows it to a reviewer in a web page, a chat message or an approval queue. The reviewer approves, rejects or sends back edited data. Later, maybe the next morning, the application resumes the same thread with Command and a resume value, and that value becomes interrupt's return value. No request stays open and no process has to stay alive. The trap is that on resume the node re-runs from its first line, not from the interrupt. Anything before it runs twice, so side effects go after the interrupt or in the next node. I also make the final action idempotent, so a duplicate approval can't send the same payment twice. That beats a static interrupt_before breakpoint, which is mainly a debugging tool.",
+      "numbers": "No number applies, but do track reviewer turnaround time and the edit rate. A near-zero edit rate means the review is a rubber stamp.",
+      "verified": "2026-10",
+      "wrong": "Using a prompt like 'ask for confirmation' as the approval mechanism. A prompt cannot durably pause execution, enforce who approves, or prevent a duplicate side effect.",
+      "follow": "How do you make sure two reviewers do not approve the same action twice?",
+      "followAnswer": "Two layers. First, the approval record lives in our database with a clear state - pending, approved, rejected - and approving is a conditional update that only succeeds from pending, so the second reviewer sees 'already decided'. Second, the side effect carries an idempotency key, such as the case id plus the action, so even a duplicate resume cannot send the payment twice.",
+      "builds": [
+        "lg-05",
+        "ag-12"
+      ],
+      "next": [
+        "ag-33",
+        "lg-23"
+      ],
+      "deeper": [
+        "langgraph-interrupts",
+        "langgraph-persistence"
+      ],
+      "check": {
+        "kind": "spot-the-bug",
+        "q": "In a payments node:\n    send_email(customer, \"Refund under review\")\n    decision = interrupt({\"amount\": amt})\n    if decision == \"approve\": pay(amt)\nCustomers report two \"under review\" emails. Why?",
+        "options": [
+          "On resume the node re-runs from its first line, so the email before `interrupt` is sent again; move side effects after it or into a separate node.",
+          "The checkpointer saved the state twice.",
+          "`interrupt` sends its payload by email.",
+          "The reviewer clicked approve twice."
+        ],
+        "answer": 0,
+        "why": "Resuming replays the node from the top, with `interrupt` returning the resume value. Anything before it runs again. Keep side effects after the interrupt and make the final action idempotent in case resume is triggered twice."
+      },
+      "try": {
+        "title": "Pause a graph for approval and resume it",
+        "minutes": 15,
+        "steps": [
+          "Run the starter; observe the first invoke returning an `__interrupt__` payload instead of finishing.",
+          "Observe \"node started\" printed twice - once before the pause, once on resume.",
+          "Resume with `Command(resume=\"no\")` on a fresh thread and observe the rejected path.",
+          "Restart Python between the two invokes using a SQLite saver, and confirm the resume still works."
+        ],
+        "code": "from typing import TypedDict\nfrom langgraph.graph import StateGraph, START, END\nfrom langgraph.checkpoint.memory import InMemorySaver\nfrom langgraph.types import interrupt, Command\n\nclass S(TypedDict):\n    amount: int\n    status: str\n\ndef approve(s):\n    print(\"node started\")  # runs again on resume\n    decision = interrupt({\"refund\": s[\"amount\"]})\n    return {\"status\": \"paid\" if decision == \"yes\" else \"rejected\"}\n\ng = StateGraph(S)\ng.add_node(\"approve\", approve)\ng.add_edge(START, \"approve\")\ng.add_edge(\"approve\", END)\napp = g.compile(checkpointer=InMemorySaver())\ncfg = {\"configurable\": {\"thread_id\": \"r1\"}}\nprint(app.invoke({\"amount\": 500, \"status\": \"new\"}, cfg))\nprint(app.invoke(Command(resume=\"yes\"), cfg))"
       }
     },
     {
@@ -527,9 +737,8 @@ window.IR.q["19-langgraph"] = {
       "priority": "high",
       "tags": [
         "langgraph",
-        "rag",
-        "design",
-        "system-design"
+        "advanced-rag",
+        "rag"
       ],
       "why": "A whiteboard question. Whether you can lay out control flow, not just name components.",
       "quick": [
@@ -658,7 +867,32 @@ window.IR.q["19-langgraph"] = {
       "numbers": "Cap rewrites low - one or two is a common starting point. Each one costs a full retrieval plus a model call, and a third rarely recovers a question the corpus cannot answer.",
       "wrong": "Drawing retrieve → generate → END. It is a chain, not an agent, and it does not answer the question that was asked.",
       "follow": "What happens when the grade node itself is wrong?",
-      "followAnswer": "Two failure modes. If it rejects good documents, we waste rewrites and may wrongly answer 'not found'. If it accepts bad ones, the answer is poorly grounded and only the check node might catch it. So I evaluate the grader on its own labelled set, measuring precision and recall of its relevant calls, log its decisions in traces, and keep the retry cap so a wrong grader cannot loop forever."
+      "followAnswer": "Two failure modes. If it rejects good documents, we waste rewrites and may wrongly answer 'not found'. If it accepts bad ones, the answer is poorly grounded and only the check node might catch it. So I evaluate the grader on its own labelled set, measuring precision and recall of its relevant calls, log its decisions in traces, and keep the retry cap so a wrong grader cannot loop forever.",
+      "builds": [
+        "lg-04",
+        "ar-05"
+      ],
+      "next": [
+        "ar-14",
+        "rag-24",
+        "lg-07"
+      ],
+      "deeper": [
+        "crag",
+        "self-rag"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "Your RAG graph loops grade -> rewrite -> retrieve whenever documents look weak, with no retry counter. A user asks about a policy the corpus does not contain. What happens?",
+        "options": [
+          "The grade node eventually passes the weak documents through.",
+          "It loops until LangGraph's recursion limit raises an error, spending a retrieval and a model call per lap, and the user gets no honest answer.",
+          "LangGraph detects the cycle and routes to END automatically.",
+          "The rewrite node invents a document that answers the question."
+        ],
+        "answer": 1,
+        "why": "Nothing in the graph can exit the loop, so it spins until the runtime's safety limit. A retry counter in state, capped at one or two, plus an honest 'not found' path is what interviewers listen for."
+      }
     },
     {
       "id": "lg-07",
@@ -671,9 +905,8 @@ window.IR.q["19-langgraph"] = {
       "priority": "medium",
       "tags": [
         "langgraph",
-        "streaming",
-        "ux",
-        "latency"
+        "latency",
+        "api-design"
       ],
       "why": "Streaming is a hard requirement for chat UX and a real source of bugs, so it is a good discriminator.",
       "quick": [
@@ -692,7 +925,7 @@ window.IR.q["19-langgraph"] = {
         "Agents need progress events; tool calls produce long token-silent gaps.",
         "Whole-output parsers cannot stream. Structured output and token streaming conflict.",
         "Measure time to first token separately from total time - they drive different UX complaints.",
-        "The streaming API is still evolving: `version=\"v2\"` gives one uniform event shape, and LangGraph 1.2 added a beta `version=\"v3\"` event API. Check the version your stack pins."
+        "The streaming API is still evolving: `version=\"v2\"` (LangGraph 1.1+) gives one uniform chunk shape, and LangGraph 1.2 added `stream_events(version=\"v3\")` with typed projections, which the docs now recommend for new code. Check the version your stack pins."
       ],
       "diagram": {
         "kind": "compare",
@@ -737,9 +970,48 @@ window.IR.q["19-langgraph"] = {
       },
       "say": "There are two kinds of streaming, and mixing them up is where the bugs come from. Token streaming shows the final answer word by word, which is what makes a five-second response feel acceptable. Update streaming emits an event after each node, like searching documents or drafting. For an agent that matters just as much, because a long tool call produces no tokens at all and a silent screen feels broken. So a good UI does both. I use the messages stream mode for tokens, filtered to the answering node, and the updates mode or custom events for progress. The trap is structured output. If the last node validates complete JSON, it has to buffer everything and can't stream, so I stream a summary field separately from the structured payload. I also measure time to first token apart from total time, because they drive different complaints.",
       "numbers": "Time to first token is the metric users feel. Roughly, sub-second feels responsive and several seconds of silence feels broken - but set the target from your own product and users rather than quoting a universal threshold.",
+      "verified": "2026-10",
       "wrong": "\"I set streaming=True.\" It does not explain what happens during a twenty-second tool call, which is the actual UX problem in agents.",
       "follow": "Your last node validates JSON. How do you still give the user something to watch?",
-      "followAnswer": "I stream progress events and a separate plain-text summary, while the JSON is still validated at the end. Earlier nodes emit updates or custom events, such as searching documents or checking policy, so the screen is never silent. For the answer itself, I generate a short human-readable part that streams token by token, then build and validate the structured payload after it. The UI shows the text straight away and renders the structured parts once validation passes."
+      "followAnswer": "I stream progress events and a separate plain-text summary, while the JSON is still validated at the end. Earlier nodes emit updates or custom events, such as searching documents or checking policy, so the screen is never silent. For the answer itself, I generate a short human-readable part that streams token by token, then build and validate the structured payload after it. The UI shows the text straight away and renders the structured parts once validation passes.",
+      "builds": [
+        "lg-04",
+        "cl-10"
+      ],
+      "next": [
+        "py-15",
+        "py-20"
+      ],
+      "alsoIn": [
+        "riq-1205"
+      ],
+      "deeper": [
+        "langgraph-streaming",
+        "langgraph-docs"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "An agent streams with `stream_mode=\"messages\"` only. It calls a document search tool that takes 20 seconds before the final answer. What does the user see during those 20 seconds?",
+        "options": [
+          "The tool's progress, streamed automatically.",
+          "Nothing - no model tokens are produced during the tool call; add `updates` or `custom` progress events.",
+          "A token-by-token stream of the tool output.",
+          "An error, because tools cannot run while streaming."
+        ],
+        "answer": 1,
+        "why": "`messages` streams LLM tokens, and a tool call produces none, so the screen goes silent. Per-node `updates` or `custom` events from `get_stream_writer()` fill that gap. That gap is the real UX problem in agents."
+      },
+      "try": {
+        "title": "Stream progress from a slow node",
+        "minutes": 10,
+        "steps": [
+          "Run the starter and observe `custom` progress events arriving during the slow search, then `updates` per node.",
+          "Change to `stream_mode=\"updates\"` only and observe the silent gap during the search.",
+          "Add `version=\"v2\"` to the `stream` call (LangGraph 1.1+) and observe every chunk arriving with the same `type`, `ns` and `data` shape.",
+          "Decide which events your UI would show and which it would hide."
+        ],
+        "code": "import time\nfrom typing import TypedDict\nfrom langgraph.graph import StateGraph, START, END\nfrom langgraph.config import get_stream_writer\n\nclass S(TypedDict):\n    q: str\n    docs: list[str]\n    answer: str\n\ndef search(s):\n    write = get_stream_writer()\n    for i in range(3):\n        write({\"progress\": f\"searching source {i + 1}/3\"})\n        time.sleep(0.7)\n    return {\"docs\": [\"d1\", \"d2\"]}\n\ndef answer(s):\n    return {\"answer\": f\"{len(s['docs'])} documents found for {s['q']}\"}\n\ng = StateGraph(S)\ng.add_node(\"search\", search)\ng.add_node(\"answer\", answer)\ng.add_edge(START, \"search\")\ng.add_edge(\"search\", \"answer\")\ng.add_edge(\"answer\", END)\nfor mode, chunk in g.compile().stream({\"q\": \"leave policy\"}, stream_mode=[\"updates\", \"custom\"]):\n    print(mode, chunk)"
+      }
     },
     {
       "id": "lg-23",
@@ -751,10 +1023,7 @@ window.IR.q["19-langgraph"] = {
       "priority": "medium",
       "tags": [
         "langgraph",
-        "command",
-        "multi-agent",
-        "handoff",
-        "routing"
+        "multi-agent"
       ],
       "why": "The LangGraph mechanics behind multi-agent answers. Panels ask it right after you name a supervisor or handoff pattern.",
       "quick": [
@@ -769,7 +1038,31 @@ window.IR.q["19-langgraph"] = {
       "numbers": "No number applies. Track handoffs per conversation - bouncing between agents more than once or twice usually means their descriptions overlap.",
       "wrong": "Saying agents 'talk to each other' without naming the mechanism. The panel wants to hear that control moves through a returned Command or a routing edge, and what context moves with it.",
       "follow": "After a handoff, how much of the previous agent's history should the next agent see?",
-      "followAnswer": "Usually not all of it. I pass the user's request, the key facts found so far and a short handoff note, not every internal tool call, because that noise costs tokens and confuses the next agent. The full history stays in the checkpoint for debugging. If the next agent keeps asking for things the first one already found, the handoff summary is too thin."
+      "followAnswer": "Usually not all of it. I pass the user's request, the key facts found so far and a short handoff note, not every internal tool call, because that noise costs tokens and confuses the next agent. The full history stays in the checkpoint for debugging. If the next agent keeps asking for things the first one already found, the handoff summary is too thin.",
+      "builds": [
+        "lg-15",
+        "ag-25"
+      ],
+      "next": [
+        "lg-16",
+        "ag-26"
+      ],
+      "deeper": [
+        "langchain-multi-agent",
+        "langgraph-graph-api"
+      ],
+      "check": {
+        "kind": "spot-the-bug",
+        "q": "A `transfer_to_billing` tool returns `Command(goto=\"billing\", update={\"active\": \"billing\"})`. The billing agent's first model call then fails with an error about a tool call without a matching result. What is missing?",
+        "options": [
+          "A conditional edge from the support agent to billing.",
+          "A checkpointer.",
+          "A ToolMessage answering the transfer call, included in the Command's message update.",
+          "The billing agent must be a subgraph."
+        ],
+        "answer": 2,
+        "why": "Chat APIs require every tool call in the history to have a matching tool result. The Command routes control but must also add that ToolMessage. Edges and checkpointers do not create the missing message."
+      }
     },
     {
       "id": "lg-16",
@@ -781,9 +1074,8 @@ window.IR.q["19-langgraph"] = {
       "priority": "medium",
       "tags": [
         "langgraph",
-        "subgraph",
-        "architecture",
-        "multi-agent"
+        "multi-agent",
+        "system-design"
       ],
       "why": "How you compose anything past a toy. Panels use it to see whether you have built something with more than one moving part.",
       "quick": [
@@ -858,7 +1150,30 @@ window.IR.q["19-langgraph"] = {
       "numbers": "No number applies. This is a composition question.",
       "wrong": "\"I'd just put all the nodes in one graph.\" It works until two agents share a message list, and then every agent's internal reasoning is in the context of every other one.",
       "follow": "Two subgraph agents both write to the same parent key. What do you need?",
-      "followAnswer": "I need a reducer on that parent key, or a separate key for each agent. If both subgraphs write the same key in the same step without a reducer, LangGraph raises an error because it can't pick a winner. So for something like collected findings, I annotate the key with a reducer such as operator.add, and make sure the merge doesn't depend on order. Where the outputs mean different things, I give each agent its own key and let a later node combine them."
+      "followAnswer": "I need a reducer on that parent key, or a separate key for each agent. If both subgraphs write the same key in the same step without a reducer, LangGraph raises an error because it can't pick a winner. So for something like collected findings, I annotate the key with a reducer such as operator.add, and make sure the merge doesn't depend on order. Where the outputs mean different things, I give each agent its own key and let a later node combine them.",
+      "builds": [
+        "lg-04"
+      ],
+      "next": [
+        "lg-23",
+        "lg-19"
+      ],
+      "deeper": [
+        "langgraph-docs",
+        "anthropic-multi-agent"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "A research subgraph makes 20 tool calls per question. It is added directly as a node and shares the parent's `messages` key. What happens to the parent conversation?",
+        "options": [
+          "Nothing - subgraph messages are always private.",
+          "The subgraph's messages are discarded when it finishes.",
+          "LangGraph raises an error because keys must differ.",
+          "All 20 tool calls and results land in the parent's history, bloating every later prompt; wrap it and return only a summary."
+        ],
+        "answer": 3,
+        "why": "Shared keys flow straight through to the parent. To keep an agent's internal chatter private, give the subgraph its own schema and wrap it in a node that maps a short summary back to the parent."
+      }
     },
     {
       "id": "lg-19",
@@ -870,8 +1185,6 @@ window.IR.q["19-langgraph"] = {
       "priority": "low",
       "tags": [
         "langgraph",
-        "state",
-        "checkpointer",
         "cost",
         "debugging"
       ],
@@ -933,7 +1246,40 @@ window.IR.q["19-langgraph"] = {
       "numbers": "Plot checkpoint size across steps in one thread. Flat is healthy; a staircase means accumulation, and the step where it jumps is your culprit.",
       "wrong": "Blaming the checkpointer and switching from Postgres to something else. The backend is not the problem - you are asking it to persist megabytes per step.",
       "follow": "You need the full document available to a node three steps later. How do you pass it?",
-      "followAnswer": "I pass a reference, not the document. The node that fetches it writes the full text to object storage or a database and puts only the id, some metadata and a short summary into state. Three steps later, the node that needs the whole document reads the id from state and loads it from storage itself. Checkpoints stay small, the intermediate steps never carry it, and the stored object gets the same access control and retention rules as the thread."
+      "followAnswer": "I pass a reference, not the document. The node that fetches it writes the full text to object storage or a database and puts only the id, some metadata and a short summary into state. Three steps later, the node that needs the whole document reads the id from state and loads it from storage itself. Checkpoints stay small, the intermediate steps never carry it, and the stored object gets the same access control and retention rules as the thread.",
+      "builds": [
+        "lg-05"
+      ],
+      "next": [
+        "lg-16",
+        "ag-21"
+      ],
+      "deeper": [
+        "langgraph-persistence"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "A tool appends a 2 MB document to `messages`. The agent then runs 10 more steps, each appending a small message. The `messages` channel is saved in full every time it changes. Roughly how much data is written for `messages` across those steps?",
+        "options": [
+          "About 2 MB",
+          "About 22 MB",
+          "Under 100 KB",
+          "Nothing - unchanged messages are never saved"
+        ],
+        "answer": 1,
+        "why": "The list changes every step, so the whole value, including the 2 MB document, is written each time - about 11 writes of 2 MB. Storing the document elsewhere and keeping an ID and summary in state keeps each checkpoint to kilobytes."
+      },
+      "try": {
+        "title": "Plot checkpoint growth step by step",
+        "minutes": 15,
+        "steps": [
+          "Run the starter and observe state size jumping at the fetch step and staying high on every later checkpoint.",
+          "Replace the 2 MB string with an ID such as `doc://contract-17` plus a 200-character summary and re-run.",
+          "Observe the sizes staying flat in kilobytes.",
+          "Note that this measures state size, a proxy for what a database checkpointer writes."
+        ],
+        "code": "import operator, pickle\nfrom typing import Annotated, TypedDict\nfrom langgraph.graph import StateGraph, START, END\nfrom langgraph.checkpoint.memory import InMemorySaver\n\nclass S(TypedDict):\n    log: Annotated[list[str], operator.add]\n    step: int\n\ndef fetch(s): return {\"log\": [\"X\" * 2_000_000], \"step\": s[\"step\"] + 1}  # whole document in state\ndef work(s): return {\"log\": [f\"note {s['step']}\"], \"step\": s[\"step\"] + 1}\n\ng = StateGraph(S)\ng.add_node(\"fetch\", fetch)\ng.add_node(\"work\", work)\ng.add_edge(START, \"fetch\")\ng.add_edge(\"fetch\", \"work\")\ng.add_conditional_edges(\"work\", lambda s: END if s[\"step\"] > 8 else \"work\")\napp = g.compile(checkpointer=InMemorySaver())\ncfg = {\"configurable\": {\"thread_id\": \"t\"}}\napp.invoke({\"log\": [], \"step\": 0}, cfg)\nfor snap in reversed(list(app.get_state_history(cfg))):\n    print(snap.metadata.get(\"step\"), len(pickle.dumps(snap.values)) // 1024, \"KB\")"
+      }
     }
   ]
 };

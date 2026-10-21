@@ -24,9 +24,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "3-5",
       "priority": "high",
       "tags": [
-        "ml-fundamentals",
-        "basics",
-        "learning-types"
+        "training",
+        "ml-basics"
       ],
       "why": "A screening opener. The good answer places LLM training inside these categories rather than reciting four definitions.",
       "quick": [
@@ -69,7 +68,28 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "No single number applies. The useful contrast is scale: self-supervised pre-training runs on trillions of unlabelled tokens, while supervised fine-tuning sets are typically thousands to a few million examples.",
       "wrong": "Four textbook definitions with no link to the models you build. The follow-up usually asks where LLMs fit, and calling pre-training simply \"unsupervised\" is imprecise - it is self-supervised, and post-training adds supervised and reinforcement learning.",
       "follow": "When would you choose reinforcement learning over supervised learning?",
-      "followAnswer": "When there is no single correct answer to label, but I can score outcomes - a sequence of decisions where the payoff comes later, or reasoning where I can check the final answer but not write every step. If I can label the right output directly, supervised learning is cheaper, more stable and easier to debug, so that stays my default."
+      "followAnswer": "When there is no single correct answer to label, but I can score outcomes - a sequence of decisions where the payoff comes later, or reasoning where I can check the final answer but not write every step. If I can label the right output directly, supervised learning is cheaper, more stable and easier to debug, so that stays my default.",
+      "next": [
+        "llm-18",
+        "ft-03",
+        "ml-01"
+      ],
+      "deeper": [
+        "instructgpt",
+        "google-mlcc"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "A model is trained to predict the next token over two trillion tokens of web text, with no human labelling at all. Which kind of learning is this stage?",
+        "options": [
+          "Unsupervised learning, because no human supplied any labels.",
+          "Reinforcement learning, because the loss acts as a reward signal.",
+          "Self-supervised learning, because the targets are carved out of the data itself.",
+          "Supervised learning, because humans originally wrote the text."
+        ],
+        "answer": 2,
+        "why": "Each next token is a label taken from the text itself, so it is self-supervised. Calling it unsupervised is the common slip - there is a precise target and a supervised-style loss, just no human labeller. Rewards only enter later, in preference tuning."
+      }
     },
     {
       "id": "ml-01",
@@ -81,9 +101,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "3-5",
       "priority": "high",
       "tags": [
-        "ml-fundamentals",
-        "basics",
-        "overfitting"
+        "ml-basics",
+        "debugging"
       ],
       "why": "The classic opener. Reciting the definition is expected; connecting it to what you would do is not.",
       "quick": [
@@ -146,7 +165,42 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "No number applies. The training-versus-validation gap is the measurement, not a threshold.",
       "wrong": "Reciting only the definitions. Every candidate can. The interviewer wants the diagnostic that follows from them.",
       "follow": "Training accuracy 99%, validation 71%. What do you do first?",
-      "followAnswer": "That gap is overfitting, but before tuning anything I check the split for leakage or a difference between the training and validation data, because a gap that large can also mean validation is simply different. If the split is sound, I regularise - stronger L2, shallower trees or dropout - add early stopping, and get more data if I can. Then I re-check the gap."
+      "followAnswer": "That gap is overfitting, but before tuning anything I check the split for leakage or a difference between the training and validation data, because a gap that large can also mean validation is simply different. If the split is sound, I regularise - stronger L2, shallower trees or dropout - add early stopping, and get more data if I can. Then I re-check the gap.",
+      "builds": [
+        "ml-37"
+      ],
+      "next": [
+        "ml-12",
+        "ml-13",
+        "ml-06"
+      ],
+      "deeper": [
+        "google-mlcc",
+        "d2l"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "Training error is 14% and validation error is 15%. The business needs under 5%. What is the diagnosis and the first move?",
+        "options": [
+          "High variance - add dropout and stronger regularisation.",
+          "High bias - add capacity or better features, since even training data is poorly fitted.",
+          "Data leakage - re-split the data by time.",
+          "Overfitting - collect more data before anything else."
+        ],
+        "answer": 1,
+        "why": "Both errors are high and close, so the model underfits. Regularisation or more data treat variance, and would make an underfit model no better - the gap, not the level, is what signals overfitting."
+      },
+      "try": {
+        "title": "See bias and variance in a polynomial fit",
+        "minutes": 15,
+        "steps": [
+          "Generate 40 noisy points from a sine curve and hold out 30% for validation.",
+          "Fit polynomials of degree 1, 4 and 15 and print training and validation error for each.",
+          "Observe that degree 1 is bad on both (bias), degree 15 is great on training but poor on validation (variance).",
+          "Double the number of points and refit degree 15 - watch the validation gap shrink, because more data attacks variance."
+        ],
+        "code": "import numpy as np\nrng = np.random.default_rng(0)\nx = rng.uniform(0, 1, 40); y = np.sin(2*np.pi*x) + rng.normal(0, 0.2, 40)\nidx = rng.permutation(40); tr, va = idx[:28], idx[28:]\nfor deg in (1, 4, 15):\n    p = np.polyfit(x[tr], y[tr], deg)\n    mse = lambda i: np.mean((np.polyval(p, x[i]) - y[i])**2)\n    print(deg, round(mse(tr), 3), round(mse(va), 3))"
+      }
     },
     {
       "id": "ml-12",
@@ -158,9 +212,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "3-5",
       "priority": "high",
       "tags": [
-        "basics",
-        "regularisation",
-        "training"
+        "ml-basics",
+        "deep-learning"
       ],
       "why": "The most basic screening question. A structured answer signals organised thinking; a scattered list signals memorisation.",
       "quick": [
@@ -182,7 +235,34 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "A validation gap of a few percent is normal. Training accuracy at 99% with validation at 70% means memorisation, not learning.",
       "wrong": "Listing techniques with no organising idea - 'dropout, regularisation, more data, early stopping'. Correct, and it sounds like a flashcard rather than understanding.",
       "follow": "Training and validation loss are both high and flat. Is that overfitting?",
-      "followAnswer": "No, that is underfitting - high bias. The model cannot even fit the data it has seen. So I add capacity or better features, reduce regularisation and train longer. I also check the basics: a learning rate that is too low or too high, noisy labels, or features that simply do not carry the signal. More data will not fix this one."
+      "followAnswer": "No, that is underfitting - high bias. The model cannot even fit the data it has seen. So I add capacity or better features, reduce regularisation and train longer. I also check the basics: a learning rate that is too low or too high, noisy labels, or features that simply do not carry the signal. More data will not fix this one.",
+      "builds": [
+        "ml-01"
+      ],
+      "next": [
+        "ml-13",
+        "ml-06",
+        "ml-41"
+      ],
+      "alsoIn": [
+        "riq-0107"
+      ],
+      "deeper": [
+        "dropout",
+        "google-mlcc"
+      ],
+      "check": {
+        "kind": "which-fails",
+        "q": "Training and validation loss are both high and flat after 20 epochs. Which change is LEAST likely to help?",
+        "options": [
+          "Checking the labels and input pipeline for a bug.",
+          "Using a larger model or adding better features.",
+          "Tuning the learning rate and training for longer.",
+          "Adding stronger L2 regularisation and more dropout."
+        ],
+        "answer": 3,
+        "why": "This is underfitting, not overfitting. Regularisation removes capacity the model is already short of. Pipeline bugs, too little capacity or a bad learning rate are the usual causes of two flat, high curves."
+      }
     },
     {
       "id": "ml-13",
@@ -194,9 +274,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "3-5",
       "priority": "high",
       "tags": [
-        "regularisation",
-        "theory",
-        "feature-selection"
+        "ml-basics",
+        "trade-offs"
       ],
       "why": "Whether you understand why L1 zeroes coefficients rather than just knowing that it does.",
       "quick": [
@@ -256,7 +335,41 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "Tune the strength on validation across a log scale. With correlated features, L1's selection can change between retrains - check stability before reporting it.",
       "wrong": "'L1 gives sparsity, L2 does not.' True and shallow. The follow-up is always why, and the geometry is the answer.",
       "follow": "Two features are almost perfectly correlated. What does L1 do?",
-      "followAnswer": "L1 usually keeps one and drives the other to zero, and which one it keeps can be close to arbitrary - a small change in the data can flip the choice. So I would not tell the business the dropped feature does not matter. If I want the weight shared across both, I use L2 or elastic net, which keeps groups of correlated features together."
+      "followAnswer": "L1 usually keeps one and drives the other to zero, and which one it keeps can be close to arbitrary - a small change in the data can flip the choice. So I would not tell the business the dropped feature does not matter. If I want the weight shared across both, I use L2 or elastic net, which keeps groups of correlated features together.",
+      "builds": [
+        "ml-12"
+      ],
+      "next": [
+        "ml-20",
+        "ml-22"
+      ],
+      "deeper": [
+        "google-mlcc",
+        "d2l"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "Why does L1 regularisation set some weights to exactly zero while L2 only shrinks them?",
+        "options": [
+          "L1 is applied with a larger default strength than L2.",
+          "L2's gradient grows near zero, pushing weights away from it.",
+          "L1's constraint region has corners on the axes, which the loss contours usually touch first.",
+          "L1 drops low-variance features before training starts."
+        ],
+        "answer": 2,
+        "why": "The diamond's corners sit where one weight is zero, and expanding loss contours tend to meet a corner. L2's circle has no corners. In fact L2's gradient shrinks near zero, which is why it never quite reaches it."
+      },
+      "try": {
+        "title": "Count the zeros: Lasso vs Ridge",
+        "minutes": 15,
+        "steps": [
+          "Create a regression problem with 50 features where only 5 are informative.",
+          "Fit Lasso and Ridge across alphas 0.01, 0.1, 1 and 10 on standardised features.",
+          "Print how many coefficients are exactly zero for each - observe Lasso zeroes more as alpha grows while Ridge zeroes none.",
+          "Duplicate one informative feature with tiny noise and refit Lasso - watch it keep one copy and drop the other."
+        ],
+        "code": "import numpy as np\nfrom sklearn.datasets import make_regression\nfrom sklearn.linear_model import Lasso, Ridge\nfrom sklearn.preprocessing import StandardScaler\nX, y = make_regression(n_samples=300, n_features=50, n_informative=5, noise=10, random_state=0)\nX = StandardScaler().fit_transform(X)\nfor a in (0.01, 0.1, 1, 10):\n    l = Lasso(alpha=a, max_iter=10000).fit(X, y); r = Ridge(alpha=a).fit(X, y)\n    print(a, 'lasso zeros', np.sum(l.coef_ == 0), 'ridge zeros', np.sum(r.coef_ == 0))"
+      }
     },
     {
       "id": "ml-06",
@@ -267,8 +380,7 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "3-5",
       "priority": "high",
       "tags": [
-        "ml-fundamentals",
-        "validation",
+        "ml-basics",
         "evaluation"
       ],
       "why": "The 'when not to' half is what distinguishes the answer.",
@@ -334,7 +446,30 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "k = 5 or 10 is standard. On time series use forward-chaining folds instead, and report performance per fold, not just the mean.",
       "wrong": "\"I always use 5-fold cross-validation.\" On time-series or grouped data that produces an optimistic number that will not survive production.",
       "follow": "Your data has one row per transaction and many rows per customer. How do you split?",
-      "followAnswer": "By customer, not by row. I use group k-fold so every transaction from one customer lands in the same fold. Otherwise the model sees a customer in training and is scored on the same customer in validation, which is optimistic. If time matters too, I combine both: train on earlier periods, validate on later ones, and keep customers separate across the split."
+      "followAnswer": "By customer, not by row. I use group k-fold so every transaction from one customer lands in the same fold. Otherwise the model sees a customer in training and is scored on the same customer in validation, which is optimistic. If time matters too, I combine both: train on earlier periods, validate on later ones, and keep customers separate across the split.",
+      "builds": [
+        "ml-12"
+      ],
+      "next": [
+        "ml-03",
+        "ml-04"
+      ],
+      "deeper": [
+        "sklearn-cv",
+        "google-rules-ml"
+      ],
+      "check": {
+        "kind": "which-fails",
+        "q": "For which dataset is plain shuffled 5-fold cross-validation still a sound choice?",
+        "options": [
+          "Daily sales history, used to forecast next month.",
+          "Hospital visits, with several visits per patient, predicting outcomes for new patients.",
+          "Transactions with many rows per customer, scoring customers never seen before.",
+          "10,000 independent product reviews labelled for sentiment."
+        ],
+        "answer": 3,
+        "why": "Independent rows are the case k-fold assumes. Time series needs forward-chaining folds, and grouped rows need group-wise splits - otherwise the model trains on the future or recognises the same patient or customer, and the score is optimistic."
+      }
     },
     {
       "id": "ml-38",
@@ -346,10 +481,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "3-5",
       "priority": "high",
       "tags": [
-        "ml-fundamentals",
-        "basics",
-        "regression",
-        "loss-functions"
+        "ml-basics",
+        "training"
       ],
       "why": "The most common classical-model question. The loss-function half checks whether you know why, not just what.",
       "quick": [
@@ -407,7 +540,41 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "Predicting 0.01 for a true positive costs about 4.6 in log loss but at most 1 in squared error. A logistic coefficient of 0.7 means the odds roughly double (e^0.7 ≈ 2.0) per unit increase in that feature.",
       "wrong": "Saying MSE would work just as well, or treating logistic regression as a regression model because of its name. The follow-up asks why not MSE, and the answer is convexity and the vanishing gradient when the model is confidently wrong.",
       "follow": "Why not just use linear regression and threshold it at 0.5?",
-      "followAnswer": "Because linear regression is unbounded, so it predicts values below zero and above one that are not probabilities. It is also pulled around by extreme points: add a few easy examples far from the boundary and the fitted line tilts, moving the 0.5 crossing even though nothing about the hard cases changed. Logistic regression models the log-odds, keeps outputs between zero and one, and trains with log loss."
+      "followAnswer": "Because linear regression is unbounded, so it predicts values below zero and above one that are not probabilities. It is also pulled around by extreme points: add a few easy examples far from the boundary and the fitted line tilts, moving the 0.5 crossing even though nothing about the hard cases changed. Logistic regression models the log-odds, keeps outputs between zero and one, and trains with log loss.",
+      "builds": [
+        "ml-14"
+      ],
+      "next": [
+        "ml-11",
+        "ml-31"
+      ],
+      "deeper": [
+        "google-mlcc",
+        "d2l"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "A logistic model predicts 0.01 for a customer who did churn (label 1). Roughly what do log loss and squared error give for this one example?",
+        "options": [
+          "Log loss about 0.01, squared error about 0.98.",
+          "Log loss about 4.6, squared error about 0.98.",
+          "Log loss about 0.98, squared error about 4.6.",
+          "Both about 0.99, so the choice hardly matters."
+        ],
+        "answer": 1,
+        "why": "Log loss is -ln(0.01) ≈ 4.6, and it grows without limit as confidence in the wrong answer rises. Squared error is (1 - 0.01)² ≈ 0.98 and can never exceed 1, so it barely punishes a confident mistake."
+      },
+      "try": {
+        "title": "Why sigmoid plus MSE stalls",
+        "minutes": 10,
+        "steps": [
+          "Take a single example with label 1 and a logit z ranging from -8 to 0.",
+          "Compute the gradient of MSE-on-sigmoid and of cross-entropy with respect to z at each value.",
+          "Observe that at z = -8 the MSE gradient is almost zero while the cross-entropy gradient is close to -1.",
+          "Explain in one sentence why a confidently wrong model learns fastest under cross-entropy."
+        ],
+        "code": "import numpy as np\nsig = lambda z: 1 / (1 + np.exp(-z))\nfor z in (-8, -4, -2, 0):\n    p = sig(z)\n    g_mse = 2 * (p - 1) * p * (1 - p)   # d/dz of (p - 1)^2\n    g_ce = p - 1                        # d/dz of -ln(p)\n    print(z, round(p, 4), round(g_mse, 5), round(g_ce, 4))"
+      }
     },
     {
       "id": "ml-16",
@@ -418,9 +585,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "3-5",
       "priority": "high",
       "tags": [
-        "trees",
-        "ensembles",
-        "basics"
+        "ml-basics",
+        "trade-offs"
       ],
       "why": "Trees still win on tabular data, and this is the base for the boosting question that follows.",
       "quick": [
@@ -442,7 +608,30 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "Feature subsampling defaults to the square root of the feature count for classification. More trees never overfits a forest - it just stops improving, typically past a few hundred.",
       "wrong": "'It builds many trees and averages them.' It misses feature subsampling, which is the mechanism that makes averaging worth anything.",
       "follow": "Why does adding more trees to a forest not cause overfitting?",
-      "followAnswer": "Because each extra tree is one more vote in an average. As trees are added, the forest's prediction settles to a stable value, so the error flattens rather than rising. Overfitting in a forest comes from individual trees being too deep on too little data, or from trees being too similar, not from their number. Past a few hundred trees you mostly pay in memory and latency."
+      "followAnswer": "Because each extra tree is one more vote in an average. As trees are added, the forest's prediction settles to a stable value, so the error flattens rather than rising. Overfitting in a forest comes from individual trees being too deep on too little data, or from trees being too similar, not from their number. Past a few hundred trees you mostly pay in memory and latency.",
+      "builds": [
+        "ml-01"
+      ],
+      "next": [
+        "ml-18",
+        "ml-17"
+      ],
+      "deeper": [
+        "sklearn-ensemble",
+        "google-mlcc"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "In a random forest, what does considering only a random subset of features at each split actually buy you?",
+        "options": [
+          "Mainly faster training - accuracy is unaffected.",
+          "It decorrelates the trees, so averaging them genuinely reduces variance.",
+          "It stops each individual tree from overfitting.",
+          "It lowers bias by forcing weak features into the model."
+        ],
+        "answer": 1,
+        "why": "If one strong feature tops every tree, the trees are near copies and averaging gains little. Feature subsampling makes trees differ. Individual trees are still deep and overfit - the forest only fixes that through averaging decorrelated errors."
+      }
     },
     {
       "id": "ml-18",
@@ -454,9 +643,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "3-5",
       "priority": "high",
       "tags": [
-        "ensembles",
-        "bias-variance",
-        "basics"
+        "ml-basics",
+        "trade-offs"
       ],
       "why": "A quick check that the bias-variance frame is a tool you use, not a phrase you repeat.",
       "quick": [
@@ -516,7 +704,31 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "A forest with 500 trees needs almost no tuning. A boosted model with 500 rounds and no early stopping is very likely overfit.",
       "wrong": "Getting them backwards, which happens often under pressure. Anchor on the mechanism - averaging reduces variance, sequential correction reduces bias.",
       "follow": "You have one afternoon and a tabular dataset. Which do you reach for?",
-      "followAnswer": "A random forest first, as the baseline, because it trains fast, needs almost no tuning and gives a trustworthy number within the hour. Then I spend the rest of the afternoon on LightGBM or XGBoost with early stopping, which usually wins by a few points. If boosting does not clearly beat the forest, I ship the simpler model."
+      "followAnswer": "A random forest first, as the baseline, because it trains fast, needs almost no tuning and gives a trustworthy number within the hour. Then I spend the rest of the afternoon on LightGBM or XGBoost with early stopping, which usually wins by a few points. If boosting does not clearly beat the forest, I ship the simpler model.",
+      "builds": [
+        "ml-16",
+        "ml-01"
+      ],
+      "next": [
+        "ml-17",
+        "ml-22"
+      ],
+      "deeper": [
+        "sklearn-ensemble",
+        "xgboost"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "You grow a random forest to 5,000 trees and a gradient-boosted model to 5,000 rounds, both on noisy data with no early stopping. What do you expect on validation?",
+        "options": [
+          "Both overfit badly.",
+          "Both keep improving steadily.",
+          "The forest plateaus; the boosted model is likely overfit.",
+          "The boosted model plateaus; the forest overfits."
+        ],
+        "answer": 2,
+        "why": "Adding trees to a bagged average only reduces variance, so a forest flattens out. Each boosting round fits remaining errors, including noise, so without early stopping it keeps chasing the training set and validation worsens."
+      }
     },
     {
       "id": "ml-17",
@@ -528,9 +740,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "boosting",
-        "ensembles",
-        "tabular"
+        "ml-basics",
+        "trade-offs"
       ],
       "why": "The honest answer to 'which model would you actually use' for structured data, in an LLM-heavy interview.",
       "quick": [
@@ -579,9 +790,45 @@ window.IR.q["16-ml-fundamentals"] = {
       },
       "say": "Gradient boosting builds small trees in sequence, each one fitting the errors the ensemble still makes. You fit a shallow tree, look at the residuals, fit the next tree to predict them, and add it in at a small learning rate. Formally each tree fits the negative gradient of the loss, which is where the name comes from. The trees stay weak, around depth three to six, because strong trees overcorrect and the sequence overfits fast. XGBoost adds regularisation on tree complexity, uses second-order gradients and learns a default direction for missing values. It still wins on tabular data because the columns are mixed. A fraud table has an amount, a category, a count and a date, with no spatial or sequence structure for a neural network to exploit, while trees handle mixed types and sharp thresholds natively with little preprocessing. The catch is that boosting really does overfit with too many rounds, so early stopping on validation isn't optional.",
       "numbers": "Learning rate 0.05 to 0.1, depth 3 to 6, with early stopping on validation. Lower learning rate needs more rounds and usually generalises slightly better.",
-      "wrong": "Saying deep learning has outdated it. On medium-sized tabular problems well-tuned boosted trees are still the baseline to beat, and the follow-up will ask for the benchmark that says otherwise.",
+      "verified": "2026-10",
+      "wrong": "Saying deep learning has made boosting obsolete - or the reverse, that boosting always wins. Well-tuned boosted trees are still the baseline to beat on most tabular problems, but tabular foundation models such as TabPFN now beat tuned boosting on many small datasets, so say you would benchmark rather than assume.",
       "follow": "Your boosted model scores 0.99 on training and 0.72 on validation. What happened?",
-      "followAnswer": "It is overfitting - most likely too many rounds, trees that are too deep, or a learning rate that is too high. I add early stopping on validation, cap depth at three to six, lower the learning rate, and add row and column subsampling plus regularisation. But a gap that big also makes me check first for leakage or a mismatch between the training and validation data."
+      "followAnswer": "It is overfitting - most likely too many rounds, trees that are too deep, or a learning rate that is too high. I add early stopping on validation, cap depth at three to six, lower the learning rate, and add row and column subsampling plus regularisation. But a gap that big also makes me check first for leakage or a mismatch between the training and validation data.",
+      "builds": [
+        "ml-18"
+      ],
+      "next": [
+        "ml-22",
+        "ml-07",
+        "ml-03"
+      ],
+      "deeper": [
+        "xgboost",
+        "tabpfn"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "A teammate says: \"For our 2-million-row fraud table, skip XGBoost - deep learning wins everywhere now.\" Which response is strongest?",
+        "options": [
+          "Agree - transformers now dominate tabular data.",
+          "Use plain logistic regression, because trees always overfit fraud data.",
+          "Start with a tuned boosted-tree baseline with early stopping, and adopt anything else only if it beats that on validation.",
+          "Have an LLM classify each row, since it understands the columns."
+        ],
+        "answer": 2,
+        "why": "Boosted trees remain the baseline to beat on mid-to-large tabular data, and any alternative should earn its place on the same validation set. Blanket claims either way fail the follow-up; tabular foundation models compete mainly on small datasets."
+      },
+      "try": {
+        "title": "Watch boosting overfit without early stopping",
+        "minutes": 15,
+        "steps": [
+          "Make a noisy classification set with flip_y=0.2 and split train and validation.",
+          "Train GradientBoostingClassifier for 1,000 rounds with depth 3 and learning rate 0.1.",
+          "Use staged_predict_proba to log validation log loss after every round.",
+          "Observe the round where validation loss bottoms out and then rises while training loss keeps falling - that is where early stopping would stop."
+        ],
+        "code": "from sklearn.datasets import make_classification\nfrom sklearn.ensemble import GradientBoostingClassifier\nfrom sklearn.metrics import log_loss\nfrom sklearn.model_selection import train_test_split\nX, y = make_classification(4000, 20, flip_y=0.2, random_state=0)\nXtr, Xva, ytr, yva = train_test_split(X, y, random_state=0)\nm = GradientBoostingClassifier(n_estimators=1000, max_depth=3).fit(Xtr, ytr)\nva = [log_loss(yva, p) for p in m.staged_predict_proba(Xva)]\nbest = min(range(len(va)), key=va.__getitem__)\nprint('best round', best + 1, 'val loss', round(va[best], 4), 'final', round(va[-1], 4))"
+      }
     },
     {
       "id": "ml-14",
@@ -592,9 +839,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "3-5",
       "priority": "high",
       "tags": [
-        "optimisation",
-        "training",
-        "basics"
+        "deep-learning",
+        "training"
       ],
       "why": "Foundational, and it connects directly to why transformer training works the way it does.",
       "quick": [
@@ -616,7 +862,33 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "Full fine-tuning uses small learning rates - roughly 1e-5 to 5e-5 for BERT-sized models, often lower for large LLMs. LoRA adapters usually run higher, around 1e-4 to 2e-4. Pre-training uses warmup then decay. A diverging loss most often means the learning rate is too high.",
       "wrong": "Describing gradient descent and stopping. The question is nearly always really about why Adam is the default, so go there yourself.",
       "follow": "Your loss is oscillating rather than decreasing. What do you change?",
-      "followAnswer": "First the learning rate - oscillation usually means the steps are too big, so I lower it or add warmup and a decay schedule. If the loss spikes, I add gradient clipping. I check the batch size, because very small batches give noisy gradients, and I check the data, because shuffling bugs or bad labels can look like an optimisation problem. One change at a time."
+      "followAnswer": "First the learning rate - oscillation usually means the steps are too big, so I lower it or add warmup and a decay schedule. If the loss spikes, I add gradient clipping. I check the batch size, because very small batches give noisy gradients, and I check the data, because shuffling bugs or bad labels can look like an optimisation problem. One change at a time.",
+      "builds": [
+        "ml-38"
+      ],
+      "next": [
+        "ml-39",
+        "ml-33"
+      ],
+      "alsoIn": [
+        "riq-0106"
+      ],
+      "deeper": [
+        "adam",
+        "d2l"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "Early in training, the loss oscillates wildly and occasionally jumps to NaN. What is the first thing to change?",
+        "options": [
+          "Increase the batch size to 4,096.",
+          "Switch from AdamW to plain SGD.",
+          "Add more layers so the model has more capacity.",
+          "Lower the learning rate, ideally with a warmup."
+        ],
+        "answer": 3,
+        "why": "Oscillation and divergence are the classic signature of steps that are too large. Lowering the rate and warming up fixes it most often. A bigger model or a different optimiser does not address the step size, and SGD is usually less stable for transformers."
+      }
     },
     {
       "id": "ml-39",
@@ -629,8 +901,7 @@ window.IR.q["16-ml-fundamentals"] = {
       "priority": "high",
       "tags": [
         "deep-learning",
-        "backprop",
-        "basics"
+        "training"
       ],
       "why": "The core deep-learning mechanism. Panels want the chain-rule idea and why it is efficient, not calculus on a whiteboard.",
       "quick": [
@@ -652,7 +923,34 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "The backward pass costs roughly twice the forward pass, so a training step is about three times the compute of inference on the same batch. That is where the common estimate of about 6 × parameters × tokens for training FLOPs comes from.",
       "wrong": "\"Backpropagation is gradient descent.\" They are separate steps: backprop computes the gradients, the optimiser uses them to update weights. Merging them suggests the idea was memorised as one word.",
       "follow": "What does `loss.backward()` actually compute in PyTorch?",
-      "followAnswer": "It walks backwards through the computation graph that autograd recorded during the forward pass, applying the chain rule at each operation. The result is the gradient of the loss with respect to every parameter that requires gradients, stored in each parameter's `.grad`. It adds to whatever is already there, which is why we zero gradients each step. The optimiser step then uses them."
+      "followAnswer": "It walks backwards through the computation graph that autograd recorded during the forward pass, applying the chain rule at each operation. The result is the gradient of the loss with respect to every parameter that requires gradients, stored in each parameter's `.grad`. It adds to whatever is already there, which is why we zero gradients each step. The optimiser step then uses them.",
+      "builds": [
+        "ml-14"
+      ],
+      "next": [
+        "ml-15",
+        "ml-40",
+        "ml-32"
+      ],
+      "alsoIn": [
+        "riq-0106"
+      ],
+      "deeper": [
+        "d2l",
+        "karpathy-gpt"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "In PyTorch, what does `loss.backward()` actually do?",
+        "options": [
+          "Computes the gradient of the loss for every parameter and adds it to each parameter's `.grad`.",
+          "Computes gradients and then updates the weights.",
+          "Computes fresh gradients, replacing whatever was in `.grad`.",
+          "Runs the forward pass in reverse to reconstruct the inputs."
+        ],
+        "answer": 0,
+        "why": "Backward only computes gradients, and it accumulates them - which is why you call `zero_grad()` each step. The optimiser's `step()` is what updates weights. Confusing the two is the 'backprop is gradient descent' mistake."
+      }
     },
     {
       "id": "ml-40",
@@ -664,8 +962,7 @@ window.IR.q["16-ml-fundamentals"] = {
       "priority": "high",
       "tags": [
         "deep-learning",
-        "activations",
-        "basics"
+        "transformers"
       ],
       "why": "A standard deep-learning screen. The non-linearity argument is the real question; the comparison shows whether you know what modern models use.",
       "quick": [
@@ -733,7 +1030,30 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "Sigmoid's slope peaks at 0.25, tanh's at 1, and ReLU's is exactly 1 for any positive input. SwiGLU layers usually shrink the hidden size to about two-thirds of the classic 4× width so the parameter count stays comparable.",
       "wrong": "\"Activations keep the output between 0 and 1.\" That describes sigmoid, not the purpose. The purpose is non-linearity - without it, depth is pointless.",
       "follow": "Why did LLMs move from ReLU to GELU and SwiGLU?",
-      "followAnswer": "ReLU outputs exactly zero for every negative input, so units can die and stop learning. GELU is a smooth version that lets small negative values through, and it trained better in BERT and GPT-2. SwiGLU adds a gate: one projection decides how much of another passes through. In experiments it gave better quality for similar compute, so Llama and most recent open models use it."
+      "followAnswer": "ReLU outputs exactly zero for every negative input, so units can die and stop learning. GELU is a smooth version that lets small negative values through, and it trained better in BERT and GPT-2. SwiGLU adds a gate: one projection decides how much of another passes through. In experiments it gave better quality for similar compute, so Llama and most recent open models use it.",
+      "builds": [
+        "ml-39"
+      ],
+      "next": [
+        "ml-15",
+        "tf-15"
+      ],
+      "deeper": [
+        "glu-variants",
+        "d2l"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "A three-layer network has no activation functions:\n    y = W3 @ (W2 @ (W1 @ x))\nWhat can it represent?",
+        "options": [
+          "Any function, given enough width.",
+          "Only linear functions of x - exactly what a single layer could do.",
+          "Only outputs between 0 and 1.",
+          "Non-linear functions, but it trains more slowly."
+        ],
+        "answer": 1,
+        "why": "W3·W2·W1 is just another matrix, so depth adds nothing without a non-linearity between layers. Universal approximation needs the activation; the 0-to-1 range describes sigmoid's output, not the purpose of activations."
+      }
     },
     {
       "id": "ml-15",
@@ -746,8 +1066,7 @@ window.IR.q["16-ml-fundamentals"] = {
       "priority": "high",
       "tags": [
         "deep-learning",
-        "training",
-        "theory"
+        "training"
       ],
       "why": "It explains three design choices in every transformer - a clean bridge from classical ML to what you build now.",
       "quick": [
@@ -805,7 +1124,35 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "Sigmoid's maximum derivative is 0.25, so across ten layers the activation derivatives alone shrink the gradient by at least a million times (0.25^10 ≈ 1e-6). Gradient clipping around 1.0 is standard for the exploding case.",
       "wrong": "Naming ReLU alone. Residual connections are the more important fix at real depth, and skipping them misses the link to transformers.",
       "follow": "Where do you see all three of those fixes in a transformer block?",
-      "followAnswer": "Each block has two sublayers, attention and a feed-forward network. Each is wrapped in a residual connection, so its input is added back to its output. Each is preceded by a normalisation layer - layer norm or RMSNorm - in the pre-norm design. And the feed-forward network uses a non-saturating activation such as GELU or SwiGLU. Gradient clipping lives in the training script."
+      "followAnswer": "Each block has two sublayers, attention and a feed-forward network. Each is wrapped in a residual connection, so its input is added back to its output. Each is preceded by a normalisation layer - layer norm or RMSNorm - in the pre-norm design. And the feed-forward network uses a non-saturating activation such as GELU or SwiGLU. Gradient clipping lives in the training script.",
+      "builds": [
+        "ml-39",
+        "ml-40"
+      ],
+      "next": [
+        "tf-15",
+        "ml-41",
+        "ml-42"
+      ],
+      "alsoIn": [
+        "riq-0302"
+      ],
+      "deeper": [
+        "resnet",
+        "d2l"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "Ignoring the weights, a gradient flows back through 20 sigmoid layers, each contributing at most sigmoid's maximum slope. What is the best-case shrink factor?",
+        "options": [
+          "About 5 (20 × 0.25).",
+          "About 0.25 - only the last layer matters.",
+          "About 1e-12 (0.25 to the power 20).",
+          "None - backpropagation preserves gradient size."
+        ],
+        "answer": 2,
+        "why": "The chain rule multiplies the slopes, so 0.25²⁰ ≈ 9e-13. Adding them is the tempting error. That multiplicative collapse is why ReLU's slope of 1 and residual connections, which give gradients a path around each block, made deep networks trainable."
+      }
     },
     {
       "id": "ml-09",
@@ -817,9 +1164,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "3-5",
       "priority": "high",
       "tags": [
-        "metrics",
-        "classification",
-        "basics"
+        "ml-basics",
+        "evaluation"
       ],
       "why": "The most-asked ML question in any loop. Reciting definitions passes nothing - connecting them to a cost does.",
       "quick": [
@@ -882,7 +1228,30 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "The harmonic mean is deliberately harsh: precision 0.9 with recall 0.1 gives an F1 near 0.18, not 0.5. That is the point of using it.",
       "wrong": "Reciting the two formulas and stopping. The question is always really about the business trade-off, and the follow-up will force it.",
       "follow": "Your fraud model has 95% precision and 40% recall. Is that good?",
-      "followAnswer": "It depends on the cost of a miss. Ninety-five percent precision means the alerts are trustworthy, but forty percent recall means we miss sixty percent of the fraud. For a bank that is usually too low. So I would lower the threshold, see how much precision we give up for extra recall, and check the review team can handle the extra alerts."
+      "followAnswer": "It depends on the cost of a miss. Ninety-five percent precision means the alerts are trustworthy, but forty percent recall means we miss sixty percent of the fraud. For a bank that is usually too low. So I would lower the threshold, see how much precision we give up for extra recall, and check the review team can handle the extra alerts.",
+      "builds": [
+        "ml-02"
+      ],
+      "next": [
+        "ml-10",
+        "ml-11"
+      ],
+      "deeper": [
+        "sklearn-eval",
+        "google-mlcc"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "A fraud model flags 200 transactions, of which 150 are fraud. There were 600 frauds in total. What are precision and recall?",
+        "options": [
+          "Precision 0.75, recall 0.25.",
+          "Precision 0.25, recall 0.75.",
+          "Precision 0.75, recall 0.33.",
+          "Precision 0.50, recall 0.25."
+        ],
+        "answer": 0,
+        "why": "Precision divides by what you flagged: 150/200 = 0.75. Recall divides by what really existed: 150/600 = 0.25. Swapping the denominators is the usual mistake. For a bank this model misses three frauds in four, so recall is the problem."
+      }
     },
     {
       "id": "ml-02",
@@ -893,9 +1262,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "3-5",
       "priority": "high",
       "tags": [
-        "ml-fundamentals",
-        "metrics",
-        "imbalanced-data"
+        "ml-basics",
+        "evaluation"
       ],
       "why": "The most useful metric question there is, and it transfers directly to GenAI evaluation.",
       "quick": [
@@ -917,7 +1285,28 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "On a 1% positive rate, a constant negative prediction scores 99% accuracy and 0% recall. That is the example to quote.",
       "wrong": "Listing precision, recall and F1 without connecting them to the cost of each error. The connection is the answer.",
       "follow": "The business wants both high precision and high recall. What do you tell them?",
-      "followAnswer": "That with a fixed model the two trade against each other - the threshold only moves us along the curve. To get both, the model itself must improve: better features, more labelled data or a better model. Meanwhile I show them the precision-recall curve, ask which error costs more, and agree an operating point, for example the best recall we can get with precision above 80%."
+      "followAnswer": "That with a fixed model the two trade against each other - the threshold only moves us along the curve. To get both, the model itself must improve: better features, more labelled data or a better model. Meanwhile I show them the precision-recall curve, ask which error costs more, and agree an operating point, for example the best recall we can get with precision above 80%.",
+      "next": [
+        "ml-09",
+        "ml-10",
+        "ml-04"
+      ],
+      "deeper": [
+        "sklearn-eval",
+        "google-mlcc"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "1% of 100,000 insurance claims are fraudulent. A model predicts \"not fraud\" for every claim. What are its accuracy and recall?",
+        "options": [
+          "1% accuracy, 100% recall.",
+          "99% accuracy, 99% recall.",
+          "50% accuracy, 0% recall.",
+          "99% accuracy, 0% recall."
+        ],
+        "answer": 3,
+        "why": "It is right on all 99,000 genuine claims, so 99% accurate, and it catches none of the 1,000 frauds, so recall is zero. Accuracy is dominated by the majority class, which is exactly why it hides the failure you care about."
+      }
     },
     {
       "id": "ml-10",
@@ -929,8 +1318,7 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "3-5",
       "priority": "high",
       "tags": [
-        "metrics",
-        "imbalance",
+        "ml-basics",
         "evaluation"
       ],
       "why": "Whether you know that ROC-AUC flatters a model on imbalanced data - which is nearly every real problem.",
@@ -990,7 +1378,42 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "At 0.1% prevalence, random PR-AUC is 0.001. So a PR-AUC of 0.4 is a strong model, even though the same number would look poor as an ROC-AUC.",
       "wrong": "Reporting a 0.97 ROC-AUC on a 1%-positive problem as proof it works. On its own it can hide a precision too low to be usable, and the follow-up will ask what precision looks like at the operating threshold.",
       "follow": "Your PR-AUC is 0.4 and the business asks if that is good. Answer them.",
-      "followAnswer": "Compared with what? A random model's PR-AUC equals the positive rate, so at 0.1% fraud, 0.4 is hundreds of times better than chance. But the business needs an operating point, not an area. So I translate it: at our chosen threshold we catch this share of fraud, and this share of alerts are real. Then I compare that with the system they use today."
+      "followAnswer": "Compared with what? A random model's PR-AUC equals the positive rate, so at 0.1% fraud, 0.4 is hundreds of times better than chance. But the business needs an operating point, not an area. So I translate it: at our chosen threshold we catch this share of fraud, and this share of alerts are real. Then I compare that with the system they use today.",
+      "builds": [
+        "ml-09"
+      ],
+      "next": [
+        "ml-11",
+        "ml-31",
+        "ml-36"
+      ],
+      "deeper": [
+        "sklearn-eval",
+        "google-mlcc"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "There are 1,000 positives among 1,000,000 cases. At one threshold the model catches 900 positives and wrongly flags 10,000 negatives. Which is true?",
+        "options": [
+          "Precision is 90%, so the alert queue is healthy.",
+          "The false positive rate is about 10%, so ROC-AUC will look poor.",
+          "The false positive rate is about 1%, so ROC looks excellent, yet precision is only about 8%.",
+          "Recall is 9%, so the model is useless."
+        ],
+        "answer": 2,
+        "why": "FPR = 10,000 / 999,000 ≈ 1%, so the ROC point looks superb. Precision = 900 / 10,900 ≈ 8%: eleven alerts per real fraud. Recall is 90%. PR-AUC exposes this pain because precision divides by what you flagged."
+      },
+      "try": {
+        "title": "ROC-AUC vs PR-AUC as positives get rarer",
+        "minutes": 15,
+        "steps": [
+          "Generate classification data at 10%, 1% and 0.1% positives with make_classification.",
+          "Train the same logistic regression on each and compute roc_auc_score and average_precision_score on a held-out split.",
+          "Observe ROC-AUC staying high and roughly stable while average precision falls sharply as positives get rarer.",
+          "Compare each PR-AUC with its random baseline (the positive rate) to judge whether it is actually good."
+        ],
+        "code": "from sklearn.datasets import make_classification\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import roc_auc_score, average_precision_score\nfrom sklearn.model_selection import train_test_split\nfor rate in (0.1, 0.01, 0.001):\n    X, y = make_classification(200_000, 20, weights=[1 - rate], class_sep=0.8, random_state=0)\n    Xtr, Xte, ytr, yte = train_test_split(X, y, stratify=y, random_state=0)\n    p = LogisticRegression(max_iter=1000).fit(Xtr, ytr).predict_proba(Xte)[:, 1]\n    print(rate, round(roc_auc_score(yte, p), 3), round(average_precision_score(yte, p), 3))"
+      }
     },
     {
       "id": "ml-04",
@@ -1001,9 +1424,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "3-5",
       "priority": "high",
       "tags": [
-        "ml-fundamentals",
-        "imbalanced-data",
-        "training"
+        "ml-basics",
+        "evaluation"
       ],
       "why": "Common and practical. The good answer starts by questioning whether resampling is needed at all.",
       "quick": [
@@ -1057,7 +1479,31 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "The default 0.5 threshold is rarely right on imbalanced data. Choose it from the precision-recall curve against the business cost of each error.",
       "wrong": "\"I use SMOTE.\" Jumping to synthesis before trying the threshold and class weights, and it invites the question of whether you applied it before or after the split.",
       "follow": "Where exactly in your pipeline does the resampling happen?",
-      "followAnswer": "Inside the training fold, after the split, and only on training data. In scikit-learn I put the sampler inside an imbalanced-learn Pipeline, so cross-validation resamples each training fold separately. Validation and test keep the real class balance, because those numbers must reflect production. Resampling before the split would leak synthetic copies of minority examples into validation and inflate the score."
+      "followAnswer": "Inside the training fold, after the split, and only on training data. In scikit-learn I put the sampler inside an imbalanced-learn Pipeline, so cross-validation resamples each training fold separately. Validation and test keep the real class balance, because those numbers must reflect production. Resampling before the split would leak synthetic copies of minority examples into validation and inflate the score.",
+      "builds": [
+        "ml-02",
+        "ml-09"
+      ],
+      "next": [
+        "ml-11",
+        "ml-03"
+      ],
+      "deeper": [
+        "sklearn-eval",
+        "google-mlcc"
+      ],
+      "check": {
+        "kind": "spot-the-bug",
+        "q": "What is wrong with this evaluation?\n    X_res, y_res = SMOTE().fit_resample(X, y)\n    X_tr, X_te, y_tr, y_te = train_test_split(X_res, y_res)\n    model.fit(X_tr, y_tr)\n    print(f1_score(y_te, model.predict(X_te)))",
+        "options": [
+          "Resampling before the split puts synthetic neighbours of training rows in the test set and fakes its class balance.",
+          "SMOTE should also be applied separately to the test set.",
+          "The split must be stratified; otherwise it is fine.",
+          "F1 cannot be used on imbalanced data."
+        ],
+        "answer": 0,
+        "why": "Synthetic points are interpolated from real ones, so test rows are near-copies of training rows, and the test set no longer has the real class ratio. Resample inside the training fold only; never touch the test set's balance."
+      }
     },
     {
       "id": "ml-03",
@@ -1069,9 +1515,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "ml-fundamentals",
-        "leakage",
-        "validation"
+        "ml-basics",
+        "debugging"
       ],
       "why": "The failure that produces excellent offline results and a useless production model. Experience shows immediately.",
       "quick": [
@@ -1130,7 +1575,42 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "No number applies. The tell is a suspiciously high score and one feature carrying most of the importance.",
       "wrong": "\"I use train-test split to avoid it.\" On time-ordered data a random split is itself the cause of temporal leakage, so the follow-up will show this answer names the mechanism that created the problem.",
       "follow": "Your model scores 0.99 AUC. Are you pleased?",
-      "followAnswer": "Suspicious first. On most real problems 0.99 means leakage until proven otherwise. I check feature importance for one dominant feature, ask when each top feature becomes available in production, look for duplicates or the same entity on both sides of the split, and confirm the split respects time. If it survives all that, I test on a fresh, later sample before believing it."
+      "followAnswer": "Suspicious first. On most real problems 0.99 means leakage until proven otherwise. I check feature importance for one dominant feature, ask when each top feature becomes available in production, look for duplicates or the same entity on both sides of the split, and confirm the split respects time. If it survives all that, I test on a fresh, later sample before believing it.",
+      "builds": [
+        "ml-06"
+      ],
+      "next": [
+        "ml-28",
+        "ml-26",
+        "ml-27"
+      ],
+      "deeper": [
+        "google-rules-ml",
+        "sklearn-cv"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "A claim-approval model scores 0.99 AUC on validation, and one feature, `days_to_payment`, carries most of the importance. What is the most likely explanation?",
+        "options": [
+          "The model is excellent and ready to ship.",
+          "Target leakage - the feature only exists after a claim is approved and paid.",
+          "Overfitting - add regularisation and retrain.",
+          "Class imbalance is inflating the AUC."
+        ],
+        "answer": 1,
+        "why": "A near-perfect score dominated by one feature is the leakage signature, and payment timing is a consequence of approval. Regularising would not help because the feature genuinely predicts - it just will not exist at decision time."
+      },
+      "try": {
+        "title": "Get 80% accuracy on pure noise",
+        "minutes": 15,
+        "steps": [
+          "Create 100 rows of 5,000 random features with random binary labels - there is no signal at all.",
+          "Select the 20 features most correlated with the label using the full dataset, then cross-validate a logistic regression on them.",
+          "Observe accuracy well above 50%, even though the data is pure noise.",
+          "Put the selection inside a Pipeline so it is refitted in each fold, and watch accuracy fall back to about 50%."
+        ],
+        "code": "import numpy as np\nfrom sklearn.feature_selection import SelectKBest, f_classif\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.model_selection import cross_val_score\nfrom sklearn.pipeline import make_pipeline\nrng = np.random.default_rng(0)\nX = rng.normal(size=(100, 5000)); y = rng.integers(0, 2, 100)\nX_leak = SelectKBest(f_classif, k=20).fit_transform(X, y)\nprint('leaky', cross_val_score(LogisticRegression(), X_leak, y, cv=5).mean())\npipe = make_pipeline(SelectKBest(f_classif, k=20), LogisticRegression())\nprint('clean', cross_val_score(pipe, X, y, cv=5).mean())"
+      }
     },
     {
       "id": "ml-26",
@@ -1142,9 +1622,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "monitoring",
-        "drift",
-        "production"
+        "ml-basics",
+        "observability"
       ],
       "why": "The vocabulary for why a model silently decays, and it applies directly to GenAI monitoring.",
       "quick": [
@@ -1206,7 +1685,30 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "PSI below 0.1 is stable, 0.1 to 0.2 warrants attention, above 0.2 is significant drift. Alert on the features the model actually weights, not on all of them.",
       "wrong": "Treating them as one thing. They have different detection methods and different remedies, and mixing them up means monitoring for the easy one and missing the dangerous one.",
       "follow": "Feature distributions are unchanged but accuracy fell 8 points. Which is it?",
-      "followAnswer": "Concept drift is the likely answer: the inputs look the same but their relationship to the outcome changed. Before concluding that, I rule out a change in how labels are recorded, and train-serve skew hiding inside a stable-looking distribution. Then I confirm by retraining on recent labelled data - if the recent model recovers the accuracy, the concept moved."
+      "followAnswer": "Concept drift is the likely answer: the inputs look the same but their relationship to the outcome changed. Before concluding that, I rule out a change in how labels are recorded, and train-serve skew hiding inside a stable-looking distribution. Then I confirm by retraining on recent labelled data - if the recent model recovers the accuracy, the concept moved.",
+      "builds": [
+        "ml-03"
+      ],
+      "next": [
+        "ml-05",
+        "ml-28"
+      ],
+      "deeper": [
+        "evidently",
+        "google-rules-ml"
+      ],
+      "check": {
+        "kind": "which-fails",
+        "q": "Input feature distributions match training closely (PSI below 0.05 on every feature), yet precision fell 8 points once labels arrived. What is the most likely cause?",
+        "options": [
+          "Concept drift - the relationship between inputs and outcome has changed.",
+          "Data drift in the inputs.",
+          "Random noise - a few points is normal.",
+          "A larger batch size at inference."
+        ],
+        "answer": 0,
+        "why": "Stable inputs rule out data drift, so the mapping itself moved, as when fraudsters adapt. That is why label-free monitors miss concept drift: only ground truth, or proxies like the share of positive predictions, reveal it."
+      }
     },
     {
       "id": "ml-30",
@@ -1218,10 +1720,9 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "decision",
-        "cost",
-        "classification",
-        "genai"
+        "fine-tuning",
+        "trade-offs",
+        "cost"
       ],
       "why": "The most practical modern ML decision, and the one that connects this topic to the rest of the portal.",
       "quick": [
@@ -1293,7 +1794,42 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "500 clean examples is a workable fine-tuning set for a small encoder. Per-call, an encoder on CPU is orders of magnitude cheaper than a hosted LLM API.",
       "wrong": "'Use an LLM, it is state of the art.' It ignores cost and latency, which are exactly what the question is testing, and it does not survive the volume follow-up.",
       "follow": "This runs on ten million documents a month. Does your answer change?",
-      "followAnswer": "Yes. At ten million a month, per-call LLM cost and latency dominate. So I would use the LLM to label a large sample, check a slice by hand, and fine-tune a small encoder for production. I keep the LLM only for the low-confidence cases the encoder routes to it. My 500 gold labels stay as the test set that proves the encoder matches the LLM."
+      "followAnswer": "Yes. At ten million a month, per-call LLM cost and latency dominate. So I would use the LLM to label a large sample, check a slice by hand, and fine-tune a small encoder for production. I keep the LLM only for the low-confidence cases the encoder routes to it. My 500 gold labels stay as the test set that proves the encoder matches the LLM.",
+      "builds": [
+        "ml-07"
+      ],
+      "next": [
+        "ft-06",
+        "cl-06",
+        "ev-02"
+      ],
+      "deeper": [
+        "huyen-ai-engineering",
+        "sentence-transformers"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "You must classify 10 million support tickets a month into stable categories. You have 500 hand-labelled examples. Which plan is strongest?",
+        "options": [
+          "Prompt a frontier model on every ticket - it is the most accurate option.",
+          "Have an LLM label a larger set, spot-check it, fine-tune a small encoder on it, and test on your 500 gold labels.",
+          "Train on the 500 examples and skip any comparison with an LLM.",
+          "Write keyword rules, since models are unreliable."
+        ],
+        "answer": 1,
+        "why": "At this volume per-call LLM cost and latency dominate, and the labels are stable, so a small encoder pays off. Distilling LLM labels gives it enough data, and keeping the 500 gold labels as the test set keeps the comparison honest."
+      },
+      "try": {
+        "title": "Embeddings plus logistic regression on 500 labels",
+        "minutes": 25,
+        "steps": [
+          "Take 500 labelled examples from four categories of the 20 Newsgroups dataset, plus a 1,000-example test set.",
+          "Embed the text with a small sentence-transformers model and train a logistic regression on the 500 embeddings.",
+          "Measure test accuracy and the time per prediction on CPU.",
+          "Optionally classify 50 test items with a local model via Ollama using a few-shot prompt, and compare accuracy and seconds per item."
+        ],
+        "code": "from sklearn.datasets import fetch_20newsgroups\nfrom sklearn.linear_model import LogisticRegression\nfrom sentence_transformers import SentenceTransformer\nimport time\ncats = ['sci.med', 'sci.space', 'rec.autos', 'comp.graphics']\ntr = fetch_20newsgroups(subset='train', categories=cats, remove=('headers', 'footers'))\nte = fetch_20newsgroups(subset='test', categories=cats, remove=('headers', 'footers'))\nm = SentenceTransformer('all-MiniLM-L6-v2')\nXtr = m.encode(tr.data[:500]); clf = LogisticRegression(max_iter=2000).fit(Xtr, tr.target[:500])\nt = time.time(); Xte = m.encode(te.data[:1000])\nprint('acc', clf.score(Xte, te.target[:1000]), 'ms/item', 1000 * (time.time() - t) / 1000)"
+      }
     },
     {
       "id": "ml-11",
@@ -1304,9 +1840,9 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "3-5",
       "priority": "medium",
       "tags": [
-        "metrics",
-        "thresholds",
-        "deployment"
+        "ml-basics",
+        "evaluation",
+        "cost"
       ],
       "why": "0.5 is a default, not a decision. This checks whether you have deployed a classifier or only trained one.",
       "quick": [
@@ -1328,7 +1864,42 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "If a miss costs 40 times a false alarm, the break-even threshold for calibrated probabilities is 1 ÷ (1 + 40) ≈ 0.024 - far below 0.5. With uncalibrated scores find it by sweeping on validation, never on test.",
       "wrong": "Reporting metrics at 0.5 and treating that as the model's performance. You are reporting one arbitrary operating point out of a hundred available.",
       "follow": "Your threshold was set six months ago. What would make you revisit it?",
-      "followAnswer": "Anything that changes the cost calculation: the base rate of positives shifting, a retrained model, calibration drifting, the cost of a miss or a false alarm changing, or the review team's capacity changing. I would also revisit it if alert volume or precision at the threshold moved noticeably. In practice I schedule a quarterly re-check rather than waiting for a complaint."
+      "followAnswer": "Anything that changes the cost calculation: the base rate of positives shifting, a retrained model, calibration drifting, the cost of a miss or a false alarm changing, or the review team's capacity changing. I would also revisit it if alert volume or precision at the threshold moved noticeably. In practice I schedule a quarterly re-check rather than waiting for a complaint.",
+      "builds": [
+        "ml-09",
+        "ml-10"
+      ],
+      "next": [
+        "ml-31",
+        "ml-04"
+      ],
+      "deeper": [
+        "sklearn-eval",
+        "sklearn-calibration"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "Your model is well calibrated. A missed loan default costs ₹9,000; rejecting a good applicant costs ₹1,000. Above what predicted default probability should you reject?",
+        "options": [
+          "0.9",
+          "0.5",
+          "0.011",
+          "0.1"
+        ],
+        "answer": 3,
+        "why": "Reject when p × 9,000 exceeds (1 - p) × 1,000, so p > 1,000 / 10,000 = 0.1. The 0.5 default ignores that a miss costs nine times more. With uncalibrated scores, find the cut-off by sweeping costs on validation instead."
+      },
+      "try": {
+        "title": "Pick a threshold by cost, not by habit",
+        "minutes": 15,
+        "steps": [
+          "Train a logistic regression on imbalanced data (about 5% positives) and get validation probabilities.",
+          "For thresholds from 0.01 to 0.99, compute total cost with a false negative at 40 and a false positive at 1.",
+          "Print the cheapest threshold and compare its cost with the cost at 0.5.",
+          "Observe that the best threshold is far below 0.5, close to 1/(1+40) if the model is well calibrated."
+        ],
+        "code": "import numpy as np\nfrom sklearn.datasets import make_classification\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.model_selection import train_test_split\nX, y = make_classification(20000, 20, weights=[0.95], random_state=0)\nXtr, Xva, ytr, yva = train_test_split(X, y, stratify=y, random_state=0)\np = LogisticRegression(max_iter=1000).fit(Xtr, ytr).predict_proba(Xva)[:, 1]\ndef cost(t):\n    pred = p >= t\n    return 40 * np.sum(~pred & (yva == 1)) + 1 * np.sum(pred & (yva == 0))\nts = np.linspace(0.01, 0.99, 99); costs = [cost(t) for t in ts]\nprint('best', ts[int(np.argmin(costs))], min(costs), 'at 0.5', cost(0.5))"
+      }
     },
     {
       "id": "ml-31",
@@ -1340,10 +1911,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "ml",
-        "calibration",
-        "probability",
-        "metrics"
+        "ml-basics",
+        "evaluation"
       ],
       "why": "Senior ML roles often require turning model scores into decisions, where probability quality matters beyond ranking metrics.",
       "quick": [
@@ -1404,7 +1973,41 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "A prediction of 0.8 is interpretable only if outcomes near that score occur about 80% of the time over a suitable sample. Do not infer calibration from AUC alone.",
       "wrong": "Saying an AUC of 0.9 means a predicted probability of 0.9 is trustworthy. Ranking quality and probability calibration are different properties.",
       "follow": "Your ranking metric is unchanged but users say the risk score feels more aggressive. Which calibration view would you compare across releases?",
-      "followAnswer": "I'd compare reliability diagrams across the two releases, ideally broken down by segment. Ranking can stay identical while the whole score distribution shifts upwards, so AUC won't move but the scores mean something different. I bin predictions, plot the average score against the observed positive rate for each bin, and overlay old and new. If the new curve sits below the diagonal, it's overconfident. I'd also compare Brier score and the score histograms, then recalibrate on held-out data if it drifted."
+      "followAnswer": "I'd compare reliability diagrams across the two releases, ideally broken down by segment. Ranking can stay identical while the whole score distribution shifts upwards, so AUC won't move but the scores mean something different. I bin predictions, plot the average score against the observed positive rate for each bin, and overlay old and new. If the new curve sits below the diagonal, it's overconfident. I'd also compare Brier score and the score histograms, then recalibrate on held-out data if it drifted.",
+      "builds": [
+        "ml-10"
+      ],
+      "next": [
+        "ml-11",
+        "ml-26"
+      ],
+      "deeper": [
+        "calibration",
+        "sklearn-calibration"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "You replace every score s with s² (a monotonic transform on 0-1). What happens to ROC-AUC and to calibration?",
+        "options": [
+          "Both are unchanged.",
+          "ROC-AUC drops; calibration is unchanged.",
+          "ROC-AUC is unchanged; calibration changes.",
+          "Both change."
+        ],
+        "answer": 2,
+        "why": "AUC depends only on ranking, and a monotonic transform preserves order, so AUC cannot move. The probabilities themselves shift, so calibration changes. That is exactly why a high AUC tells you nothing about whether 0.8 means 80%."
+      },
+      "try": {
+        "title": "Break calibration with class weights, then fix it",
+        "minutes": 20,
+        "steps": [
+          "Train a logistic regression with class_weight='balanced' on data with 5% positives.",
+          "Plot or print calibration_curve on a held-out set - observe predicted probabilities far above the observed rates.",
+          "Wrap the same model in CalibratedClassifierCV with method='isotonic' and recompute the curve and Brier score.",
+          "Confirm that ROC-AUC barely changes while calibration improves sharply."
+        ],
+        "code": "from sklearn.calibration import CalibratedClassifierCV, calibration_curve\nfrom sklearn.datasets import make_classification\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import brier_score_loss, roc_auc_score\nfrom sklearn.model_selection import train_test_split\nX, y = make_classification(30000, 20, weights=[0.95], random_state=0)\nXtr, Xte, ytr, yte = train_test_split(X, y, stratify=y, random_state=0)\nfor name, m in [('weighted', LogisticRegression(class_weight='balanced', max_iter=1000)),\n                ('calibrated', CalibratedClassifierCV(LogisticRegression(class_weight='balanced', max_iter=1000), method='isotonic'))]:\n    p = m.fit(Xtr, ytr).predict_proba(Xte)[:, 1]\n    frac, mean = calibration_curve(yte, p, n_bins=5)\n    print(name, 'AUC', round(roc_auc_score(yte, p), 3), 'Brier', round(brier_score_loss(yte, p), 4))\n    print('  predicted', mean.round(2), 'observed', frac.round(2))"
+      }
     },
     {
       "id": "ml-19",
@@ -1415,9 +2018,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "3-5",
       "priority": "medium",
       "tags": [
-        "clustering",
-        "unsupervised",
-        "basics"
+        "ml-basics",
+        "embeddings"
       ],
       "why": "The standard unsupervised question, and its assumptions matter directly for embedding clustering.",
       "quick": [
@@ -1464,7 +2066,26 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "Standardise tabular features before k-means (for embeddings, L2-normalise instead). Use k-means++ with around ten restarts - a single random initialisation regularly lands in a poor local optimum.",
       "wrong": "Describing the algorithm with no mention of assumptions. The follow-up is always about where it fails, and shape and scale are the answers.",
       "follow": "You cluster 100k document embeddings and get one huge cluster. What went wrong?",
-      "followAnswer": "Usually the embeddings weren't normalised, or k-means was the wrong tool for that space. Raw embeddings vary in length, so Euclidean distance tracks magnitude rather than meaning, and many points pile around one centre. They also often share a dominant common direction. So I L2-normalise the vectors so distance follows cosine similarity, and sometimes reduce dimensions first. I check whether the big cluster is really boilerplate or near-duplicate documents. If shapes are uneven, I try HDBSCAN, which labels outliers as noise instead."
+      "followAnswer": "Usually the embeddings weren't normalised, or k-means was the wrong tool for that space. Raw embeddings vary in length, so Euclidean distance tracks magnitude rather than meaning, and many points pile around one centre. They also often share a dominant common direction. So I L2-normalise the vectors so distance follows cosine similarity, and sometimes reduce dimensions first. I check whether the big cluster is really boilerplate or near-duplicate documents. If shapes are uneven, I try HDBSCAN, which labels outliers as noise instead.",
+      "next": [
+        "ml-20",
+        "em-02"
+      ],
+      "deeper": [
+        "google-mlcc"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "You run k-means (k=4) on customers using `income` in rupees (up to 50,00,000) and `age` (18-80), with no scaling. What do the clusters look like?",
+        "options": [
+          "Four bands split almost entirely by income, with age ignored.",
+          "Four bands split mainly by age.",
+          "Balanced clusters - k-means is scale-invariant.",
+          "It fails to converge because the units differ."
+        ],
+        "answer": 0,
+        "why": "K-means uses Euclidean distance, so a feature with a range a hundred thousand times larger dominates every distance. It still converges, just to income bands. Standardise tabular features first, or L2-normalise embeddings."
+      }
     },
     {
       "id": "ml-20",
@@ -1475,8 +2096,7 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "3-5",
       "priority": "medium",
       "tags": [
-        "dimensionality",
-        "unsupervised",
+        "ml-basics",
         "embeddings"
       ],
       "why": "Connects classical ML to embedding work, where dimensionality is a live cost concern.",
@@ -1499,7 +2119,39 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "95% explained variance is a common cutoff. Embeddings often keep most retrieval quality at half their dimensions - but measure recall, do not assume it.",
       "wrong": "Calling it feature selection. It is feature extraction - every component mixes all the original features, which is exactly why interpretability disappears.",
       "follow": "Does PCA help your model's accuracy?",
-      "followAnswer": "Sometimes, but usually not, and I'd measure rather than assume. PCA is unsupervised, so it keeps the directions with most variance, not the ones that predict the target, and it can throw away a small but useful signal. It helps a linear model when features are highly correlated or when there are far more features than rows. Tree models like XGBoost rarely gain from it and lose interpretability. So I compare validation scores with and without it, fitting PCA inside the training fold only."
+      "followAnswer": "Sometimes, but usually not, and I'd measure rather than assume. PCA is unsupervised, so it keeps the directions with most variance, not the ones that predict the target, and it can throw away a small but useful signal. It helps a linear model when features are highly correlated or when there are far more features than rows. Tree models like XGBoost rarely gain from it and lose interpretability. So I compare validation scores with and without it, fitting PCA inside the training fold only.",
+      "next": [
+        "em-05",
+        "ar-16",
+        "ml-19"
+      ],
+      "deeper": [
+        "google-mlcc",
+        "matryoshka"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "You keep the principal components explaining 95% of variance, and the downstream classifier gets worse. What is the most likely reason?",
+        "options": [
+          "PCA always lowers accuracy.",
+          "The model overfits because PCA adds features.",
+          "PCA removed the outliers the model relied on.",
+          "PCA is unsupervised, so a low-variance direction it dropped may have carried the predictive signal."
+        ],
+        "answer": 3,
+        "why": "PCA ranks directions by variance, not by relevance to the label, so a small but predictive direction can be thrown away. It reduces features rather than adding them, and it does not remove outliers. Measure downstream accuracy, never assume."
+      },
+      "try": {
+        "title": "Halve embedding dimensions and measure recall",
+        "minutes": 20,
+        "steps": [
+          "Embed 2,000 short sentences with a sentence-transformers model and treat each sentence's top 10 cosine neighbours at full dimension as ground truth.",
+          "Fit PCA to 192 and 96 dimensions, re-normalise, and recompute each sentence's top 10 neighbours.",
+          "Compute recall@10 against the full-dimension neighbours for each size.",
+          "Observe how much neighbour overlap survives at half and quarter size, and note the storage saving."
+        ],
+        "code": "import numpy as np\nfrom sklearn.datasets import fetch_20newsgroups\nfrom sklearn.decomposition import PCA\nfrom sentence_transformers import SentenceTransformer\ntexts = [t[:300] for t in fetch_20newsgroups(subset='train').data[:2000]]\nE = SentenceTransformer('all-MiniLM-L6-v2').encode(texts, normalize_embeddings=True)\ndef topk(M):\n    S = M @ M.T; np.fill_diagonal(S, -1)\n    return np.argsort(-S, axis=1)[:, :10]\ntruth = topk(E)\nfor d in (192, 96):\n    R = PCA(d).fit_transform(E); R /= np.linalg.norm(R, axis=1, keepdims=True)\n    got = topk(R)\n    print(d, np.mean([len(set(a) & set(b)) / 10 for a, b in zip(truth, got)]))"
+      }
     },
     {
       "id": "ml-21",
@@ -1510,9 +2162,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "3-5",
       "priority": "medium",
       "tags": [
-        "data",
-        "preprocessing",
-        "basics"
+        "ml-basics",
+        "trade-offs"
       ],
       "why": "The mechanism behind the missingness decides the method - that reasoning is what is being tested.",
       "quick": [
@@ -1534,7 +2185,27 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "Under about 5% missing and completely at random, dropping rows is usually fine. Past roughly 50% in a column, consider dropping the column and keeping the indicator.",
       "wrong": "'Fill with the mean.' It is the reflex answer, it shrinks variance, distorts relationships, and throws away the information that the value was absent.",
       "follow": "Income is missing for 30% of rows, mostly high earners. What do you do?",
-      "followAnswer": "I treat it as missing not at random, because the gap itself tells me something. Imputing from the observed incomes would pull high earners down towards the middle and bias the model. So I add an income-was-missing flag, which is probably one of the stronger signals, and either leave the gaps for XGBoost or LightGBM to handle natively or impute with a simple value alongside the flag. Anything fitted is fitted inside the training fold. Then I check whether the flag behaves the same in production."
+      "followAnswer": "I treat it as missing not at random, because the gap itself tells me something. Imputing from the observed incomes would pull high earners down towards the middle and bias the model. So I add an income-was-missing flag, which is probably one of the stronger signals, and either leave the gaps for XGBoost or LightGBM to handle natively or impute with a simple value alongside the flag. Anything fitted is fitted inside the training fold. Then I check whether the flag behaves the same in production.",
+      "next": [
+        "ml-22",
+        "ml-03"
+      ],
+      "deeper": [
+        "google-mlcc",
+        "google-rules-ml"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Income is blank for 30% of loan applicants, mostly high earners. Which approach is soundest?",
+        "options": [
+          "Fill the blanks with the mean income.",
+          "Drop the rows with missing income.",
+          "Add a was-missing flag and impute, or let a boosted model handle the gaps natively alongside the flag.",
+          "Drop the income column entirely."
+        ],
+        "answer": 2,
+        "why": "The gap depends on the missing value itself, so the blank is information. Mean filling pulls high earners to the middle and erases that signal; dropping rows removes mostly high earners and biases the sample. The flag preserves it."
+      }
     },
     {
       "id": "ml-22",
@@ -1545,9 +2216,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "3-5",
       "priority": "medium",
       "tags": [
-        "features",
-        "tabular",
-        "practice"
+        "ml-basics",
+        "trade-offs"
       ],
       "why": "Tests calibration. The answer is genuinely split by data type, and a blanket answer either way is wrong.",
       "quick": [
@@ -1569,7 +2239,31 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "On tabular problems, good feature engineering routinely beats model choice. Moving from logistic regression to XGBoost often gains less than adding the right ten features.",
       "wrong": "'Deep learning made it obsolete.' True for unstructured data and wrong for tabular, which is most of what enterprises actually run.",
       "follow": "Give me three features you would build for a churn model.",
-      "followAnswer": "I'd build a recency, a trend and a friction feature. First, days since last login or last purchase, because disengagement usually shows up before cancellation. Second, a usage trend such as the ratio of activity in the last thirty days to the previous ninety, since a falling ratio matters more than the absolute level. Third, support tickets or failed payments in the last month. Every one is computed as of the prediction date only, so nothing from after the churn event leaks in."
+      "followAnswer": "I'd build a recency, a trend and a friction feature. First, days since last login or last purchase, because disengagement usually shows up before cancellation. Second, a usage trend such as the ratio of activity in the last thirty days to the previous ninety, since a falling ratio matters more than the absolute level. Third, support tickets or failed payments in the last month. Every one is computed as of the prediction date only, so nothing from after the churn event leaks in.",
+      "builds": [
+        "ml-17"
+      ],
+      "next": [
+        "ml-03",
+        "ml-27",
+        "ml-21"
+      ],
+      "deeper": [
+        "google-rules-ml",
+        "google-mlcc"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "A gradient-boosted model already has `revenue` and `headcount`. Why can adding `revenue_per_employee` still improve it?",
+        "options": [
+          "Ratios add information the raw columns did not contain.",
+          "Boosting cannot use raw numeric columns well.",
+          "It reduces the size of the training data.",
+          "Each split tests one feature, so the trees need many splits to approximate a ratio that one split on the new feature captures."
+        ],
+        "answer": 3,
+        "why": "Feature engineering adds no new information - the ratio is computable from the inputs - but trees carve axis-aligned steps, so a ratio boundary needs a staircase of splits. Handing it over directly makes the pattern cheap to learn."
+      }
     },
     {
       "id": "ml-41",
@@ -1582,8 +2276,7 @@ window.IR.q["16-ml-fundamentals"] = {
       "priority": "medium",
       "tags": [
         "deep-learning",
-        "normalisation",
-        "regularisation"
+        "transformers"
       ],
       "why": "Checks that you know why transformers use layer norm, and the train-versus-inference behaviour behind a classic bug.",
       "quick": [
@@ -1640,7 +2333,41 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "Typical dropout rates are 0.1 to 0.5, with 0.1 common in transformers when it is used at all; LoRA adapters often use 0.05 to 0.1. Batch norm gets unreliable at small per-device batch sizes, roughly below 16.",
       "wrong": "\"They are the same thing on different axes, so it does not matter.\" The axis is exactly why it matters: batch norm struggles with small batches and variable-length sequences, which is why transformers use layer norm.",
       "follow": "Your model gives different predictions for the same input on every call at inference. What is the likely bug?",
-      "followAnswer": "Most likely the model is still in training mode, so dropout is active and randomly zeroing units on every call. I would check that `model.eval()` is called before inference, and wrap it in `torch.no_grad()` or inference mode. Eval mode also stops batch norm updating its running statistics. For an LLM, the other obvious cause is sampling with temperature above zero."
+      "followAnswer": "Most likely the model is still in training mode, so dropout is active and randomly zeroing units on every call. I would check that `model.eval()` is called before inference, and wrap it in `torch.no_grad()` or inference mode. Eval mode also stops batch norm updating its running statistics. For an LLM, the other obvious cause is sampling with temperature above zero.",
+      "builds": [
+        "ml-15"
+      ],
+      "next": [
+        "ml-32",
+        "tf-15"
+      ],
+      "deeper": [
+        "layernorm",
+        "batchnorm"
+      ],
+      "check": {
+        "kind": "spot-the-bug",
+        "q": "Same input, different output on every call:\n    model = load_model('ckpt.pt')\n    with torch.no_grad():\n        a = model(x)\n        b = model(x)\n    print(torch.equal(a, b))  # False\nWhat is the most likely bug?",
+        "options": [
+          "`no_grad` makes the forward pass random.",
+          "The batch is too small for layer norm.",
+          "The model is still in training mode, so dropout is active - call `model.eval()`.",
+          "GPU kernels are always non-deterministic, so nothing can be done."
+        ],
+        "answer": 2,
+        "why": "`no_grad` only stops gradient tracking; it does not switch modes. In train mode dropout zeroes random units on each call and batch norm uses batch statistics. `model.eval()` fixes both."
+      },
+      "try": {
+        "title": "Dropout on, dropout off",
+        "minutes": 10,
+        "steps": [
+          "Build a tiny PyTorch model with a Linear layer, Dropout(0.5) and another Linear layer.",
+          "Call it twice on the same input inside torch.no_grad() and compare the outputs.",
+          "Call model.eval() and repeat - observe the outputs now match exactly.",
+          "Print the fraction of zeroed activations in train mode to see dropout's rate and the scaling of the survivors."
+        ],
+        "code": "import torch, torch.nn as nn\ntorch.manual_seed(0)\nmodel = nn.Sequential(nn.Linear(8, 64), nn.ReLU(), nn.Dropout(0.5), nn.Linear(64, 1))\nx = torch.randn(1, 8)\nwith torch.no_grad():\n    print('train mode', model(x).item(), model(x).item())\n    model.eval()\n    print('eval mode ', model(x).item(), model(x).item())"
+      }
     },
     {
       "id": "ml-42",
@@ -1652,9 +2379,7 @@ window.IR.q["16-ml-fundamentals"] = {
       "priority": "medium",
       "tags": [
         "deep-learning",
-        "cnn",
-        "rnn",
-        "architecture"
+        "transformers"
       ],
       "why": "Checks you know the pre-transformer building blocks and exactly which problem attention solved.",
       "quick": [
@@ -1721,7 +2446,31 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "An RNN needs n sequential steps for a sequence of length n; a transformer layer processes all n positions at once, paying for it with attention cost that grows with n squared. That trade is the whole story.",
       "wrong": "\"RNNs are obsolete.\" Too strong. Recurrent ideas returned in state-space and hybrid models for long context, and CNNs still win in many small-data and on-device vision settings.",
       "follow": "If attention is quadratic in sequence length, why not go back to RNNs for long documents?",
-      "followAnswer": "Because classic RNNs still train one step at a time and forget over long ranges. The modern answer is a middle path: state-space models such as Mamba keep a recurrent state, so inference cost grows linearly with length, yet they can still be trained in parallel. Several recent LLMs are hybrids that keep some attention layers, because pure recurrent models are weaker at exact recall from far back."
+      "followAnswer": "Because classic RNNs still train one step at a time and forget over long ranges. The modern answer is a middle path: state-space models such as Mamba keep a recurrent state, so inference cost grows linearly with length, yet they can still be trained in parallel. Several recent LLMs are hybrids that keep some attention layers, because pure recurrent models are weaker at exact recall from far back.",
+      "builds": [
+        "ml-15"
+      ],
+      "next": [
+        "tf-16",
+        "tf-01",
+        "tf-07"
+      ],
+      "deeper": [
+        "attention",
+        "mamba"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "What was the main reason transformers displaced RNNs for training large language models?",
+        "options": [
+          "RNNs need far more parameters for the same quality.",
+          "An RNN must process positions one after another, so training cannot parallelise across a sequence; attention can.",
+          "Transformers have attention cost that grows linearly with length.",
+          "RNNs cannot process text tokens at all."
+        ],
+        "answer": 1,
+        "why": "Sequential steps waste GPU parallelism and pass gradients through every step, so early tokens fade. Attention links every pair directly and runs all positions at once - at a cost that grows quadratically, not linearly, with length."
+      }
     },
     {
       "id": "ml-32",
@@ -1733,10 +2482,9 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "ml",
-        "pytorch",
+        "deep-learning",
         "training",
-        "deep-learning"
+        "python"
       ],
       "why": "Many senior AI roles still expect hands-on deep-learning training knowledge even when the team also builds GenAI applications.",
       "quick": [
@@ -1791,7 +2539,31 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "Do not quote a default epoch or batch count without the dataset. Track steps, examples seen, validation metric and learning-rate schedule so runs can be compared fairly.",
       "wrong": "Describing only `loss.backward()` and `optimizer.step()`. Validation mode, gradient clearing, checkpoint selection and reproducibility are part of a production training answer.",
       "follow": "Training loss keeps falling while validation loss rises. What do you change first, and how do you know it helped?",
-      "followAnswer": "That's overfitting, so the first thing I change is when I stop, with early stopping on validation loss and keeping the best checkpoint. That alone often fixes it. If the gap still opens early, I add regularisation, such as more dropout or weight decay, or more data and augmentation, and I change one thing at a time. I know it helped when the best validation score improves and the gap narrows on the same held-out split, ideally confirmed across a couple of seeds."
+      "followAnswer": "That's overfitting, so the first thing I change is when I stop, with early stopping on validation loss and keeping the best checkpoint. That alone often fixes it. If the gap still opens early, I add regularisation, such as more dropout or weight decay, or more data and augmentation, and I change one thing at a time. I know it helped when the best validation score improves and the gap narrows on the same held-out split, ideally confirmed across a couple of seeds.",
+      "builds": [
+        "ml-39",
+        "ml-41"
+      ],
+      "next": [
+        "ml-33",
+        "ml-34"
+      ],
+      "deeper": [
+        "d2l",
+        "karpathy-gpt"
+      ],
+      "check": {
+        "kind": "spot-the-bug",
+        "q": "What is wrong with this training loop?\n    model.train()\n    for x, y in loader:\n        loss = loss_fn(model(x), y)\n        loss.backward()\n        optimizer.step()",
+        "options": [
+          "`backward()` must be called after `optimizer.step()`.",
+          "The loss should be detached before calling backward.",
+          "Nothing - this is the standard loop.",
+          "It never calls `optimizer.zero_grad()`, so gradients pile up across batches."
+        ],
+        "answer": 3,
+        "why": "PyTorch accumulates gradients by design, so without zeroing, each step uses the sum of all past gradients and training becomes erratic. Detaching the loss would cut the graph and backward would fail - the order shown is right apart from the missing reset."
+      }
     },
     {
       "id": "ml-33",
@@ -1803,11 +2575,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "ml",
-        "pytorch",
-        "mixed-precision",
-        "gradient-accumulation",
-        "gpu"
+        "deep-learning",
+        "training"
       ],
       "why": "These are common practical controls when training or adapting models on limited GPU memory.",
       "quick": [
@@ -1830,7 +2599,30 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "Effective batch size is micro-batch size × accumulation steps × data-parallel workers. Use that number when comparing runs and choosing learning-rate changes.",
       "wrong": "Calling gradient accumulation the same as increasing the physical batch. It changes when optimizer and synchronisation steps happen and can change training behaviour.",
       "follow": "You double the number of data-parallel GPUs. What happens to effective batch size if you change nothing else?",
-      "followAnswer": "It doubles, because effective batch size is micro-batch times accumulation steps times data-parallel workers. Each optimiser step now averages gradients over twice as many examples, and there are half as many steps per epoch. That changes the training dynamics, so the learning rate and warmup tuned for the old setup may no longer fit. I either halve the accumulation steps to keep the effective batch the same, or deliberately retune the learning rate, and compare runs by examples seen rather than steps."
+      "followAnswer": "It doubles, because effective batch size is micro-batch times accumulation steps times data-parallel workers. Each optimiser step now averages gradients over twice as many examples, and there are half as many steps per epoch. That changes the training dynamics, so the learning rate and warmup tuned for the old setup may no longer fit. I either halve the accumulation steps to keep the effective batch the same, or deliberately retune the learning rate, and compare runs by examples seen rather than steps.",
+      "builds": [
+        "ml-32"
+      ],
+      "next": [
+        "ml-34",
+        "ft-09"
+      ],
+      "deeper": [
+        "pytorch-amp",
+        "d2l"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "Micro-batch size 4, gradient accumulation of 8 steps, on 4 data-parallel GPUs. What is the effective batch size per optimiser step?",
+        "options": [
+          "16",
+          "32",
+          "128",
+          "512"
+        ],
+        "answer": 2,
+        "why": "Effective batch = micro-batch × accumulation steps × data-parallel workers = 4 × 8 × 4 = 128. Forgetting the GPU count gives 32. Use this number when comparing runs and scaling the learning rate, and remember the schedule now counts fewer optimiser steps."
+      }
     },
     {
       "id": "ml-34",
@@ -1841,10 +2633,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "ml",
-        "distributed-training",
-        "pytorch",
-        "gpu"
+        "deep-learning",
+        "training"
       ],
       "why": "Senior roles that train or serve larger models expect basic distributed-compute trade-offs, not only single-GPU code.",
       "quick": [
@@ -1907,7 +2697,30 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "Communication can become the bottleneck before compute. Compare scaling efficiency as GPUs increase rather than assuming twice the GPUs gives twice the training speed.",
       "wrong": "Calling every multi-GPU job data parallelism. The split can be across examples, tensors, layers, or training state, and each has different communication costs.",
       "follow": "The model fits on one GPU but optimizer state does not. Which approach would you try before tensor parallelism?",
-      "followAnswer": "I would shard the optimizer state first - ZeRO stage 1 or 2, or FSDP - so each GPU holds only its slice of the Adam states. On a single GPU, an 8-bit optimizer or offloading optimizer state to CPU memory is the cheaper option. Tensor parallelism splits the layer computation itself, which I only need when the weights and activations do not fit."
+      "followAnswer": "I would shard the optimizer state first - ZeRO stage 1 or 2, or FSDP - so each GPU holds only its slice of the Adam states. On a single GPU, an 8-bit optimizer or offloading optimizer state to CPU memory is the cheaper option. Tensor parallelism splits the layer computation itself, which I only need when the weights and activations do not fit.",
+      "builds": [
+        "ml-33"
+      ],
+      "next": [
+        "cl-08",
+        "ft-09"
+      ],
+      "deeper": [
+        "zero",
+        "megatron"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "A 7B model's weights fit on one 80 GB GPU, but full fine-tuning with Adam runs out of memory because of gradients and optimiser state. What do you try first?",
+        "options": [
+          "Tensor parallelism across several nodes.",
+          "Sharded data parallelism (FSDP or ZeRO), splitting optimiser state and gradients across GPUs.",
+          "Pipeline parallelism with one layer per GPU.",
+          "Plain DDP, which copies everything to every GPU."
+        ],
+        "answer": 1,
+        "why": "The problem is training state, not a layer too big for one GPU, and sharding that state is exactly what FSDP and ZeRO do while keeping the simple data-parallel style. Plain DDP replicates the state, so it runs out of memory the same way."
+      }
     },
     {
       "id": "ml-23",
@@ -1919,9 +2732,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "3-5",
       "priority": "medium",
       "tags": [
-        "statistics",
-        "reasoning",
-        "stakeholders"
+        "ml-basics",
+        "trade-offs"
       ],
       "why": "Tests whether you can stop a business from acting on a false pattern - a senior responsibility.",
       "quick": [
@@ -1980,7 +2792,26 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "Feature importance measures predictive contribution, not causal effect. Presenting it as a to-do list of interventions is a common and costly mistake.",
       "wrong": "Reaching for ice cream and drowning. It shows you know the concept and not that you can apply it - use an example from work.",
       "follow": "The business wants to act on your top feature. How do you respond?",
-      "followAnswer": "I'd first ask whether they want to predict or to intervene, because the top feature only tells us what predicts the outcome. If it's something like support contact, pushing it down could make things worse, since it's a symptom rather than a cause. So I explain that feature importance isn't a to-do list and propose a proper test. We randomise the intervention on a slice of customers, measure the outcome against a control group, and only roll out if the effect is real."
+      "followAnswer": "I'd first ask whether they want to predict or to intervene, because the top feature only tells us what predicts the outcome. If it's something like support contact, pushing it down could make things worse, since it's a symptom rather than a cause. So I explain that feature importance isn't a to-do list and propose a proper test. We randomise the intervention on a slice of customers, measure the outcome against a control group, and only roll out if the effect is real.",
+      "next": [
+        "ml-25",
+        "ml-08"
+      ],
+      "deeper": [
+        "google-rules-ml"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Your churn model's top feature is the number of support tickets. A VP proposes making support harder to reach to cut churn. What is your best response?",
+        "options": [
+          "Explain that tickets signal an existing problem, so the feature predicts but does not cause churn - and propose a randomised test of any intervention.",
+          "Agree - the model shows tickets drive churn.",
+          "Remove the feature so nobody misreads it.",
+          "Retrain with more data until the feature drops in importance."
+        ],
+        "answer": 0,
+        "why": "A problem drives both the ticket and the churn, so cutting support removes help without removing the cause. Feature importance measures prediction, not effect. Only a randomised experiment tells you what an intervention will do."
+      }
     },
     {
       "id": "ml-24",
@@ -1991,8 +2822,7 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "statistics",
-        "ab-testing",
+        "ml-basics",
         "evaluation"
       ],
       "why": "Almost everyone gets the definition subtly wrong, and it matters for every A/B test you will run.",
@@ -2015,7 +2845,35 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "Fix the sample size before starting. Testing twenty metrics at 0.05 yields roughly one false positive by chance - correct for it or expect to chase noise.",
       "wrong": "'It is the probability the result happened by chance.' It is the near-universal phrasing and it is the definition inverted.",
       "follow": "Your test hits p = 0.04 on day three. Do you ship?",
-      "followAnswer": "No, not on day three. If we planned to run for two weeks, stopping early because p dipped below 0.05 is peeking, and it inflates the false positive rate well past five percent. Three days also misses the weekly cycle, and novelty effects can fade. So I let it run to the planned sample size and duration, then look at the effect size and confidence interval. If we genuinely need early decisions, I'd design a sequential test from the start."
+      "followAnswer": "No, not on day three. If we planned to run for two weeks, stopping early because p dipped below 0.05 is peeking, and it inflates the false positive rate well past five percent. Three days also misses the weekly cycle, and novelty effects can fade. So I let it run to the planned sample size and duration, then look at the effect size and confidence interval. If we genuinely need early decisions, I'd design a sequential test from the start.",
+      "next": [
+        "ml-25",
+        "ev-08"
+      ],
+      "deeper": [],
+      "check": {
+        "kind": "concept",
+        "q": "An A/B test reports p = 0.03. Which statement is correct?",
+        "options": [
+          "There is a 3% chance the null hypothesis is true.",
+          "There is a 97% chance the new version is better.",
+          "If the change truly did nothing, a result at least this extreme would occur about 3% of the time.",
+          "The effect is large enough to matter commercially."
+        ],
+        "answer": 2,
+        "why": "A p-value is computed assuming the null is true, so it cannot be the probability of the null. The first option is the near-universal inversion. It says nothing about effect size either - read the confidence interval for that."
+      },
+      "try": {
+        "title": "Peeking manufactures winners",
+        "minutes": 15,
+        "steps": [
+          "Simulate 2,000 A/A tests where both arms have the same 10% conversion rate, adding 500 users per arm per day for 20 days.",
+          "For each test, run a two-proportion z-test every day and stop the first time p < 0.05.",
+          "Count the share of tests declared significant - observe it is far above 5%.",
+          "Repeat testing only once on day 20 and confirm the false positive rate returns to about 5%."
+        ],
+        "code": "import numpy as np\nfrom scipy.stats import norm\nrng = np.random.default_rng(0)\ndef p_value(a, b, n):\n    pa, pb = a / n, b / n; pool = (a + b) / (2 * n)\n    se = np.sqrt(2 * pool * (1 - pool) / n)\n    return 2 * (1 - norm.cdf(abs(pa - pb) / se)) if se > 0 else 1\npeek = final = 0\nfor _ in range(2000):\n    a = b = n = 0; hit = False\n    for day in range(20):\n        a += rng.binomial(500, 0.1); b += rng.binomial(500, 0.1); n += 500\n        if p_value(a, b, n) < 0.05: hit = True\n    peek += hit; final += p_value(a, b, n) < 0.05\nprint('peeking FPR', peek / 2000, 'single test FPR', final / 2000)"
+      }
     },
     {
       "id": "ml-25",
@@ -2027,9 +2885,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "ab-testing",
-        "experimentation",
-        "statistics"
+        "evaluation",
+        "ml-basics"
       ],
       "why": "Every model change needs an experiment. Design flaws are invisible until the result is already wrong.",
       "quick": [
@@ -2077,10 +2934,32 @@ window.IR.q["16-ml-fundamentals"] = {
         "caption": "**Fix everything before launch.** Halving the detectable effect **quadruples the sample**, and a 52/48 split on a 50/50 plan means assignment is broken."
       },
       "say": "I start with the decision, because if nothing changes whichever way it lands, the test isn't worth running. Then I fix one primary metric before launch. Picking the best of ten afterwards gives about a 40 percent chance of a false winner. Sample size comes from the baseline rate, the smallest lift worth detecting and 80 percent power. The fact people forget is that halving that lift quadruples the users you need. I run at least a full week, often two, because weekday and weekend users behave differently, and I stop at the planned size, not when it looks good. Guardrails are metrics I'm not trying to move but mustn't damage, like latency, error rate, cost and complaints. A GenAI feature that lifts engagement but doubles cost isn't a win. Finally I check validity. Randomise by user, run an A/A test, and watch for sample ratio mismatch. A 50/50 split arriving as 52/48 on a big sample means assignment is broken.",
-      "numbers": "80% power at 5% significance is standard. Two weeks minimum duration. On 10,000 users, a 50/50 split arriving at 52/48 gives a chi-square p-value near 0.0001 - broken assignment - investigate before reading the result.",
+      "numbers": "80% power at 5% significance is standard. Run whole weekly cycles - at least one full week, often two - and stop at the planned sample size. Check the split too: on 10,000 users, a 50/50 design arriving at 52/48 gives a chi-square p-value below 0.001, which means broken assignment - investigate before reading the result.",
       "wrong": "Running until the result looks good. It is peeking with extra steps, and it produces a stream of exciting findings that never replicate.",
       "follow": "The primary metric is flat but a secondary one is up 8%. What do you conclude?",
-      "followAnswer": "I conclude the test didn't show a win on what we agreed mattered, so I wouldn't ship on the secondary metric alone. If we tracked several secondary metrics, one rising eight percent could easily be chance, since the more metrics we test, the more false winners we get. I'd check whether it's plausible, correct for multiple comparisons, and look at guardrails. If it still looks real, I treat it as a hypothesis and run a fresh test with it as the primary metric."
+      "followAnswer": "I conclude the test didn't show a win on what we agreed mattered, so I wouldn't ship on the secondary metric alone. If we tracked several secondary metrics, one rising eight percent could easily be chance, since the more metrics we test, the more false winners we get. I'd check whether it's plausible, correct for multiple comparisons, and look at guardrails. If it still looks real, I treat it as a hypothesis and run a fresh test with it as the primary metric.",
+      "builds": [
+        "ml-24"
+      ],
+      "next": [
+        "ev-08",
+        "ml-36"
+      ],
+      "deeper": [
+        "evanmiller-ab"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "Detecting an absolute lift of 2 percentage points needs about 4,000 users per arm. Roughly how many per arm to detect a 1-point lift at the same power and significance?",
+        "options": [
+          "About 8,000",
+          "About 2,000",
+          "About 16,000",
+          "About 4,000 - the lift size does not matter"
+        ],
+        "answer": 2,
+        "why": "Required sample size scales with one over the effect squared, so halving the lift multiplies users by four. Doubling is the intuitive but wrong guess, and it is how under-powered tests that 'found nothing' get launched."
+      }
     },
     {
       "id": "ml-08",
@@ -2092,9 +2971,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "ml-fundamentals",
-        "explainability",
-        "communication"
+        "responsible-ai",
+        "ml-basics"
       ],
       "why": "Regulated employers require explainability, and it is a communication test as much as a technical one.",
       "quick": [
@@ -2117,7 +2995,30 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "No number applies. If the setting is regulated, consider whether an interpretable model at slightly lower accuracy is the better trade.",
       "wrong": "\"I show them the SHAP plot.\" Handing over a technical artefact is not explaining. The translation is the deliverable.",
       "follow": "The model declined a loan and the customer asks why. What exactly do you send them?",
-      "followAnswer": "I send the main reasons in plain language, plus what would change the outcome. For example, the application was declined mainly because the account is four months old and there were three late payments in the last year. At twelve months with no late payments, the decision would likely be different. I take the top contributing factors from SHAP, translate them, and have compliance check the wording. I never send raw scores or feature names, and I tell them how to request a human review."
+      "followAnswer": "I send the main reasons in plain language, plus what would change the outcome. For example, the application was declined mainly because the account is four months old and there were three late payments in the last year. At twelve months with no late payments, the decision would likely be different. I take the top contributing factors from SHAP, translate them, and have compliance check the wording. I never send raw scores or feature names, and I tell them how to request a human review.",
+      "builds": [
+        "ml-23"
+      ],
+      "next": [
+        "ml-29",
+        "gr-08"
+      ],
+      "deeper": [
+        "shap",
+        "nist-ai-rmf"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "A lending model declined a customer, who asks why. What do you send them?",
+        "options": [
+          "The SHAP waterfall plot for their application.",
+          "A plain statement of the main factors, such as a four-month-old account and three late payments, and what would likely change the outcome.",
+          "The model's global feature importance chart.",
+          "A note that the model is proprietary and cannot be explained."
+        ],
+        "answer": 1,
+        "why": "The customer asked a local question, and the answer must be in their terms and actionable. A SHAP plot is the raw material, not the explanation, and global importance answers a different question - what drives the model overall."
+      }
     },
     {
       "id": "ml-29",
@@ -2128,9 +3029,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "explainability",
-        "shap",
-        "stakeholders"
+        "responsible-ai",
+        "ml-basics"
       ],
       "why": "The named tool for explainability, and regulated employers will ask specifically.",
       "quick": [
@@ -2177,7 +3077,29 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "TreeSHAP is exact and fast for tree models. KernelSHAP is model-agnostic and slow - sample rather than running it over a full dataset.",
       "wrong": "Presenting SHAP values as causal effects. They describe the model's behaviour; a spurious correlation produces a confident and misleading explanation.",
       "follow": "SHAP shows postcode as the top feature in a lending model. What now?",
-      "followAnswer": "I treat it as a fairness and compliance problem before anything else. Postcode can act as a proxy for protected characteristics like ethnicity, so a lending model leaning on it may be discriminating indirectly, even if it's predictive. I check whether it correlates with protected groups and compare approval rates across those groups. Then I talk to compliance. Usually I remove it or replace it with legitimate direct features, retrain, and confirm that no other feature is quietly carrying the same proxy signal."
+      "followAnswer": "I treat it as a fairness and compliance problem before anything else. Postcode can act as a proxy for protected characteristics like ethnicity, so a lending model leaning on it may be discriminating indirectly, even if it's predictive. I check whether it correlates with protected groups and compare approval rates across those groups. Then I talk to compliance. Usually I remove it or replace it with legitimate direct features, retrain, and confirm that no other feature is quietly carrying the same proxy signal.",
+      "builds": [
+        "ml-08"
+      ],
+      "next": [
+        "ml-23",
+        "gr-08"
+      ],
+      "deeper": [
+        "shap"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "The average predicted default risk is 8%. For one applicant SHAP shows +15 points from debt-to-income, +9 from recent enquiries, -1 from account age, and the remaining features sum to zero. What is this applicant's prediction?",
+        "options": [
+          "31%",
+          "23%",
+          "24%",
+          "32%"
+        ],
+        "answer": 0,
+        "why": "SHAP values are additive: base value plus every contribution equals the prediction, so 8 + 15 + 9 - 1 = 31. Forgetting the base value gives 23. For tree models the units are often log-odds, so convert before quoting points."
+      }
     },
     {
       "id": "ml-05",
@@ -2189,9 +3111,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "ml-fundamentals",
-        "drift",
-        "monitoring"
+        "observability",
+        "ml-basics"
       ],
       "why": "It maps directly onto GenAI monitoring, and it is where classical ML experience becomes an asset.",
       "quick": [
@@ -2214,7 +3135,31 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "Prediction drift is computable on every request at no label cost. It is the first monitor to build, before any accuracy pipeline.",
       "wrong": "\"We monitor accuracy in production.\" Only if labels arrive quickly. If they do not, the follow-up about delayed labels exposes a gap: you need drift and prediction monitoring in the meantime.",
       "follow": "Inputs look stable and accuracy fell. What is that?",
-      "followAnswer": "That's most likely concept drift, where the inputs look the same but their relationship to the outcome has changed. Fraudsters adapting is the classic example. Before I conclude that, I rule out a change in how labels are recorded, and train-serve skew hiding behind stable-looking averages, by checking segments and logged inference features. If those are clean, I retrain on recent labelled data. If the recent model recovers the accuracy, that confirms the concept moved, and I shorten the retraining cycle."
+      "followAnswer": "That's most likely concept drift, where the inputs look the same but their relationship to the outcome has changed. Fraudsters adapting is the classic example. Before I conclude that, I rule out a change in how labels are recorded, and train-serve skew hiding behind stable-looking averages, by checking segments and logged inference features. If those are clean, I retrain on recent labelled data. If the recent model recovers the accuracy, that confirms the concept moved, and I shorten the retraining cycle.",
+      "builds": [
+        "ml-26"
+      ],
+      "next": [
+        "ml-28",
+        "ops-05",
+        "rag-49"
+      ],
+      "deeper": [
+        "evidently",
+        "google-rules-ml"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Your churn model's labels arrive about 90 days after each prediction. Which monitor do you build first?",
+        "options": [
+          "A weekly accuracy dashboard.",
+          "Nightly retraining, so monitoring is unnecessary.",
+          "Nothing until the first labels arrive.",
+          "Prediction drift - the score distribution and positive rate - plus input data-quality checks."
+        ],
+        "answer": 3,
+        "why": "Accuracy is invisible for 90 days, so you watch what is available now: predictions need no labels and are cheap, and data checks catch broken pipelines. Retraining blindly can bake a broken feed into the model."
+      }
     },
     {
       "id": "ml-28",
@@ -2225,9 +3170,9 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "production",
+        "ml-basics",
         "debugging",
-        "mlops"
+        "observability"
       ],
       "why": "The classic production ML failure, and a concrete example proves you have shipped rather than only trained.",
       "quick": [
@@ -2249,7 +3194,30 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "It typically costs several accuracy points and goes unnoticed for weeks. Comparing logged inference feature distributions against training is the fastest detection there is.",
       "wrong": "Defining it without an example. Every candidate can define it; having actually debugged one is what the question is really asking.",
       "follow": "How would you detect this within a day rather than a month?",
-      "followAnswer": "I log the actual features the model receives at inference and compare them daily with the training distribution. Per-feature checks like PSI or a KS test, plus null rates and the share of unknown categories, would have flagged a country feature suddenly collapsing to unknown within hours. I'd also replay a sample of recent requests through the training pipeline and diff the two feature vectors directly. Alerting on prediction drift adds a cheap backstop, because the model's output mix shifts when a key feature breaks."
+      "followAnswer": "I log the actual features the model receives at inference and compare them daily with the training distribution. Per-feature checks like PSI or a KS test, plus null rates and the share of unknown categories, would have flagged a country feature suddenly collapsing to unknown within hours. I'd also replay a sample of recent requests through the training pipeline and diff the two feature vectors directly. Alerting on prediction drift adds a cheap backstop, because the model's output mix shifts when a key feature breaks.",
+      "builds": [
+        "ml-03"
+      ],
+      "next": [
+        "ml-27",
+        "ml-05"
+      ],
+      "deeper": [
+        "google-rules-ml",
+        "evidently"
+      ],
+      "check": {
+        "kind": "spot-the-bug",
+        "q": "Training read country from the warehouse; serving reads it from an API:\n    # training: row['country'] -> 'IN', 'US'\n    # serving:\n    code = payload.get('country', '')  # 'India', 'United States'\n    x = encoder.transform([code])      # unknown -> 0\nWhat goes wrong?",
+        "options": [
+          "Nothing - the encoder handles unknown values safely.",
+          "`payload.get` with a default is unsafe and should raise.",
+          "Train-serve skew - serving values never match training categories, so the feature is silently constant and accuracy drops with no errors.",
+          "The encoder must be refitted on serving data each day."
+        ],
+        "answer": 2,
+        "why": "Handling unknowns is what makes this silent: every live value falls into the unknown bucket, so the model loses a feature without any exception. Refitting at serving creates new skew. Share the transformation code and compare logged serving features with training."
+      }
     },
     {
       "id": "ml-07",
@@ -2261,9 +3229,9 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "ml-fundamentals",
-        "judgement",
-        "trade-off"
+        "ml-basics",
+        "trade-offs",
+        "cost"
       ],
       "why": "Increasingly asked, and the strong answer is specific about where each tool wins.",
       "quick": [
@@ -2285,7 +3253,30 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "A gradient-boosted model serves predictions in single-digit milliseconds at effectively zero marginal cost. Compare that against a per-token bill before choosing an LLM for a scoring task.",
       "wrong": "\"LLMs can do everything now.\" The follow-up on cost per prediction, latency and calibration will expose it, because for labelled tabular tasks a simple model often wins on all three.",
       "follow": "Give me a task in our business where you would refuse to use an LLM.",
-      "followAnswer": "I'd refuse to use an LLM for real-time fraud scoring on transactions. It's a labelled tabular problem, so a gradient-boosted model is more accurate, answers in milliseconds, costs almost nothing per call and gives a calibrated probability I can threshold against the cost of a miss. It's also deterministic and explainable with SHAP, which regulators expect. An LLM would add latency, a per-token bill and outputs I can't reliably calibrate. I might still use one to extract fields from free-text notes."
+      "followAnswer": "I'd refuse to use an LLM for real-time fraud scoring on transactions. It's a labelled tabular problem, so a gradient-boosted model is more accurate, answers in milliseconds, costs almost nothing per call and gives a calibrated probability I can threshold against the cost of a miss. It's also deterministic and explainable with SHAP, which regulators expect. An LLM would add latency, a per-token bill and outputs I can't reliably calibrate. I might still use one to extract fields from free-text notes.",
+      "builds": [
+        "ml-17"
+      ],
+      "next": [
+        "ml-30",
+        "cl-06"
+      ],
+      "deeper": [
+        "google-rules-ml",
+        "huyen-ai-engineering"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Which of these tasks would you most firmly refuse to hand to an LLM?",
+        "options": [
+          "Extracting policy numbers and amounts from messy claim emails.",
+          "Summarising call-centre transcripts for supervisors.",
+          "Scoring 50 million card transactions a day for fraud from 40 tabular features with years of labels.",
+          "Answering staff questions from policy documents."
+        ],
+        "answer": 2,
+        "why": "Labelled, high-volume, tabular scoring is where a boosted model is cheaper, faster, calibratable and usually more accurate. The other three involve unstructured language or written output - exactly where LLMs earn their cost."
+      }
     },
     {
       "id": "ml-36",
@@ -2297,10 +3288,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "ml",
-        "ranking",
-        "search",
-        "metrics"
+        "retrieval",
+        "evaluation"
       ],
       "why": "Search, RAG and recommendation roles all need ranking metrics and an understanding of where offline metrics stop.",
       "quick": [
@@ -2322,7 +3311,42 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "Use K equal to meaningful product cutoffs: the retrieved set passed to a reranker or the number of results a user can reasonably inspect. A metric at an irrelevant K can be misleading.",
       "wrong": "Reporting one average NDCG and stopping. Ranking quality should be sliced by query/user type and checked against real online behaviour.",
       "follow": "Why can click-through be a bad relevance label, and how would you reduce position bias?",
-      "followAnswer": "Clicks reflect what users saw and where, not only what's relevant. Items at the top get clicked more just for being there, and items the old ranker never showed get no clicks at all, so training on clicks teaches the model to copy the incumbent. To reduce position bias, I estimate how click probability falls with position, from a small randomised slice or result swapping, and weight clicks by the inverse of that. I also add some exploration and check against human relevance judgements."
+      "followAnswer": "Clicks reflect what users saw and where, not only what's relevant. Items at the top get clicked more just for being there, and items the old ranker never showed get no clicks at all, so training on clicks teaches the model to copy the incumbent. To reduce position bias, I estimate how click probability falls with position, from a small randomised slice or result swapping, and weight clicks by the inverse of that. I also add some exploration and check against human relevance judgements.",
+      "builds": [
+        "ml-09",
+        "rag-46"
+      ],
+      "next": [
+        "ml-35",
+        "rag-07",
+        "em-08"
+      ],
+      "deeper": [
+        "sklearn-eval"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "You train a new ranker on click logs. The old ranker always placed product A first, and A has the highest click-through rate. What is the main risk?",
+        "options": [
+          "Clicks partly reflect position, so the labels flatter whatever the old ranker put on top.",
+          "Click logs are too small to train on.",
+          "NDCG cannot be computed from clicks.",
+          "Product A is probably irrelevant."
+        ],
+        "answer": 0,
+        "why": "Users click what they see first, so A's clicks mix relevance with exposure. Naive training copies the old ranker's choices. Reduce it with randomised exploration, position-bias correction or human judgements - and confirm with an online test."
+      },
+      "try": {
+        "title": "Compute Recall@K, MRR and NDCG by hand",
+        "minutes": 15,
+        "steps": [
+          "Take one query with graded relevance labels for 10 ranked results, for example [0, 2, 0, 1, 0, 0, 3, 0, 0, 0].",
+          "Compute Recall@5, the reciprocal rank of the first relevant result, and NDCG@5 by hand in Python.",
+          "Check your NDCG against sklearn's ndcg_score.",
+          "Move the relevance-3 item to rank 1 and observe NDCG jump while Recall@5 barely changes."
+        ],
+        "code": "import numpy as np\nfrom sklearn.metrics import ndcg_score\nrel = np.array([0, 2, 0, 1, 0, 0, 3, 0, 0, 0])\nk = 5\nrecall = (rel[:k] > 0).sum() / (rel > 0).sum()\nmrr = 1 / (np.argmax(rel > 0) + 1)\ndcg = lambda r: np.sum((2**r - 1) / np.log2(np.arange(2, len(r) + 2)))\nndcg = dcg(rel[:k]) / dcg(np.sort(rel)[::-1][:k])\nscores = np.arange(len(rel), 0, -1)  # ranking order as scores\nprint(recall, mrr, round(ndcg, 3), round(ndcg_score([rel], [scores], k=k), 3))"
+      }
     },
     {
       "id": "ml-27",
@@ -2334,9 +3358,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "5-10",
       "priority": "low",
       "tags": [
-        "mlops",
-        "features",
-        "architecture"
+        "ml-basics",
+        "trade-offs"
       ],
       "why": "The honest answer is usually no, and knowing when it is yes shows real production judgement.",
       "quick": [
@@ -2390,7 +3413,29 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "Online serving typically needs feature retrieval in single-digit milliseconds, which is why the online store is a key-value store rather than a warehouse.",
       "wrong": "Recommending one for every project. It is heavy infrastructure, and for a single batch model the follow-up on operating cost will show a shared feature library would have done the job.",
       "follow": "How would you get point-in-time correctness without a feature store?",
-      "followAnswer": "I'd build point-in-time joins myself. Every feature is stored as a history with the timestamp it became valid, rather than overwritten in place. When I build a training set, each row joins to the latest feature value at or before its event time, never after it. In SQL that's an as-of join, or a range join on validity windows. I also account for pipeline lag, so a value computed at midnight only counts from when it actually landed, and I test the join against known cases."
+      "followAnswer": "I'd build point-in-time joins myself. Every feature is stored as a history with the timestamp it became valid, rather than overwritten in place. When I build a training set, each row joins to the latest feature value at or before its event time, never after it. In SQL that's an as-of join, or a range join on validity windows. I also account for pipeline lag, so a value computed at midnight only counts from when it actually landed, and I test the join against known cases.",
+      "builds": [
+        "ml-28"
+      ],
+      "next": [
+        "sd-23",
+        "ml-05"
+      ],
+      "deeper": [
+        "google-rules-ml"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "One team runs two batch models nightly, with all features in one warehouse. Should they adopt a feature store?",
+        "options": [
+          "Yes - every production model needs one.",
+          "Probably not - a shared, tested feature library with point-in-time joins gives most of the benefit at far lower cost.",
+          "Yes - they need the online store's millisecond lookups.",
+          "No - each model should compute its own features independently."
+        ],
+        "answer": 1,
+        "why": "A feature store pays off with many teams reusing features or real-time serving. Neither applies here. Letting each model compute its own features is the opposite error - it invites train-serve skew."
+      }
     },
     {
       "id": "ml-35",
@@ -2402,10 +3447,8 @@ window.IR.q["16-ml-fundamentals"] = {
       "level": "5-10",
       "priority": "low",
       "tags": [
-        "ml",
-        "recommendation",
-        "ranking",
-        "system-design"
+        "system-design",
+        "retrieval"
       ],
       "why": "Recommendation and ranking remain common senior ML interview areas outside pure GenAI teams.",
       "quick": [
@@ -2454,7 +3497,31 @@ window.IR.q["16-ml-fundamentals"] = {
       "numbers": "Candidate and displayed-set sizes depend on latency and catalog scale. Report metrics at the actual product cutoffs, such as Recall@K or NDCG@K, rather than a convenient arbitrary K.",
       "wrong": "Training one classifier over every item in the catalog and calling that the recommender. Large systems usually need a fast retrieval stage before expensive ranking.",
       "follow": "Offline NDCG improved but click-through fell in the experiment. What biases or product effects would you investigate?",
-      "followAnswer": "I'd look first at whether the offline labels and the live objective disagree. Offline NDCG was measured on logged clicks, which are biased towards what the old ranker showed, so the new model may be better at matching past behaviour but not at finding what users want now. I'd check position bias, reduced diversity or novelty, cold-start items dropping out, latency increases, and presentation changes. I'd also slice by segment, since a gain for heavy users can hide losses for new ones."
+      "followAnswer": "I'd look first at whether the offline labels and the live objective disagree. Offline NDCG was measured on logged clicks, which are biased towards what the old ranker showed, so the new model may be better at matching past behaviour but not at finding what users want now. I'd check position bias, reduced diversity or novelty, cold-start items dropping out, latency increases, and presentation changes. I'd also slice by segment, since a gain for heavy users can hide losses for new ones.",
+      "builds": [
+        "ml-36",
+        "em-04"
+      ],
+      "next": [
+        "ml-36",
+        "rag-12"
+      ],
+      "deeper": [
+        "faiss",
+        "google-rules-ml"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "Why do large recommenders use a separate candidate-generation stage before the ranker?",
+        "options": [
+          "To remove popularity bias from the results.",
+          "Because rankers cannot use embedding features.",
+          "To guarantee variety in what users see.",
+          "Scoring the whole catalogue with a rich model on every request is too slow, so a cheap, recall-oriented stage narrows it to hundreds first."
+        ],
+        "answer": 3,
+        "why": "It is a latency and cost split: fast retrieval tuned for recall, then expensive ranking on a small set. Debiasing and variety are separate concerns handled with exploration and business rules, and rankers use embeddings freely."
+      }
     }
   ]
 };

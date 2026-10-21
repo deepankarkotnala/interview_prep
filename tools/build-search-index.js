@@ -125,3 +125,28 @@ fs.writeFileSync(path.join(root, "data/search-index.js"), out, "utf8");
 var kb = Math.round(Buffer.byteLength(out) / 1024);
 console.log("search-index.js written - " + entries.length + " cards, "
   + topicMeta.length + " topics, " + kb + "KB");
+
+/* data/catalog.js - one short row per card: [id, topic, question, rounds,
+   level, priority, dupOf]. It loads on every page (the full card data does
+   not), so the home dashboard, sidebar progress rings, the review queue and
+   cross-topic links all work without shipping the whole corpus. */
+var rows = [];
+IR.topics.forEach(function (t) {
+  var key = t.num + "-" + t.slug;
+  var set = IR.q[key];
+  if (!set || !set.cards) return;
+  set.cards.forEach(function (c) {
+    var r = [c.id, key, c.q, (c.round || []).join(","), c.level || "", c.priority || ""];
+    if (c.dupOf) r.push(c.dupOf);
+    rows.push(r);
+  });
+});
+var cat = "/* Interview Room - generated card catalog. DO NOT EDIT BY HAND.\n"
+  + "   Regenerate with:  node tools/build-search-index.js\n"
+  + "   Row: [id, topic, question, rounds, level, priority, dupOf?] */\n\n"
+  + "window.IR = window.IR || {};\n"
+  + "window.IR.catalog = {\"built\":" + JSON.stringify(payload.built) + ",\"cards\":[\n"
+  + rows.map(function (r) { return JSON.stringify(r); }).join(",\n") + "\n]};\n";
+fs.writeFileSync(path.join(root, "data/catalog.js"), cat, "utf8");
+console.log("catalog.js written - " + rows.length + " cards, "
+  + Math.round(Buffer.byteLength(cat) / 1024) + "KB");

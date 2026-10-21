@@ -24,10 +24,9 @@ window.IR.q["01-llm-foundations"] = {
       "level": "3-5",
       "priority": "high",
       "tags": [
-        "basics",
-        "llm",
-        "generative",
-        "communication"
+        "llm-basics",
+        "ml-basics",
+        "training"
       ],
       "why": "Whether you can explain the core technology plainly and correctly, without hype, to someone who does not build it.",
       "quick": [
@@ -84,7 +83,28 @@ window.IR.q["01-llm-foundations"] = {
       "numbers": "No single number applies. Current models range from around a billion parameters (small on-device models) to hundreds of billions or more; size alone does not predict quality on your task.",
       "wrong": "\"It understands everything and knows the whole internet.\" It overstates what the model does, hides why it hallucinates, and loses a non-technical listener's trust the first time the model is wrong.",
       "follow": "If it only predicts the next word, how can it follow instructions or reason?",
-      "followAnswer": "Because predicting the next token well, across huge and varied text, forces the model to learn grammar, facts and patterns of reasoning. Then post-training - supervised examples and preference tuning - teaches it to respond to instructions instead of just continuing text. Reasoning models add reinforcement learning on checkable problems. It is still next-token prediction; the training shapes what it predicts."
+      "followAnswer": "Because predicting the next token well, across huge and varied text, forces the model to learn grammar, facts and patterns of reasoning. Then post-training - supervised examples and preference tuning - teaches it to respond to instructions instead of just continuing text. Reasoning models add reinforcement learning on checkable problems. It is still next-token prediction; the training shapes what it predicts.",
+      "next": [
+        "llm-01",
+        "llm-05",
+        "llm-18"
+      ],
+      "deeper": [
+        "hf-llm-course",
+        "huyen-ai-engineering"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "A colleague says: 'The chatbot quoted a refund clause that does not exist, so it must hold a corrupted copy of our policy.' What is the best correction?",
+        "options": [
+          "The model stores documents word for word, so re-uploading the policy will fix its copy.",
+          "It generates likely text rather than looking up stored facts, so a plausible clause can be invented.",
+          "Hallucination only happens above temperature 1, so lowering the temperature fixes it.",
+          "The model ran out of parameters to hold the clause, so a bigger model will fix it."
+        ],
+        "answer": 1,
+        "why": "An LLM predicts likely next tokens; it does not consult a stored copy, so plausible but false text is a natural failure. Re-uploading or a bigger model leaves that mechanism unchanged - grounding with retrieval and checking against a source is what helps."
+      }
     },
     {
       "id": "llm-01",
@@ -96,9 +116,9 @@ window.IR.q["01-llm-foundations"] = {
       "level": "3-5",
       "priority": "high",
       "tags": [
-        "tokens",
-        "basics",
-        "cost"
+        "llm-basics",
+        "cost",
+        "multilingual"
       ],
       "why": "Whether you connect a definition to the things it controls - cost, limits and latency.",
       "quick": [
@@ -149,7 +169,46 @@ window.IR.q["01-llm-foundations"] = {
       "numbers": "Use the exact tokenizer or provider usage counter on a representative sample. A single words-per-token multiplier is too model- and language-dependent for a production cost estimate.",
       "wrong": "Saying a token is a word, or quoting one English conversion factor as if it applies to every language and model.",
       "follow": "Your product serves Hindi and English. What does that do to your cost model?",
-      "followAnswer": "Hindi usually needs more tokens than English for the same meaning, because most tokenisers were trained mainly on English text. The exact ratio depends on the model, so I measure it: run a few hundred real Hindi, English and mixed Hinglish messages through the tokeniser. Then I budget per language, watch context limits for Hindi users, and compare models on cost per request, not price per token."
+      "followAnswer": "Hindi usually needs more tokens than English for the same meaning, because most tokenisers were trained mainly on English text. The exact ratio depends on the model, so I measure it: run a few hundred real Hindi, English and mixed Hinglish messages through the tokeniser. Then I budget per language, watch context limits for Hindi users, and compare models on cost per request, not price per token.",
+      "builds": [
+        "llm-20"
+      ],
+      "next": [
+        "llm-02",
+        "pr-05",
+        "cl-01"
+      ],
+      "alsoIn": [
+        "riq-0801"
+      ],
+      "deeper": [
+        "tiktoken",
+        "hf-tokenizers"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "Your English prompts average 1,000 tokens. You launch the same feature in Hindi with the same content. What should you assume before budgeting?",
+        "options": [
+          "Exactly 1,000 tokens, because the meaning is the same.",
+          "About 750 tokens, since one token is roughly three quarters of a word.",
+          "Probably more tokens, by a model-specific ratio you must measure with the exact tokeniser.",
+          "Fewer tokens, because Devanagari packs more meaning into each character."
+        ],
+        "answer": 2,
+        "why": "Tokenisers are trained mostly on English, so Hindi usually splits into more tokens, and the ratio differs by model. The 'three quarters of a word' rule is an English-only rough guide, so you measure real samples rather than reuse it."
+      },
+      "try": {
+        "title": "Count tokens across languages",
+        "minutes": 15,
+        "steps": [
+          "Install tiktoken with `pip install tiktoken` and run the starter code.",
+          "Observe how the Hindi sentence needs more tokens than the English one with the same meaning.",
+          "Switch the encoding to `cl100k_base` (an older tokeniser) and observe the Hindi count change much more than the English one.",
+          "Add five real messages from your own product, including a Hinglish one, and compute tokens per word for each language.",
+          "Notice that the product code splits into many tokens - identifiers are expensive too."
+        ],
+        "code": "import tiktoken\nenc = tiktoken.get_encoding(\"o200k_base\")\nsamples = {\n    \"en\": \"Your refund will be processed within five working days.\",\n    \"hi\": \"आपका रिफंड पाँच कार्यदिवसों के भीतर संसाधित किया जाएगा।\",\n    \"hinglish\": \"Aapka refund 5 working days mein process ho jayega.\",\n    \"code\": \"order_id = 'ORD-2024-118873'\",\n}\nfor name, text in samples.items():\n    n = len(enc.encode(text))\n    print(f\"{name:9} words={len(text.split()):3} tokens={n:3} tokens/word={n/len(text.split()):.2f}\")"
+      }
     },
     {
       "id": "llm-02",
@@ -161,9 +220,9 @@ window.IR.q["01-llm-foundations"] = {
       "level": "3-5",
       "priority": "high",
       "tags": [
-        "context",
-        "basics",
-        "limits"
+        "llm-basics",
+        "context-engineering",
+        "structured-output"
       ],
       "why": "Whether you have handled the failure or only read the number on a pricing page.",
       "quick": [
@@ -215,7 +274,46 @@ window.IR.q["01-llm-foundations"] = {
       "numbers": "Reserve output tokens explicitly - often 1–2k for a plain chat answer, far more for reasoning models, whose thinking tokens usually count against the output budget. A model that hits the limit mid-JSON returns invalid JSON, and that is a production incident, not a warning.",
       "wrong": "\"The model just forgets the oldest part.\" That is your framework silently trimming, not the model. Not knowing which is happening means you cannot debug why an instruction stopped being followed.",
       "follow": "Your system prompt stopped being followed after twenty turns. Why?",
-      "followAnswer": "Usually one of two things. Either the framework trimmed the history and cut the system prompt or an early instruction with it, or the prompt is still there but diluted by thousands of tokens of conversation. I check the exact payload in the trace first. The fixes are to pin the system prompt so it is never trimmed, summarise old turns, and restate key rules near the latest message if evals show it helps."
+      "followAnswer": "Usually one of two things. Either the framework trimmed the history and cut the system prompt or an early instruction with it, or the prompt is still there but diluted by thousands of tokens of conversation. I check the exact payload in the trace first. The fixes are to pin the system prompt so it is never trimmed, summarise old turns, and restate key rules near the latest message if evals show it helps.",
+      "builds": [
+        "llm-01"
+      ],
+      "next": [
+        "pr-11",
+        "tf-07",
+        "rag-02"
+      ],
+      "alsoIn": [
+        "riq-1003"
+      ],
+      "deeper": [
+        "anthropic-context-engineering",
+        "lost-in-middle"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "You ask for a 40-field JSON object but set max output tokens to 300, and the model hits the limit halfway through. What does your parser most likely receive?",
+        "options": [
+          "Truncated, invalid JSON - generation stops mid-object, so parsing fails.",
+          "A shorter but still valid JSON object with the remaining fields dropped.",
+          "An API error and no text at all.",
+          "The full object, because output tokens do not count against the limit."
+        ],
+        "answer": 0,
+        "why": "The output limit simply stops generation wherever it is, so you get a half-written object and a parse failure. The model does not tidily close the JSON for you, which is why you reserve output tokens explicitly and check the stop reason."
+      },
+      "try": {
+        "title": "Watch a token limit break JSON",
+        "minutes": 15,
+        "steps": [
+          "Install Ollama, pull a small model with `ollama pull llama3.2:1b`, then `pip install ollama`.",
+          "Run the starter code and observe that the 60-token call returns text that `json.loads` rejects.",
+          "Print `r.done_reason` for both calls and observe it says the length limit was hit on the short one.",
+          "Raise the limit until parsing succeeds and note how many output tokens the full object really needed.",
+          "Write down the rule you would use: reserve that many tokens plus headroom, and treat a length stop as an error."
+        ],
+        "code": "import json, ollama\nprompt = (\"Return a JSON object describing a fictional customer with 15 fields: \"\n          \"name, email, phone, city, plan, signup_date, and 9 more of your choice. JSON only.\")\nfor limit in [60, 800]:\n    r = ollama.generate(model=\"llama3.2:1b\", prompt=prompt, format=\"json\",\n                        options={\"num_predict\": limit, \"temperature\": 0})\n    try:\n        json.loads(r.response)\n        print(limit, \"parsed OK\", r.eval_count, \"output tokens\")\n    except json.JSONDecodeError as e:\n        print(limit, \"INVALID JSON:\", e.msg, \"| stop:\", r.done_reason)"
+      }
     },
     {
       "id": "llm-03",
@@ -227,8 +325,8 @@ window.IR.q["01-llm-foundations"] = {
       "priority": "high",
       "tags": [
         "sampling",
-        "temperature",
-        "determinism"
+        "llm-basics",
+        "testing"
       ],
       "why": "Whether you understand generation as sampling, which underpins every reliability question later.",
       "quick": [
@@ -279,7 +377,45 @@ window.IR.q["01-llm-foundations"] = {
       "numbers": "Common settings: 0–0.2 for extraction, classification and structured output; 0.7 for drafting and ideation. Set it explicitly - provider defaults differ, and some reasoning models do not accept a temperature setting at all.",
       "wrong": "\"Temperature 0 makes it deterministic.\" Nearly true, and the exception is exactly what bites you when the same test starts failing intermittently in CI.",
       "follow": "You need reproducible outputs for an audit. How do you get as close as possible?",
-      "followAnswer": "Temperature zero, a pinned model snapshot, and a fixed prompt, tool list and retrieved context. I also set a seed if the provider supports one. Even then, GPU batching can cause small differences, so for an audit I do not rely on regenerating the answer. I log the full input, model version, parameters and exact output, and that stored output is the record."
+      "followAnswer": "Temperature zero, a pinned model snapshot, and a fixed prompt, tool list and retrieved context. I also set a seed if the provider supports one. Even then, GPU batching can cause small differences, so for an audit I do not rely on regenerating the answer. I log the full input, model version, parameters and exact output, and that stored output is the record.",
+      "builds": [
+        "llm-20"
+      ],
+      "next": [
+        "llm-11",
+        "ev-17",
+        "py-05"
+      ],
+      "alsoIn": [
+        "riq-0812"
+      ],
+      "deeper": [
+        "hf-generation",
+        "nucleus"
+      ],
+      "check": {
+        "kind": "which-fails",
+        "q": "A CI test asserts the exact string returned by a classifier called at temperature 0, and it fails about once a week. Which explanation is correct?",
+        "options": [
+          "Temperature 0 is fully deterministic, so the bug must be in the test harness.",
+          "At temperature 0 the model samples from its top ten tokens.",
+          "The seed resets every call, which reorders the tokens.",
+          "GPU arithmetic, batching and provider model updates can still change output at temperature 0."
+        ],
+        "answer": 3,
+        "why": "Temperature 0 makes generation near-deterministic, not guaranteed: floating-point order differs across batches and hardware, and providers update models. The fix is to assert on parsed labels or properties, not exact strings, and pin the model version."
+      },
+      "try": {
+        "title": "See sampling variation for yourself",
+        "minutes": 10,
+        "steps": [
+          "Pull a small local model with `ollama pull llama3.2:1b` and install the client with `pip install ollama`.",
+          "Run the starter code and observe that temperature 0.9 gives several different names across five runs.",
+          "Observe that temperature 0 gives the same name every time on your laptop.",
+          "Change the prompt to an extraction task (pull the date out of a sentence) and observe that variation at 0.9 matters far less when there is one right answer."
+        ],
+        "code": "import ollama\nprompt = \"Suggest one name for a personal budgeting app. Reply with the name only.\"\nfor temp in [0.0, 0.9]:\n    outs = []\n    for _ in range(5):\n        r = ollama.generate(model=\"llama3.2:1b\", prompt=prompt, options={\"temperature\": temp})\n        outs.append(r.response.strip())\n    print(f\"temperature={temp}: {len(set(outs))} distinct -> {outs}\")"
+      }
     },
     {
       "id": "llm-11",
@@ -292,8 +428,7 @@ window.IR.q["01-llm-foundations"] = {
       "priority": "high",
       "tags": [
         "sampling",
-        "inference",
-        "decoding"
+        "inference"
       ],
       "why": "Everyone sets these. This checks whether you know what they do to the distribution or only that one makes output 'more creative'.",
       "quick": [
@@ -315,7 +450,46 @@ window.IR.q["01-llm-foundations"] = {
       "numbers": "Temperature 0 for extraction, classification and structured output. Around 0.7 with top-p 0.9 is a common creative default. Tuning both at once makes behaviour hard to reason about.",
       "wrong": "'Temperature controls creativity.' It describes the effect and not the mechanism, and the follow-up - how is top-p different? - needs the mechanism.",
       "follow": "You need deterministic JSON extraction. What do you set, and is that enough?",
-      "followAnswer": "Temperature zero, a pinned model version, and schema-constrained output so the shape is guaranteed. That is not enough on its own. Temperature zero is near-deterministic, not guaranteed, and a schema says nothing about whether the values are right. So I validate every field in code, check IDs against the source system, and log failures. The schema fixes the shape; validation checks the content."
+      "followAnswer": "Temperature zero, a pinned model version, and schema-constrained output so the shape is guaranteed. That is not enough on its own. Temperature zero is near-deterministic, not guaranteed, and a schema says nothing about whether the values are right. So I validate every field in code, check IDs against the source system, and log failures. The schema fixes the shape; validation checks the content.",
+      "builds": [
+        "llm-03"
+      ],
+      "next": [
+        "llm-07",
+        "tf-10"
+      ],
+      "alsoIn": [
+        "riq-a05",
+        "riq-a06",
+        "riq-1004"
+      ],
+      "deeper": [
+        "nucleus",
+        "hf-generation"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "The next-token probabilities are [0.92, 0.04, 0.03, 0.01]. How many tokens stay as candidates with top-p = 0.9, and with top-k = 3?",
+        "options": [
+          "Top-p keeps all 4, top-k keeps 3.",
+          "Top-p keeps 1, top-k keeps 3.",
+          "Top-p keeps 2, top-k keeps 2.",
+          "Both settings keep all 4 tokens."
+        ],
+        "answer": 1,
+        "why": "Top-p keeps the smallest set whose probabilities reach 0.9, and the first token alone (0.92) does. Top-k keeps three no matter how confident the model is. That adaptivity is why top-p is preferred and top-k is called blunt."
+      },
+      "try": {
+        "title": "Reshape a distribution with temperature and top-p",
+        "minutes": 15,
+        "steps": [
+          "Run the starter code with numpy and look at the printed probabilities for each temperature.",
+          "Observe that at 0.2 almost all the mass sits on the top token, and at 1.5 the tail gets a real share.",
+          "Observe how many tokens survive top-p 0.9 at each temperature - more when the distribution is flatter.",
+          "Change the logits to a confident case like [8, 2, 1, 0, 0, 0] and observe top-p shrink to one token while top-k would still keep k."
+        ],
+        "code": "import numpy as np\nlogits = np.array([4.0, 3.5, 2.0, 1.0, 0.5, 0.1])\n\ndef probs(t):\n    z = logits / t\n    e = np.exp(z - z.max())\n    return e / e.sum()\n\ndef top_p(pr, p=0.9):\n    order = np.argsort(-pr)\n    cum = np.cumsum(pr[order])\n    n = int(np.searchsorted(cum, p) + 1)   # smallest set reaching p\n    return order[:n]\n\nfor t in [0.2, 0.7, 1.0, 1.5]:\n    pr = probs(t)\n    print(f\"T={t}: {np.round(pr, 3)}  top-p(0.9) keeps {len(top_p(pr))} tokens\")"
+      }
     },
     {
       "id": "llm-18",
@@ -328,10 +502,8 @@ window.IR.q["01-llm-foundations"] = {
       "priority": "high",
       "tags": [
         "training",
-        "pre-training",
-        "sft",
         "alignment",
-        "basics"
+        "llm-basics"
       ],
       "why": "Whether you know where a model's knowledge and its behaviour each come from - which decides whether prompting, RAG or fine-tuning can fix a problem.",
       "quick": [
@@ -374,10 +546,38 @@ window.IR.q["01-llm-foundations"] = {
         ]
       },
       "say": "Knowledge comes from pre-training, and behaviour comes from the stages after it. Pre-training is next-token prediction over trillions of tokens of web pages, books and code. It takes most of the compute and produces a base model that knows a lot but just continues text. Supervised fine-tuning then trains it on instruction and answer pairs, so it learns to answer instead of ramble. Preference tuning comes next. With RLHF you train a reward model on human choices between two answers and optimise the model to score well on it, while DPO learns straight from the preferred and rejected pairs. That shapes helpfulness, tone and refusals. Newer reasoning models add reinforcement learning on maths and code, where an automatic checker rewards correct answers, and that's where long step-by-step thinking comes from. The consequence that matters in practice is simple. Fine-tuning is good at changing format and style, and poor at adding new facts. So if the model is missing facts, I reach for retrieval, not a fine-tune.",
-      "numbers": "Pre-training corpora for current open models are reported in the trillions of tokens - Meta reported over 15 trillion for Llama 3. Post-training data is far smaller, often thousands to millions of examples.",
+      "numbers": "Pre-training corpora for open models are reported in the trillions of tokens - Meta reported over 15 trillion for Llama 3 (2024) and Alibaba about 36 trillion for Qwen3 (2025). Post-training data is far smaller, often thousands to millions of examples.",
+      "verified": "2026-10",
       "wrong": "\"They train it on the internet and then it can answer questions.\" That skips post-training, which is exactly where instruction following, refusals and reasoning behaviour come from - and it leads to the wrong belief that fine-tuning is how you add new knowledge.",
       "follow": "If behaviour comes from post-training, when would you fine-tune instead of prompting?",
-      "followAnswer": "When prompting has plateaued on a behaviour I can show with examples - a strict output style, a narrow classification, a house tone, or making a small model do one task a large model already does well. I would not fine-tune to add facts that change; that is retrieval. And I start only once an eval set shows the prompt-only baseline and what better means."
+      "followAnswer": "When prompting has plateaued on a behaviour I can show with examples - a strict output style, a narrow classification, a house tone, or making a small model do one task a large model already does well. I would not fine-tune to add facts that change; that is retrieval. And I start only once an eval set shows the prompt-only baseline and what better means.",
+      "builds": [
+        "llm-20"
+      ],
+      "next": [
+        "llm-04",
+        "ft-03",
+        "rag-45"
+      ],
+      "alsoIn": [
+        "riq-0606"
+      ],
+      "deeper": [
+        "instructgpt",
+        "huyen-ai-engineering"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "A support bot does not know the refund policy introduced last month. The team proposes fine-tuning on the new policy text. What is the best response?",
+        "options": [
+          "Agree - fine-tuning is the standard way to add new facts to a model.",
+          "Re-run pre-training on the policy so the knowledge is permanent.",
+          "Supply the policy at answer time with retrieval; fine-tuning mainly shapes behaviour and style, not reliable facts.",
+          "Use preference tuning so the model prefers answers that mention the policy."
+        ],
+        "answer": 2,
+        "why": "Knowledge comes mainly from pre-training, and fine-tuning on a small text is poor at adding facts the model will recall reliably. Retrieval puts the current policy in front of the model and is easy to update when the policy changes again."
+      }
     },
     {
       "id": "llm-05",
@@ -390,9 +590,9 @@ window.IR.q["01-llm-foundations"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "hallucination",
-        "reliability",
-        "generation"
+        "llm-basics",
+        "rag",
+        "evaluation"
       ],
       "why": "Whether you can explain the mechanism, which determines whether your mitigations make sense.",
       "quick": [
@@ -414,7 +614,32 @@ window.IR.q["01-llm-foundations"] = {
       "numbers": "No fixed rate - it is entirely task-dependent. What you measure is your own groundedness rate on your own traffic.",
       "wrong": "\"RAG solves it.\" RAG addresses missing knowledge. It does not address a model ignoring the context it was given, which is a large share of real failures.",
       "follow": "How do you measure hallucination when you have no ground truth?",
-      "followAnswer": "I measure groundedness instead of truth. For RAG, a judge model or an NLI checker tests whether each claim in the answer is supported by the retrieved context, and I calibrate that judge against a few hundred human labels. I also check that citations point to real sources, sample traffic for human review, and track user corrections. The trend over time matters more than the absolute number."
+      "followAnswer": "I measure groundedness instead of truth. For RAG, a judge model or an NLI checker tests whether each claim in the answer is supported by the retrieved context, and I calibrate that judge against a few hundred human labels. I also check that citations point to real sources, sample traffic for human review, and track user corrections. The trend over time matters more than the absolute number.",
+      "builds": [
+        "llm-20",
+        "llm-03"
+      ],
+      "next": [
+        "ev-18",
+        "rag-61",
+        "pr-08"
+      ],
+      "deeper": [
+        "huyen-ai-engineering",
+        "rag-paper"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "A RAG bot has the correct chunk in its context but still answers with a wrong figure. Which statement is accurate?",
+        "options": [
+          "The model can ignore or misread context it was given, so grounding checks are still needed.",
+          "This cannot happen with RAG, so the retriever must have failed.",
+          "Raising the temperature makes the model attend more closely to the context.",
+          "Hallucination only comes from missing knowledge, so the index needs more documents."
+        ],
+        "answer": 0,
+        "why": "RAG fixes missing knowledge, but the model can still blend in training patterns or misread a number it was given. That is why you check faithfulness against the retrieved text. Blaming the retriever or adding documents misses this failure entirely."
+      }
     },
     {
       "id": "llm-19",
@@ -426,10 +651,9 @@ window.IR.q["01-llm-foundations"] = {
       "level": "3-5",
       "priority": "high",
       "tags": [
-        "reasoning",
-        "test-time-compute",
-        "model-selection",
-        "cost"
+        "inference",
+        "cost",
+        "latency"
       ],
       "why": "A 2025-26 currency check: whether you know what these models do differently and can say when the extra cost and latency are worth it.",
       "quick": [
@@ -452,7 +676,31 @@ window.IR.q["01-llm-foundations"] = {
       "numbers": "Reasoning tokens can be several times the visible answer, so a reasoning call can cost and take far longer than a standard call with the same visible output. Measure it from the provider's usage breakdown on your own tasks.",
       "wrong": "\"Reasoning models are just better, so we use them everywhere.\" On simple extraction or classification they add cost and latency for little or no quality gain, and the panel wants to hear that you route by task.",
       "follow": "How would you choose the reasoning effort level for a production feature?",
-      "followAnswer": "Empirically. I run the eval set at each effort level and compare quality against cost and p95 latency. I pick the lowest level where quality stops improving meaningfully, and set a max output token cap so a runaway reasoning trace cannot blow the budget. If only some requests are hard, I route: low effort by default, higher effort for cases a classifier or a failed first attempt flags."
+      "followAnswer": "Empirically. I run the eval set at each effort level and compare quality against cost and p95 latency. I pick the lowest level where quality stops improving meaningfully, and set a max output token cap so a runaway reasoning trace cannot blow the budget. If only some requests are hard, I route: low effort by default, higher effort for cases a classifier or a failed first attempt flags.",
+      "builds": [
+        "llm-18"
+      ],
+      "next": [
+        "pr-03",
+        "rag-50",
+        "ft-11"
+      ],
+      "deeper": [
+        "deepseek-r1",
+        "claude-docs"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Which workload most justifies a reasoning model's extra cost and latency?",
+        "options": [
+          "Classifying 50,000 support tickets a day into five categories.",
+          "Extracting invoice numbers and dates into JSON.",
+          "A short greeting reply in a website chat widget.",
+          "Planning a multi-step data migration with dependencies and checking the plan for conflicts."
+        ],
+        "answer": 3,
+        "why": "Reasoning models earn their thinking tokens on multi-step problems where planning and self-checking change the outcome. Classification, extraction and greetings are high-volume and simple, so a standard model is faster and cheaper with little or no quality loss."
+      }
     },
     {
       "id": "llm-07",
@@ -465,9 +713,8 @@ window.IR.q["01-llm-foundations"] = {
       "priority": "high",
       "tags": [
         "structured-output",
-        "json",
-        "reliability",
-        "tools"
+        "tools",
+        "python"
       ],
       "why": "Every real system parses model output. This is where demos break in production.",
       "quick": [
@@ -554,7 +801,45 @@ window.IR.q["01-llm-foundations"] = {
       "numbers": "Prompt-and-parse commonly fails a small but non-zero share of requests. At 10,000 requests a day even 1% is 100 broken responses - which is why schema-constrained output or tool calling should be the default for anything parsed at volume.",
       "wrong": "\"I ask for JSON and it works.\" It works in the notebook. The panel is asking about the tail - fences, trailing commas, truncation - and the follow-up will ask what happens to the 1% that fails.",
       "follow": "Your JSON is valid but a field contains a hallucinated ID. Now what?",
-      "followAnswer": "A schema cannot catch that, so I add semantic validation in code. Every ID is checked against the source of truth before use. If it does not exist, I retry once with a message saying the ID is invalid, and where possible give the model the real candidates or a lookup tool. If it still fails, I return a safe error or route to a human, and log the case."
+      "followAnswer": "A schema cannot catch that, so I add semantic validation in code. Every ID is checked against the source of truth before use. If it does not exist, I retry once with a message saying the ID is invalid, and where possible give the model the real candidates or a lookup tool. If it still fails, I return a safe error or route to a human, and log the case.",
+      "builds": [
+        "llm-03"
+      ],
+      "next": [
+        "pr-09",
+        "py-23",
+        "py-11"
+      ],
+      "alsoIn": [
+        "riq-1005"
+      ],
+      "deeper": [
+        "openai-structured",
+        "pydantic"
+      ],
+      "check": {
+        "kind": "spot-the-bug",
+        "q": "This runs at 10,000 requests a day:\n    data = json.loads(resp.text)\n    db.refund(data[\"order_id\"])\nWhat is the most serious gap?",
+        "options": [
+          "`json.loads` is slow, so it should use a faster JSON library.",
+          "No schema or validation - parse failures crash it, and an invented `order_id` is acted on unchecked.",
+          "It should use temperature 1 so the JSON varies less.",
+          "Only that `data.get` should replace the square brackets to avoid a KeyError."
+        ],
+        "answer": 1,
+        "why": "At volume, a small parse failure rate means daily crashes, and valid JSON can still carry a hallucinated ID. You need constrained output, field validation and an existence check before a state-changing call. Swapping to `.get` hides the problem rather than fixing it."
+      },
+      "try": {
+        "title": "Validate model output with Pydantic",
+        "minutes": 15,
+        "steps": [
+          "Install Pydantic v2 with `pip install pydantic` and run the starter code.",
+          "Observe which of the four realistic responses pass and which fail, and read each error message.",
+          "Add a cleanup step that strips markdown fences and leading chatter, then rerun and observe which failures remain.",
+          "Notice that the 'refunds' category and 'high' priority still fail - those are content errors that cleanup cannot fix and that you would retry or route."
+        ],
+        "code": "from pydantic import BaseModel, ValidationError, field_validator\n\nclass Ticket(BaseModel):\n    category: str\n    priority: int\n    order_id: str\n\n    @field_validator(\"category\")\n    @classmethod\n    def known(cls, v):\n        if v not in {\"billing\", \"delivery\", \"other\"}:\n            raise ValueError(\"unknown category\")\n        return v\n\nraw = ['{\"category\":\"billing\",\"priority\":2,\"order_id\":\"A17\"}',\n       '```json\\n{\"category\":\"billing\",\"priority\":2,\"order_id\":\"A17\"}\\n```',\n       '{\"category\":\"refunds\",\"priority\":\"high\",\"order_id\":\"A17\"}',\n       'Sure! {\"category\":\"other\",\"priority\":1,\"order_id\":\"B2\"}']\nfor r in raw:\n    try:\n        print(\"OK  \", Ticket.model_validate_json(r))\n    except ValidationError as e:\n        print(\"FAIL\", e.errors()[0][\"msg\"])"
+      }
     },
     {
       "id": "llm-08",
@@ -567,10 +852,9 @@ window.IR.q["01-llm-foundations"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "model-selection",
+        "evaluation",
         "cost",
-        "trade-off",
-        "evaluation"
+        "trade-offs"
       ],
       "why": "Whether you decide with your own evaluation or with a leaderboard.",
       "quick": [
@@ -620,9 +904,37 @@ window.IR.q["01-llm-foundations"] = {
       },
       "say": "From our own evaluation, not a leaderboard, because public benchmarks measure general skill on public tasks and ours is neither. I start with hard constraints. Where must the data stay, do the contract terms work, and do we need to self-host? Those rules often remove most options before quality even comes up. Then I build an eval set of around a hundred examples from our own data and run three or four shortlisted models on it. I look at quality, cost per request and p95 latency together, because prices between tiers often differ by ten times or more. A cheap model frequently handles most support tickets well, so I route only the hard ones to the expensive model. A hundred examples will spot big gaps, but separating models a few points apart needs more. Finally I plan for change. Model access sits behind one interface, so a switch is a config change, and I keep the eval set to re-run the day a new model ships.",
       "numbers": "A 100-example evaluation set is usually enough to spot large gaps between candidates; separating models a few points apart needs more examples. Price differences between model tiers are often an order of magnitude or more, which is why per-request cost belongs in the comparison from the start.",
+      "verified": "2026-10",
       "wrong": "\"We use the top model on the leaderboard.\" The follow-up will ask how it performed on your data, and without your own evaluation set there is no answer - that is the skill being probed.",
       "follow": "A new model launches next month. What do you do?",
-      "followAnswer": "I run it through the same eval set - same prompts first, then with light prompt tuning - and compare quality, cost per request and p95 latency against the current model. If it wins clearly, I canary it on a small slice of real traffic with monitoring, then roll out. If it only ties, I usually stay, because a switch has migration and regression-testing cost."
+      "followAnswer": "I run it through the same eval set - same prompts first, then with light prompt tuning - and compare quality, cost per request and p95 latency against the current model. If it wins clearly, I canary it on a small slice of real traffic with monitoring, then roll out. If it only ties, I usually stay, because a switch has migration and regression-testing cost.",
+      "builds": [
+        "llm-19"
+      ],
+      "next": [
+        "llm-10",
+        "cl-06",
+        "ev-02"
+      ],
+      "alsoIn": [
+        "riq-1107"
+      ],
+      "deeper": [
+        "hamel-evals",
+        "huyen-ai-engineering"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "A newly released model tops a public leaderboard. Your product manager wants to switch tomorrow. What is the strongest response?",
+        "options": [
+          "Run it on our eval set for quality, cost and p95 latency, then canary it if it clearly wins.",
+          "Switch - leaderboard results reflect general capability, which transfers to our task.",
+          "Wait a year until the model has a long track record.",
+          "Switch, but keep the old prompts unchanged so the comparison stays fair."
+        ],
+        "answer": 0,
+        "why": "Public benchmarks measure general skill on public tasks, not your data. Your own eval set tells you whether it wins on quality, cost and latency together, and a canary limits the blast radius. Refusing for a year throws away real gains."
+      }
     },
     {
       "id": "llm-04",
@@ -634,8 +946,8 @@ window.IR.q["01-llm-foundations"] = {
       "priority": "medium",
       "tags": [
         "training",
-        "models",
-        "fine-tuning"
+        "alignment",
+        "llm-basics"
       ],
       "why": "Whether you know how the model you call was produced.",
       "quick": [
@@ -657,7 +969,33 @@ window.IR.q["01-llm-foundations"] = {
       "numbers": "No number applies. This is a training-pipeline question.",
       "wrong": "\"They are the same model with a different prompt template.\" The template differs, but so do the weights - different training stages produced them.",
       "follow": "Where does RLHF fit, and what is DPO doing differently?",
-      "followAnswer": "RLHF comes after supervised fine-tuning, and it is the step that turns an instruct model into a helpful, well-behaved chat model. Humans compare pairs of answers, a reward model learns to predict their preferences, and reinforcement learning, classically PPO, pushes the model to score well while a penalty keeps it close to the original. DPO skips the reward model and the RL loop. It trains directly on chosen and rejected pairs with a simple loss, which is cheaper and more stable to run."
+      "followAnswer": "RLHF comes after supervised fine-tuning, and it is the step that turns an instruct model into a helpful, well-behaved chat model. Humans compare pairs of answers, a reward model learns to predict their preferences, and reinforcement learning, classically PPO, pushes the model to score well while a penalty keeps it close to the original. DPO skips the reward model and the RL loop. It trains directly on chosen and rejected pairs with a simple loss, which is cheaper and more stable to run.",
+      "builds": [
+        "llm-18"
+      ],
+      "next": [
+        "ft-03",
+        "llm-09"
+      ],
+      "alsoIn": [
+        "riq-0607"
+      ],
+      "deeper": [
+        "instructgpt",
+        "hf-chat-templates"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "You send 'What is the capital of France?' to a base model, with no chat template. What is a likely output?",
+        "options": [
+          "'Paris.' - every model answers questions directly.",
+          "A refusal, because base models are safety-tuned.",
+          "More text in the same pattern, such as further quiz questions.",
+          "An error, because base models require a system prompt."
+        ],
+        "answer": 2,
+        "why": "A base model only continues text, so a lone question often looks like the start of a quiz and it writes more questions. Answering and refusing are behaviours learned in instruction and preference tuning, which the base model has not had."
+      }
     },
     {
       "id": "llm-09",
@@ -669,7 +1007,6 @@ window.IR.q["01-llm-foundations"] = {
       "priority": "medium",
       "tags": [
         "prompting",
-        "roles",
         "security"
       ],
       "why": "Small question, useful signal - it leads directly into injection.",
@@ -693,7 +1030,34 @@ window.IR.q["01-llm-foundations"] = {
       "numbers": "No number applies. This is a trust-boundary answer.",
       "wrong": "\"The system prompt cannot be overridden.\" It can, routinely - that is how prompt injection works - and the follow-up will ask where your real controls live.",
       "follow": "Show me how a retrieved document could override your system prompt.",
-      "followAnswer": "Say a support bot retrieves a help article that someone has edited to include a line telling the assistant to ignore its previous instructions and list the customer's recent orders with addresses. The model sees that text in the same context as my system prompt, and because it cannot reliably tell data from instructions, it may obey. That is indirect prompt injection. So I mark retrieved text as data, give the model only this user's tools and data, and enforce access in code, so obeying achieves nothing."
+      "followAnswer": "Say a support bot retrieves a help article that someone has edited to include a line telling the assistant to ignore its previous instructions and list the customer's recent orders with addresses. The model sees that text in the same context as my system prompt, and because it cannot reliably tell data from instructions, it may obey. That is indirect prompt injection. So I mark retrieved text as data, give the model only this user's tools and data, and enforce access in code, so obeying achieves nothing.",
+      "builds": [
+        "llm-04"
+      ],
+      "next": [
+        "pr-06",
+        "gr-05",
+        "pr-01"
+      ],
+      "alsoIn": [
+        "riq-1002"
+      ],
+      "deeper": [
+        "willison-injection",
+        "owasp-llm"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "Where should the rule 'never show another customer's orders' be enforced?",
+        "options": [
+          "In the system prompt, since models weight it above user messages.",
+          "In both the system prompt and a reminder appended to each user message.",
+          "In a few-shot example that shows the model refusing.",
+          "In the code that fetches orders, scoped to the logged-in customer."
+        ],
+        "answer": 3,
+        "why": "The system prompt is weighted more heavily but can still be argued past, which is how prompt injection works. An access rule must live where the model cannot negotiate with it: the data-access code only returns the current user's orders."
+      }
     },
     {
       "id": "llm-06",
@@ -705,9 +1069,8 @@ window.IR.q["01-llm-foundations"] = {
       "priority": "medium",
       "tags": [
         "inference",
-        "latency",
-        "kv-cache",
-        "serving"
+        "serving",
+        "latency"
       ],
       "why": "The request-lifecycle view: it ties prefill, the decode loop, the KV cache and stopping together, and separates people who have tuned serving from people who have only called an API.",
       "quick": [
@@ -729,7 +1092,35 @@ window.IR.q["01-llm-foundations"] = {
       "numbers": "KV cache memory ≈ 2 × layers × KV heads × head dimension × sequence length × batch × bytes per value (worked example in tf-12). It is commonly the binding constraint on concurrent requests, ahead of raw compute.",
       "wrong": "\"The model just generates the answer.\" For an API-only role it may pass. For anything touching self-hosting or cost, it does not.",
       "follow": "How does continuous batching change throughput?",
-      "followAnswer": "Static batching waits for every request in the batch to finish, so short requests sit idle behind long ones. Continuous batching works at each token step: as soon as one sequence ends, a waiting one joins the running batch. The GPU stays full, so throughput is often several times higher at similar latency. vLLM, TGI and SGLang all do this, usually with a paged KV cache."
+      "followAnswer": "Static batching waits for every request in the batch to finish, so short requests sit idle behind long ones. Continuous batching works at each token step: as soon as one sequence ends, a waiting one joins the running batch. The GPU stays full, so throughput is often several times higher at similar latency. vLLM, TGI and SGLang all do this, usually with a paged KV cache.",
+      "builds": [
+        "llm-01",
+        "tf-01"
+      ],
+      "next": [
+        "llm-14",
+        "tf-03",
+        "cl-04"
+      ],
+      "alsoIn": [
+        "riq-a24"
+      ],
+      "deeper": [
+        "paged-attention",
+        "vllm"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "A chatbot's prompts grow from 1k to 20k tokens of retrieved documents while answer length stays the same. Which metric degrades most?",
+        "options": [
+          "Decode speed in tokens per second, which drops about twentyfold.",
+          "Time to first token, because prefill must process far more input.",
+          "Neither - latency depends only on output length.",
+          "Only cost changes; latency stays constant."
+        ],
+        "answer": 1,
+        "why": "Prefill processes the whole prompt before the first token, so its time grows with input length. Decode gets only slightly slower as the KV cache grows, nowhere near twentyfold. Input length clearly affects latency, not just cost."
+      }
     },
     {
       "id": "llm-14",
@@ -802,7 +1193,45 @@ window.IR.q["01-llm-foundations"] = {
       "numbers": "Prefill cost scales with input length; decode cost scales mainly with output length, and each decode step gets a little slower as the KV cache grows. If TTFT is your problem, look at prompt size, queueing and caching, not at the model's tokens per second.",
       "wrong": "Treating generation as one uniform process. It leaves you unable to explain why a long prompt and a long answer degrade different metrics.",
       "follow": "Your TTFT is fine but total response time is bad. Which phase, and what do you do?",
-      "followAnswer": "That is the decode phase, so the problem is how many tokens we generate or how fast we generate them. I check output length first, because shorter output is the cheapest fix: tighter instructions, a max token cap, leaner JSON, or no reasoning where it adds nothing. Then I look at generation speed, with a smaller or quantised model, speculative decoding, or less crowded batches if the server is overloaded. Streaming also helps, since users start reading while the rest arrives."
+      "followAnswer": "That is the decode phase, so the problem is how many tokens we generate or how fast we generate them. I check output length first, because shorter output is the cheapest fix: tighter instructions, a max token cap, leaner JSON, or no reasoning where it adds nothing. Then I look at generation speed, with a smaller or quantised model, speculative decoding, or less crowded batches if the server is overloaded. Streaming also helps, since users start reading while the rest arrives.",
+      "builds": [
+        "llm-06"
+      ],
+      "next": [
+        "tf-05",
+        "cl-04",
+        "cl-10"
+      ],
+      "alsoIn": [
+        "riq-0809"
+      ],
+      "deeper": [
+        "vllm",
+        "paged-attention"
+      ],
+      "check": {
+        "kind": "which-fails",
+        "q": "Users say the first word appears quickly but answers take forever to finish. Which proposed fix targets the wrong phase?",
+        "options": [
+          "Shortening the required output length.",
+          "Speculative decoding with a small draft model.",
+          "Adding prompt caching on the system prompt.",
+          "Quantising weights so each decode step reads less memory."
+        ],
+        "answer": 2,
+        "why": "A fast first token means prefill is fine; the slow part is decode. Prompt caching only skips prefill on a repeated prefix. Shorter output, speculative decoding and lighter weights all cut decode time, which is memory-bandwidth bound."
+      },
+      "try": {
+        "title": "Measure prefill and decode speed locally",
+        "minutes": 15,
+        "steps": [
+          "Pull `llama3.2:1b` with Ollama and `pip install ollama`, then run the starter code.",
+          "Observe that prefill runs at many times more tokens per second than decode, because the prompt is processed in parallel.",
+          "Observe that the long prompt raises total prompt time while decode speed barely changes.",
+          "Run the script twice and notice the long prompt's prompt count drops on the second run - Ollama reuses the cached prefix, which is prompt caching in miniature."
+        ],
+        "code": "import ollama\n\ndef run(label, prompt, n):\n    r = ollama.generate(model=\"llama3.2:1b\", prompt=prompt, options={\"num_predict\": n, \"temperature\": 0})\n    pf_s = r.prompt_eval_duration / 1e9\n    dc_s = r.eval_duration / 1e9\n    print(f\"{label:12} in={r.prompt_eval_count:5} prefill {r.prompt_eval_count/pf_s:7.0f} tok/s ({pf_s:.2f}s)\"\n          f\" | out={r.eval_count:4} decode {r.eval_count/dc_s:5.0f} tok/s ({dc_s:.2f}s)\")\n\nfiller = \"The policy covers accidental damage to the device. \" * 300\nrun(\"short in\", \"Say hello.\", 50)\nrun(\"long in\", filler + \"Summarise in one line.\", 50)\nrun(\"long out\", \"Write a long story about a lighthouse.\", 400)"
+      }
     },
     {
       "id": "llm-15",
@@ -814,9 +1243,9 @@ window.IR.q["01-llm-foundations"] = {
       "level": "3-5",
       "priority": "medium",
       "tags": [
+        "caching",
         "cost",
-        "latency",
-        "caching"
+        "latency"
       ],
       "why": "A direct way to cut cost that most candidates know exists and cannot say how to exploit.",
       "quick": [
@@ -826,7 +1255,7 @@ window.IR.q["01-llm-foundations"] = {
         "Put fixed parts first and changing parts last.",
         "A timestamp at the top breaks it every time."
       ],
-      "simple": "Prompt caching means that if many requests start with exactly the same text, the provider can reuse the work it already did on that opening part, called the prefix. That part skips prefill, so those input tokens cost much less, commonly 50-90% below the normal rate, and the first token arrives sooner.\n\nIt is an exact prefix match, so the cache breaks at the first token that differs. That's why you order the prompt from static to variable: the system prompt, tool definitions and examples first, then retrieved documents, history and the user's question. For example, a common mistake is putting a timestamp or user ID at the top of the system prompt, which silently breaks the cache on every request. The biggest payoff is in agents and long chats, which resend the same opening again and again. Caches expire after a few minutes, though, so you measure the hit rate rather than assume it.",
+      "simple": "Prompt caching means that if many requests start with exactly the same text, the provider can reuse the work it already did on that opening part, called the prefix. That part skips prefill, so those input tokens cost much less - on current frontier APIs, cache reads are commonly billed at around a tenth of the normal input rate - and the first token arrives sooner.\n\nIt is an exact prefix match, so the cache breaks at the first token that differs. That's why you order the prompt from static to variable: the system prompt, tool definitions and examples first, then retrieved documents, history and the user's question. For example, a common mistake is putting a timestamp or user ID at the top of the system prompt, which silently breaks the cache on every request. The biggest payoff is in agents and long chats, which resend the same opening again and again. Caches expire after a few minutes by default, though, so you measure the hit rate rather than assume it.",
       "points": [
         "Caches an exact token prefix; it breaks at the first difference.",
         "Order static content first, variable content last.",
@@ -874,10 +1303,35 @@ window.IR.q["01-llm-foundations"] = {
         ]
       },
       "say": "The provider reuses work done on a prompt's opening text, so the parts that never change must come first. If a new request starts with the same tokens as a recent one, that prefix skips prefill. Those tokens are billed at roughly 50 to 90 percent less, and the first token arrives sooner. The catch is it's an exact prefix match. It breaks at the first differing token, and everything after is computed fresh. So I order the prompt from static to variable. System prompt, tool definitions and few-shot examples go first, then retrieved documents, history and the question. The classic mistake is a timestamp or user ID at the top of the system prompt, which silently kills every cache hit. Agent loops gain most, since they resend the same prompt and tools every step. Caches expire after a few minutes, there's a minimum prefix length, and some providers charge extra for cache writes. So I measure the hit rate rather than assume it.",
-      "numbers": "Cached input tokens are commonly billed at roughly 50-90% below the normal input rate, depending on provider and model, and some providers charge a premium to write the cache. Default lifetimes are typically minutes, with longer options on some providers. The minimum cacheable prefix varies by model, often around a thousand tokens.",
+      "numbers": "On current frontier APIs, cache reads are commonly billed at around a tenth of the normal input rate, and some newer models go lower. Some providers also charge a premium to write the cache (Anthropic charges 1.25x the input rate for a 5-minute cache). Default lifetimes are typically minutes, with longer paid options on some providers. The minimum cacheable prefix varies by model, from a few hundred to a few thousand tokens - check the provider's docs.",
+      "verified": "2026-10",
       "wrong": "Enabling caching and assuming the saving arrives. If a variable element sits near the top of the prompt, the hit rate is near zero and nothing tells you.",
       "follow": "Your cache hit rate is 5%. Where would you look first?",
-      "followAnswer": "I diff the start of consecutive requests to find where they diverge. The usual culprits are a timestamp, request ID or user name early in the system prompt, tool definitions serialised in a different order, retrieved context placed before the stable instructions, or a prefix below the provider's minimum length. Then I check traffic: if requests sharing that prefix are minutes apart, the cache simply expires."
+      "followAnswer": "I diff the start of consecutive requests to find where they diverge. The usual culprits are a timestamp, request ID or user name early in the system prompt, tool definitions serialised in a different order, retrieved context placed before the stable instructions, or a prefix below the provider's minimum length. Then I check traffic: if requests sharing that prefix are minutes apart, the cache simply expires.",
+      "builds": [
+        "llm-14"
+      ],
+      "next": [
+        "cl-03",
+        "pr-10",
+        "cl-07"
+      ],
+      "deeper": [
+        "claude-prompt-caching",
+        "openai-prompt-caching"
+      ],
+      "check": {
+        "kind": "spot-the-bug",
+        "q": "Cache hit rate is near zero. The system prompt starts with\n    f\"Current time: {now}. You are a support assistant...\"\nfollowed by 3,000 tokens of fixed rules and tool definitions. Why?",
+        "options": [
+          "3,000 tokens is too long to be cached.",
+          "The timestamp at the very start changes every request, so the cached prefix never matches.",
+          "Caching only applies to user messages, not system prompts.",
+          "Tool definitions are never eligible for caching."
+        ],
+        "answer": 1,
+        "why": "Prompt caching is an exact prefix match that breaks at the first differing token. A timestamp in the first line makes every request unique from token one. Move variable content to the end and the 3,000 stable tokens become cacheable."
+      }
     },
     {
       "id": "llm-12",
@@ -888,7 +1342,7 @@ window.IR.q["01-llm-foundations"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "quantisation",
+        "open-weights",
         "serving",
         "cost"
       ],
@@ -953,7 +1407,42 @@ window.IR.q["01-llm-foundations"] = {
       "numbers": "Rough weight memory: FP16/BF16 is 2 bytes per parameter, 8-bit 1 byte, 4-bit half a byte (plus a few percent for scale factors). Add the KV cache on top - at long context and high concurrency it can be larger than the weights.",
       "wrong": "'INT4 halves quality.' The trade is usually far better than that and highly task-dependent, so the follow-up will ask what you measured on your own eval set.",
       "follow": "You quantised to INT4 and your eval dropped 3 points. What are your options?",
-      "followAnswer": "First, check whether 3 points matters for the product and where the loss sits. Then the options: try 8-bit or FP8, which usually recovers most of it; use a better 4-bit method or smaller group size; keep sensitive layers at higher precision; or run a smaller model at higher precision. If the cost saving is large, a short fine-tune after quantisation can also win quality back."
+      "followAnswer": "First, check whether 3 points matters for the product and where the loss sits. Then the options: try 8-bit or FP8, which usually recovers most of it; use a better 4-bit method or smaller group size; keep sensitive layers at higher precision; or run a smaller model at higher precision. If the cost saving is large, a short fine-tune after quantisation can also win quality back.",
+      "builds": [
+        "llm-16"
+      ],
+      "next": [
+        "ft-09",
+        "cl-08",
+        "em-05"
+      ],
+      "deeper": [
+        "awq",
+        "gptq"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "A 70B-parameter model is quantised to 4-bit weights for one 80 GB GPU. Which is closest to the weight memory, and what is the catch?",
+        "options": [
+          "About 70 GB, leaving no room for anything else.",
+          "About 17 GB, and quality is unchanged on every task.",
+          "About 35 GB, but the KV cache still needs room on top.",
+          "About 140 GB, because 4-bit does not change stored size."
+        ],
+        "answer": 2,
+        "why": "Four bits is half a byte per parameter, so 70B is about 35 GB plus a little for scale factors. 140 GB is the 16-bit figure. The KV cache for concurrent long requests still sits on top, and 4-bit can hurt reasoning and code."
+      },
+      "try": {
+        "title": "Compare 8-bit and 4-bit builds of one model",
+        "minutes": 25,
+        "steps": [
+          "Pull two quantisations of the same small model, for example `ollama pull qwen2.5:1.5b-instruct-q8_0` and `ollama pull qwen2.5:1.5b-instruct-q4_K_M`.",
+          "Before loading them, work out the expected weight size from parameters times bytes per weight, then check with `ollama list`.",
+          "Run each model and check `ollama ps` to observe actual memory, which is higher because of the KV cache and runtime overhead.",
+          "Ask both the same ten questions - five factual and five multi-step arithmetic or code - and score them yourself.",
+          "Observe whether the 4-bit build slips more on the multi-step questions than on the simple ones."
+        ]
+      }
     },
     {
       "id": "llm-10",
@@ -965,10 +1454,9 @@ window.IR.q["01-llm-foundations"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "operations",
-        "versioning",
+        "llmops",
         "evaluation",
-        "incident"
+        "debugging"
       ],
       "why": "A real operational scenario. It tests whether you built for a dependency you do not control.",
       "quick": [
@@ -990,7 +1478,31 @@ window.IR.q["01-llm-foundations"] = {
       "numbers": "Run the golden set on a schedule matched to your risk - daily or weekly is common - and always after any provider announcement. The cost of a 100-example run is small against finding out from a user.",
       "wrong": "\"We would update the prompt to fix it.\" That is step four. Steps one to three are detection, quantification and rollback, and skipping them is the actual failure.",
       "follow": "How would you detect quality drift automatically, without a user complaining?",
-      "followAnswer": "I run the golden set on a schedule and alert when a metric drops past a threshold against a baseline. On live traffic I sample requests and score them with a calibrated LLM judge for groundedness or task success. I also watch cheap proxies: refusal rate, parse failures, output length, retries, thumbs-down and escalations. A sudden shift in any of them triggers a look at the traces."
+      "followAnswer": "I run the golden set on a schedule and alert when a metric drops past a threshold against a baseline. On live traffic I sample requests and score them with a calibrated LLM judge for groundedness or task success. I also watch cheap proxies: refusal rate, parse failures, output length, retries, thumbs-down and escalations. A sudden shift in any of them triggers a look at the traces.",
+      "builds": [
+        "llm-08"
+      ],
+      "next": [
+        "ops-05",
+        "ops-03",
+        "ev-06"
+      ],
+      "deeper": [
+        "huyen-llm-production",
+        "hamel-evals"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Your classifier's outputs shifted overnight with no deploy from your team. What do you do first?",
+        "options": [
+          "Edit the prompt until the outputs look right again.",
+          "Switch to a different provider immediately.",
+          "Raise the temperature to see whether more variety helps.",
+          "Confirm from logs whether the model version changed, then run the golden set on old and new."
+        ],
+        "answer": 3,
+        "why": "Detection and measurement come before fixing. Logs show whether the model changed, and the golden set shows what moved and by how much, so you can roll back if pinned. Editing the prompt first means guessing at an unmeasured problem."
+      }
     },
     {
       "id": "llm-16",
@@ -1002,9 +1514,9 @@ window.IR.q["01-llm-foundations"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "decision",
-        "cost",
-        "architecture"
+        "open-weights",
+        "trade-offs",
+        "privacy"
       ],
       "why": "A senior architecture decision a hiring manager will press on. The trap is treating \"open-weight\" as \"self-hosted\" and deciding on cost alone.",
       "quick": [
@@ -1067,7 +1579,31 @@ window.IR.q["01-llm-foundations"] = {
       "numbers": "Self-hosting is fixed GPU and engineering cost; API is per token. Compute your own break-even volume - it is usually higher than teams expect.",
       "wrong": "Assuming self-hosting is automatically cheaper or more secure. Either can be wrong if utilisation is low, operations are weak, or the surrounding data and logging path is not controlled.",
       "follow": "Your client insists on on-premise but wants frontier-model quality. What do you tell them?",
-      "followAnswer": "I tell them the two goals pull against each other, so we need to pin down what on-premise really requires. If the concern is residency or no third-party access to data, some frontier models can run in a dedicated cloud region or a private deployment, which may satisfy the contract. If it truly means their own hardware, that means open-weight models, and I would show on their own eval set how close the best open model with retrieval gets, so they decide on evidence."
+      "followAnswer": "I tell them the two goals pull against each other, so we need to pin down what on-premise really requires. If the concern is residency or no third-party access to data, some frontier models can run in a dedicated cloud region or a private deployment, which may satisfy the contract. If it truly means their own hardware, that means open-weight models, and I would show on their own eval set how close the best open model with retrieval gets, so they decide on evidence.",
+      "builds": [
+        "llm-08"
+      ],
+      "next": [
+        "cl-05",
+        "llm-12",
+        "gr-06"
+      ],
+      "deeper": [
+        "huyen-ai-engineering",
+        "vllm"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "A bank requires that no customer data leaves its own data centre. Which statement is correct?",
+        "options": [
+          "It needs a model running on the bank's own infrastructure; open weights are the usual route, but open weights alone do not guarantee it.",
+          "Any open-weight model satisfies it automatically, even when called through a hosted API.",
+          "Only a closed model from a major vendor can meet it.",
+          "Self-hosting is always cheaper, so cost settles the decision anyway."
+        ],
+        "answer": 0,
+        "why": "Open-weight is about who can hold the weights; self-hosting is about who runs the servers. An open model called through someone else's API still sends data out. The residency rule decides where it runs, and cost only matters afterwards."
+      }
     },
     {
       "id": "llm-13",
@@ -1154,7 +1690,30 @@ window.IR.q["01-llm-foundations"] = {
       "numbers": "Reported speedups are often around 2–3× at low batch sizes on predictable text like code; less on surprising content or under heavy batching. The draft model must be small enough that proposing is cheap relative to verifying.",
       "wrong": "'It trades a little accuracy for speed.' It does not - the acceptance test preserves the exact output distribution, and that is the whole reason it is interesting.",
       "follow": "Your acceptance rate is 30%. Is speculative decoding still helping?",
-      "followAnswer": "Probably not much, and it may be making things slower. At that acceptance rate most verification passes keep few draft tokens, so I pay to run the draft model and still get little more than one token per pass. I measure end-to-end tokens per second with it on and off rather than guess. If it is not winning, I propose fewer tokens per step, try a draft better matched to our domain or distilled from the target, or switch it off."
+      "followAnswer": "Probably not much, and it may be making things slower. At that acceptance rate most verification passes keep few draft tokens, so I pay to run the draft model and still get little more than one token per pass. I measure end-to-end tokens per second with it on and off rather than guess. If it is not winning, I propose fewer tokens per step, try a draft better matched to our domain or distilled from the target, or switch it off.",
+      "builds": [
+        "llm-14"
+      ],
+      "next": [
+        "cl-04",
+        "cl-09"
+      ],
+      "deeper": [
+        "speculative-decoding",
+        "vllm"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "Why does speculative decoding not reduce output quality?",
+        "options": [
+          "The draft model is fine-tuned to match the big model exactly.",
+          "It only runs on easy tokens where quality does not matter.",
+          "The big model verifies every drafted token, and the acceptance rule preserves its exact output distribution.",
+          "It does reduce quality slightly - that is the trade for speed."
+        ],
+        "answer": 2,
+        "why": "Every drafted token is checked by the large model in one pass, and rejected tokens are replaced with the large model's own choice. The acceptance test is designed so the output matches the large model's distribution exactly; speed comes from memory-bound decode, not from cutting corners."
+      }
     },
     {
       "id": "llm-17",
@@ -1167,10 +1726,8 @@ window.IR.q["01-llm-foundations"] = {
       "priority": "low",
       "tags": [
         "multimodal",
-        "vision",
-        "audio",
-        "llm",
-        "production"
+        "evaluation",
+        "privacy"
       ],
       "why": "Senior AI roles increasingly expect text, image, audio or video systems rather than text-only chat.",
       "quick": [
@@ -1192,7 +1749,31 @@ window.IR.q["01-llm-foundations"] = {
       "numbers": "Do not convert every image or second of audio into one universal token estimate. Providers account for modalities differently, so record real request units, latency and cost by input type.",
       "wrong": "Treating multimodal as the same chat pipeline with a file attached. The preprocessing, evaluation, privacy and performance failure modes are different.",
       "follow": "A user uploads a blurry photo of a medical form. How do you decide whether to answer or ask for a better image?",
-      "followAnswer": "I use a quality gate before the model answers anything that matters. First, cheap checks for blur and resolution, then I ask the model to list which fields it could read and flag any it is unsure of. If a field that matters, like a dosage or a date of birth, is unclear, I ask for a better photo and say which part was unreadable. With medical content I would rather ask again than guess, and never fill a gap with a plausible value."
+      "followAnswer": "I use a quality gate before the model answers anything that matters. First, cheap checks for blur and resolution, then I ask the model to list which fields it could read and flag any it is unsure of. If a field that matters, like a dosage or a date of birth, is unclear, I ask for a better photo and say which part was unreadable. With medical content I would rather ask again than guess, and never fill a gap with a plausible value.",
+      "builds": [
+        "llm-20"
+      ],
+      "next": [
+        "sd-24",
+        "ar-22",
+        "rag-04"
+      ],
+      "deeper": [
+        "clip",
+        "huyen-ai-engineering"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Your text-only RAG eval scores 92%. You now accept scanned invoices as images. What is the right assumption?",
+        "options": [
+          "Accuracy will stay around 92% because the same model is used.",
+          "You need a separate image eval set, because failures like a misread digit are new and unmeasured.",
+          "Images are turned into text, so no new privacy concerns arise.",
+          "Cost per request will be the same as for text."
+        ],
+        "answer": 1,
+        "why": "Each modality brings its own failure modes, such as OCR slips, misread charts and blurry scans, that a text eval never exercised. Images can also expose faces or IDs, and providers bill images in their own units, so measure both."
+      }
     }
   ]
 };

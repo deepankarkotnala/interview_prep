@@ -25,7 +25,6 @@ window.IR.q["06-advanced-rag"] = {
       "priority": "high",
       "tags": [
         "advanced-rag",
-        "query-rewriting",
         "retrieval"
       ],
       "why": "The cheapest advanced technique, and the one most candidates skip past. **Also asked as:** “Multi-query, RAG-Fusion, step-back, decomposition and routing - compare the query transformation techniques.”",
@@ -111,7 +110,32 @@ window.IR.q["06-advanced-rag"] = {
       "numbers": "A small-model rewrite typically adds 100–300 ms. Gating on first-pass score means paying it on a minority of queries rather than all of them.",
       "wrong": "\"I always rewrite the query, it improves retrieval.\" Sometimes it degrades it - a rewrite can drop the exact identifier that was the only thing worth matching.",
       "follow": "The rewrite dropped the part number the user typed. How do you prevent that?",
-      "followAnswer": "Two guards. I tell the rewriter to copy identifiers, codes and names exactly, and I check it in code: pull anything that looks like an ID out of the original query, and if the rewrite lost it, add it back or fall back to the original. I also keep BM25 running on the user's original text, so exact matches still work even when a rewrite is poor."
+      "followAnswer": "Two guards. I tell the rewriter to copy identifiers, codes and names exactly, and I check it in code: pull anything that looks like an ID out of the original query, and if the rewrite lost it, add it back or fall back to the original. I also keep BM25 running on the user's original text, so exact matches still work even when a rewrite is poor.",
+      "builds": [
+        "rag-25",
+        "rag-17"
+      ],
+      "next": [
+        "ar-02",
+        "ar-19",
+        "rag-47"
+      ],
+      "deeper": [
+        "langchain-docs",
+        "llamaindex"
+      ],
+      "check": {
+        "kind": "spot-the-bug",
+        "q": "A user types 'warranty for XR-4471B?'. The rewriter outputs 'What is the warranty period for this product?'. Retrieval gets worse. What went wrong?",
+        "options": [
+          "The rewrite was too long for the embedding model.",
+          "Query rewriting should only be used for agents.",
+          "The rewriter should have used a higher temperature.",
+          "The rewrite dropped the exact part number, the only token worth matching; rewrites must preserve identifiers."
+        ],
+        "answer": 3,
+        "why": "Rewriting can degrade retrieval when it paraphrases away exact identifiers that BM25 or the embedding needed. Instruct the rewriter to keep codes verbatim, check that every identifier survives, or search with both the original and the rewrite."
+      }
     },
     {
       "id": "ar-02",
@@ -123,8 +147,8 @@ window.IR.q["06-advanced-rag"] = {
       "priority": "high",
       "tags": [
         "advanced-rag",
-        "hyde",
-        "retrieval"
+        "retrieval",
+        "embeddings"
       ],
       "why": "A named technique check. The good answer explains the intuition and then declines to over-sell it.",
       "quick": [
@@ -146,7 +170,35 @@ window.IR.q["06-advanced-rag"] = {
       "numbers": "HyDE adds a full generation to the critical path - commonly 500 ms to several seconds. That is often the entire latency budget.",
       "wrong": "Presenting it as a standard part of a modern pipeline. It is situational, and the follow-up asks what it costs per query and how it misfires on identifiers - a default-on answer has no reply to either.",
       "follow": "What would you try before reaching for HyDE?",
-      "followAnswer": "Cheaper, more predictable fixes. Hybrid search, so exact terms match through BM25. A reranker on the top fifty. Contextual enrichment of chunks at ingestion. And if questions and documents look very different, HyPE - generating likely questions per chunk at index time - which moves the LLM cost off the query path. I try HyDE only if the eval still shows short questions missing long text-heavy documents."
+      "followAnswer": "Cheaper, more predictable fixes. Hybrid search, so exact terms match through BM25. A reranker on the top fifty. Contextual enrichment of chunks at ingestion. And if questions and documents look very different, HyPE - generating likely questions per chunk at index time - which moves the LLM cost off the query path. I try HyDE only if the eval still shows short questions missing long text-heavy documents.",
+      "builds": [
+        "rag-59",
+        "ar-01"
+      ],
+      "next": [
+        "ar-19",
+        "rag-11",
+        "rag-12"
+      ],
+      "alsoIn": [
+        "riq-2209"
+      ],
+      "deeper": [
+        "hyde",
+        "llamaindex"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "With HyDE, the model's hypothetical answer to 'What is the battery life of the Z9?' confidently describes a different product, the Z7. What happens to retrieval?",
+        "options": [
+          "Retrieval drifts towards documents about the Z7, because the fake answer's content is what gets embedded.",
+          "Nothing, because HyDE only uses the hypothetical answer's style, not its content.",
+          "Retrieval improves, because any fake answer looks like a document.",
+          "The query fails with an error."
+        ],
+        "answer": 0,
+        "why": "HyDE embeds the generated text, so invented specifics pull the vector towards the wrong documents. It helps short questions against long prose, but misfires on identifiers and adds a full generation of latency per query."
+      }
     },
     {
       "id": "ar-15",
@@ -158,9 +210,9 @@ window.IR.q["06-advanced-rag"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "advanced-rag",
-        "retrieval",
-        "reranking"
+        "reranking",
+        "embeddings",
+        "retrieval"
       ],
       "why": "Whether you understand the speed-versus-accuracy trade-off behind every retrieval stack. **Also asked as:** “A reranker only reorders what retrieval found. What can it fix, what can't it, and how many candidates should it see?”",
       "quick": [
@@ -228,7 +280,46 @@ window.IR.q["06-advanced-rag"] = {
       "numbers": "A cross-encoder reranking 50 candidates typically adds around 50–300 ms. A ColBERT index stores one vector per token, so it is many times larger than a one-vector-per-chunk index unless compressed (ColBERTv2 / PLAID reduce this a lot).",
       "wrong": "\"Use a cross-encoder for retrieval because it is more accurate.\" You cannot score 10 million documents with a cross-encoder on every query - it is a reranker, not a retriever.",
       "follow": "Why can't we pre-compute cross-encoder scores?",
-      "followAnswer": "Because the score depends on the query and the document together, and we do not know the query in advance. A bi-encoder can pre-compute because each document vector does not depend on the query. With a cross-encoder, every new query creates new pairs, so the model has to run again for each candidate."
+      "followAnswer": "Because the score depends on the query and the document together, and we do not know the query in advance. A bi-encoder can pre-compute because each document vector does not depend on the query. With a cross-encoder, every new query creates new pairs, so the model has to run again for each candidate.",
+      "builds": [
+        "rag-59",
+        "em-01"
+      ],
+      "next": [
+        "rag-12",
+        "ar-16",
+        "em-09"
+      ],
+      "alsoIn": [
+        "riq-1810",
+        "riq-2003"
+      ],
+      "deeper": [
+        "colbert",
+        "sbert"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "Why can't you pre-compute cross-encoder scores for your corpus the way you pre-compute bi-encoder embeddings?",
+        "options": [
+          "Cross-encoders are too large to store.",
+          "A cross-encoder scores a query and document together, so the score depends on the query, which is unknown until search time.",
+          "Cross-encoder outputs change every time the model runs.",
+          "Pre-computing is possible, but vendors forbid it."
+        ],
+        "answer": 1,
+        "why": "A bi-encoder encodes each document alone, so vectors can be stored. A cross-encoder's attention runs over query and document jointly, so there is nothing to pre-compute without the query. That is why it reranks a few candidates rather than retrieving."
+      },
+      "try": {
+        "title": "Bi-encoder vs cross-encoder, side by side",
+        "minutes": 20,
+        "steps": [
+          "Load all-MiniLM-L6-v2 (bi-encoder) and cross-encoder/ms-marco-MiniLM-L-6-v2 with sentence-transformers.",
+          "Take one question and 30 candidate passages, including a few near-misses that share keywords but not the answer.",
+          "Rank with the bi-encoder and with the cross-encoder, and compare the top 3.",
+          "Time each method, and observe the cross-encoder runs once per passage per query while the bi-encoder reuses stored vectors."
+        ]
+      }
     },
     {
       "id": "ar-16",
@@ -239,9 +330,9 @@ window.IR.q["06-advanced-rag"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "advanced-rag",
         "vector-db",
-        "scaling"
+        "embeddings",
+        "cost"
       ],
       "why": "Whether you can bring retrieval cost down without blindly giving up quality.",
       "quick": [
@@ -308,7 +399,43 @@ window.IR.q["06-advanced-rag"] = {
       "numbers": "10M × 1,024-dim: float32 ≈ 41 GB → int8 ≈ 10 GB → binary ≈ 1.3 GB. Published benchmarks report binary plus rescoring keeping roughly 90–95% or more of the original retrieval quality for models that suit it - measure on your own model and data.",
       "wrong": "Quantizing without rescoring and without measuring recall. That is how you quietly lose the right chunk from the top-k and only find out from user complaints.",
       "follow": "Why does binary quantization work at all, when it throws away so much information?",
-      "followAnswer": "In high dimensions, the pattern of signs - which dimensions are positive and which are negative - still carries a lot of the vector's direction, and similarity search mostly cares about direction. So comparing bit patterns is a rough but useful stand-in for cosine similarity. It is good enough to find candidates, and rescoring with full vectors fixes the final order."
+      "followAnswer": "In high dimensions, the pattern of signs - which dimensions are positive and which are negative - still carries a lot of the vector's direction, and similarity search mostly cares about direction. So comparing bit patterns is a rough but useful stand-in for cosine similarity. It is good enough to find candidates, and rescoring with full vectors fixes the final order.",
+      "builds": [
+        "em-04",
+        "rag-66"
+      ],
+      "next": [
+        "em-05",
+        "rag-13",
+        "rag-67"
+      ],
+      "deeper": [
+        "faiss",
+        "es-knn"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "10 million vectors at 1,024 dimensions take about 41 GB as float32. Roughly how big are they with binary quantisation (1 bit per dimension), before overhead?",
+        "options": [
+          "About 10 GB",
+          "About 5 GB",
+          "About 1.3 GB",
+          "About 41 MB"
+        ],
+        "answer": 2,
+        "why": "Binary keeps 1 bit instead of 32 bits per number, a 32x reduction: 41 GB / 32 is about 1.3 GB. 10 GB is int8 (4x). Keep full vectors on disk and rescore the top candidates to recover quality."
+      },
+      "try": {
+        "title": "Binary quantisation with and without rescoring",
+        "minutes": 25,
+        "steps": [
+          "Embed 5,000 sentences (any public dataset) and 50 queries with a sentence-transformers model, normalised.",
+          "Compute exact top-10 results with float32 dot products as ground truth.",
+          "Binarise vectors with np.packbits(v > 0) and search by Hamming distance; measure recall@10.",
+          "Take the binary top-100, rescore them with float vectors, keep the top 10, and measure recall@10 again.",
+          "Observe the gap that rescoring closes, and the memory saved."
+        ]
+      }
     },
     {
       "id": "ar-07",
@@ -321,8 +448,8 @@ window.IR.q["06-advanced-rag"] = {
       "priority": "high",
       "tags": [
         "advanced-rag",
-        "multi-hop",
-        "retrieval"
+        "retrieval",
+        "agents"
       ],
       "why": "The dependent version of multi-document questions, and a failure most RAG systems have but never diagnose.",
       "quick": [
@@ -373,7 +500,32 @@ window.IR.q["06-advanced-rag"] = {
       "numbers": "Cap iterative retrieval at two or three hops. Beyond that you are usually paying for a question the corpus cannot answer.",
       "wrong": "\"I would increase k so more documents are retrieved.\" It occasionally helps by luck and mostly adds noise and cost, because the second fact is not near the question in embedding space.",
       "follow": "How do you detect multi-hop failures in production?",
-      "followAnswer": "Offline, I put labelled multi-hop questions in the eval set and check that every needed fact was retrieved, not just one. In production I trace each request and run a groundedness check: a claim in the answer that no retrieved chunk supports is the typical sign of a missing hop. I also review thumbs-down answers and tag the ones that needed a second lookup."
+      "followAnswer": "Offline, I put labelled multi-hop questions in the eval set and check that every needed fact was retrieved, not just one. In production I trace each request and run a groundedness check: a claim in the answer that no retrieved chunk supports is the typical sign of a missing hop. I also review thumbs-down answers and tag the ones that needed a second lookup.",
+      "builds": [
+        "rag-39",
+        "ag-02"
+      ],
+      "next": [
+        "ar-05",
+        "ar-06",
+        "ar-14"
+      ],
+      "deeper": [
+        "react",
+        "llamaindex"
+      ],
+      "check": {
+        "kind": "which-fails",
+        "q": "'Is the manager of the Pune claims team eligible for the new allowance?' Which approach is least likely to work?",
+        "options": [
+          "Iterative retrieval: find the manager and grade, then search the allowance rule for that grade.",
+          "Join manager and grade facts into one chunk at ingestion, then retrieve.",
+          "An agent loop capped at three retrieval steps.",
+          "Raise k from 5 to 30 on the original question."
+        ],
+        "answer": 3,
+        "why": "The second fact depends on the first answer and is not near the question in embedding space, so more k mostly adds noise. Iterative retrieval, a capped agent loop or pre-joining the facts at ingestion address the dependency."
+      }
     },
     {
       "id": "ar-05",
@@ -386,7 +538,6 @@ window.IR.q["06-advanced-rag"] = {
       "tags": [
         "advanced-rag",
         "agents",
-        "architecture",
         "cost"
       ],
       "why": "The buzzword of the moment. The panel is checking whether you can bound it. **Also asked as:** “Retrieval is now a tool the agent calls. What changes, and when is agentic RAG the wrong choice?”",
@@ -478,7 +629,32 @@ window.IR.q["06-advanced-rag"] = {
       "numbers": "A three-step agentic path costs roughly three times the model calls of single-shot RAG. Route on question type, or that becomes your default cost.",
       "wrong": "\"We made our RAG agentic to improve quality.\" Without the cap, the routing and the cost comparison, the follow-up - which questions needed it, and at what cost - has no answer ready.",
       "follow": "How do you decide which questions take the cheap path?",
-      "followAnswer": "A router in front. Usually a small, fast model or a trained classifier labels the question as a simple lookup, multi-step, or out of scope. Simple questions go straight to one retrieval and one answer. I also use a runtime signal: if the first retrieval scores well on the reranker, answer directly; if not, escalate to the agent loop. And I evaluate the router on its own labelled set."
+      "followAnswer": "A router in front. Usually a small, fast model or a trained classifier labels the question as a simple lookup, multi-step, or out of scope. Simple questions go straight to one retrieval and one answer. I also use a runtime signal: if the first retrieval scores well on the reranker, answer directly; if not, escalate to the agent loop. And I evaluate the router on its own labelled set.",
+      "builds": [
+        "ar-07",
+        "ag-13"
+      ],
+      "next": [
+        "ar-14",
+        "ag-28",
+        "lg-12"
+      ],
+      "deeper": [
+        "anthropic-agents",
+        "react"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "80% of your traffic is single-fact policy lookups; 20% needs data from a database plus documents. How should you introduce agentic RAG?",
+        "options": [
+          "Route: single-shot RAG for lookups, a capped agent loop for multi-source questions, with tracing.",
+          "Make every request agentic, so quality is consistent.",
+          "Avoid agents entirely, because they are always too slow.",
+          "Let the agent decide the routing on every request with no step cap."
+        ],
+        "answer": 0,
+        "why": "Agentic paths multiply model calls and latency, so they should be bounded to the questions that need multiple steps or sources. A router keeps the cheap path for the 80%. No cap turns an edge case into your default cost."
+      }
     },
     {
       "id": "ar-14",
@@ -491,8 +667,8 @@ window.IR.q["06-advanced-rag"] = {
       "priority": "high",
       "tags": [
         "advanced-rag",
-        "self-rag",
-        "crag"
+        "retrieval",
+        "langgraph"
       ],
       "why": "Whether you know the main self-checking RAG patterns by name and can say what problem each one solves.",
       "quick": [
@@ -581,7 +757,36 @@ window.IR.q["06-advanced-rag"] = {
       "numbers": "Each check is an extra model call - a grading loop typically adds a few hundred milliseconds to a couple of seconds - so cap retries at one or two.",
       "wrong": "\"Self-RAG and CRAG are the same thing.\" They check different stages. And describing Self-RAG as just \"the LLM reviews its answer\" misses the retrieve-only-when-needed part.",
       "follow": "Would you use a big LLM as the document grader?",
-      "followAnswer": "Usually not. 'Is this chunk relevant to the question?' is a simple classification task, so a small fast model - or a cross-encoder reranker score with a threshold - is often good enough and much cheaper. I would compare a small grader against a big one on a labelled sample, and only pay for the big one if the accuracy gap actually matters."
+      "followAnswer": "Usually not. 'Is this chunk relevant to the question?' is a simple classification task, so a small fast model - or a cross-encoder reranker score with a threshold - is often good enough and much cheaper. I would compare a small grader against a big one on a labelled sample, and only pay for the big one if the accuracy gap actually matters.",
+      "builds": [
+        "rag-24",
+        "ar-05"
+      ],
+      "next": [
+        "lg-12",
+        "ar-01",
+        "rag-15"
+      ],
+      "alsoIn": [
+        "riq-2203",
+        "riq-2204"
+      ],
+      "deeper": [
+        "crag",
+        "self-rag"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "Which statement correctly separates CRAG from Self-RAG?",
+        "options": [
+          "They are the same technique with different names.",
+          "CRAG grades retrieved documents and re-searches if they are poor; Self-RAG trains the model to decide when to retrieve and critique its own output.",
+          "CRAG only works with web search; Self-RAG only works offline.",
+          "Self-RAG grades documents; CRAG grades the final answer."
+        ],
+        "answer": 1,
+        "why": "CRAG checks the input to generation - are these documents right? - and corrects by discarding or searching again. Self-RAG uses reflection tokens for on-demand retrieval and support checks on its own output. Saying Self-RAG grades documents and CRAG grades answers swaps their roles."
+      }
     },
     {
       "id": "ar-06",
@@ -593,9 +798,8 @@ window.IR.q["06-advanced-rag"] = {
       "priority": "high",
       "tags": [
         "advanced-rag",
-        "graphrag",
-        "knowledge-graph",
-        "trade-off"
+        "retrieval",
+        "trade-offs"
       ],
       "why": "A depth question where the honest answer - usually no - scores higher than enthusiasm. **Also asked as:** “When would you use a knowledge graph instead of a vector store?”",
       "quick": [
@@ -619,9 +823,34 @@ window.IR.q["06-advanced-rag"] = {
       ],
       "say": "GraphRAG extracts entities and relationships into a knowledge graph and retrieves over that, and on most projects I wouldn't build it. It does answer a class of question chunk retrieval can't. Which suppliers are affected by this regulation, and through which contracts, needs facts connected across many documents. Microsoft's version also clusters the graph into communities and pre-summarises each, so whole-corpus theme questions get answered. The costs are large, though. Ingestion means model calls over every chunk plus a summary per community, a real bill to price before proposing it. The graph needs upkeep as documents change, and extraction errors compound into a wrong graph, which is worse than none. You're also running a second datastore. Lighter variants like LazyGraphRAG defer most of the LLM work to query time, which brings indexing cost down to about that of plain vector RAG. So I build it only for genuinely relational questions on a fairly stable corpus. For what does the policy say about X, plain RAG with a reranker wins.",
       "numbers": "Full GraphRAG makes one or more model calls per chunk at ingestion, plus a summary call per community. On a large corpus that is a substantial one-time bill - price it before proposing it. Microsoft reports LazyGraphRAG's indexing cost as roughly that of plain vector RAG.",
+      "verified": "2026-10",
       "wrong": "\"GraphRAG is more accurate than normal RAG.\" On relational questions, often. On lookup questions it is more expensive and no better, and that distinction is the answer.",
       "follow": "Your documents change weekly. What does that do to the graph?",
-      "followAnswer": "It turns into a maintenance job. Each changed document needs its entities and relationships re-extracted, merged into existing nodes through entity resolution, stale ones removed, and the affected community summaries regenerated. So I track which chunks fed which nodes, update incrementally, and schedule a fuller rebuild when drift builds up. If churn is high, LazyGraphRAG-style indexing or plain RAG is often the better choice."
+      "followAnswer": "It turns into a maintenance job. Each changed document needs its entities and relationships re-extracted, merged into existing nodes through entity resolution, stale ones removed, and the affected community summaries regenerated. So I track which chunks fed which nodes, update incrementally, and schedule a fuller rebuild when drift builds up. If churn is high, LazyGraphRAG-style indexing or plain RAG is often the better choice.",
+      "builds": [
+        "rag-39",
+        "ar-07"
+      ],
+      "next": [
+        "ar-18",
+        "ar-08",
+        "rag-41"
+      ],
+      "deeper": [
+        "graphrag"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Which use case best justifies full GraphRAG's ingestion cost?",
+        "options": [
+          "An HR bot answering 'how many days of leave do I get?'.",
+          "A support FAQ that changes daily.",
+          "Finding which suppliers are affected by a regulation and through which contracts, across a stable contract corpus.",
+          "Looking up a product's warranty period by part number."
+        ],
+        "answer": 2,
+        "why": "GraphRAG earns its cost on relational questions that connect entities across many documents, on a corpus stable enough to keep the graph current. Lookups are better served by plain RAG with a reranker, and daily changes make graph upkeep expensive."
+      }
     },
     {
       "id": "ar-09",
@@ -634,8 +863,8 @@ window.IR.q["06-advanced-rag"] = {
       "priority": "high",
       "tags": [
         "advanced-rag",
-        "judgement",
-        "prioritisation"
+        "trade-offs",
+        "evaluation"
       ],
       "why": "The synthesis question. It tests prioritisation, which is the actual senior skill in this topic.",
       "quick": [
@@ -691,7 +920,35 @@ window.IR.q["06-advanced-rag"] = {
       "numbers": "Track recall@k, answer accuracy, p95 latency and cost per query together. Any technique that moves one without a stated trade on the others has not been measured.",
       "wrong": "Listing every technique you know. The question is about prioritisation, and an unordered list answers a different one.",
       "follow": "You added three techniques and quality is flat. What went wrong?",
-      "followAnswer": "Usually they were added without diagnosing which stage was failing, or all at once, so their effects cancelled out or hid each other - or the eval set does not contain the failing questions. I go back to the baseline, measure recall, ranking and faithfulness separately, then add one technique at a time on the same eval set, keeping only those that move their target metric within budget."
+      "followAnswer": "Usually they were added without diagnosing which stage was failing, or all at once, so their effects cancelled out or hid each other - or the eval set does not contain the failing questions. I go back to the baseline, measure recall, ranking and faithfulness separately, then add one technique at a time on the same eval set, keeping only those that move their target metric within budget.",
+      "builds": [
+        "rag-05",
+        "rag-56"
+      ],
+      "next": [
+        "rag-12",
+        "ar-04",
+        "ar-01"
+      ],
+      "alsoIn": [
+        "riq-2214"
+      ],
+      "deeper": [
+        "anthropic-contextual-retrieval",
+        "hamel-evals"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Recall@20 is 0.95, but the right chunk usually sits at rank 8-15, and you pass only the top 5 to the model. What do you add first?",
+        "options": [
+          "GraphRAG.",
+          "Query rewriting with multiple phrasings.",
+          "A better chunking strategy.",
+          "A cross-encoder reranker over the top 20-50."
+        ],
+        "answer": 3,
+        "why": "Recall is fine, so the problem is ranking: the right chunk is found but sits below the cut-off. A reranker fixes exactly that, cheaply. Chunking or rewriting target recall; GraphRAG targets relational questions."
+      }
     },
     {
       "id": "ar-19",
@@ -703,8 +960,8 @@ window.IR.q["06-advanced-rag"] = {
       "priority": "medium",
       "tags": [
         "advanced-rag",
-        "query-transformation",
-        "indexing"
+        "embeddings",
+        "retrieval"
       ],
       "why": "Whether you understand that you can move LLM work from query time to index time.",
       "quick": [
@@ -763,7 +1020,31 @@ window.IR.q["06-advanced-rag"] = {
       "numbers": "HyDE adds one LLM call per query, often 0.5–2 s. HyPE with about 3–5 questions per chunk multiplies the number of stored vectors by roughly that factor.",
       "wrong": "\"HyPE and HyDE are the same trick.\" The whole point is where the cost sits - query time or index time - and that changes latency, index size and freshness.",
       "follow": "When would HyPE not help?",
-      "followAnswer": "When users ask things the generated questions did not anticipate - very specific combinations, or comparisons across several chunks. It also helps less when queries are keyword-like, such as product codes, where BM25 already does the work. That is why I keep the normal chunk embeddings and BM25 alongside the generated questions, not instead of them."
+      "followAnswer": "When users ask things the generated questions did not anticipate - very specific combinations, or comparisons across several chunks. It also helps less when queries are keyword-like, such as product codes, where BM25 already does the work. That is why I keep the normal chunk embeddings and BM25 alongside the generated questions, not instead of them.",
+      "builds": [
+        "ar-02"
+      ],
+      "next": [
+        "ar-04",
+        "rag-58",
+        "ar-23"
+      ],
+      "deeper": [
+        "hyde",
+        "llamaindex"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "What is the core difference between HyPE and HyDE?",
+        "options": [
+          "HyPE generates likely questions per chunk at index time; HyDE generates a fake answer per query at search time.",
+          "HyPE uses keyword search; HyDE uses embeddings.",
+          "HyPE needs no LLM at all.",
+          "HyDE works only on code, HyPE only on prose."
+        ],
+        "answer": 0,
+        "why": "Both close the gap between how questions and answers are worded. HyPE pays once at ingestion and grows the index; HyDE pays a generation on every query. That shift of cost from query time to index time is the point."
+      }
     },
     {
       "id": "ar-04",
@@ -825,7 +1106,42 @@ window.IR.q["06-advanced-rag"] = {
       "numbers": "Anthropic's 2024 write-up reported about 35% fewer top-20 retrieval failures from contextual embeddings, about 49% with contextual BM25 added, and about 67% with reranking on top - on their benchmarks, so measure on yours. The cost is once per chunk at ingestion, and prompt caching over the source document cuts it sharply.",
       "wrong": "\"We add metadata to the chunk.\" Metadata in a separate field does not affect the embedding. The context has to be in the text that gets embedded.",
       "follow": "Do you embed the enriched text or the original? Which one do you show the user?",
-      "followAnswer": "I embed the enriched text and show the original. The situating line exists to help matching, so it goes into both the embedding and the BM25 index. But it's model-written and can be slightly off, so the user and the citation see the source text exactly as written. I store both on the chunk record, the enriched version for indexing and the original for display and for the prompt, with the document title and section kept as metadata for the citation."
+      "followAnswer": "I embed the enriched text and show the original. The situating line exists to help matching, so it goes into both the embedding and the BM25 index. But it's model-written and can be slightly off, so the user and the citation see the source text exactly as written. I store both on the chunk record, the enriched version for indexing and the original for display and for the prompt, with the document title and section kept as metadata for the citation.",
+      "builds": [
+        "rag-18",
+        "rag-21"
+      ],
+      "next": [
+        "ar-23",
+        "llm-15",
+        "ar-09"
+      ],
+      "deeper": [
+        "anthropic-contextual-retrieval"
+      ],
+      "check": {
+        "kind": "spot-the-bug",
+        "q": "A team stores 'From the 2026 GOLD plan policy, eligibility section' in a separate metadata field on each chunk, and embeds only the chunk text. Retrieval does not improve. Why?",
+        "options": [
+          "The context line is too short to matter.",
+          "Metadata in a separate field never reaches the embedding or BM25; the context must be prepended to the indexed text.",
+          "Contextual retrieval only works with Anthropic models.",
+          "The metadata should be stored as a number, not text."
+        ],
+        "answer": 1,
+        "why": "Contextual retrieval works because the situating line changes what gets embedded and keyword-indexed. A separate field can filter, but it does not move the vector. Prepend the context, index the enriched text and show the original."
+      },
+      "try": {
+        "title": "Free contextual enrichment with heading paths",
+        "minutes": 25,
+        "steps": [
+          "Take a structured document with headings and chunk it into paragraphs.",
+          "Write 15 questions that name the section topic but not words in the paragraph itself.",
+          "Measure recall@5 with plain chunks using a sentence-transformers model.",
+          "Prepend 'Document title > Section > Subsection' to each chunk, re-embed, and measure again.",
+          "Observe the gain before paying for any model-written context."
+        ]
+      }
     },
     {
       "id": "ar-23",
@@ -838,8 +1154,7 @@ window.IR.q["06-advanced-rag"] = {
       "tags": [
         "advanced-rag",
         "chunking",
-        "embeddings",
-        "late-chunking"
+        "embeddings"
       ],
       "why": "Whether you know the embedding-side fix for chunks that lose their context, and what it cannot do.",
       "quick": [
@@ -859,9 +1174,35 @@ window.IR.q["06-advanced-rag"] = {
       ],
       "say": "Both fix chunks that lose their document context, but contextual retrieval does it with text and late chunking does it inside the embedding model. Picture a chunk saying its population is 3.8 million. Nothing in it says which city. Contextual retrieval has an LLM write a context line for each chunk and indexes that with it. That costs a call per chunk at ingestion, but it helps both dense search and BM25. Late chunking skips the LLM. You run the whole document, or a large section, through a long-context embedding model once, so every token vector has seen the city named earlier. Only then do you cut at chunk boundaries and average the token vectors inside each one. The limits are real. You need a model with a long window that exposes token-level outputs, like Jina's, most closed embedding APIs don't, and it only helps the dense side. Hosted models like voyage-context-3 now package the same idea. The two can be combined, so I measure both on our eval set.",
       "numbers": "Late chunking was introduced by Jina AI in 2024. It is bounded by the embedding model's input window - 8,192 tokens for jina-embeddings-v3, 32K for voyage-context-3. Reported gains are small on short documents and larger on long ones; measure on yours.",
+      "verified": "2026-10",
       "wrong": "\"Just use bigger chunks so they keep their context.\" Bigger chunks blur the embedding and hurt precise matches. The point of late chunking is small chunks that still know their context.",
       "follow": "Which would you try first on a new corpus?",
-      "followAnswer": "The free one: prepend the document title and section heading to each chunk. If references still break, I try late chunking or a contextual embedding model, if our embedding choice supports it, because it adds no LLM calls. I use LLM-written contextual retrieval when BM25 also needs the context, or when the corpus is small enough that the one-time bill is fine."
+      "followAnswer": "The free one: prepend the document title and section heading to each chunk. If references still break, I try late chunking or a contextual embedding model, if our embedding choice supports it, because it adds no LLM calls. I use LLM-written contextual retrieval when BM25 also needs the context, or when the corpus is small enough that the one-time bill is fine.",
+      "builds": [
+        "ar-04",
+        "rag-18"
+      ],
+      "next": [
+        "ar-18",
+        "em-03",
+        "ar-09"
+      ],
+      "deeper": [
+        "late-chunking",
+        "anthropic-contextual-retrieval"
+      ],
+      "check": {
+        "kind": "which-fails",
+        "q": "You use a closed embedding API that returns one vector per input and no token-level outputs. Which technique can you NOT apply directly?",
+        "options": [
+          "Contextual retrieval with a model-written context line.",
+          "Prepending heading paths to chunks.",
+          "Late chunking.",
+          "Hybrid search with BM25."
+        ],
+        "answer": 2,
+        "why": "Late chunking pools token vectors after the whole document passes through the model, so it needs token-level outputs from a long-context model. The other three only change the text you send or add a keyword index, which works with any API."
+      }
     },
     {
       "id": "ar-18",
@@ -873,8 +1214,8 @@ window.IR.q["06-advanced-rag"] = {
       "priority": "medium",
       "tags": [
         "advanced-rag",
-        "indexing",
-        "chunking"
+        "chunking",
+        "retrieval"
       ],
       "why": "Whether you know how to answer both detail questions and big-picture questions from the same corpus.",
       "quick": [
@@ -923,7 +1264,35 @@ window.IR.q["06-advanced-rag"] = {
       "numbers": "RAPTOR-style trees usually have 2–4 levels, costing about one LLM summary call per cluster per level. A window of 2–5 sentences on each side is a common starting point.",
       "wrong": "\"Just make the chunks bigger for summary questions.\" Bigger chunks hurt precise matching for every other question, and still don't capture a whole document's themes.",
       "follow": "Documents change every week. How do you keep a RAPTOR tree up to date?",
-      "followAnswer": "I don't rebuild the whole tree. I re-embed and re-cluster only the changed leaves, and regenerate the summaries on the path from those leaves up to the top. If the corpus changes a lot, I schedule a full rebuild at a quiet time and keep serving the old tree until the new one passes a quick eval."
+      "followAnswer": "I don't rebuild the whole tree. I re-embed and re-cluster only the changed leaves, and regenerate the summaries on the path from those leaves up to the top. If the corpus changes a lot, I schedule a full rebuild at a quiet time and keep serving the old tree until the new one passes a quick eval.",
+      "builds": [
+        "rag-18",
+        "rag-21"
+      ],
+      "next": [
+        "ar-06",
+        "rag-41",
+        "ar-21"
+      ],
+      "alsoIn": [
+        "riq-2210"
+      ],
+      "deeper": [
+        "raptor",
+        "llamaindex"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Users ask both 'What is the termination notice in clause 14?' and 'What are the main risks in this 200-page contract?'. Which pairing fits?",
+        "options": [
+          "Bigger chunks for everything.",
+          "Only RAPTOR, since summaries answer both.",
+          "Only sentence-window, since precision answers both.",
+          "Sentence-window retrieval for precise clauses, and a RAPTOR-style summary tree for the big-picture question."
+        ],
+        "answer": 3,
+        "why": "Search small, read wide answers precise questions; a tree of summaries answers whole-document themes. Bigger chunks blur precise matches and still miss the full-document picture, so the two techniques complement each other."
+      }
     },
     {
       "id": "ar-21",
@@ -934,9 +1303,9 @@ window.IR.q["06-advanced-rag"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "advanced-rag",
-        "context",
-        "cost"
+        "context-engineering",
+        "cost",
+        "advanced-rag"
       ],
       "why": "Whether you can cut tokens and noise in the prompt without cutting the answer.",
       "quick": [
@@ -956,7 +1325,32 @@ window.IR.q["06-advanced-rag"] = {
       "numbers": "LLMLingua-style methods report compressing prompts by roughly 2–20x depending on the task; how much sentence extraction cuts depends on how focused your chunks already are - measure it on your own traffic.",
       "wrong": "\"The context window is big enough, so compression doesn't matter.\" You still pay for every token on every request, and more noise often lowers answer quality.",
       "follow": "Compression dropped a sentence and the answer became wrong. How would you catch this before users do?",
-      "followAnswer": "Run the eval set twice - with and without compression - and compare correctness and faithfulness per question, not only the average. The questions that fail only with compression show what it is cutting. Conditions and exceptions are the usual victims, so I either compress less or protect sentences containing words like 'except', 'unless' and 'only'."
+      "followAnswer": "Run the eval set twice - with and without compression - and compare correctness and faithfulness per question, not only the average. The questions that fail only with compression show what it is cutting. Conditions and exceptions are the usual victims, so I either compress less or protect sentences containing words like 'except', 'unless' and 'only'.",
+      "builds": [
+        "rag-23",
+        "rag-12"
+      ],
+      "next": [
+        "rag-34",
+        "cl-02",
+        "ar-24"
+      ],
+      "deeper": [
+        "lost-in-middle",
+        "anthropic-context-engineering"
+      ],
+      "check": {
+        "kind": "which-fails",
+        "q": "A sentence-level compressor keeps only sentences similar to 'Can staff claim relocation costs?'. Which kind of sentence is it most likely to drop wrongly?",
+        "options": [
+          "'This does not apply to contract staff.'",
+          "'Relocation costs are reimbursed up to 50,000 rupees.'",
+          "'Staff may claim relocation costs with receipts.'",
+          "'Relocation claims must be filed within 30 days.'"
+        ],
+        "answer": 0,
+        "why": "Exceptions often share few words with the question, so similarity-based compression drops them, and the answer becomes confidently wrong. Run the eval set with and without compression, and keep source links so dropped context can be traced."
+      }
     },
     {
       "id": "ar-24",
@@ -968,11 +1362,9 @@ window.IR.q["06-advanced-rag"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "advanced-rag",
-        "cag",
-        "long-context",
         "caching",
-        "trade-off"
+        "context-engineering",
+        "trade-offs"
       ],
       "why": "A recent name-check. The panel wants the mechanism and the narrow conditions where it beats retrieval.",
       "quick": [
@@ -1032,10 +1424,39 @@ window.IR.q["06-advanced-rag"] = {
         "caption": "CAG fits one corner: **small, stable, and every user may see all of it**. Cached tokens are cheaper, not free."
       },
       "say": "CAG skips retrieval by loading the whole knowledge base into context once and reusing the model's cached state for every question. That state is the KV cache, the keys and values computed for each input token, and building it for a long document is the expensive part. CAG does it once and appends each question, so there's no chunking, no index and no retrieval miss. On a hosted API, the everyday version is provider prompt caching of a long fixed prefix. It fits a narrow case, like a product manual or FAQ that's small, rarely changes, and every user may see. Outside that it breaks. The corpus has to fit the window, any change invalidates the cache, there's no per-user filtering, and accuracy can drop when the answer is buried deep. Cached tokens are cheaper, not free, and caches expire, so a 100k-token prefix still rides along on every call. The common middle path is caching the stable core and retrieving the long tail.",
-      "numbers": "Cached input tokens are billed at a fraction of the normal input price - roughly 10-50% depending on provider and model - and caches expire (Anthropic's default lifetime is 5 minutes, with a 1-hour option). A 100k-token prefix is still 100k tokens of context on every call.",
+      "numbers": "Cached input tokens are billed at a fraction of the normal input price - from a few percent to about half, depending on provider and model, so check the pricing page - and caches expire (Anthropic's default lifetime is 5 minutes, with a 1-hour option). A 100k-token prefix is still 100k tokens of context on every call.",
+      "verified": "2026-10",
       "wrong": "\"Context windows are big now, so CAG replaces RAG.\" It only holds for small, static, unpermissioned corpora, and the follow-ups on updates and access control have no answer.",
       "follow": "The FAQ you cached changes twice a day. Does CAG still work?",
-      "followAnswer": "Yes, if the prompt is structured for it. Each change means rebuilding the cache once, which is cheap at twice a day. I put the stable instructions first and the FAQ after, version the FAQ, and warm the new cache when it is published. It stops working when changes are constant or different users need different content - then I retrieve instead."
+      "followAnswer": "Yes, if the prompt is structured for it. Each change means rebuilding the cache once, which is cheap at twice a day. I put the stable instructions first and the FAQ after, version the FAQ, and warm the new cache when it is published. It stops working when changes are constant or different users need different content - then I retrieve instead.",
+      "builds": [
+        "llm-15",
+        "rag-02"
+      ],
+      "next": [
+        "ar-10",
+        "cl-03",
+        "rag-09"
+      ],
+      "alsoIn": [
+        "riq-2213"
+      ],
+      "deeper": [
+        "claude-prompt-caching",
+        "openai-prompt-caching"
+      ],
+      "check": {
+        "kind": "which-fails",
+        "q": "Which use case is the worst fit for cache-augmented generation?",
+        "options": [
+          "A 40-page product manual that every user may read and that changes quarterly.",
+          "An HR knowledge base of 30,000 documents with per-department access rules.",
+          "A company FAQ updated once a month.",
+          "A fixed set of onboarding guides for new joiners."
+        ],
+        "answer": 1,
+        "why": "CAG needs a corpus that fits the window, rarely changes and is visible to everyone. 30,000 documents will not fit, and a shared cache cannot enforce per-department access. Retrieval with permission filters is the right tool there."
+      }
     },
     {
       "id": "ar-08",
@@ -1047,9 +1468,8 @@ window.IR.q["06-advanced-rag"] = {
       "priority": "medium",
       "tags": [
         "advanced-rag",
-        "text-to-sql",
-        "routing",
-        "architecture"
+        "sql",
+        "system-design"
       ],
       "why": "A real system-design problem, common in enterprise, and it tests routing thinking.",
       "quick": [
@@ -1139,7 +1559,32 @@ window.IR.q["06-advanced-rag"] = {
       "numbers": "Always cap generated SQL with a row limit and a statement timeout. An unbounded generated join is a production incident waiting to happen.",
       "wrong": "\"I'd put the database rows into the vector store.\" Then a count becomes a retrieval, and retrieval cannot count. It gives approximately-right numbers, which is worse than none.",
       "follow": "The router sent an aggregation question to retrieval. How would you know?",
-      "followAnswer": "Two ways, offline and in production. Offline, the router has its own labelled set, so aggregation questions classified as document questions show up directly. In production I log every routing decision in the trace and flag counting-style questions, with words like how many, total or average, that were answered from retrieval with no SQL result behind the figure. A number with no database source is the symptom. Those cases go back into the router's eval set, and uncertain ones run both paths."
+      "followAnswer": "Two ways, offline and in production. Offline, the router has its own labelled set, so aggregation questions classified as document questions show up directly. In production I log every routing decision in the trace and flag counting-style questions, with words like how many, total or average, that were answered from retrieval with no SQL result behind the figure. A number with no database source is the symptom. Those cases go back into the router's eval set, and uncertain ones run both paths.",
+      "builds": [
+        "rag-14",
+        "rag-65"
+      ],
+      "next": [
+        "ar-12",
+        "ar-11",
+        "ag-24"
+      ],
+      "deeper": [
+        "llamaindex",
+        "anthropic-agents"
+      ],
+      "check": {
+        "kind": "spot-the-bug",
+        "q": "An assistant runs model-generated SQL against the production database with the app's read-write credentials and no limits. What is the biggest problem?",
+        "options": [
+          "SQL is slower than vector search.",
+          "The model cannot write SQL.",
+          "A generated query can modify data or run an unbounded join; use a read-only role, a validator, a row limit and a statement timeout.",
+          "Results should be embedded before showing them."
+        ],
+        "answer": 2,
+        "why": "Generated SQL is untrusted code. Read-only credentials prevent writes, validation blocks dangerous statements, and row limits and timeouts stop runaway joins. Speed and embedding are irrelevant to the safety risk."
+      }
     },
     {
       "id": "ar-10",
@@ -1150,10 +1595,9 @@ window.IR.q["06-advanced-rag"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "advanced-rag",
         "caching",
-        "cost",
-        "security"
+        "security",
+        "rag"
       ],
       "why": "Caching is the biggest way to cut cost and the easiest place to cause a data breach.",
       "quick": [
@@ -1205,7 +1649,32 @@ window.IR.q["06-advanced-rag"] = {
       "numbers": "For semantic caching, set the similarity threshold high - a loose threshold serves the answer to a different question, and users notice that faster than any cost saving pays for.",
       "wrong": "\"We cache responses by question text.\" That is the leak. It is also the most common caching implementation, which is exactly why it gets asked.",
       "follow": "A document was withdrawn. Which of your caches still answers from it?",
-      "followAnswer": "Any cache holding retrieved results or finished answers, unless its key includes a corpus version. The embedding cache is fine, because a query vector doesn't depend on the documents. Retrieval and answer caches keyed on question and entitlements still return chunks or text from the withdrawn document, and the semantic cache is worst, since it serves that answer to similar questions too. So ingestion bumps the corpus version on withdrawal, and for urgent withdrawals I also purge entries citing that document."
+      "followAnswer": "Any cache holding retrieved results or finished answers, unless its key includes a corpus version. The embedding cache is fine, because a query vector doesn't depend on the documents. Retrieval and answer caches keyed on question and entitlements still return chunks or text from the withdrawn document, and the semantic cache is worst, since it serves that answer to similar questions too. So ingestion bumps the corpus version on withdrawal, and for urgent withdrawals I also purge entries citing that document.",
+      "builds": [
+        "rag-09",
+        "cl-03"
+      ],
+      "next": [
+        "py-29",
+        "rag-10",
+        "ar-24"
+      ],
+      "deeper": [
+        "owasp-llm",
+        "claude-prompt-caching"
+      ],
+      "check": {
+        "kind": "which-fails",
+        "q": "A policy is withdrawn and ingestion removes its chunks. Which cache can still serve content from it?",
+        "options": [
+          "The query-embedding cache keyed on text and model version.",
+          "Provider prompt caching of the system prompt.",
+          "A cache of the embedding model's weights.",
+          "An answer cache keyed on question and user entitlements, but with no corpus version."
+        ],
+        "answer": 3,
+        "why": "Without a corpus version in the key, a finished answer built from the withdrawn policy keeps being served. Query vectors do not depend on documents, and provider prompt caching regenerates answers fresh. Ingestion should bump the corpus version on withdrawal."
+      }
     },
     {
       "id": "ar-22",
@@ -1216,8 +1685,8 @@ window.IR.q["06-advanced-rag"] = {
       "level": "5-10",
       "priority": "low",
       "tags": [
-        "advanced-rag",
         "multimodal",
+        "retrieval",
         "ingestion"
       ],
       "why": "Whether you know the newer option for visually rich documents, and its trade-offs.",
@@ -1239,7 +1708,32 @@ window.IR.q["06-advanced-rag"] = {
       "numbers": "ColPali produces roughly 1,000 patch vectors per page (128 dimensions each), so the index grows fast; pooling and compression are commonly used to shrink it.",
       "wrong": "\"Visual retrieval replaces text RAG.\" For text-heavy documents, text chunks plus BM25 are cheaper, more precise and easier to cite.",
       "follow": "How would you decide which pages go through visual retrieval?",
-      "followAnswer": "At ingestion I classify each page by how much of it is text versus images, tables and charts - a simple ratio from the parser, or a small vision classifier. Text-heavy pages go through normal text chunking; visually heavy pages also get a visual embedding. Then I check on the eval set that questions about charts and tables actually improve."
+      "followAnswer": "At ingestion I classify each page by how much of it is text versus images, tables and charts - a simple ratio from the parser, or a small vision classifier. Text-heavy pages go through normal text chunking; visually heavy pages also get a visual embedding. Then I check on the eval set that questions about charts and tables actually improve.",
+      "builds": [
+        "ar-15",
+        "rag-04"
+      ],
+      "next": [
+        "rag-37",
+        "sd-24",
+        "riq-2211"
+      ],
+      "deeper": [
+        "colpali",
+        "colbert"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Your corpus is 90% plain-text policies and 10% chart-heavy slide decks. Where does a ColPali-style visual retriever fit?",
+        "options": [
+          "Use it for the slide decks and chart pages, and keep text chunks plus BM25 for the policies.",
+          "Replace the whole text pipeline with visual retrieval.",
+          "Never, because visual retrieval cannot answer questions.",
+          "Only for documents that are already in Markdown."
+        ],
+        "answer": 0,
+        "why": "Visual retrieval shines where layout carries meaning, but its index is large and exact-code matching is weaker. Text chunks with BM25 are cheaper, more precise and easier to cite for text-heavy documents, so route by page type."
+      }
     },
     {
       "id": "ar-12",
@@ -1250,10 +1744,9 @@ window.IR.q["06-advanced-rag"] = {
       "level": "5-10",
       "priority": "low",
       "tags": [
+        "sql",
         "advanced-rag",
-        "text-to-sql",
-        "scale",
-        "architecture"
+        "system-design"
       ],
       "why": "Every text-to-SQL demo uses five tables. Every real warehouse has hundreds. This is where the demo-to-production gap actually shows.",
       "quick": [
@@ -1307,7 +1800,31 @@ window.IR.q["06-advanced-rag"] = {
       "numbers": "200 tables of DDL is easily 30k–50k tokens per query. Schema retrieval typically cuts that to a couple of thousand and raises accuracy at the same time.",
       "wrong": "\"I would use a model with a bigger context window.\" It costs more per query, and it does not fix the real problem, which is that the model picks the wrong table when offered 200 of them.",
       "follow": "Two tables both look like the right one and the model keeps picking the deprecated one. What do you change?",
-      "followAnswer": "I make the right choice visible to retrieval and then enforce it. The deprecated table gets marked as deprecated in its description, or dropped from the schema index entirely, and the current table's description says it replaces the old one. Better still, I expose only the curated view layer, so the deprecated table isn't there to pick. As a guard, the validator rejects queries that touch deprecated tables and returns an error naming the replacement, and those questions join the eval set."
+      "followAnswer": "I make the right choice visible to retrieval and then enforce it. The deprecated table gets marked as deprecated in its description, or dropped from the schema index entirely, and the current table's description says it replaces the old one. Better still, I expose only the curated view layer, so the deprecated table isn't there to pick. As a guard, the validator rejects queries that touch deprecated tables and returns an error naming the replacement, and those questions join the eval set.",
+      "builds": [
+        "ar-08"
+      ],
+      "next": [
+        "ag-24",
+        "ar-11",
+        "ag-04"
+      ],
+      "deeper": [
+        "llamaindex",
+        "anthropic-context-engineering"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Text-to-SQL over a 200-table warehouse picks the wrong tables. Table names are cryptic, like DIM_CUST_MSTR_V2. What helps most?",
+        "options": [
+          "Move to a model with a larger context window and paste the full schema.",
+          "Index each table as a document with a written description, columns and sample values, retrieve the relevant few, and include join paths.",
+          "Rename every table in the warehouse.",
+          "Fine-tune the model on the DDL."
+        ],
+        "answer": 1,
+        "why": "Accuracy falls when the model chooses among 200 tables; schema retrieval narrows it to the relevant ones, and descriptions let 'customer' match DIM_CUST_MSTR_V2. A bigger window costs more and leaves the choice just as hard."
+      }
     },
     {
       "id": "ar-11",
@@ -1319,11 +1836,9 @@ window.IR.q["06-advanced-rag"] = {
       "level": "5-10",
       "priority": "low",
       "tags": [
-        "advanced-rag",
-        "tabular",
-        "csv",
-        "text-to-sql",
-        "architecture"
+        "sql",
+        "python",
+        "system-design"
       ],
       "why": "Enterprise data is mostly tables, and both reflex answers - paste it, or embed every row - fail. The follow-up on exact totals shows whether you separate lookup from computation.",
       "quick": [
@@ -1347,7 +1862,43 @@ window.IR.q["06-advanced-rag"] = {
       "numbers": "Do not estimate feasibility from file size alone. Sample the actual file and tokenizer if token count matters; for tabular analytics, the architecture should avoid sending the raw dataset to the model either way.",
       "wrong": "'I would chunk the CSV and put it in a vector store.' It demos well on ten rows and produces silently wrong totals on ten million. The panel is listening for whether you separate lookup from aggregation.",
       "follow": "The user asks something needing both a number from the table and an explanation from a policy PDF. What happens?",
-      "followAnswer": "The router sends it down both paths. The table part becomes SQL against DuckDB, run read-only with limits, and returns the exact figure. The policy part goes to document retrieval over the PDF. Generation then gets both, the small result set and the retrieved clauses, and writes one answer that marks which figure came from the data and cites the policy section. If one depends on the other, like is this total above the policy limit, I run them in sequence and let code do the comparison."
+      "followAnswer": "The router sends it down both paths. The table part becomes SQL against DuckDB, run read-only with limits, and returns the exact figure. The policy part goes to document retrieval over the PDF. Generation then gets both, the small result set and the retrieved clauses, and writes one answer that marks which figure came from the data and cites the policy section. If one depends on the other, like is this total above the policy limit, I run them in sequence and let code do the comparison.",
+      "builds": [
+        "ar-08",
+        "rag-65"
+      ],
+      "next": [
+        "ar-12",
+        "py-31",
+        "rag-43"
+      ],
+      "deeper": [
+        "pandas",
+        "llamaindex"
+      ],
+      "check": {
+        "kind": "which-fails",
+        "q": "A 2 GB CSV of refunds must answer 'total refund value in March by region'. Which design gives silently wrong answers?",
+        "options": [
+          "Load into DuckDB; the model writes SQL from the schema; code validates and runs it read-only.",
+          "Load into a warehouse with documented views, and run model-written SQL on them.",
+          "Embed every row and let the model add up the top-k retrieved rows.",
+          "A pandas agent with read-only data and a validated, sandboxed query."
+        ],
+        "answer": 2,
+        "why": "Top-k retrieval returns a handful of similar rows, never all March rows, so the total is incomplete yet sounds confident. Exact aggregation needs a query engine; the model should write the query, not do the arithmetic over samples."
+      },
+      "try": {
+        "title": "Let a local model write SQL over a CSV",
+        "minutes": 30,
+        "steps": [
+          "Install duckdb and create a CSV of 100,000 synthetic refund rows with date, region and amount.",
+          "Print the table schema and three sample rows - this, not the data, is what the model sees.",
+          "Ask a local model through Ollama to write DuckDB SQL for 'total refund value in March by region'.",
+          "Check the SQL is a read-only SELECT, run it, and compare with a pandas groupby you write yourself.",
+          "Observe that the model never needed the 100,000 rows, only the schema and the small result."
+        ]
+      }
     }
   ]
 };

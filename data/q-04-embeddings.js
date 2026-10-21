@@ -27,7 +27,7 @@ window.IR.q["04-embeddings"] = {
       "priority": "high",
       "tags": [
         "embeddings",
-        "basics"
+        "retrieval"
       ],
       "why": "A warm-up. The signal is whether you connect it to retrieval behaviour or stop at the definition.",
       "quick": [
@@ -73,7 +73,47 @@ window.IR.q["04-embeddings"] = {
       "numbers": "Common dimensions: 384 for small models, 768–1,536 for general-purpose, 3,072–4,096 at the large end. Many current models are Matryoshka-trained, so you can keep a shorter prefix (say 256 or 512) and trade a little quality for cost. Dimension drives both storage and search cost.",
       "wrong": "\"It converts text to numbers so the computer can process it.\" True of any encoding, including ASCII. The point is that distance means similarity.",
       "follow": "Two different embedding models - how do you decide which is better for us?",
-      "followAnswer": "I test both on our own data. I build about a hundred real questions, each labelled with the chunk that answers it, embed the corpus with each model, and compare recall at ten and MRR, sliced by document type and language. Then I weigh dimension, latency, cost, and whether the model can run where our data must stay. A public leaderboard only builds the shortlist."
+      "followAnswer": "I test both on our own data. I build about a hundred real questions, each labelled with the chunk that answers it, embed the corpus with each model, and compare recall at ten and MRR, sliced by document type and language. Then I weigh dimension, latency, cost, and whether the model can run where our data must stay. A public leaderboard only builds the shortlist.",
+      "builds": [
+        "llm-01"
+      ],
+      "next": [
+        "em-02",
+        "em-11",
+        "em-03"
+      ],
+      "alsoIn": [
+        "riq-a13",
+        "riq-1801"
+      ],
+      "deeper": [
+        "sbert",
+        "sentence-transformers"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "Why can embedding search return a 'time-off entitlement' section for the query 'how many days off do I get?' with no shared keywords?",
+        "options": [
+          "It expands the query with synonyms from a dictionary.",
+          "It matches shared characters between the two texts.",
+          "The model maps texts with similar meaning to nearby vectors, so distance tracks meaning.",
+          "The vector database learns synonyms from past queries."
+        ],
+        "answer": 2,
+        "why": "An embedding model is trained so similar meanings land close together, which is why semantic search works without keyword overlap. No dictionary or database-side learning is involved, and the same mechanism fails when the model has never seen your jargon."
+      },
+      "try": {
+        "title": "See meaning as distance",
+        "minutes": 15,
+        "steps": [
+          "Install with `pip install sentence-transformers` and run the starter code.",
+          "Observe the leave and PTO sentences ranking above the cafeteria one despite sharing few words with the query.",
+          "Observe the internal-jargon sentence: the model has no idea what 'ZK7 approval flow' means, so its score is unreliable.",
+          "Ask a query using only your company's jargon and see how poorly the general model ranks it - that is where retrieval quietly fails.",
+          "Print the embedding dimension and work out storage for one million chunks in float32."
+        ],
+        "code": "from sentence_transformers import SentenceTransformer\nm = SentenceTransformer(\"all-MiniLM-L6-v2\")\nq = \"how many days off do I get?\"\ndocs = [\"Annual leave entitlement is 24 days per year.\",\n        \"Raise a PTO request in the HR portal before the 5th.\",\n        \"The cafeteria opens at 8am on weekdays.\",\n        \"Public holidays follow the regional calendar.\",\n        \"PRJ-ALPHA leave goes through the ZK7 approval flow.\"]\nsims = m.similarity(m.encode([q]), m.encode(docs))[0].tolist()\nfor s, d in sorted(zip(sims, docs), reverse=True):\n    print(f\"{s:.3f}  {d}\")\nprint(\"dimension:\", m.get_sentence_embedding_dimension())"
+      }
     },
     {
       "id": "em-11",
@@ -85,10 +125,8 @@ window.IR.q["04-embeddings"] = {
       "level": "3-5",
       "priority": "high",
       "tags": [
-        "embeddings",
         "vector-db",
-        "ann",
-        "basics"
+        "embeddings"
       ],
       "why": "A basics check. The signal is whether you know the hard part is nearest-neighbour search at scale, not storage.",
       "quick": [
@@ -111,7 +149,31 @@ window.IR.q["04-embeddings"] = {
       "numbers": "Exact search over 1 million 768-dimension float32 vectors scans about 3 GB and does roughly 770 million multiply-adds per query - often in the region of a hundred milliseconds on CPU. A tuned HNSW index typically answers in a few milliseconds at 95%+ recall. Measure on your own hardware.",
       "wrong": "\"It is a database that stores vectors.\" Any database can store an array. The follow-up asks why searching them is hard, and the answer needs nearest-neighbour search and the approximate-search trade-off.",
       "follow": "When is brute-force search good enough, with no index at all?",
-      "followAnswer": "When the collection is small or already filtered down. Up to a few hundred thousand vectors, an exact scan with NumPy or a FAISS flat index often answers in tens of milliseconds, gives perfect recall, and has nothing to tune. It also fits right after a very selective filter, like one user's own documents. I add an ANN index only when measured latency or traffic demands it."
+      "followAnswer": "When the collection is small or already filtered down. Up to a few hundred thousand vectors, an exact scan with NumPy or a FAISS flat index often answers in tens of milliseconds, gives perfect recall, and has nothing to tune. It also fits right after a very selective filter, like one user's own documents. I add an ANN index only when measured latency or traffic demands it.",
+      "builds": [
+        "em-01"
+      ],
+      "next": [
+        "em-04",
+        "em-07",
+        "em-13"
+      ],
+      "deeper": [
+        "hnsw",
+        "faiss"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "Why is a normal B-tree index not enough for vector search?",
+        "options": [
+          "B-trees cannot store floating-point numbers.",
+          "B-trees serve exact matches and ranges, not 'nearest in 768 dimensions', which needs an approximate index like HNSW.",
+          "B-trees are too slow to write to.",
+          "Relational databases cannot hold data in memory."
+        ],
+        "answer": 1,
+        "why": "Storing vectors is easy; finding the closest ones to a query among millions is the hard part, and B-trees order single values, not points in high-dimensional space. That is why vector indexes exist - and why Postgres needed pgvector to add them."
+      }
     },
     {
       "id": "em-02",
@@ -123,8 +185,7 @@ window.IR.q["04-embeddings"] = {
       "priority": "high",
       "tags": [
         "embeddings",
-        "similarity",
-        "vector-search"
+        "retrieval"
       ],
       "why": "A quick factual check with a wrong answer that has real consequences.",
       "quick": [
@@ -190,7 +251,44 @@ window.IR.q["04-embeddings"] = {
       "numbers": "No number applies. It is a compatibility choice, verified empirically.",
       "wrong": "\"Cosine is standard so I use cosine.\" Right most of the time by accident, which is not the same as knowing why.",
       "follow": "What changes if the vectors are not normalised?",
-      "followAnswer": "Then the three metrics can rank differently. Dot product rewards longer vectors, so a document with a large magnitude can win even when its direction is a worse match. Cosine ignores length, and Euclidean penalises differences in both angle and length. So I use exactly the metric the model was trained with - and if the card says cosine, I normalise at write and query time and use dot product for speed."
+      "followAnswer": "Then the three metrics can rank differently. Dot product rewards longer vectors, so a document with a large magnitude can win even when its direction is a worse match. Cosine ignores length, and Euclidean penalises differences in both angle and length. So I use exactly the metric the model was trained with - and if the card says cosine, I normalise at write and query time and use dot product for speed.",
+      "builds": [
+        "em-01"
+      ],
+      "next": [
+        "em-03",
+        "py-07"
+      ],
+      "alsoIn": [
+        "riq-1806"
+      ],
+      "deeper": [
+        "sentence-transformers",
+        "sbert"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "Your embedding model outputs vectors normalised to length 1. You switch the index metric from cosine to dot product. What happens to the ranking?",
+        "options": [
+          "Ranking improves because dot product is more precise.",
+          "Ranking breaks because the metric no longer matches.",
+          "Longer documents start ranking higher.",
+          "Ranking is identical - for unit vectors, cosine and dot product are the same."
+        ],
+        "answer": 3,
+        "why": "Cosine is the dot product divided by both lengths, so with unit vectors they are equal, and Euclidean gives the same order too. That is why mismatches go unnoticed - until a model that does not normalise arrives and rankings quietly change."
+      },
+      "try": {
+        "title": "When do cosine, dot and Euclidean disagree?",
+        "minutes": 10,
+        "steps": [
+          "Run the starter code with numpy.",
+          "Observe that with unnormalised vectors of varying length, the top-10 lists overlap only partly between metrics.",
+          "Observe that after normalising, all three give the same top 10.",
+          "Note what this means: a metric mismatch is silent when vectors are normalised and harmful when they are not."
+        ],
+        "code": "import numpy as np\nrng = np.random.default_rng(1)\ndocs = rng.standard_normal((1000, 64)) * rng.uniform(0.5, 3, (1000, 1))  # varied lengths\nq = rng.standard_normal(64)\ntop = lambda s: set(np.argsort(-s)[:10])\ncos = docs @ q / (np.linalg.norm(docs, axis=1) * np.linalg.norm(q))\ndot = docs @ q\neuc = -np.linalg.norm(docs - q, axis=1)\nprint(\"raw:  cos&dot\", len(top(cos) & top(dot)), \" cos&euc\", len(top(cos) & top(euc)))\ndn = docs / np.linalg.norm(docs, axis=1, keepdims=True)\nqn = q / np.linalg.norm(q)\nprint(\"unit: cos&dot\", len(top(dn @ qn) & top(cos)), \" euc&dot\",\n      len(top(-np.linalg.norm(dn - qn, axis=1)) & top(dn @ qn)))"
+      }
     },
     {
       "id": "em-03",
@@ -203,8 +301,8 @@ window.IR.q["04-embeddings"] = {
       "priority": "high",
       "tags": [
         "embeddings",
-        "model-selection",
-        "evaluation"
+        "evaluation",
+        "retrieval"
       ],
       "why": "Whether you evaluate on your own data or pick from a leaderboard.",
       "quick": [
@@ -226,7 +324,36 @@ window.IR.q["04-embeddings"] = {
       "numbers": "Around 100 labelled pairs is usually enough to separate candidates with a clear gap; close calls need a few hundred. Re-embedding a large corpus is a real cost - price it before you treat the choice as reversible.",
       "wrong": "\"We use the top model on MTEB.\" It says you did not test on your own data, which is the actual skill being probed.",
       "follow": "Would you ever fine-tune the embedding model instead?",
-      "followAnswer": "Only after the cheaper fixes fail - hybrid search, a reranker, better chunking and query rewriting. Fine-tuning pays when our language is far from general text, like internal product codes or medical coding, and retrieval keeps missing on it. I would need a few thousand query-document pairs with hard negatives, and I would budget for re-embedding the whole corpus on every retrain."
+      "followAnswer": "Only after the cheaper fixes fail - hybrid search, a reranker, better chunking and query rewriting. Fine-tuning pays when our language is far from general text, like internal product codes or medical coding, and retrieval keeps missing on it. I would need a few thousand query-document pairs with hard negatives, and I would budget for re-embedding the whole corpus on every retrain.",
+      "builds": [
+        "em-01",
+        "em-02"
+      ],
+      "next": [
+        "em-08",
+        "em-09",
+        "em-10"
+      ],
+      "alsoIn": [
+        "riq-a15",
+        "riq-1812"
+      ],
+      "deeper": [
+        "mteb",
+        "mteb-leaderboard"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Two embedding models score 0.86 and 0.87 recall@10 on your 100-pair labelled set. The 0.86 model has half the vector size and lower latency. Which do you pick?",
+        "options": [
+          "Probably the 0.86 model: a one-point gap is within noise on 100 pairs, and it is cheaper to run.",
+          "The 0.87 model, because the higher score always wins.",
+          "Neither - use whichever leads the MTEB leaderboard.",
+          "Average the two models' vectors to get the best of both."
+        ],
+        "answer": 0,
+        "why": "On 100 pairs, one point is one or two queries, well inside run-to-run noise. When quality ties, storage and latency decide. To separate close models you would need a few hundred pairs, not a public leaderboard, and vectors from different models cannot be mixed."
+      }
     },
     {
       "id": "em-04",
@@ -238,10 +365,8 @@ window.IR.q["04-embeddings"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "embeddings",
-        "hnsw",
-        "index",
-        "ann"
+        "vector-db",
+        "retrieval"
       ],
       "why": "Whether you know what your vector database is doing, which matters the moment it gets slow.",
       "quick": [
@@ -286,7 +411,47 @@ window.IR.q["04-embeddings"] = {
       "numbers": "Common starting points: M around 16, efConstruction around 200, efSearch tuned from 50 upward against your recall target. Keep efSearch at least as large as k - in some engines, pgvector included, it caps how many results come back.",
       "wrong": "\"It's approximate nearest neighbour search.\" Correct, but it only names the category. The follow-up asks for the mechanism and what each parameter costs, and the label alone cannot answer that.",
       "follow": "The index no longer fits in memory. What are your options?",
-      "followAnswer": "Cheapest first. Quantise the vectors - int8 is about four times smaller with a small recall loss. Shorten them if the model supports Matryoshka truncation. Switch to IVF-PQ or a disk-based index like DiskANN, which keep only compressed vectors in RAM and rescore the top candidates. Shard across machines only when one node truly cannot hold it. After each step I re-measure recall."
+      "followAnswer": "Cheapest first. Quantise the vectors - int8 is about four times smaller with a small recall loss. Shorten them if the model supports Matryoshka truncation. Switch to IVF-PQ or a disk-based index like DiskANN, which keep only compressed vectors in RAM and rescore the top candidates. Shard across machines only when one node truly cannot hold it. After each step I re-measure recall.",
+      "builds": [
+        "em-11"
+      ],
+      "next": [
+        "em-05",
+        "em-06",
+        "em-13"
+      ],
+      "alsoIn": [
+        "riq-a30",
+        "riq-1906"
+      ],
+      "deeper": [
+        "hnsw",
+        "faiss"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "HNSW recall is too low and a rebuild would take hours. What do you change first?",
+        "options": [
+          "Raise M, the number of links per node.",
+          "Raise efSearch at query time and measure recall and latency.",
+          "Lower efSearch to make queries faster.",
+          "Switch permanently to flat search."
+        ],
+        "answer": 1,
+        "why": "efSearch is a query-time setting: raising it explores more of the graph for better recall at some latency cost, with no rebuild. M is fixed at build time, so changing it means rebuilding. Lowering efSearch cuts recall further."
+      },
+      "try": {
+        "title": "Tune efSearch and measure ANN recall",
+        "minutes": 20,
+        "steps": [
+          "Install with `pip install faiss-cpu numpy` and run the starter code (building takes a minute).",
+          "Observe recall@10 against exact search rising as efSearch grows, while time per query rises too.",
+          "Pick the smallest efSearch that reaches 0.95 recall - that is how you would set it in production.",
+          "Rebuild with M = 32 and observe better recall at the same efSearch, at the cost of build time and memory.",
+          "Note that random vectors are harder than real embeddings, so your own data usually reaches high recall sooner."
+        ],
+        "code": "import numpy as np, faiss, time\nd, n = 128, 100_000\nrng = np.random.default_rng(0)\nxb = rng.standard_normal((n, d)).astype(\"float32\")\nxq = rng.standard_normal((200, d)).astype(\"float32\")\nflat = faiss.IndexFlatL2(d); flat.add(xb)\n_, gt = flat.search(xq, 10)                       # exact ground truth\nhnsw = faiss.IndexHNSWFlat(d, 16)                  # M = 16\nhnsw.hnsw.efConstruction = 200\nhnsw.add(xb)\nfor ef in [16, 32, 64, 128, 256]:\n    hnsw.hnsw.efSearch = ef\n    t = time.perf_counter(); _, I = hnsw.search(xq, 10)\n    ms = (time.perf_counter() - t) * 1000 / len(xq)\n    rec = np.mean([len(set(I[i]) & set(gt[i])) / 10 for i in range(len(xq))])\n    print(f\"efSearch={ef:3}  recall@10={rec:.3f}  {ms:.2f} ms/query\")"
+      }
     },
     {
       "id": "em-06",
@@ -298,10 +463,9 @@ window.IR.q["04-embeddings"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "embeddings",
-        "filtering",
-        "performance",
-        "access-control"
+        "vector-db",
+        "security",
+        "retrieval"
       ],
       "why": "A subtle mechanism with a large production impact, and few candidates have hit it.",
       "quick": [
@@ -370,7 +534,33 @@ window.IR.q["04-embeddings"] = {
       "numbers": "Always measure recall with filters applied. A system at 0.95 unfiltered can sit far lower once a selective tenant filter is added.",
       "wrong": "\"I just add a filter to the query.\" It works until the filter is selective, and then it fails in a way that looks like a retrieval-quality problem.",
       "follow": "You have 400 tenants. One collection with a filter, or 400 collections?",
-      "followAnswer": "Usually one collection partitioned by tenant - a namespace, partition key or the engine's multi-tenancy feature - rather than a plain filter or 400 separate collections. Hundreds of collections multiply overhead, and a plain filter on a small tenant can wreck recall. If a few tenants are huge or need strict isolation, only those get their own collection. Either way the tenant is enforced server-side, never trusted from the client."
+      "followAnswer": "Usually one collection partitioned by tenant - a namespace, partition key or the engine's multi-tenancy feature - rather than a plain filter or 400 separate collections. Hundreds of collections multiply overhead, and a plain filter on a small tenant can wreck recall. If a few tenants are huge or need strict isolation, only those get their own collection. Either way the tenant is enforced server-side, never trusted from the client.",
+      "builds": [
+        "em-04"
+      ],
+      "next": [
+        "rag-09",
+        "sd-07"
+      ],
+      "alsoIn": [
+        "riq-1909"
+      ],
+      "deeper": [
+        "qdrant",
+        "pgvector"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "With post-filtering, you fetch the top 100 by vector similarity and then keep only one tenant's documents. That tenant owns 1% of the corpus. What is the typical result?",
+        "options": [
+          "About 100 results, all from the tenant.",
+          "Other tenants' documents leak into the answer.",
+          "Often zero to a handful of results, so recall collapses.",
+          "The database returns an error."
+        ],
+        "answer": 2,
+        "why": "If the tenant is 1% of the data, about one of the top 100 belongs to them, so most results are filtered away and users see 'search returns nothing'. Post-filtering returns too few results rather than leaking - filtering during the graph walk fixes it."
+      }
     },
     {
       "id": "em-07",
@@ -382,10 +572,8 @@ window.IR.q["04-embeddings"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "embeddings",
         "vector-db",
-        "architecture",
-        "trade-off"
+        "trade-offs"
       ],
       "why": "A real architecture decision with no universally correct answer - which is why it is asked.",
       "quick": [
@@ -407,7 +595,30 @@ window.IR.q["04-embeddings"] = {
       "numbers": "pgvector with HNSW is commonly run at single-digit to tens of millions of vectors on one well-sized node, especially with halfvec; the limit is usually the index fitting in memory and filtered-query p95. Measure p95 with your real filters before committing either way.",
       "wrong": "\"Dedicated vector databases are faster, so we use one.\" Faster at what, under which filters, at what operational cost. This answer invites all three follow-ups.",
       "follow": "What measurement would trigger the migration?",
-      "followAnswer": "I agree the thresholds in advance. For example: filtered p95 search latency above budget at peak QPS after tuning, the HNSW index no longer fitting in memory on the largest node we are willing to run, or index builds and vacuum hurting the main transactional workload. If one of those holds for a sustained period, we plan the move - as a decision, not a fire."
+      "followAnswer": "I agree the thresholds in advance. For example: filtered p95 search latency above budget at peak QPS after tuning, the HNSW index no longer fitting in memory on the largest node we are willing to run, or index builds and vacuum hurting the main transactional workload. If one of those holds for a sustained period, we plan the move - as a decision, not a fire.",
+      "builds": [
+        "em-11"
+      ],
+      "next": [
+        "rag-36",
+        "em-06"
+      ],
+      "deeper": [
+        "pgvector",
+        "qdrant"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Your team runs Postgres well, has 3 million chunks, and needs joins with permission tables. Which is the sensible choice?",
+        "options": [
+          "A dedicated vector database, because they are always faster.",
+          "pgvector with HNSW, with an agreed migration trigger on corpus size, QPS or filtered p95.",
+          "Store vectors as JSON and scan them in application code.",
+          "Elasticsearch, since joins need a search engine."
+        ],
+        "answer": 1,
+        "why": "At a few million vectors pgvector is comfortably in range, and you keep joins, transactions and one backup and access story. A new datastore adds on-call and security surface. Agreeing the switch trigger in advance makes a later migration a decision rather than a fire."
+      }
     },
     {
       "id": "em-12",
@@ -419,10 +630,9 @@ window.IR.q["04-embeddings"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
+        "hybrid-search",
         "embeddings",
-        "sparse",
-        "bm25",
-        "hybrid-search"
+        "retrieval"
       ],
       "why": "Whether you understand both halves of hybrid search, not just the vector half.",
       "quick": [
@@ -492,7 +702,47 @@ window.IR.q["04-embeddings"] = {
       "numbers": "BM25's usual defaults are k1 around 1.2 and b = 0.75. A BERT-based SPLADE vector has about 30,000 possible slots (the vocabulary size), but typically only tens to a few hundred are non-zero per document.",
       "wrong": "\"Sparse is the old way and dense replaced it.\" On identifier-heavy corpora BM25 still beats dense retrieval on exact codes, and learned sparse models are a current, actively used option.",
       "follow": "Your dense retriever misses queries with product codes. What do you change?",
-      "followAnswer": "I add BM25 or a learned sparse index alongside the dense one and merge the two lists with reciprocal rank fusion, so exact codes match lexically. I also check that the text analyser does not split the code into useless pieces - a keyword field for identifiers often helps. Then I measure recall on a labelled set of code-heavy queries, before and after."
+      "followAnswer": "I add BM25 or a learned sparse index alongside the dense one and merge the two lists with reciprocal rank fusion, so exact codes match lexically. I also check that the text analyser does not split the code into useless pieces - a keyword field for identifiers often helps. Then I measure recall on a labelled set of code-heavy queries, before and after.",
+      "builds": [
+        "em-01"
+      ],
+      "next": [
+        "rag-11",
+        "py-26",
+        "py-17"
+      ],
+      "alsoIn": [
+        "riq-a26",
+        "riq-1809"
+      ],
+      "deeper": [
+        "bm25",
+        "splade"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "The query is 'FX-2290 cartridge'. One document mentions FX-2290 and another FX-2209. Which retriever most reliably ranks the FX-2290 document first?",
+        "options": [
+          "BM25, because the exact rare token matches only one document.",
+          "A dense embedding model, because it understands meaning.",
+          "Both are equally reliable on codes.",
+          "Neither can match product codes."
+        ],
+        "answer": 0,
+        "why": "Dense models compress text into meaning, and two near-identical codes look almost the same to them. BM25 scores exact rare tokens highly, so the exact code wins. That is why hybrid search keeps a sparse retriever alongside dense."
+      },
+      "try": {
+        "title": "BM25 versus dense on product codes",
+        "minutes": 15,
+        "steps": [
+          "Install with `pip install rank-bm25 sentence-transformers` and run the starter code.",
+          "Observe that the dense scores for the FX-2290 and FX-2209 documents are close together.",
+          "Observe that BM25 gives the exact-code document a clearly higher score.",
+          "Change the query to 'replacement filter for my water jug' and observe dense search now does the better job.",
+          "Combine the two rankings by hand with reciprocal rank fusion and check that both queries come out right."
+        ],
+        "code": "from rank_bm25 import BM25Okapi\nfrom sentence_transformers import SentenceTransformer\ndocs = [\"Replacement filter cartridge FX-2290 for the AquaPure 300.\",\n        \"Replacement filter cartridge FX-2209 for the AquaPure 200.\",\n        \"How to descale your kettle with vinegar.\",\n        \"Water filter jug, fits most standard cartridges.\"]\nq = \"FX-2290 cartridge\"\nbm25 = BM25Okapi([d.lower().replace(\".\", \"\").split() for d in docs])\nprint(\"bm25 \", bm25.get_scores(q.lower().split()).round(2))\nm = SentenceTransformer(\"all-MiniLM-L6-v2\")\nprint(\"dense\", m.similarity(m.encode([q]), m.encode(docs))[0].numpy().round(3))"
+      }
     },
     {
       "id": "em-13",
@@ -503,11 +753,9 @@ window.IR.q["04-embeddings"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "embeddings",
-        "index",
-        "ivf",
-        "hnsw",
-        "ann"
+        "vector-db",
+        "retrieval",
+        "cost"
       ],
       "why": "Whether you pick an index from data size, memory and update pattern rather than from habit.",
       "quick": [
@@ -578,7 +826,30 @@ window.IR.q["04-embeddings"] = {
       "numbers": "pgvector's starting guidance for IVFFlat: lists ≈ rows / 1,000 up to 1M rows and √rows above that, with probes ≈ √lists. Then tune probes (nprobe in FAISS) against ANN recall measured with flat search.",
       "wrong": "\"HNSW is the best, so always use HNSW.\" At a billion vectors the RAM bill decides otherwise, and the follow-up asks what you would do instead.",
       "follow": "Your IVF index's recall has slowly dropped over six months. Why?",
-      "followAnswer": "Most likely drift. The cluster centres were trained on the data we had back then. New documents look different, so they crowd into a few clusters or sit far from every centre, and the clusters we probe no longer cover them. I confirm by measuring ANN recall against flat search on recent documents, then retrain the centroids and rebuild - and make that retrain a scheduled job."
+      "followAnswer": "Most likely drift. The cluster centres were trained on the data we had back then. New documents look different, so they crowd into a few clusters or sit far from every centre, and the clusters we probe no longer cover them. I confirm by measuring ANN recall against flat search on recent documents, then retrain the centroids and rebuild - and make that retrain a scheduled job.",
+      "builds": [
+        "em-04"
+      ],
+      "next": [
+        "em-05",
+        "rag-13"
+      ],
+      "deeper": [
+        "faiss",
+        "pgvector"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "You have one billion 768-dimension vectors, limited RAM, and data that rarely changes. Which index family fits?",
+        "options": [
+          "Flat search, because exact results are best.",
+          "HNSW fully in RAM, whatever the cost.",
+          "IVF-PQ or a disk-based index such as DiskANN.",
+          "A B-tree on the first dimension."
+        ],
+        "answer": 2,
+        "why": "A billion float32 vectors is about 3 TB before graph links, so all-in-RAM HNSW is very expensive and flat search too slow. Compressed IVF-PQ or disk-based indexes trade a little recall for a far smaller memory bill, and static data keeps IVF clusters fresh."
+      }
     },
     {
       "id": "em-05",
@@ -589,10 +860,9 @@ window.IR.q["04-embeddings"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "embeddings",
-        "scale",
-        "quantisation",
-        "cost"
+        "vector-db",
+        "cost",
+        "embeddings"
       ],
       "why": "A scaling scenario with several valid answers - it tests whether you reason about trade-offs.",
       "quick": [
@@ -644,7 +914,31 @@ window.IR.q["04-embeddings"] = {
       "numbers": "float32 → int8 is about 4× smaller. 200M vectors at 1024 dimensions is roughly 800 GB in float32, about 200 GB in int8 - plus the HNSW graph links, roughly another 25–30 GB at M = 16.",
       "wrong": "\"Add more RAM.\" Valid once, but it grows with the corpus. The follow-up asks what you do when that stops being affordable, and the answer needs the options and their recall cost.",
       "follow": "You quantised and recall dropped 4 points. What next?",
-      "followAnswer": "First I check whether the loss matters, by looking at which queries lost their right chunk and whether they cluster in one segment. The usual fix is rescoring. I fetch a bigger candidate set from the quantised index, say the top hundred, and re-rank those with full-precision vectors kept on disk, which typically wins back most of the loss for little latency. If it doesn't, I raise efSearch, try gentler quantisation or add a reranker, then re-measure recall at k."
+      "followAnswer": "First I check whether the loss matters, by looking at which queries lost their right chunk and whether they cluster in one segment. The usual fix is rescoring. I fetch a bigger candidate set from the quantised index, say the top hundred, and re-rank those with full-precision vectors kept on disk, which typically wins back most of the loss for little latency. If it doesn't, I raise efSearch, try gentler quantisation or add a reranker, then re-measure recall at k.",
+      "builds": [
+        "em-04",
+        "em-13"
+      ],
+      "next": [
+        "ar-16",
+        "em-08"
+      ],
+      "deeper": [
+        "matryoshka",
+        "faiss"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "200 million vectors at 1,024 dimensions. Roughly how large are they in float32, and in int8?",
+        "options": [
+          "About 200 GB, and about 50 GB.",
+          "About 80 GB, and about 20 GB.",
+          "About 800 GB, and about 400 GB.",
+          "About 800 GB, and about 200 GB."
+        ],
+        "answer": 3,
+        "why": "200M x 1,024 x 4 bytes is about 820 GB in float32; int8 uses 1 byte per value, a quarter of that. Halving to 400 GB would be float16. The HNSW graph links add more on top, so re-measure recall after quantising."
+      }
     },
     {
       "id": "em-08",
@@ -656,9 +950,9 @@ window.IR.q["04-embeddings"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "embeddings",
         "evaluation",
-        "metrics"
+        "retrieval",
+        "vector-db"
       ],
       "why": "The RAG topic owns the metric definitions; this is the embeddings-layer version - telling 'the index missed the nearest vectors' apart from 'the nearest vectors were the wrong chunks'.",
       "quick": [
@@ -721,7 +1015,31 @@ window.IR.q["04-embeddings"] = {
       "numbers": "Useful bar: recall@10 above 0.90 before tuning the prompt. 100+ labelled pairs, or run-to-run noise exceeds the effect you are measuring. ANN recall@10 against exact search of 0.95–0.99 is a common index-tuning target.",
       "wrong": "\"We check whether the answers look right.\" That measures the whole pipeline at once, so a retrieval regression and a prompt regression are indistinguishable.",
       "follow": "Recall@10 is 0.95 but recall@3 is 0.6. What does that tell you?",
-      "followAnswer": "It tells me retrieval is finding the right chunk but ranking it poorly, so it's an ordering problem, not a recall problem. If the model only sees the top three, the right chunk is missing from its context on roughly four questions in ten, even though it was found. So I add a cross-encoder reranker over the top twenty or fifty, which is exactly the fix for this pattern, or pass more chunks if the context budget allows. Then I re-check recall at three and MRR."
+      "followAnswer": "It tells me retrieval is finding the right chunk but ranking it poorly, so it's an ordering problem, not a recall problem. If the model only sees the top three, the right chunk is missing from its context on roughly four questions in ten, even though it was found. So I add a cross-encoder reranker over the top twenty or fifty, which is exactly the fix for this pattern, or pass more chunks if the context budget allows. Then I re-check recall at three and MRR.",
+      "builds": [
+        "em-03",
+        "em-04"
+      ],
+      "next": [
+        "rag-46",
+        "rag-26"
+      ],
+      "deeper": [
+        "faiss",
+        "ragas"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "ANN recall@10 against exact search is 0.98, but relevance recall@10 on your labelled pairs is 0.62. Where is the problem?",
+        "options": [
+          "In the index - raise efSearch.",
+          "In the embedding model or chunking - the true nearest vectors are the wrong chunks.",
+          "In the LLM prompt.",
+          "The labelled set is too large to be reliable."
+        ],
+        "answer": 1,
+        "why": "0.98 ANN recall means the index returns almost exactly what brute force would, so tuning it cannot help much. The nearest vectors themselves are not the right chunks, which points at the embedding model or how documents were split."
+      }
     },
     {
       "id": "em-09",
@@ -734,7 +1052,7 @@ window.IR.q["04-embeddings"] = {
       "tags": [
         "embeddings",
         "fine-tuning",
-        "advanced"
+        "retrieval"
       ],
       "why": "A depth question. The senior answer is mostly about when not to.",
       "quick": [
@@ -789,7 +1107,32 @@ window.IR.q["04-embeddings"] = {
       "numbers": "A few thousand query-document pairs is a realistic starting point. With far fewer, the effort is usually better spent on a reranker.",
       "wrong": "\"We fine-tuned embeddings to improve accuracy.\" Without the alternatives tried and the re-embedding cost named, it reads as reaching for the most expensive option first.",
       "follow": "How would you get those query-document pairs without a labelling team?",
-      "followAnswer": "I mine them from what we already have. Search and chat logs give real queries, and clicks, thumbs-up or a chunk cited in a well-rated answer give the positive document. Where logs are thin, I have an LLM write a few plausible questions for each chunk, so the source chunk is the label, and I spot-check a sample. For hard negatives I take chunks the current model ranks highly that aren't the answer, filtering out any that are secretly correct."
+      "followAnswer": "I mine them from what we already have. Search and chat logs give real queries, and clicks, thumbs-up or a chunk cited in a well-rated answer give the positive document. Where logs are thin, I have an LLM write a few plausible questions for each chunk, so the source chunk is the label, and I spot-check a sample. For hard negatives I take chunks the current model ranks highly that aren't the answer, filtering out any that are secretly correct.",
+      "builds": [
+        "em-03",
+        "em-08"
+      ],
+      "next": [
+        "rag-26",
+        "ar-15",
+        "rag-12"
+      ],
+      "deeper": [
+        "sentence-transformers",
+        "dpr"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Retrieval keeps missing queries about internal product codes. You have 200 labelled pairs. What is the best next step?",
+        "options": [
+          "Fine-tune the embedding model on the 200 pairs.",
+          "Switch to a bigger generation model.",
+          "Add BM25 hybrid search and a reranker first; consider fine-tuning later with thousands of pairs if still needed.",
+          "Raise chunk overlap to 90 percent."
+        ],
+        "answer": 2,
+        "why": "Exact codes are a classic dense-retrieval weakness that hybrid search fixes cheaply and reversibly, and a reranker helps further. Two hundred pairs is thin for fine-tuning, which also means owning a model and re-embedding the corpus. The generation model is not where the miss happens."
+      }
     },
     {
       "id": "em-10",
@@ -802,9 +1145,8 @@ window.IR.q["04-embeddings"] = {
       "priority": "low",
       "tags": [
         "embeddings",
-        "migration",
-        "operations",
-        "versioning"
+        "llmops",
+        "vector-db"
       ],
       "why": "An operational scenario that catches anyone who has only built, never migrated.",
       "quick": [
@@ -861,7 +1203,33 @@ window.IR.q["04-embeddings"] = {
       "numbers": "Budget the full re-embedding cost and time up front - for a large corpus this is a real spend and a multi-day job, not an afternoon.",
       "wrong": "\"We would re-embed everything and switch.\" The right shape, missing the parallel index, the comparison and the rollback - which is where the risk actually is.",
       "follow": "Halfway through the rebuild, ingestion breaks. What state are you in?",
-      "followAnswer": "A safe one, as long as nothing has been cut over. The live index on the old model keeps serving, so users see no change, and the new index is partial and stale, so nothing queries it. Because every chunk carries its model version and the rebuild checkpoints its progress, I fix ingestion, resume from the checkpoint rather than starting over, and backfill whatever the dual-write missed. Only then do the recall comparison and shadowing carry on."
+      "followAnswer": "A safe one, as long as nothing has been cut over. The live index on the old model keeps serving, so users see no change, and the new index is partial and stale, so nothing queries it. Because every chunk carries its model version and the rebuild checkpoints its progress, I fix ingestion, resume from the checkpoint rather than starting over, and backfill whatever the dual-write missed. Only then do the recall comparison and shadowing carry on.",
+      "builds": [
+        "em-03"
+      ],
+      "next": [
+        "rag-10",
+        "rag-36"
+      ],
+      "alsoIn": [
+        "riq-1813"
+      ],
+      "deeper": [
+        "sentence-transformers",
+        "huyen-ai-engineering"
+      ],
+      "check": {
+        "kind": "spot-the-bug",
+        "q": "Migration plan: embed new documents with model B, leave old documents on model A in the same index, and embed queries with model B. What goes wrong?",
+        "options": [
+          "Old documents' vectors live in a different space, so B-query scores against them are meaningless.",
+          "Nothing, as long as both models output the same dimension.",
+          "Only latency increases slightly.",
+          "The index automatically rejects mixed vectors."
+        ],
+        "answer": 0,
+        "why": "Each model learns its own coordinate system, so matching dimensions does not make vectors comparable. Old documents get arbitrary scores, and nothing errors to warn you. Build a parallel index, compare, and cut over behind a flag."
+      }
     }
   ]
 };

@@ -24,8 +24,7 @@ window.IR.q["18-system-design"] = {
       "priority": "high",
       "tags": [
         "system-design",
-        "process",
-        "requirements"
+        "rag"
       ],
       "why": "The open design prompt. Most candidates fail it in the first two minutes by naming technology.",
       "quick": [
@@ -77,7 +76,31 @@ window.IR.q["18-system-design"] = {
       "numbers": "Spend roughly the first 5 minutes of a 45-minute round on requirements. Skipping it is the most common way to design the wrong system confidently.",
       "wrong": "Opening with \"I'd use LangChain with a vector database.\" You have chosen technology before knowing the volume, the latency budget or the permission model. The first follow-up on scale or access control will show the choice had no basis.",
       "follow": "Now the same system for 10,000 concurrent users. What changes?",
-      "followAnswer": "The architecture mostly stays; capacity and failure handling change. I estimate peak requests and tokens per minute, then check provider quota or buy provisioned throughput, and spread load across deployments or regions. I add caching for repeated questions, autoscaling on the retrieval tier, per-user rate limits, and a queue for ingestion. Then I load-test to find the real p95 and plan fallbacks for when the provider throttles us."
+      "followAnswer": "The architecture mostly stays; capacity and failure handling change. I estimate peak requests and tokens per minute, then check provider quota or buy provisioned throughput, and spread load across deployments or regions. I add caching for repeated questions, autoscaling on the retrieval tier, per-user rate limits, and a queue for ingestion. Then I load-test to find the real p95 and plan fallbacks for when the provider throttles us.",
+      "builds": [
+        "sd-26"
+      ],
+      "next": [
+        "rag-38",
+        "rag-13",
+        "sd-07"
+      ],
+      "deeper": [
+        "system-design-primer",
+        "huyen-llm-production"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "The prompt is: \"Design a GenAI assistant for our support team.\" What is the strongest first two minutes?",
+        "options": [
+          "Propose LangChain with a vector database and a frontier model.",
+          "Draw the full architecture, then ask whether it fits.",
+          "Start by explaining how transformers and embeddings work.",
+          "Ask who uses it, volume, latency, data sources, permissions and the success metric, then state assumptions aloud."
+        ],
+        "answer": 3,
+        "why": "Agents on a live call and customers typing directly need different latency, tone and guardrails, so the requirements decide the design. Naming tools first means choosing before knowing scale or the permission model, and the first follow-up exposes it."
+      }
     },
     {
       "id": "sd-26",
@@ -88,10 +111,9 @@ window.IR.q["18-system-design"] = {
       "level": "3-5",
       "priority": "high",
       "tags": [
-        "system-design",
         "rag",
-        "architecture",
-        "access-control"
+        "system-design",
+        "security"
       ],
       "why": "The single most common GenAI design prompt. It checks that you can connect ingestion, permissions, retrieval, generation, evaluation and operations into one working system.",
       "quick": [
@@ -198,7 +220,32 @@ window.IR.q["18-system-design"] = {
       "numbers": "A typical starting point: chunks of 300-800 tokens, retrieve 20-50 candidates, rerank to 3-5, and aim for the first token within 1-2 seconds. Tune each on your own eval set rather than copying these.",
       "wrong": "\"Embed the PDFs, put them in a vector database and call the LLM.\" That is a demo. It has no permission model, no update or delete path, no evaluation and no not-found behaviour - the four things that decide whether it reaches production.",
       "follow": "A user sees an answer quoting a document they are not allowed to open. Where did your design fail?",
-      "followAnswer": "The permission filter was missing or stale somewhere. I would check three places. Was the access list captured at ingestion and re-synced when access changed? Was the filter applied inside retrieval on every search path, including keyword search and any answer cache? And did the user's identity come from the verified session? The fix goes in retrieval, plus a test that attempts exactly this access on every build."
+      "followAnswer": "The permission filter was missing or stale somewhere. I would check three places. Was the access list captured at ingestion and re-synced when access changed? Was the filter applied inside retrieval on every search path, including keyword search and any answer cache? And did the user's identity come from the verified session? The fix goes in retrieval, plus a test that attempts exactly this access on every build.",
+      "builds": [
+        "rag-17",
+        "rag-09"
+      ],
+      "next": [
+        "sd-07",
+        "rag-10",
+        "rag-24"
+      ],
+      "deeper": [
+        "rag-paper",
+        "es-hybrid"
+      ],
+      "check": {
+        "kind": "which-fails",
+        "q": "Where should document permissions be enforced in an internal RAG chatbot?",
+        "options": [
+          "In the system prompt: \"Only use documents the user may access.\"",
+          "As a filter in retrieval, using the user's authenticated identity, so restricted chunks never reach the model.",
+          "In a post-processing check that removes restricted citations from the answer.",
+          "In the UI, by hiding restricted document titles."
+        ],
+        "answer": 1,
+        "why": "A model cannot be trusted to obey access rules, and post-processing is too late - the content already shaped the answer. Filtering at retrieval means a contractor never receives an HR-only chunk at all."
+      }
     },
     {
       "id": "sd-07",
@@ -209,9 +256,9 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
+        "security",
         "system-design",
-        "multi-tenant",
-        "security"
+        "caching"
       ],
       "why": "A constraint-driven design question. It rewards defence in depth over a single clever idea.",
       "quick": [
@@ -267,7 +314,30 @@ window.IR.q["18-system-design"] = {
       "numbers": "No number applies - this is a binary control. What you measure is that the cross-tenant test suite runs on every build and has never let a cross-tenant read through.",
       "wrong": "\"We add tenant_id to the metadata filter.\" Necessary and insufficient. It leaves caching, traces and where the filter is enforced unaddressed, and caching is where the leak usually is.",
       "follow": "Someone adds a response cache to cut costs. What review catches the problem?",
-      "followAnswer": "Ideally nothing depends on a reviewer remembering. The shared cache library builds the key itself - tenant, user entitlements, prompt version, corpus version - so feature code cannot pass the raw question as the key. The cross-tenant test suite runs on every build: tenant A asks a question, tenant B asks the same one, and the build fails if B gets A's answer. A design-review checklist item for any new cache backs that up."
+      "followAnswer": "Ideally nothing depends on a reviewer remembering. The shared cache library builds the key itself - tenant, user entitlements, prompt version, corpus version - so feature code cannot pass the raw question as the key. The cross-tenant test suite runs on every build: tenant A asks a question, tenant B asks the same one, and the build fails if B gets A's answer. A design-review checklist item for any new cache backs that up.",
+      "builds": [
+        "rag-09"
+      ],
+      "next": [
+        "ar-10",
+        "gr-02",
+        "sd-28"
+      ],
+      "deeper": [
+        "owasp-llm"
+      ],
+      "check": {
+        "kind": "spot-the-bug",
+        "q": "A multi-tenant assistant adds a response cache to cut cost:\n    key = sha256(normalise(question))\n    if key in cache: return cache[key]\nWhat is the flaw?",
+        "options": [
+          "sha256 is too slow for a cache key.",
+          "Normalising the question will cause too many misses.",
+          "Caches should never be used with LLMs.",
+          "The key has no tenant or entitlements, so one customer's answer can be served to another."
+        ],
+        "answer": 3,
+        "why": "Two tenants asking the same question share a key, so tenant A's grounded answer goes to tenant B. Build the key in a shared library from tenant, entitlements, prompt version and corpus version, and run cross-tenant tests on every build."
+      }
     },
     {
       "id": "sd-27",
@@ -278,10 +348,9 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "system-design",
-        "agents",
         "multi-agent",
-        "research"
+        "agents",
+        "cost"
       ],
       "why": "The standard agentic design prompt of 2025-26. It checks whether you add agents for a real reason, control cost and loops, and keep the report grounded in sources.",
       "quick": [
@@ -370,9 +439,34 @@ window.IR.q["18-system-design"] = {
       },
       "say": "A planner splits the question, a few researchers work on the parts in parallel, a writer drafts, and a checker verifies every citation, all under hard budgets. Before building that, I'd check whether one agent with a search tool would do, because it often does. Multiple agents only earn their place when the research genuinely splits into parallel parts. Each researcher returns short notes with the exact quoted passage and link, not whole pages, so the planner's context stays small. The writer drafts only from those notes, and the checker matches each claim to its passage and sends gaps back for another round. Control is the senior part. Anthropic has reported its multi-agent research system using around fifteen times the tokens of a normal chat, so I cap researchers, steps, tokens and wall-clock time. Fetched pages can carry prompt injection, so researchers get read-only tools. Durable state lets long runs resume, and I'd measure citation accuracy, coverage, and cost and time per report.",
       "numbers": "Multi-agent research is token-hungry: Anthropic reported its multi-agent research system used roughly 15x the tokens of a normal chat interaction. Set a per-report token and time budget up front, and measure real cost per report on a test set.",
+      "verified": "2026-10",
       "wrong": "Five agents - a 'researcher', a 'critic', a 'manager' - chatting freely with no budget. It loops, costs a fortune, loses context at every handoff, and nobody can tell which agent introduced the wrong fact.",
       "follow": "The report cites a source that does not say what the report claims. How do you stop that?",
-      "followAnswer": "I make citation checking a step, not a hope. Researchers store the exact quoted passage with each note, not just a link. The writer may only cite notes, and a checker compares each claim with its passage and flags anything unsupported. Unsupported claims are removed or sent back for more research. And citation accuracy is a tracked metric on the test set, so a prompt or model change that worsens it is caught."
+      "followAnswer": "I make citation checking a step, not a hope. Researchers store the exact quoted passage with each note, not just a link. The writer may only cite notes, and a checker compares each claim with its passage and flags anything unsupported. Unsupported claims are removed or sent back for more research. And citation accuracy is a tracked metric on the test set, so a prompt or model change that worsens it is caught.",
+      "builds": [
+        "ag-07"
+      ],
+      "next": [
+        "ag-26",
+        "ag-27",
+        "rag-08"
+      ],
+      "deeper": [
+        "anthropic-multi-agent",
+        "anthropic-agents"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "A normal chat answer in your product uses about 20,000 tokens. Using Anthropic's published ratio for its multi-agent research system, roughly how many tokens might one research report use?",
+        "options": [
+          "About 40,000",
+          "About 80,000",
+          "About 300,000",
+          "About 2 million"
+        ],
+        "answer": 2,
+        "why": "Anthropic reported about 4x the tokens of chat for a single agent and about 15x for its multi-agent system, so roughly 300,000. 80,000 is the single-agent figure. Measure your own ratio, and cap tokens, steps and time per report."
+      }
     },
     {
       "id": "sd-03",
@@ -384,9 +478,8 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "story",
-        "behavioural",
-        "ownership"
+        "project-story",
+        "behavioural"
       ],
       "why": "The most predictable question in the process, and the most commonly wasted.",
       "quick": [
@@ -409,7 +502,29 @@ window.IR.q["18-system-design"] = {
       "numbers": "Use your real numbers - users, documents, the metric before and after, and the timeframe. Vague scale reads as a project you observed.",
       "wrong": "A component tour: \"we used LangChain, Pinecone, GPT-4 and Streamlit.\" It answers what you installed, not what you did.",
       "follow": "What was the hardest part, and what did you get wrong?",
-      "followAnswer": "Shape it with your own facts: the hardest part was [a specific technical problem], for example getting tables in scanned PDFs to retrieve correctly. What I got wrong was [a decision], for example building the eval set from questions engineers wrote, so we missed how real users phrase things. We fixed it by adding a weekly sample of real queries to the eval set, and that became the number we reported."
+      "followAnswer": "Shape it with your own facts: the hardest part was [a specific technical problem], for example getting tables in scanned PDFs to retrieve correctly. What I got wrong was [a decision], for example building the eval set from questions engineers wrote, so we missed how real users phrase things. We fixed it by adding a weekly sample of real queries to the eval set, and that became the number we reported.",
+      "next": [
+        "sd-04",
+        "riq-3502",
+        "riq-3101"
+      ],
+      "alsoIn": [
+        "riq-a08",
+        "riq-1401"
+      ],
+      "deeper": [],
+      "check": {
+        "kind": "judgement",
+        "q": "In a screening call you are asked, \"Tell me about a GenAI project you built.\" Which opening lands best?",
+        "options": [
+          "\"We used LangChain, a vector database, a frontier model and Streamlit.\"",
+          "A ten-minute walkthrough of every component.",
+          "\"A policy assistant for 400 support agents. I owned retrieval and evaluation. The hard call was retrieval over long context, because of per-user permissions. Handling time fell measurably.\"",
+          "\"We built a RAG chatbot for internal documents.\""
+        ],
+        "answer": 2,
+        "why": "It gives the problem, your own part, one decision with its reason and a result, in under a minute. A component list says what you installed, not what you did, and a generic one-liner describes a thousand projects."
+      }
     },
     {
       "id": "sd-04",
@@ -420,10 +535,8 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "story",
-        "behavioural",
-        "ownership",
-        "failure"
+        "project-story",
+        "behavioural"
       ],
       "why": "The question the whole manager round hinges on. A frictionless story is not believed.",
       "quick": [
@@ -445,7 +558,30 @@ window.IR.q["18-system-design"] = {
       "numbers": "Include the duration and the impact. \"Three weeks, caught by support, zero reports after the fix\" is credible in a way that an unquantified story is not.",
       "wrong": "\"We didn't face major issues.\" It answers a different question and throws away the round's best opportunity to show ownership.",
       "follow": "How would you have caught that earlier?",
-      "followAnswer": "With a reconciliation check from day one - a nightly job that compares document IDs in the source with those in the index and alerts on anything the source no longer has. Plus an eval case with a withdrawn document, asserting it is never cited. And in design review I now treat 'what happens when a document is deleted' as a required question for any ingestion pipeline, not an edge case."
+      "followAnswer": "With a reconciliation check from day one - a nightly job that compares document IDs in the source with those in the index and alerts on anything the source no longer has. Plus an eval case with a withdrawn document, asserting it is never cited. And in design review I now treat 'what happens when a document is deleted' as a required question for any ingestion pipeline, not an edge case.",
+      "builds": [
+        "sd-03"
+      ],
+      "next": [
+        "sd-21",
+        "rag-16"
+      ],
+      "alsoIn": [
+        "riq-3405"
+      ],
+      "deeper": [],
+      "check": {
+        "kind": "judgement",
+        "q": "The manager asks, \"What went wrong on that project?\" Which answer lands best?",
+        "options": [
+          "\"Honestly, nothing major - the project went smoothly.\"",
+          "\"The data team delivered late, which delayed us.\"",
+          "\"We were probably too ambitious with the scope.\"",
+          "\"I deferred the delete path in ingestion. A withdrawn policy was quoted for three weeks until support caught it. I pulled it, added tombstones and a drift alert.\""
+        ],
+        "answer": 3,
+        "why": "It is specific, owned and quantified, with an immediate fix and a structural one - and it shows a judgement gap you now avoid. Blaming another team or a humblebrag about ambition shows no ownership, and 'nothing went wrong' is not believed."
+      }
     },
     {
       "id": "sd-21",
@@ -456,9 +592,9 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "behavioural",
-        "incident",
-        "ownership"
+        "project-story",
+        "debugging",
+        "llmops"
       ],
       "why": "Ownership is what separates a senior hire from a capable engineer. The structure of the answer reveals it.",
       "quick": [
@@ -480,7 +616,30 @@ window.IR.q["18-system-design"] = {
       "numbers": "Quantify duration and users affected. An incident story without numbers sounds like a story rather than something you owned.",
       "wrong": "An incident where nothing was your fault and nothing changed afterwards. The follow-up asks what you changed and what your part was, and there is nothing to point to.",
       "follow": "What would have caught it an hour earlier?",
-      "followAnswer": "An alert on a leading signal rather than on uptime. In the parser example, a spike in output-format or schema-validation failures would have fired within minutes, long before users noticed. So I now alert on error and retry rates, refusal rate, format failures and tokens per request. And provider model version changes go through a canary on a small share of traffic, so a changed model is caught before everyone gets it."
+      "followAnswer": "An alert on a leading signal rather than on uptime. In the parser example, a spike in output-format or schema-validation failures would have fired within minutes, long before users noticed. So I now alert on error and retry rates, refusal rate, format failures and tokens per request. And provider model version changes go through a canary on a small share of traffic, so a changed model is caught before everyone gets it.",
+      "builds": [
+        "sd-04"
+      ],
+      "next": [
+        "llm-10",
+        "ops-05",
+        "ops-08"
+      ],
+      "deeper": [
+        "sre-book"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "After a provider model update, your response parser starts failing for a share of users. What is the right first action?",
+        "options": [
+          "Debug the parser in production until you find the exact cause.",
+          "Wait for more data so the root cause is clear.",
+          "Stop the damage first - roll back, pin the previous model version or switch to a fallback - then investigate.",
+          "Email the provider and wait for their fix."
+        ],
+        "answer": 2,
+        "why": "Mitigation comes before diagnosis, because every minute of debugging is a minute users are affected. Afterwards you name the cause, quantify the impact, add a parse-failure alert and a canary for model changes, and add the case to the eval set."
+      }
     },
     {
       "id": "sd-08",
@@ -493,7 +652,7 @@ window.IR.q["18-system-design"] = {
       "priority": "high",
       "tags": [
         "behavioural",
-        "collaboration"
+        "trade-offs"
       ],
       "why": "A standard behavioural question. In GenAI it is usually asked because these decisions are unusually opinion-driven.",
       "quick": [
@@ -515,7 +674,27 @@ window.IR.q["18-system-design"] = {
       "numbers": "No number applies, but the answer is stronger if the example carries one - what the test measured and what it showed.",
       "wrong": "\"I explain my reasoning and usually they agree.\" The follow-up asks about the time they did not agree, and the answer has no mechanism for that case.",
       "follow": "What if the test is inconclusive and a decision is needed this week?",
-      "followAnswer": "Then I pick the option that is cheaper to reverse, and say that is why. If the numbers do not separate the two, the risk each one carries decides it. I write down the decision, the reason, and the metric or date that would make us revisit it. If we still disagree, the owner makes the call, and I back it fully rather than reopening it later."
+      "followAnswer": "Then I pick the option that is cheaper to reverse, and say that is why. If the numbers do not separate the two, the risk each one carries decides it. I write down the decision, the reason, and the metric or date that would make us revisit it. If we still disagree, the owner makes the call, and I back it fully rather than reopening it later.",
+      "next": [
+        "riq-3305",
+        "sd-06"
+      ],
+      "alsoIn": [
+        "riq-3305"
+      ],
+      "deeper": [],
+      "check": {
+        "kind": "judgement",
+        "q": "You and a colleague disagree on whether a reranker is worth its latency. Which approach lands best with a panel?",
+        "options": [
+          "\"I explain my reasoning, and usually they agree.\"",
+          "\"We agreed the metric, dataset and pass mark first. The test showed I was wrong - 180 ms more, clearly better answers - so we shipped it.\"",
+          "\"I escalate to the tech lead so a decision gets made quickly.\"",
+          "\"I go with their view to keep the peace.\""
+        ],
+        "answer": 1,
+        "why": "It turns opinion into an experiment agreed beforehand, removes seniority from the argument, and shows you can be wrong and commit. 'They usually agree' has no mechanism for when they do not, which is exactly the follow-up."
+      }
     },
     {
       "id": "sd-09",
@@ -527,9 +706,8 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "behavioural",
         "hr",
-        "fitment"
+        "behavioural"
       ],
       "why": "It looks like a formality. Inconsistency or bitterness here undoes a strong technical loop.",
       "quick": [
@@ -551,7 +729,27 @@ window.IR.q["18-system-design"] = {
       "numbers": "No number applies. Thirty seconds is the target.",
       "wrong": "Anything critical about the current employer, and anything vague like \"looking for growth\". Criticism makes the panel wonder how you will describe them later; vagueness gives them nothing to match against the role.",
       "follow": "What would make you turn down an offer?",
-      "followAnswer": "Mainly a mismatch in the work. If the role turned out to be mostly maintenance, with no path to production GenAI work or no way to measure quality, that would matter more to me than a small difference in pay. Beyond that, the usual - a level or package well below the scope, or a team setup different from what we discussed. I would raise those openly before deciding."
+      "followAnswer": "Mainly a mismatch in the work. If the role turned out to be mostly maintenance, with no path to production GenAI work or no way to measure quality, that would matter more to me than a small difference in pay. Beyond that, the usual - a level or package well below the scope, or a team setup different from what we discussed. I would raise those openly before deciding.",
+      "next": [
+        "sd-11",
+        "sd-10"
+      ],
+      "alsoIn": [
+        "riq-3504"
+      ],
+      "deeper": [],
+      "check": {
+        "kind": "judgement",
+        "q": "\"Why are you leaving your current job?\" Which answer lands best?",
+        "options": [
+          "\"My manager doesn't value GenAI work, so I'm stuck.\"",
+          "\"I'm looking for growth and new challenges.\"",
+          "\"I've taken our retrieval platform as far as the current scope allows; I want to own evaluation and production at a larger scale, which this role offers.\"",
+          "A detailed account of every reason, so they see the full picture."
+        ],
+        "answer": 2,
+        "why": "It is forward-looking, specific enough to match against the role, and short. Criticising your manager makes the panel imagine how you will describe them; 'growth' is too vague to check, and a long answer has only downside here."
+      }
     },
     {
       "id": "sd-11",
@@ -563,9 +761,8 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "behavioural",
         "hr",
-        "compensation"
+        "behavioural"
       ],
       "why": "Whether you can hold a position without becoming difficult. It is asked early precisely to anchor you.",
       "quick": [
@@ -587,7 +784,24 @@ window.IR.q["18-system-design"] = {
       "numbers": "Use the market for the actual role, level and location rather than a universal percentage increase. Norms differ: some markets routinely ask for current pay and may verify it with payslips, while others restrict salary-history questions by law. If you share current pay, state it accurately, and anchor your expectation to the role.",
       "wrong": "Giving a precise minimum before knowing the level and package, or inventing market data. A defensible range is stronger than an arbitrary anchor.",
       "follow": "That is above our band for this level. How do you respond?",
-      "followAnswer": "I would ask what the band is and which level it maps to. If the scope we discussed fits a higher level, I would make that case from the specific responsibilities. If the band is genuinely fixed, I would look at the whole package - joining bonus, equity, review timing - and decide honestly. I would not pretend a number works if it does not; better to say so clearly now."
+      "followAnswer": "I would ask what the band is and which level it maps to. If the scope we discussed fits a higher level, I would make that case from the specific responsibilities. If the band is genuinely fixed, I would look at the whole package - joining bonus, equity, review timing - and decide honestly. I would not pretend a number works if it does not; better to say so clearly now.",
+      "next": [
+        "sd-13",
+        "sd-12"
+      ],
+      "deeper": [],
+      "check": {
+        "kind": "judgement",
+        "q": "Early in the process, the recruiter asks for your salary expectation. Which response is strongest?",
+        "options": [
+          "\"Whatever you think is fair.\"",
+          "\"Could you share the approved range and what total pay includes? If you need a figure, I have a researched range whose bottom I'd accept.\"",
+          "A single precise minimum based on a percentage rise over your current pay.",
+          "\"I won't discuss pay until I have an offer.\""
+        ],
+        "answer": 1,
+        "why": "It asks for their range first, frames pay as total compensation, and if pushed gives a defensible, researched range anchored to the role. Deferring entirely reads as difficult, and a precise minimum tied to current pay anchors you low."
+      }
     },
     {
       "id": "sd-12",
@@ -598,9 +812,8 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "behavioural",
         "hr",
-        "logistics"
+        "behavioural"
       ],
       "why": "A logistics question with one trap: overpromising a date you cannot meet.",
       "quick": [
@@ -622,7 +835,24 @@ window.IR.q["18-system-design"] = {
       "numbers": "Use your actual contract dates. Notice periods range from a couple of weeks to three months or more depending on country, employer and seniority, and early release or buyout is usually at the employer's discretion - so do not promise it until it is confirmed in writing.",
       "wrong": "Promising a start date that depends on an unconfirmed release, buyout or visa step. A realistic date is more valuable than an optimistic one you later renegotiate.",
       "follow": "We need someone in four weeks. Does that rule you out?",
-      "followAnswer": "Not necessarily, but I will not promise it blindly. My contract says [your notice period]. I can ask my employer about early release this week and confirm by [date]. If it is not possible, I would ask whether a start on [realistic date] works, perhaps with some onboarding reading done beforehand. I would rather give you a date I can keep than one I have to renegotiate."
+      "followAnswer": "Not necessarily, but I will not promise it blindly. My contract says [your notice period]. I can ask my employer about early release this week and confirm by [date]. If it is not possible, I would ask whether a start on [realistic date] works, perhaps with some onboarding reading done beforehand. I would rather give you a date I can keep than one I have to renegotiate.",
+      "next": [
+        "sd-13",
+        "sd-11"
+      ],
+      "deeper": [],
+      "check": {
+        "kind": "judgement",
+        "q": "Your contract has a three-month notice period. The company asks when you can join. Which answer is best?",
+        "options": [
+          "\"Three months per contract. Leave might shorten it by two weeks if my manager agrees - I'll confirm in writing within a week.\"",
+          "\"I can join in a month - I'll get an early release.\"",
+          "\"As soon as you need me.\"",
+          "\"My company will buy out my notice, so timing isn't an issue.\""
+        ],
+        "answer": 0,
+        "why": "It states the contractual fact, separates confirmed from possible flexibility, and commits to a date for certainty. Early release or buyout is usually at the employer's discretion, so promising it risks a date you later have to walk back."
+      }
     },
     {
       "id": "sd-10",
@@ -636,8 +866,7 @@ window.IR.q["18-system-design"] = {
       "priority": "high",
       "tags": [
         "behavioural",
-        "hr",
-        "closing"
+        "hr"
       ],
       "why": "Almost always asked, almost always wasted, and it is the one part of the process you fully control.",
       "quick": [
@@ -660,7 +889,24 @@ window.IR.q["18-system-design"] = {
       "numbers": "Three questions is right. More reads as interrogation, fewer as disinterest.",
       "wrong": "\"No, I think you have covered everything.\" It reads as disengagement, and it discards the only part of the process you fully control.",
       "follow": "We don't really measure quality yet. Does that put you off?",
-      "followAnswer": "Not at all - it is a common stage, and it is work I would enjoy. What I would want to know is that there is support to build it: time to create a small golden set from real traffic, and agreement on one or two metrics the business cares about. If that support is there, setting up evaluation is one of the most useful things I could do in my first ninety days."
+      "followAnswer": "Not at all - it is a common stage, and it is work I would enjoy. What I would want to know is that there is support to build it: time to create a small golden set from real traffic, and agreement on one or two metrics the business cares about. If that support is there, setting up evaluation is one of the most useful things I could do in my first ninety days.",
+      "next": [
+        "ev-01",
+        "sd-09"
+      ],
+      "deeper": [],
+      "check": {
+        "kind": "judgement",
+        "q": "At the end of the interview you are asked, \"Do you have any questions for us?\" Which question tells you the most about the job?",
+        "options": [
+          "\"How many leave days do you offer?\"",
+          "\"No, I think you've covered everything.\"",
+          "\"What does the company do?\"",
+          "\"How do you measure whether a GenAI feature is working once it ships?\""
+        ],
+        "answer": 3,
+        "why": "It reveals whether the team has real evaluation or runs on impressions, which shapes your daily work. Perks belong with the recruiter, a question answered on the website signals no preparation, and declining wastes the one part you control."
+      }
     },
     {
       "id": "sd-28",
@@ -672,10 +918,8 @@ window.IR.q["18-system-design"] = {
       "priority": "medium",
       "tags": [
         "system-design",
-        "gateway",
         "llmops",
-        "cost",
-        "security"
+        "cost"
       ],
       "why": "Platform teams now build or buy one. It checks whether you can put central control - identity, quotas, cost, fallbacks and logging - in front of many teams and many model providers.",
       "quick": [
@@ -730,7 +974,32 @@ window.IR.q["18-system-design"] = {
       "numbers": "The gateway should add only a few milliseconds per request - measure it. Rate-limit counters usually live in a fast shared store such as Redis, so every gateway replica sees the same counts.",
       "wrong": "\"Each team gets its own provider key and we check the bill monthly.\" No attribution, no limits, keys scattered everywhere, and a provider change touches every codebase.",
       "follow": "One team's batch job is using all the quota and chat users are getting 429s. What do you change?",
-      "followAnswer": "I separate the traffic classes. Interactive chat gets a reserved share of the provider quota, and batch work gets a lower-priority lane with its own token limit. The batch job goes through a queue that drains at a controlled rate, or moves to the provider's batch API, which is usually cheaper anyway. Per-team budgets then stop one team starving everyone else again."
+      "followAnswer": "I separate the traffic classes. Interactive chat gets a reserved share of the provider quota, and batch work gets a lower-priority lane with its own token limit. The batch job goes through a queue that drains at a controlled rate, or moves to the provider's batch API, which is usually cheaper anyway. Per-team budgets then stop one team starving everyone else again.",
+      "builds": [
+        "py-13",
+        "cl-06"
+      ],
+      "next": [
+        "ops-06",
+        "ops-04",
+        "sd-07"
+      ],
+      "deeper": [
+        "litellm",
+        "sre-book"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Through your LLM gateway, one team's nightly batch job uses the whole shared quota and interactive chat users start getting 429s. What is the best change?",
+        "options": [
+          "Raise the provider quota and keep one shared limit.",
+          "Give each team its own quota, and route batch traffic through a lower-priority queue or batch endpoint so interactive traffic is protected.",
+          "Remove rate limiting from the gateway.",
+          "Ask the batch team to run at night only."
+        ],
+        "answer": 1,
+        "why": "The fix is isolation and priority, which is what a gateway is for. More quota just moves the cliff, removing limits invites the same outage, and a scheduling agreement is not enforcement."
+      }
     },
     {
       "id": "sd-17",
@@ -741,9 +1010,9 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "design",
         "agents",
-        "workflow"
+        "system-design",
+        "tools"
       ],
       "why": "A bounded agentic task where the right answer is mostly workflow with narrow agentic steps.",
       "quick": [
@@ -837,7 +1106,31 @@ window.IR.q["18-system-design"] = {
       "numbers": "Use an idempotency key per filing, plus a duplicate check on merchant, date and amount - a re-photographed receipt has a different file hash. Require explicit confirmation above a value threshold set with finance.",
       "wrong": "Building it as an open-ended agent because the brief said agent. Most of this is a known sequence, and an agent makes it slower, costlier and harder to audit.",
       "follow": "The agent misreads an amount as 5,000 instead of 500. Where does that get caught?",
-      "followAnswer": "It gets caught by deterministic checks before submission, not by trusting the model. The extraction step reports a confidence score per field, so an uncertain amount is shown to the user for confirmation. Code also cross-checks the amount against other fields on the receipt, such as line items, tax and the total, and against what is typical for that category and merchant. A 5,000 claim would also cross the policy limit and the confirmation threshold agreed with finance, so the user sees it explicitly before anything is filed."
+      "followAnswer": "It gets caught by deterministic checks before submission, not by trusting the model. The extraction step reports a confidence score per field, so an uncertain amount is shown to the user for confirmation. Code also cross-checks the amount against other fields on the receipt, such as line items, tax and the total, and against what is typical for that category and merchant. A 5,000 claim would also cross the policy limit and the confirmation threshold agreed with finance, so the user sees it explicitly before anything is filed.",
+      "builds": [
+        "ag-13"
+      ],
+      "next": [
+        "ag-32",
+        "ag-12",
+        "sd-25"
+      ],
+      "deeper": [
+        "anthropic-agents",
+        "claude-tool-use"
+      ],
+      "check": {
+        "kind": "which-fails",
+        "q": "The expense agent reads ₹5,000 instead of ₹500 from a receipt. Which control is LEAST likely to catch it before filing?",
+        "options": [
+          "Per-field extraction confidence, sending low-confidence amounts to the user.",
+          "A code check that the amount matches the card transaction or receipt total.",
+          "A confirmation screen showing exactly what will be filed, mandatory above a value threshold.",
+          "Asking the model in the prompt to double-check its reading."
+        ],
+        "answer": 3,
+        "why": "Self-checking with the same model often repeats the same misreading. Confidence routing, a deterministic cross-check against another source, and user confirmation are independent controls - which is why the workflow keeps them outside the model."
+      }
     },
     {
       "id": "sd-16",
@@ -848,9 +1141,9 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "design",
-        "code",
-        "retrieval"
+        "retrieval",
+        "hybrid-search",
+        "system-design"
       ],
       "why": "Repo-scale retrieval with hard latency and IP constraints. Different from document RAG in instructive ways.",
       "quick": [
@@ -909,7 +1202,31 @@ window.IR.q["18-system-design"] = {
       "numbers": "Target first tokens within about a second for chat and a few hundred milliseconds for inline completion. Reindex incrementally on merge - a nightly rebuild is already stale for an active monorepo.",
       "wrong": "Applying a document RAG design unchanged. Character chunking splits functions, and pure dense retrieval fails on the identifier searches developers actually make.",
       "follow": "A developer asks why a function exists. Does your retrieval find the answer?",
-      "followAnswer": "Usually not from the code alone, because code shows what a function does, not why it exists. The why lives in commit messages, pull request descriptions, linked tickets, design docs and code comments. So I index those as well and link them to the code, for example by running git blame on the function to find the commits and pull requests that introduced or changed it, then retrieving their descriptions. The answer should cite those sources, and say plainly when no rationale was recorded instead of inventing one."
+      "followAnswer": "Usually not from the code alone, because code shows what a function does, not why it exists. The why lives in commit messages, pull request descriptions, linked tickets, design docs and code comments. So I index those as well and link them to the code, for example by running git blame on the function to find the commits and pull requests that introduced or changed it, then retrieving their descriptions. The answer should cite those sources, and say plainly when no rationale was recorded instead of inventing one.",
+      "builds": [
+        "rag-48",
+        "rag-11"
+      ],
+      "next": [
+        "em-12",
+        "rag-10"
+      ],
+      "deeper": [
+        "es-hybrid",
+        "bm25"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "A developer pastes the exact error string `ERR_LEDGER_SYNC_TIMEOUT` into your code assistant. Why does pure vector search often struggle here?",
+        "options": [
+          "Error strings are too short to embed at all.",
+          "Embeddings capture approximate meaning, so a rare exact identifier can rank below semantically similar code - keyword search matches the token exactly.",
+          "Vector search cannot index source code.",
+          "The embedding model needs fine-tuning on every repository first."
+        ],
+        "answer": 1,
+        "why": "Dense vectors blur rare tokens into nearby meaning, while BM25 rewards an exact, rare match heavily. That is why code search is hybrid. Fine-tuning can help but does not replace exact matching, and embeddings work fine on code generally."
+      }
     },
     {
       "id": "sd-14",
@@ -920,9 +1237,9 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "design",
-        "insurance",
-        "ingestion"
+        "ingestion",
+        "multimodal",
+        "system-design"
       ],
       "why": "An ingestion-heavy design in a regulated vertical. The messy input is the problem, not the model.",
       "quick": [
@@ -1017,7 +1334,31 @@ window.IR.q["18-system-design"] = {
       "numbers": "Report confidence per field rather than per document. Set the straight-through threshold with the business - start conservative and raise it as measured precision justifies.",
       "wrong": "Designing around the LLM and treating ingestion as a preprocessing detail. On scanned documents, extraction is where the project succeeds or fails.",
       "follow": "Ten percent of bills are handwritten. What does that do to your design?",
-      "followAnswer": "It makes handwriting a separate path rather than a lower-accuracy version of the main one. Classification flags handwritten pages, which go to a model suited to handwriting, and I expect field confidence to be lower, so more of them go to human review. I measure accuracy and straight-through rate for that slice separately, so it does not hide inside the overall average. The review interface with field highlighting matters most here, and reviewer corrections become labelled data for improving extraction over time."
+      "followAnswer": "It makes handwriting a separate path rather than a lower-accuracy version of the main one. Classification flags handwritten pages, which go to a model suited to handwriting, and I expect field confidence to be lower, so more of them go to human review. I measure accuracy and straight-through rate for that slice separately, so it does not hide inside the overall average. The review interface with field highlighting matters most here, and reviewer corrections become labelled data for improving extraction over time.",
+      "builds": [
+        "rag-04",
+        "rag-44"
+      ],
+      "next": [
+        "ag-35",
+        "gr-03"
+      ],
+      "deeper": [
+        "azure-doc-intelligence",
+        "docling"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "Why report extraction confidence per field rather than per document for scanned hospital bills?",
+        "options": [
+          "Per-document scores are too expensive to compute.",
+          "Regulators require field-level scores.",
+          "Per-field scores make the model more accurate.",
+          "One wrong field, such as the total, can hide inside a page that looks confident overall, and review can then target just that field."
+        ],
+        "answer": 3,
+        "why": "A document average lets a bad total pass with 30 good fields. Field-level confidence routes only the doubtful field to a reviewer, highlighted on the source, which raises straight-through rate without lowering precision. Confidence measures, it does not improve accuracy."
+      }
     },
     {
       "id": "sd-24",
@@ -1028,11 +1369,9 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "system-design",
         "multimodal",
-        "voice",
-        "vision",
-        "rag"
+        "system-design",
+        "guardrails"
       ],
       "why": "Multimodal and voice experiences are now common extensions of enterprise and consumer GenAI systems.",
       "quick": [
@@ -1085,7 +1424,30 @@ window.IR.q["18-system-design"] = {
       "numbers": "For voice, track time to first audio/text response, transcription error by language/noise condition, and task completion. For screenshots, track extraction/grounding errors rather than only final-answer preference.",
       "wrong": "Converting everything to text and discarding the original confidence and evidence. That hides OCR or speech errors and makes sensitive actions unsafe.",
       "follow": "The transcript confidence is low but the user says “yes” to a payment action. What exactly do you ask them to confirm?",
-      "followAnswer": "I ask them to confirm the specific action in words they can check, not a generic yes. I read back the payee, the amount and the account or card, and ask them to confirm those details, ideally shown on screen as well as spoken. Because the transcript was uncertain, a yes to an unclear question proves nothing. For payments I also require a stronger step, such as a PIN, a one-time code or an in-app tap, and if confidence stays low I hand over to a person."
+      "followAnswer": "I ask them to confirm the specific action in words they can check, not a generic yes. I read back the payee, the amount and the account or card, and ask them to confirm those details, ideally shown on screen as well as spoken. Because the transcript was uncertain, a yes to an unclear question proves nothing. For payments I also require a stronger step, such as a PIN, a one-time code or an in-app tap, and if confidence stays low I hand over to a person.",
+      "builds": [
+        "llm-17"
+      ],
+      "next": [
+        "sd-14",
+        "ag-12"
+      ],
+      "deeper": [
+        "whisper",
+        "clip"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "A noisy voice note is transcribed as \"cancel my order\" with low speech-recognition confidence. What should the assistant do?",
+        "options": [
+          "Cancel the order, since the transcript says so.",
+          "Ask a specific confirmation - \"Cancel order 4417 for ₹2,350, placed yesterday?\" - before acting.",
+          "Ignore the request and ask the user to type instead.",
+          "Re-run speech recognition until confidence is high."
+        ],
+        "answer": 1,
+        "why": "Low confidence on a destructive action calls for confirmation naming the exact object and amount, so a 'yes' means something. Acting blindly is unsafe, ignoring voice defeats the channel, and re-running the same audio rarely changes much."
+      }
     },
     {
       "id": "sd-23",
@@ -1097,10 +1459,7 @@ window.IR.q["18-system-design"] = {
       "priority": "medium",
       "tags": [
         "system-design",
-        "ml",
-        "batch",
-        "realtime",
-        "features"
+        "ml-basics"
       ],
       "why": "Many 3-10 year ML roles require production prediction pipelines beyond LLM request handling.",
       "quick": [
@@ -1159,7 +1518,30 @@ window.IR.q["18-system-design"] = {
       "numbers": "Define separate freshness and latency SLOs for batch and online paths. A daily batch score and a 50 ms online feature cannot share one vague definition of “fresh enough.”",
       "wrong": "Putting the batch model behind the same synchronous API and calling it real time. Data freshness, feature access, throughput and failure handling are different design problems.",
       "follow": "Training uses a feature computed nightly but online scoring recomputes it from live events. How do you prove the two definitions match?",
-      "followAnswer": "I prove it by computing both and comparing them, not by reading the code. The best fix is one feature definition used by both paths, but I still check. I log the online feature values at scoring time, recompute the same features offline for the same entities and timestamps, and compare the distributions and per-row differences against a tolerance. I run that comparison continuously and alert on drift. Point-in-time correctness matters too, so training only uses values that would have been available at prediction time."
+      "followAnswer": "I prove it by computing both and comparing them, not by reading the code. The best fix is one feature definition used by both paths, but I still check. I log the online feature values at scoring time, recompute the same features offline for the same entities and timestamps, and compare the distributions and per-row differences against a tolerance. I run that comparison continuously and alert on drift. Point-in-time correctness matters too, so training only uses values that would have been available at prediction time.",
+      "builds": [
+        "ml-28",
+        "ml-27"
+      ],
+      "next": [
+        "ml-05",
+        "ml-27"
+      ],
+      "deeper": [
+        "google-rules-ml"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Which of these decisions genuinely needs online, real-time scoring?",
+        "options": [
+          "A weekly list of customers likely to churn for the retention team.",
+          "Monthly credit-limit reviews.",
+          "A fraud check while a card payment is being authorised.",
+          "Nightly product recommendations for an email campaign."
+        ],
+        "answer": 2,
+        "why": "The fraud decision must be made inside the payment flow, with features fresh to the second. The others are consumed on a schedule, so batch scoring is cheaper and more reliable. Choose the path by when the decision is used."
+      }
     },
     {
       "id": "sd-22",
@@ -1171,11 +1553,8 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "system-design",
-        "rest",
-        "grpc",
-        "kafka",
-        "queues"
+        "api-design",
+        "system-design"
       ],
       "why": "Current senior AI roles expect ordinary distributed-systems judgement around model and agent services.",
       "quick": [
@@ -1237,7 +1616,26 @@ window.IR.q["18-system-design"] = {
       "numbers": "Do not choose from a generic latency benchmark. Measure payload size, request rate, burstiness, consumer lag and acceptable end-to-end delay in your own system.",
       "wrong": "Choosing Kafka because the system is large, or gRPC because it is faster. The interaction and delivery requirements should justify the protocol.",
       "follow": "Your embedding consumer is falling behind the producer. Which backpressure and scaling signals do you inspect?",
-      "followAnswer": "I look first at consumer lag, meaning how far behind the consumers are, and whether it is growing or stable. Then I compare the producer's input rate with consumer throughput, and check consumer utilisation, the embedding provider's 429 and latency rates, and retry and dead-letter counts. If consumers are idle waiting on the provider, adding more will not help; I batch more per request or raise the quota. If they are saturated and the provider has headroom, I scale consumers out, and if nothing helps, I slow the producer."
+      "followAnswer": "I look first at consumer lag, meaning how far behind the consumers are, and whether it is growing or stable. Then I compare the producer's input rate with consumer throughput, and check consumer utilisation, the embedding provider's 429 and latency rates, and retry and dead-letter counts. If consumers are idle waiting on the provider, adding more will not help; I batch more per request or raise the quota. If they are saturated and the provider has headroom, I scale consumers out, and if nothing helps, I slow the producer.",
+      "next": [
+        "sd-25",
+        "py-27"
+      ],
+      "deeper": [
+        "system-design-primer"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "A user uploads 2,000 PDFs for ingestion, which takes about two hours. How should the API service hand this to the ingestion workers?",
+        "options": [
+          "A synchronous REST call that returns when ingestion finishes.",
+          "A gRPC stream held open for the whole two hours.",
+          "Put a job on a queue, return a job id immediately, and let workers consume and report status.",
+          "Kafka, because the system is large."
+        ],
+        "answer": 2,
+        "why": "Long, bursty work should not hold a connection open; a queue decouples, buffers and lets workers scale. Kafka is justified by replayable multi-consumer events, not size. You still need idempotent jobs and a dead-letter path."
+      }
     },
     {
       "id": "sd-25",
@@ -1249,10 +1647,8 @@ window.IR.q["18-system-design"] = {
       "priority": "medium",
       "tags": [
         "system-design",
-        "idempotency",
-        "retries",
-        "backpressure",
-        "reliability"
+        "agents",
+        "api-design"
       ],
       "why": "Agentic and ML systems are distributed systems; senior interviews increasingly probe failure handling beyond the happy path.",
       "quick": [
@@ -1337,7 +1733,45 @@ window.IR.q["18-system-design"] = {
       "numbers": "Track queue depth/lag, retry rate, duplicate-suppression count and processing throughput together. Capacity is safe only while sustained consumer throughput stays above incoming work or overload is deliberately shed.",
       "wrong": "Relying on “exactly once” as a magic broker setting. End-to-end side effects still need application-level idempotency and a clear duplicate policy.",
       "follow": "The model call timed out, you retry, and the provider bills both attempts. How do you prevent duplicate downstream actions even if duplicate compute cannot be avoided?",
-      "followAnswer": "I make the downstream action idempotent, keyed on the business operation rather than on the model call. The key comes from the workflow, for example the request id plus the step, and is created before the first attempt. Whichever attempt finishes first records its result against that key, and any later attempt finds it already done and returns the stored result instead of acting again. The side effect, like creating a ticket, also passes that key to the downstream system, so its own deduplication backs mine up."
+      "followAnswer": "I make the downstream action idempotent, keyed on the business operation rather than on the model call. The key comes from the workflow, for example the request id plus the step, and is created before the first attempt. Whichever attempt finishes first records its result against that key, and any later attempt finds it already done and returns the stored result instead of acting again. The side effect, like creating a ticket, also passes that key to the downstream system, so its own deduplication backs mine up.",
+      "builds": [
+        "sd-22",
+        "py-04"
+      ],
+      "next": [
+        "ag-32",
+        "ag-33"
+      ],
+      "alsoIn": [
+        "riq-2403"
+      ],
+      "deeper": [
+        "sre-book",
+        "system-design-primer"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "An agent calls `create_ticket`; the call times out, but the ticket was actually created. The agent retries. What prevents a duplicate ticket?",
+        "options": [
+          "A shorter timeout on the first call.",
+          "Turning on the broker's exactly-once setting.",
+          "Never retrying any tool call.",
+          "A stable idempotency key per action, which the ticket service checks and returns the existing ticket for."
+        ],
+        "answer": 3,
+        "why": "Only the side-effecting service can know the work already happened, so it dedupes on the key. Broker exactly-once does not cover external side effects, and banning retries trades duplicates for lost actions on real transient failures."
+      },
+      "try": {
+        "title": "Simulate a timeout after success",
+        "minutes": 15,
+        "steps": [
+          "Write a fake ticket service that creates a ticket and then, 30% of the time, raises TimeoutError as if the reply was lost.",
+          "Call it with a naive retry loop for 100 actions and count tickets created - observe duplicates.",
+          "Add an idempotency key per action that the service stores, returning the existing ticket on repeat.",
+          "Re-run and confirm exactly 100 tickets despite the same timeouts."
+        ],
+        "code": "import random, uuid\ntickets, seen = [], {}\ndef create_ticket(payload, key=None):\n    if key and key in seen: return seen[key]\n    tid = len(tickets); tickets.append(payload)\n    if key: seen[key] = tid\n    if random.random() < 0.3: raise TimeoutError\n    return tid\ndef with_retry(payload, key=None, tries=3):\n    for _ in range(tries):\n        try: return create_ticket(payload, key)\n        except TimeoutError: pass\nfor use_key in (False, True):\n    tickets.clear(); seen.clear()\n    for i in range(100): with_retry({'n': i}, str(uuid.uuid4()) if use_key else None)\n    print('keys' if use_key else 'naive', len(tickets))"
+      }
     },
     {
       "id": "sd-02",
@@ -1349,9 +1783,8 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "system-design",
-        "judgement",
-        "business"
+        "trade-offs",
+        "system-design"
       ],
       "why": "A senior judgement question. Engineers reflexively build, and the panel is checking for commercial reasoning.",
       "quick": [
@@ -1414,7 +1847,28 @@ window.IR.q["18-system-design"] = {
       "numbers": "A useful rule: if building it takes more than a quarter and a mature option exists, buy it and spend the quarter on the data and evaluation instead.",
       "wrong": "\"We built our own framework for full control.\" It invites the question of what that control bought, and how much of the year went into maintaining it.",
       "follow": "You bought the platform and now need a feature they will not build. What now?",
-      "followAnswer": "First I check whether I can build it around the platform rather than inside it. Most good platforms have APIs, webhooks or plugin points, so I build the feature as a thin service of ours that sits beside it. I also raise it formally with the vendor, since a clear business case sometimes changes the roadmap. If the gap is core to what differentiates us, I revisit the build-versus-buy decision, which is where owning our data and eval set pays off, because leaving becomes realistic."
+      "followAnswer": "First I check whether I can build it around the platform rather than inside it. Most good platforms have APIs, webhooks or plugin points, so I build the feature as a thin service of ours that sits beside it. I also raise it formally with the vendor, since a clear business case sometimes changes the roadmap. If the gap is core to what differentiates us, I revisit the build-versus-buy decision, which is where owning our data and eval set pays off, because leaving becomes realistic.",
+      "next": [
+        "cl-05",
+        "rag-51",
+        "ops-12"
+      ],
+      "deeper": [
+        "huyen-ai-engineering",
+        "fowler-genai-patterns"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Your team proposes building its own LLM tracing platform. Mature products exist, and the build would take about five months. What do you recommend?",
+        "options": [
+          "Buy or adopt one, keep your traces exportable, and spend the time on your data and evaluation set.",
+          "Build it, because owning the code avoids lock-in.",
+          "Build it, since tracing is core to every AI product.",
+          "Skip tracing until the product is more mature."
+        ],
+        "answer": 0,
+        "why": "Tracing is necessary but generic, so building it means maintaining it forever. The real lock-in risk is losing your data and history, which you handle with export, not by writing the tool. Skipping tracing leaves you blind in production."
+      }
     },
     {
       "id": "sd-18",
@@ -1425,9 +1879,8 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "consulting",
-        "scoping",
-        "stakeholders"
+        "behavioural",
+        "trade-offs"
       ],
       "why": "The services-company staple. Scoping is the actual skill being hired for.",
       "quick": [
@@ -1449,7 +1902,31 @@ window.IR.q["18-system-design"] = {
       "numbers": "Without volume, handling time and error cost, there is no business case. Get those three numbers before proposing an architecture.",
       "wrong": "Taking the brief literally and proposing a chatbot. It wins the meeting and produces a pilot that never reaches production because nobody defined what success was.",
       "follow": "You conclude their problem does not need AI. How do you say that to the client?",
-      "followAnswer": "I say it plainly, with the evidence, and lead with the solution rather than the no. I walk them through what we found in their own process, such as the delays coming from a missing integration or poor search, then show that a simpler fix meets their metric faster, cheaper and more reliably. I frame it as protecting their budget and timeline, not rejecting their idea. And I say where AI could genuinely help later, so they know I am not against it, just against a pilot that goes nowhere."
+      "followAnswer": "I say it plainly, with the evidence, and lead with the solution rather than the no. I walk them through what we found in their own process, such as the delays coming from a missing integration or poor search, then show that a simpler fix meets their metric faster, cheaper and more reliably. I frame it as protecting their budget and timeline, not rejecting their idea. And I say where AI could genuinely help later, so they know I am not against it, just against a pilot that goes nowhere.",
+      "next": [
+        "sd-19",
+        "sd-05",
+        "ev-09"
+      ],
+      "alsoIn": [
+        "riq-a21",
+        "riq-3201"
+      ],
+      "deeper": [
+        "google-rules-ml"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "A client opens with \"We want AI for our claims team.\" What is the best next step?",
+        "options": [
+          "Propose a claims chatbot and a two-week demo.",
+          "Ask which model they prefer.",
+          "Ask them to walk you through one real claim, then get volume, handling time and the cost of an error.",
+          "Send a questionnaire about their data warehouse."
+        ],
+        "answer": 2,
+        "why": "Following one real case shows where time and errors actually go, and the three numbers make the business case. A chatbot demo wins the meeting and dies as a pilot; model preference is irrelevant before the problem is defined."
+      }
     },
     {
       "id": "sd-19",
@@ -1460,9 +1937,8 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "consulting",
-        "estimation",
-        "delivery"
+        "trade-offs",
+        "behavioural"
       ],
       "why": "Asked directly in services-company interviews, and the honest structure is what earns credit.",
       "quick": [
@@ -1509,7 +1985,32 @@ window.IR.q["18-system-design"] = {
       "numbers": "A planning heuristic, not a law: pilot to production often takes 2–3× the pilot effort - the phases above give 10–14+ weeks after a 4–6 week pilot. Hardening is commonly at least as long as the pilot.",
       "wrong": "Quoting a single number for the whole project. It hides the feasibility uncertainty, and it sets up the conversation where hardening looks like scope creep.",
       "follow": "The client wants a fixed price for the whole thing. What do you propose?",
-      "followAnswer": "I propose fixed price per phase, not for the whole thing, because quality is discovered rather than specified. Discovery is fixed price with a clear deliverable, a go or no-go backed by evidence. Once we know the data and the achievable quality, I can price the pilot, and then hardening, each with written assumptions and an agreed success metric. If they insist on one number, I make the assumptions explicit, attach a change process for when they break, and price in the risk rather than hoping."
+      "followAnswer": "I propose fixed price per phase, not for the whole thing, because quality is discovered rather than specified. Discovery is fixed price with a clear deliverable, a go or no-go backed by evidence. Once we know the data and the achievable quality, I can price the pilot, and then hardening, each with written assumptions and an agreed success metric. If they insist on one number, I make the assumptions explicit, attach a change process for when they break, and price in the risk rather than hoping.",
+      "builds": [
+        "sd-18"
+      ],
+      "next": [
+        "sd-05",
+        "ev-09"
+      ],
+      "alsoIn": [
+        "riq-3206"
+      ],
+      "deeper": [
+        "huyen-ai-engineering"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "A client hears that the GenAI pilot took five weeks and asks when it will be in production. Using a phase-based estimate, what is a defensible answer?",
+        "options": [
+          "Two more weeks to polish the pilot.",
+          "Another five weeks - the same again.",
+          "It cannot be estimated at all.",
+          "Roughly another ten to fourteen weeks or more, mostly hardening and rollout, with written assumptions and a named owner for data access."
+        ],
+        "answer": 3,
+        "why": "Hardening - security, permissions, guardrails, monitoring, integrations - is commonly at least as long as the pilot, and rollout adds more. A range with assumptions keeps credibility; 'two weeks' sets up hardening to look like scope creep."
+      }
     },
     {
       "id": "sd-05",
@@ -1521,9 +2022,8 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "story",
-        "business",
-        "communication"
+        "behavioural",
+        "trade-offs"
       ],
       "why": "Senior engineers are expected to sell work, not just do it. Services and consulting panels press hard here.",
       "quick": [
@@ -1546,7 +2046,24 @@ window.IR.q["18-system-design"] = {
       "numbers": "Time-box the pilot - six to eight weeks on one workflow with one agreed metric. Open-ended pilots are how these projects quietly die.",
       "wrong": "Leading with what the technology can do. It is the same pitch that produced the demo they already distrust.",
       "follow": "The pilot hit its metric but nobody is using it. What happened?",
-      "followAnswer": "Usually it solved the metric but not the workflow. I would go and watch the users first, because the reasons are often simple: it sits in a separate tool instead of where they already work, it is slower than their shortcut, they do not trust it after one bad answer, or nobody changed the process to expect it. Then I fix the adoption problem, such as embedding it in their existing screen, adding citations and training, and I track usage as a success metric alongside quality next time."
+      "followAnswer": "Usually it solved the metric but not the workflow. I would go and watch the users first, because the reasons are often simple: it sits in a separate tool instead of where they already work, it is slower than their shortcut, they do not trust it after one bad answer, or nobody changed the process to expect it. Then I fix the adoption problem, such as embedding it in their existing screen, adding citations and training, and I track usage as a success metric alongside quality next time.",
+      "next": [
+        "ev-09",
+        "sd-06"
+      ],
+      "deeper": [],
+      "check": {
+        "kind": "judgement",
+        "q": "A sceptical operations head has seen impressive AI demos deliver nothing. Which pitch is most likely to win funding?",
+        "options": [
+          "A live demo of the latest model's capabilities.",
+          "A six-to-eight-week pilot on their slowest queue, with one agreed metric and a stop rule if it misses.",
+          "Industry reports on AI productivity gains.",
+          "A full transformation roadmap across all departments."
+        ],
+        "answer": 1,
+        "why": "It starts from their own problem and metric, limits their risk, and the stop rule earns credibility. Another capability demo repeats exactly what they already distrust, and a grand roadmap raises the stakes instead of lowering them."
+      }
     },
     {
       "id": "sd-06",
@@ -1558,9 +2075,8 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "story",
-        "communication",
-        "expectations"
+        "behavioural",
+        "responsible-ai"
       ],
       "why": "Expectation management is most of a senior role, and this is a fast way to test it.",
       "quick": [
@@ -1582,7 +2098,24 @@ window.IR.q["18-system-design"] = {
       "numbers": "Whatever accuracy figure you quote, commit to reporting it on a schedule. A one-time disclosure is not expectation management.",
       "wrong": "\"I explain that LLMs are probabilistic.\" True, and it transfers the problem to them instead of telling them what to do about it.",
       "follow": "They ask you to guarantee it will never be wrong. What do you say?",
-      "followAnswer": "I say honestly that I cannot guarantee that, and that nobody honestly can for any system, human or automated. What I can guarantee is how we handle it. We measure the error rate on real cases and report it on a schedule, every answer shows its source so errors are easy to spot, a person approves anything that changes a record, and we have a clear path to report and fix mistakes. Then I ask what error rate the business can accept, and design to that."
+      "followAnswer": "I say honestly that I cannot guarantee that, and that nobody honestly can for any system, human or automated. What I can guarantee is how we handle it. We measure the error rate on real cases and report it on a schedule, every answer shows its source so errors are easy to spot, a person approves anything that changes a record, and we have a clear path to report and fix mistakes. Then I ask what error rate the business can accept, and design to that.",
+      "next": [
+        "sd-05",
+        "rag-24"
+      ],
+      "deeper": [],
+      "check": {
+        "kind": "judgement",
+        "q": "How do you explain the assistant's error rate to a non-technical operations director before launch?",
+        "options": [
+          "\"The model may occasionally produce inaccurate results.\"",
+          "\"LLMs are probabilistic, so some errors are inevitable.\"",
+          "\"About one answer in twenty needs correcting, so every answer shows its source and a person approves anything that changes a record. I'll report the rate monthly.\"",
+          "Avoid raising it unless they ask."
+        ],
+        "answer": 2,
+        "why": "It is concrete, pairs the limit with the control you built, and commits to ongoing reporting. Vague hedging gives them nothing to act on, and a limitation disclosed after an incident becomes a surprise rather than a design decision."
+      }
     },
     {
       "id": "sd-13",
@@ -1594,10 +2127,8 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "behavioural",
         "hr",
-        "compensation",
-        "judgement"
+        "behavioural"
       ],
       "why": "It tests whether you are straightforward under leverage - the panel is imagining you negotiating with a client.",
       "quick": [
@@ -1619,7 +2150,24 @@ window.IR.q["18-system-design"] = {
       "numbers": "The only important number here is the real decision deadline. Give the exact date rather than saying 'soon' if you expect the company to act on it.",
       "wrong": "Inventing or exaggerating another offer to create leverage. The short-term pressure is not worth the credibility risk.",
       "follow": "We cannot match it. Would you still join?",
-      "followAnswer": "I answer honestly, based on the whole role rather than the one number. The framework: say whether the gap matters to you and why, then name what would make it work, such as a higher level if the scope justifies it, a joining bonus, equity, or an earlier pay review with clear criteria. If this is genuinely your first choice and the package is fair, say yes clearly. If the gap is too large, say so politely now rather than accepting and continuing to shop around."
+      "followAnswer": "I answer honestly, based on the whole role rather than the one number. The framework: say whether the gap matters to you and why, then name what would make it work, such as a higher level if the scope justifies it, a joining bonus, equity, or an earlier pay review with clear criteria. If this is genuinely your first choice and the package is fair, say yes clearly. If the gap is too large, say so politely now rather than accepting and continuing to shop around.",
+      "next": [
+        "sd-11",
+        "sd-12"
+      ],
+      "deeper": [],
+      "check": {
+        "kind": "judgement",
+        "q": "You have a competing offer that needs an answer by the 14th, and this role is your first choice. What do you say?",
+        "options": [
+          "\"I have an offer due on the 14th, and this role is my first choice because of the work - can we align on timing?\"",
+          "\"I have several offers, so you'll need to move fast and beat them.\"",
+          "Say nothing and let the deadline pass.",
+          "Inflate the other offer to create leverage."
+        ],
+        "answer": 0,
+        "why": "A real date with a genuine preference gives the company something to act on and builds trust. Vague pressure or an inflated offer is easy to check and impossible to walk back, and silence can cost you both offers."
+      }
     },
     {
       "id": "sd-15",
@@ -1630,10 +2178,9 @@ window.IR.q["18-system-design"] = {
       "level": "5-10",
       "priority": "low",
       "tags": [
-        "design",
         "multilingual",
-        "low-bandwidth",
-        "voice"
+        "india",
+        "system-design"
       ],
       "why": "A globally relevant design where language, intermittent connectivity, channel choice, cost and voice quality interact.",
       "quick": [
@@ -1655,7 +2202,32 @@ window.IR.q["18-system-design"] = {
       "numbers": "Measure per-language token use, retrieval recall, speech error rate, latency and task completion on representative traffic. Indic scripts such as Devanagari often cost roughly 1.5–3× the tokens of equivalent English depending on the tokenizer, so measure on your own traffic rather than applying one multiplier to every language.",
       "wrong": "Treating multilingual support as a translation layer at the edge. Language changes retrieval, tokenisation, speech quality, evaluation and sometimes the whole channel design.",
       "follow": "A user mixes two languages and types both in Latin script. How does your retrieval pipeline normalise without losing the original meaning?",
-      "followAnswer": "I keep the original text untouched and add normalised versions alongside it for search. Language identification runs at the word or phrase level, so a sentence mixing romanised Hindi and English is recognised as mixed, not forced into one language. I then generate a transliterated form in the native script and a cleaned version, and search across all of them with hybrid retrieval, since keyword search catches exact product names. The model answers from the original message, so nothing is lost, and I evaluate on real code-switched queries."
+      "followAnswer": "I keep the original text untouched and add normalised versions alongside it for search. Language identification runs at the word or phrase level, so a sentence mixing romanised Hindi and English is recognised as mixed, not forced into one language. I then generate a transliterated form in the native script and a cleaned version, and search across all of them with hybrid retrieval, since keyword search catches exact product names. The model answers from the original message, so nothing is lost, and I evaluate on real code-switched queries.",
+      "builds": [
+        "rag-30",
+        "pr-05"
+      ],
+      "next": [
+        "rag-30",
+        "em-03",
+        "pr-05"
+      ],
+      "deeper": [
+        "indictrans2",
+        "bhashini"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "Your English pilot costs ₹2 lakh a month in tokens. You add Hindi traffic of the same volume in Devanagari. What is a sensible budget assumption before measuring?",
+        "options": [
+          "The same ₹2 lakh - tokens are tokens.",
+          "Roughly 1.5 to 3 times the English token cost for the Hindi share, then measure on real traffic with your tokeniser.",
+          "Exactly 4 times, the standard Hindi multiplier.",
+          "Less, because Hindi sentences are shorter."
+        ],
+        "answer": 1,
+        "why": "Many tokenisers split Indic scripts into more tokens than equivalent English, so cost rises by a range that depends on the tokeniser. No universal multiplier exists, which is why you plan with a range and then measure per language."
+      }
     },
     {
       "id": "sd-20",
@@ -1667,8 +2239,7 @@ window.IR.q["18-system-design"] = {
       "priority": "low",
       "tags": [
         "behavioural",
-        "judgement",
-        "communication"
+        "trade-offs"
       ],
       "why": "A strong differentiator. Panels are wary of candidates who think every problem is an LLM problem.",
       "quick": [
@@ -1690,7 +2261,475 @@ window.IR.q["18-system-design"] = {
       "numbers": "A measurement on twenty real examples from their data carries more weight than any argument from principle.",
       "wrong": "A generic answer about managing expectations. The question wants a specific decision with a cost attached, and the follow-up will ask what you measured and what saying no cost.",
       "follow": "They disagreed and went ahead anyway. What did you do?",
-      "followAnswer": "I made my case once, clearly and in writing, with the evidence and the risks, and then committed to making their approach succeed. That is the framework to fill with your own story. I helped define early checkpoints and a stop criterion, so we would know quickly whether it was working. Then give the outcome honestly: either it worked and what you learned about your own assumptions, or it missed the checkpoint and you helped move to the alternative without saying I told you so."
+      "followAnswer": "I made my case once, clearly and in writing, with the evidence and the risks, and then committed to making their approach succeed. That is the framework to fill with your own story. I helped define early checkpoints and a stop criterion, so we would know quickly whether it was working. Then give the outcome honestly: either it worked and what you learned about your own assumptions, or it missed the checkpoint and you helped move to the alternative without saying I told you so.",
+      "builds": [
+        "ml-07"
+      ],
+      "next": [
+        "rag-14",
+        "sd-18"
+      ],
+      "deeper": [
+        "google-rules-ml"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "A team wants an LLM for an extraction task that needs near-perfect accuracy. You suspect it won't reach the bar. What makes your 'no' most persuasive?",
+        "options": [
+          "Explaining that LLMs hallucinate in general.",
+          "Measuring it on about twenty real examples from their data, sharing the gap, and offering a cheaper alternative such as rules plus better search.",
+          "Escalating to their director.",
+          "Agreeing, then letting the pilot fail on its own."
+        ],
+        "answer": 1,
+        "why": "Evidence on their own data beats any argument from principle, and an alternative keeps you a partner rather than a blocker. Letting a pilot fail wastes their money and your credibility."
+      }
+    },
+    {
+      "id": "sd-29",
+      "q": "The offer says CTC of 38 lakh. How do you work out what you will actually earn, and how do you state your own expectation?",
+      "round": [
+        "hr"
+      ],
+      "level": "3-5",
+      "priority": "high",
+      "tags": [
+        "hr",
+        "india",
+        "behavioural"
+      ],
+      "why": "Indian offers quote cost to company, which mixes cash, contributions, one-offs and equity. HR checks whether you can compare offers on the same basis and state a clear number.",
+      "quick": [
+        "Split CTC: fixed, variable, one-time, employer contributions, equity.",
+        "Variable is a target, not a promise - ask last year's payout.",
+        "Joining bonus is one-time and usually clawed back if you leave early.",
+        "ESOPs: vesting, cliff, exercise price, liquidity; RSUs vest as shares.",
+        "State expectations as fixed pay plus total, with your reasoning."
+      ],
+      "simple": "CTC, cost to company, is everything the employer might spend on you in a year, so two offers with the same CTC can pay very different cash. Break it into five parts. **Fixed pay** is basic, HRA and allowances - the reliable monthly money. **Variable pay** is a performance bonus quoted at target; the actual payout depends on your rating and the company's year. **One-time items** such as a joining or relocation bonus appear only in year one, and offer letters usually say you repay them, fully or pro rata, if you leave within a period such as twelve months. **Employer contributions** such as provident fund and gratuity are real benefits but not monthly cash. **Equity** is ESOPs at a startup - options you pay an exercise price for, vesting over years, often with a one-year cliff, and hard to sell until there is a liquidity event - or RSUs at a listed company, which vest as shares.\n\nFor example, 38 lakh might be 30 fixed, 4 variable at target, 2 joining bonus and 2 of contributions. Your recurring cash in year two is closer to 30-34 than 38.\n\nWhen asked your expectation, give fixed and total separately and anchor them to the role and market.",
+      "points": [
+        "Recurring cash versus one-offs versus contributions versus equity.",
+        "Ask how variable paid out last cycle.",
+        "Read the joining-bonus clawback clause and its period.",
+        "ESOP: grant size, vesting, cliff, exercise price, buyback history.",
+        "Compare offers on year-two recurring cash plus realistic equity."
+      ],
+      "say": "I'd break the CTC into its parts before reacting to the headline. Fixed pay is what I can rely on monthly. Variable is quoted at target, so I'd ask how it actually paid out in the last cycle. A joining bonus is one-time and usually has a clawback if I leave within a set period, so it shouldn't count towards year two. Provident fund and gratuity contributions are real benefits but not cash in hand. And equity depends on the type: startup ESOPs have a vesting schedule, often a one-year cliff, an exercise price and limited liquidity, while RSUs at a listed company vest as shares. So I compare offers on recurring cash plus a realistic view of equity. When asked for my expectation, I give a fixed number and a total separately, anchored to the role's scope and the market for this level, and I'm happy to explain how I got there.",
+      "numbers": "Illustrative split of 38 lakh CTC: 30 fixed, 4 variable at target, 2 joining bonus, 2 employer contributions - so year-two recurring cash is about 30-34 lakh depending on the variable payout. Use the numbers in your own offer letter.",
+      "wrong": "Accepting the higher CTC without breaking it down. A large variable component, a clawed-back joining bonus and illiquid ESOPs can make the higher CTC the lower-paying offer.",
+      "follow": "We can't move the fixed pay. Can we close the gap with a joining bonus?",
+      "followAnswer": "Possibly, and I'd be open to it, but I'd want to understand the terms. A joining bonus helps year one but not year two, so I'd ask whether the fixed pay can be reviewed after the first appraisal, or whether part of the gap can come as a higher equity grant. I'd also check the clawback period and whether repayment is pro rata. If the overall structure gets close to my expectation for the first two years, I'm comfortable moving forward.",
+      "builds": [
+        "sd-11"
+      ],
+      "next": [
+        "sd-36",
+        "sd-35",
+        "sd-12"
+      ],
+      "deeper": [],
+      "check": {
+        "kind": "judgement",
+        "q": "Offer A: 36 lakh CTC with 32 fixed. Offer B: 40 lakh CTC with 28 fixed, 6 variable at target and a 4 lakh joining bonus. Which comparison is most sound?",
+        "options": [
+          "B is better because its CTC is 4 lakh higher.",
+          "Compare recurring cash: A's 32 fixed against B's 28 fixed plus its expected variable payout.",
+          "They are equal because both companies call it CTC.",
+          "B is better because joining bonuses repeat every year."
+        ],
+        "answer": 1,
+        "why": "B's joining bonus is one-time and its variable is only a target, so its recurring cash may be at or below A's. Comparing headline CTC is the classic error."
+      }
+    },
+    {
+      "id": "sd-30",
+      "q": "Your notice period is 90 days and the new company wants you in 30. How do you handle buyout and early release?",
+      "round": [
+        "hr"
+      ],
+      "level": "3-5",
+      "priority": "high",
+      "tags": [
+        "hr",
+        "india",
+        "behavioural"
+      ],
+      "why": "Notice periods are a constant friction in Indian hiring. HR checks you will negotiate honestly with both sides and not leave without a relieving letter.",
+      "quick": [
+        "Early release and buyout are at your current employer's discretion.",
+        "Buyout: you pay notice pay in lieu; new employer may reimburse.",
+        "Unused leave may offset days - confirm in writing.",
+        "Get the last working day and relieving letter commitment in writing.",
+        "Never abscond - the relieving letter matters for verification."
+      ],
+      "simple": "Your employment contract sets the notice period, and shortening it usually needs your current employer's agreement. There are two common routes. **Early release** is your manager agreeing to a shorter period, usually once your handover is credible. **Buyout** is paying salary in lieu of the unserved notice - recovered from your full and final settlement - and some new employers reimburse that amount, often as part of the joining bonus. Some companies also let unused leave offset part of the notice. All of these depend on the policy and on your manager, so treat them as possibilities until they are in writing.\n\nThe practical sequence is: read the contract clause, resign formally, offer a concrete handover plan with dates, then ask for early release. Tell the new employer the confirmed date, not the hoped-for one, and update them immediately if it changes.\n\nFor example, you might say: my contract says 90 days, I have proposed a six-week handover and asked for release on that date, and the company will confirm within a week; if they insist on 90 days, buyout is an option if you can support it. Leaving without completing the exit process can cost you the relieving letter, which many background checks ask for.",
+      "points": [
+        "Quote the contract and what is confirmed versus hoped.",
+        "Handover plan makes early release likely.",
+        "Ask the new employer whether they reimburse buyout.",
+        "Written last working day and relieving letter.",
+        "Update the recruiter the moment dates move."
+      ],
+      "say": "My contract says 90 days, and I won't promise a shorter date I can't control, because early release and buyout are my current employer's decision. What I'll do is resign formally, propose a handover plan of about six weeks with named owners for each piece of work, and ask for release on that date. Many managers agree once the handover is credible. If they insist on the full period, a buyout of the remaining notice is possible, and I'd ask whether you reimburse that, as some companies do through the joining bonus. I'll also check whether unused leave can offset part of it. I'll confirm the last working day in writing within a week of resigning and tell you immediately if anything changes. The one thing I won't do is leave without completing the exit, because I need a clean relieving letter for your background check anyway.",
+      "numbers": "Typical Indian notice periods for experienced engineers run from 30 to 90 days, set by your contract. Buyout cost is roughly your salary for the unserved days - check how your company calculates it.",
+      "wrong": "\"Don't worry, I'll join in 30 days\" - before your employer has agreed. If the release falls through, the new team has planned around a date you cannot meet, and trust is gone before day one.",
+      "follow": "If your employer refuses early release, will you still be able to join?",
+      "followAnswer": "Yes, on my contractual date at the latest, and I'll confirm that date in writing. If your timeline genuinely can't wait, I'd rather tell you now than surprise you later. Options I'd explore are a buyout, if you can support the cost, or joining remotely for onboarding in the final weeks if both employers agree and it doesn't conflict with my current contract. But I won't promise a date I don't control, and I'd prefer to start on a clean, agreed date with a proper relieving letter.",
+      "builds": [
+        "sd-12"
+      ],
+      "next": [
+        "sd-31",
+        "sd-32"
+      ],
+      "deeper": [],
+      "check": {
+        "kind": "judgement",
+        "q": "The recruiter asks if you can join in 30 days. Your notice is 90 and your manager hasn't been asked yet. Best response?",
+        "options": [
+          "Yes, I'll make it happen somehow.",
+          "My contract is 90 days; I'll request release with a handover plan and confirm a date within a week.",
+          "I'll just stop going after 30 days; they can't do anything.",
+          "No, it's 90 days and nothing can change it."
+        ],
+        "answer": 1,
+        "why": "It is honest about the contract, shows a plan to shorten it, and commits to a confirmed date. Promising 30 days is unverifiable, absconding risks the relieving letter, and a flat no gives up an option you have."
+      }
+    },
+    {
+      "id": "sd-31",
+      "q": "You resigned and your current employer makes a counter-offer. How do you handle it?",
+      "round": [
+        "hr",
+        "manager"
+      ],
+      "level": "3-5",
+      "priority": "medium",
+      "tags": [
+        "hr",
+        "behavioural",
+        "india"
+      ],
+      "why": "The new employer is checking whether your acceptance means anything. Your current employer will test whether money alone solves why you left.",
+      "quick": [
+        "Decide your reasons for leaving before you resign, not after.",
+        "Ask: would the counter fix the reason, or only the pay?",
+        "Thank your manager; decline clearly if you are going.",
+        "Never use a counter to re-negotiate the accepted offer repeatedly.",
+        "If you accept a counter, tell the new employer at once."
+      ],
+      "simple": "A counter-offer is your current employer offering more - money, a title, a new project - to keep you after you resign. It is a legitimate offer, but think about it before it arrives. Most people move for reasons that are not only pay: scope, the kind of work, growth, or a manager. A counter usually addresses pay quickly and the rest slowly, if at all. And once you have resigned, you may be seen as a flight risk, which can affect the next round of opportunities.\n\nSo decide before you resign. Write down why you are leaving and what would genuinely make you stay. If the counter fixes those reasons, it is worth considering, and you should tell the new employer promptly and honestly. If it only fixes pay, decline it warmly: thank your manager, say the decision is about the work, and move to the handover.\n\nFor example: \"I appreciate it, and I've enjoyed working here. My decision is about moving into hands-on GenAI platform work, which this role offers. I'll make sure the handover is solid.\" What damages your reputation is using a counter to extract repeated raises from the new employer, or accepting both and backing out late.",
+      "points": [
+        "Decide criteria before resigning.",
+        "Separate pay from the actual reason for leaving.",
+        "Decline gracefully, focus on the work.",
+        "If you stay, tell the new employer immediately.",
+        "No repeated back-and-forth bidding."
+      ],
+      "say": "I'd have made the decision before resigning, so the counter-offer doesn't restart it. I'm moving because I want hands-on ownership of production GenAI systems, and that's the work this role offers. If my current employer counters with more money, I'd thank them sincerely, because it's a compliment, and decline, because pay wasn't the reason I'm leaving. If they offered to change the work itself in a concrete way, I'd consider it honestly, and if I changed my mind I'd tell the new employer the same day rather than let them find out late. What I wouldn't do is take the counter back to the new employer to bid up the offer. Once I've accepted, I treat that as a commitment. My aim is to leave on good terms, with a proper handover, because in this industry you work with the same people again.",
+      "numbers": "No universal number applies. Decide in advance what change - in pay, scope or role - would actually make you stay, and write it down before you resign.",
+      "wrong": "Using the counter-offer to go back and forth between employers for more money. Both sides learn your word is negotiable, and the new offer can be withdrawn.",
+      "follow": "If your company matches our offer, will you stay?",
+      "followAnswer": "No. A match would fix the pay, and pay isn't why I'm moving. I'm leaving for the scope of the work - owning a GenAI platform in production, which my current role doesn't offer in the near term. I've thought about this before applying, and I've accepted your offer because the role is what I want. If anything ever changed that, I'd tell you directly and promptly, but I don't expect it to.",
+      "builds": [
+        "sd-09"
+      ],
+      "next": [
+        "sd-36",
+        "sd-13"
+      ],
+      "deeper": [],
+      "check": {
+        "kind": "judgement",
+        "q": "You accepted Company B's offer. Your current employer counters with 25% more pay but the same role. You left because of the work. Best move?",
+        "options": [
+          "Accept the counter quietly and tell B a week before joining.",
+          "Forward the counter to B and ask them to beat it.",
+          "Thank your employer, decline because the reason was the work, and continue the handover.",
+          "Accept both and decide on the joining date."
+        ],
+        "answer": 2,
+        "why": "The counter does not fix the reason you are leaving, so declining is consistent and keeps both relationships intact. Bidding B up after accepting, or holding both, damages trust on both sides."
+      }
+    },
+    {
+      "id": "sd-32",
+      "q": "The offer is subject to background verification. What gets checked, and what can make it fail?",
+      "round": [
+        "hr"
+      ],
+      "level": "3-5",
+      "priority": "high",
+      "tags": [
+        "hr",
+        "india",
+        "behavioural"
+      ],
+      "why": "Background verification failures after joining are common and avoidable. HR wants to see that what you told them will match the records.",
+      "quick": [
+        "Employment dates, designation, reason for exit and relieving letters.",
+        "Past pay against payslips or offer letters.",
+        "Education certificates, address, identity and sometimes court records.",
+        "PF service history can reveal undeclared or overlapping employers.",
+        "Disclose gaps and short stints upfront; inconsistency fails, not gaps."
+      ],
+      "simple": "Most Indian employers use a verification vendor once you accept, sometimes after you join. The usual checks are: employment history - company names, dates, designation and exit status, confirmed with past HR teams and relieving or experience letters; past compensation against payslips or offer letters, if you declared it; education - degree and university records; identity and address; and sometimes court-record and reference checks. With your consent, the provident fund service history linked to your UAN can also show every employer that contributed for you, with dates.\n\nWhat fails a check is inconsistency, not imperfection. Common failures are inflated past pay, dates stretched to cover a gap, a designation that differs from the company's records, an employer you left off your CV that appears in PF records, overlapping employment, and a missing relieving letter because the exit was not completed.\n\nFor example, a six-month stint you left off because it went badly will usually surface. Declared upfront with a one-line reason - the project was cancelled, or the role was not what was offered - it is a non-event. Discovered by the vendor, it looks like concealment, and offers can be withdrawn or employment terminated for misrepresentation.",
+      "points": [
+        "Know what is checked: employment, pay, education, identity, records.",
+        "Make the CV match HR records exactly - dates, titles.",
+        "Declare every employer, including short ones.",
+        "Never inflate past pay; it is verified.",
+        "Complete exits properly to get relieving letters."
+      ],
+      "say": "I expect the standard checks: employment dates, designation and exit status with each past employer, relieving and experience letters, past pay against payslips, education records, identity and address, and possibly references. I've made sure my CV matches HR records exactly, including titles and dates. One thing I'd mention now rather than have the vendor find: I had a short four-month role in 2021 that I left because the project was cancelled. It's on my application form, and it will show in my PF history. My past pay is as I declared it, and I can share payslips. I'll also have my relieving letter from my current employer, because I'm serving my notice properly. If anything needs clarifying during the check, I'd rather you ask me directly so it gets resolved quickly.",
+      "numbers": "No universal number. Make every date, title and pay figure you have given match your documents exactly - a mismatch of a few months or one designation level is a common cause of a flagged report.",
+      "wrong": "Omitting a short or awkward job and rounding dates to hide a gap. PF records and HR confirmations usually reveal both, and concealment is treated far more seriously than the gap itself.",
+      "follow": "There's a gap of eight months on your CV. What happened?",
+      "followAnswer": "I took eight months between roles in 2023. I spent most of it on structured upskilling in GenAI - I built two RAG projects and an evaluation harness that are on my GitHub - and part of it on a family responsibility that is now resolved. I'm mentioning it plainly because it's true and it will show up in verification anyway. The work from that period is actually what got me into this field, and I'm happy to walk you through it.",
+      "builds": [
+        "sd-12"
+      ],
+      "next": [
+        "sd-35",
+        "sd-33"
+      ],
+      "deeper": [],
+      "check": {
+        "kind": "judgement",
+        "q": "You had a three-month job that ended badly and isn't on your CV. The offer is subject to background verification. Best approach?",
+        "options": [
+          "Leave it off - three months is too short to matter.",
+          "Declare it now with a one-line honest reason.",
+          "Extend your previous job's end date to cover the gap.",
+          "Mention it only if the vendor finds it."
+        ],
+        "answer": 1,
+        "why": "Short stints usually appear in PF service history or employer checks; declared upfront they are routine, discovered they look like misrepresentation. Stretching dates is exactly the inconsistency verification is designed to catch."
+      }
+    },
+    {
+      "id": "sd-33",
+      "q": "You moved into AI from backend, testing or data engineering. How do you explain the switch?",
+      "round": [
+        "hr",
+        "manager"
+      ],
+      "level": "3-5",
+      "priority": "high",
+      "tags": [
+        "behavioural",
+        "project-story",
+        "hr"
+      ],
+      "why": "Many candidates in India are switching into GenAI. The panel checks whether the switch is backed by real work and whether your previous domain is an asset rather than a gap.",
+      "quick": [
+        "Frame it as a progression, not an escape.",
+        "Name the trigger and the concrete work since.",
+        "Show the evidence: shipped project, metrics, code you can walk through.",
+        "Turn the old domain into the edge - testing, data, systems.",
+        "Be honest about gaps and how you are closing them."
+      ],
+      "simple": "A domain switch raises one question in the panel's mind: is this real, or just following the hype? The answer that works is a short story with evidence. Start with the trigger - for example, you were asked to add a GenAI feature to a backend service and found you were more interested in why its answers failed than in the API. Then the work: what you built, at what scale, and what you measured. Then the bridge: why your previous experience makes you better at this, not just new to it.\n\nEach background has a natural edge. A backend engineer brings reliability, latency budgets, idempotency and on-call discipline, which most GenAI prototypes lack. A tester brings evaluation thinking - golden sets, regression gates and edge cases - which is the hardest skill in LLM systems. A data engineer brings ingestion, quality and pipelines, which is where RAG systems actually fail.\n\nFor example: \"I spent four years on payments backends. When we added an assistant, I owned its retrieval and evaluation, cut wrong answers on our test set from 18% to 6%, and realised production GenAI is mostly the engineering I already knew plus evaluation.\" Close with an honest gap and how you are closing it.",
+      "points": [
+        "Trigger, work, bridge, gap - in about a minute.",
+        "One shipped or production-like project with a number.",
+        "Previous domain as a strength.",
+        "Avoid certification lists as the main evidence.",
+        "Consistent with your CV and other rounds."
+      ],
+      "say": "It's more of a progression than a switch. I spent four years building payments backends, and when we added an assistant to our support flow I volunteered to own its retrieval and evaluation. I found I cared more about why it gave wrong answers than about the API around it. Over the next year I rebuilt the retrieval with hybrid search, set up a golden set with the support team, and took the wrong-answer rate on that set from about 18 percent to 6. What I bring from backend is exactly what most GenAI prototypes lack: latency budgets, retries and idempotency, observability and being on call for it. The gap I'm still closing is fine-tuning - I've done LoRA experiments on my own, but not in production, and I'd want to learn that here. So I'm not starting from zero; I'm bringing production engineering to a field that needs it.",
+      "numbers": "Keep it to about a minute: one trigger, one project with one number, one bridge, one honest gap.",
+      "wrong": "\"AI is the future and my old domain was boring, so I did some courses.\" It sounds like following hype, offers no evidence, and dismisses experience the panel would otherwise value.",
+      "follow": "You haven't run GenAI in production at scale. Why should we take the risk?",
+      "followAnswer": "Fair question. The parts of production GenAI that fail most often are the ones I've done for years - reliability, observability, data pipelines and incident handling - and I've shown on our assistant that I can apply them to retrieval and evaluation, with a measured improvement. What I haven't done is run it at your scale, so I'd want a strong reviewer in my first months and I'd start by owning a well-bounded piece, like the evaluation harness. I learn quickly with real traffic and real feedback, and the evidence is the project I just walked you through.",
+      "builds": [
+        "riq-3504",
+        "sd-03"
+      ],
+      "next": [
+        "sd-04",
+        "in-16"
+      ],
+      "deeper": [],
+      "check": {
+        "kind": "judgement",
+        "q": "Asked \"Why the move from QA into GenAI?\", which answer lands best?",
+        "options": [
+          "Testing was repetitive and AI pays better.",
+          "I've completed five AI certifications this year.",
+          "I built our assistant's golden set and regression gate; evaluation is the hardest part of GenAI and it's what I know.",
+          "Everyone is moving to AI, so I don't want to be left behind."
+        ],
+        "answer": 2,
+        "why": "It gives evidence of real work and turns the old domain into a strength. Pay, certifications and fear of missing out all read as following the trend rather than having a reason."
+      }
+    },
+    {
+      "id": "sd-34",
+      "q": "Are you open to relocation, and how do you feel about working from the office three days a week?",
+      "round": [
+        "hr",
+        "manager"
+      ],
+      "level": "3-5",
+      "priority": "medium",
+      "tags": [
+        "hr",
+        "behavioural",
+        "india"
+      ],
+      "why": "Work-location questions decide offers more often than candidates expect. HR wants a true answer now, not a yes that becomes a no after joining.",
+      "quick": [
+        "Ask for the actual policy: location, days, flexibility, how enforced.",
+        "Give a true answer now; conditions are fine, surprises are not.",
+        "Raise constraints early - family, health, timing - with a proposal.",
+        "Ask about relocation support in writing.",
+        "Do not accept a policy you plan to ignore."
+      ],
+      "simple": "Location policy is often treated as a formality, but it is one of the most common reasons offers fall through or new hires leave early. Many companies in India have moved to fixed office days, some hire only for specific hubs such as Bengaluru, Hyderabad, Pune or Gurugram, and some GCCs follow the parent company's policy, which can change.\n\nSo first ask what the policy actually is: which office, how many days, whether it is team-level or company-wide, and how strictly it is applied. Then answer truthfully. A conditional answer is fine - \"yes, from June, once my child's school year ends\" - while a yes you do not mean is not, because it surfaces within weeks of joining.\n\nIf you would relocate, ask what support exists: travel, temporary accommodation, a relocation allowance and its clawback terms, and whether it is in the offer letter. If you have a hard constraint, state it early with a proposal, such as starting remotely for two months. For example, a candidate who says \"I can do three days a week from Hyderabad, but not five\" gives HR something to work with; one who agrees to everything and then asks for exceptions in month two damages trust with the new manager.",
+      "points": [
+        "Clarify the policy before answering.",
+        "Truthful, possibly conditional answer.",
+        "Constraints raised early with a workable proposal.",
+        "Relocation support in writing, including clawback.",
+        "Consistency between what you say and do."
+      ],
+      "say": "Could you tell me the actual policy first - which office, how many days, and whether it's a company-wide rule or set by the team? That helps me give you a real answer. For me, three days a week in the Bengaluru office works well, and I like in-person time for design discussions. Relocation is possible, but I'd need about two months because of my family's commitments, so I'd propose starting from the office here or remotely for the first weeks if that's acceptable. I'd also like to understand any relocation support - travel, temporary accommodation, an allowance and whether it has a clawback - and have that in the offer letter. I'd rather sort this out now than agree to something and then ask for exceptions after joining.",
+      "numbers": "No universal number. Ask for the exact office days and location in writing, and include any agreed exception in the offer letter rather than an email thread.",
+      "wrong": "Saying yes to five days or relocation you do not intend to honour, planning to negotiate after joining. It usually surfaces within weeks and can turn a strong hire into a performance conversation.",
+      "follow": "The policy may change to five days next year. Would that work for you?",
+      "followAnswer": "I'd want to be honest: three days works well for me, and five would be a significant change I'd need to think through. I wouldn't rule it out, but I'd want to understand why it might change and whether there would be flexibility for specific circumstances. If the role is genuinely five days in the near future, I'd rather know now so I can decide properly than accept and struggle with it later.",
+      "builds": [
+        "sd-12"
+      ],
+      "next": [
+        "sd-35",
+        "sd-10"
+      ],
+      "deeper": [],
+      "check": {
+        "kind": "judgement",
+        "q": "The role needs four office days a week. You can do two because of a family responsibility for the next six months. What do you say?",
+        "options": [
+          "Agree to four days and work it out with your manager later.",
+          "Say two days for six months, then four, and ask if a written interim arrangement is possible.",
+          "Say you prefer full remote and see what they offer.",
+          "Decline the interview process immediately."
+        ],
+        "answer": 1,
+        "why": "It is truthful, time-bound and gives HR a concrete proposal to approve. Agreeing and renegotiating later breaks trust, and an open-ended preference gives them nothing to decide on."
+      }
+    },
+    {
+      "id": "sd-35",
+      "q": "You have the offer letter in hand. What red flags do you check before signing?",
+      "round": [
+        "hr"
+      ],
+      "level": "3-5",
+      "priority": "medium",
+      "tags": [
+        "hr",
+        "india",
+        "behavioural"
+      ],
+      "why": "Many problems after joining were in the offer letter all along. HR respects a candidate who reads it carefully and asks clear questions.",
+      "quick": [
+        "Level, title and fixed pay match what was agreed verbally.",
+        "Variable, joining bonus and clawback terms in writing.",
+        "Notice period, probation and any training bond or penalties.",
+        "Non-compete, moonlighting and IP clauses - ask for narrow wording.",
+        "ESOP grant, vesting and documents promised in writing."
+      ],
+      "simple": "Read the whole offer letter and any annexures before signing, and compare them with what you agreed in conversation. The common gaps are these. **Level and title** lower than discussed, which affects pay bands and the next promotion. **Pay structure**: a fixed component smaller than agreed, a variable component described vaguely, and joining or relocation bonuses with a clawback period you did not expect. **Notice and probation**: a long notice period, sometimes longer than during probation, or a training bond with a repayment penalty. **Restrictive clauses**: broad non-compete, non-solicitation or IP clauses claiming anything you build, including personal projects, and a ban on any outside work. **Equity**: ESOPs mentioned in an email but missing from the letter, with no grant size, vesting schedule or plan document. **Conditions**: offers subject to background verification, references or a joining date.\n\nFor example, if the letter says \"ESOPs as per company policy\", ask for the number of options, the vesting schedule and the exercise price in writing. Indian courts have generally not enforced post-employment non-competes under Section 27 of the Contract Act, but do not rely on that - ask for the clause to be narrowed instead. Raise everything in one polite message, not one at a time.",
+      "points": [
+        "Compare letter against verbal agreement line by line.",
+        "Bonus clawback, variable terms and notice in writing.",
+        "Narrow IP and outside-work clauses for personal projects.",
+        "Equity specifics: number, vesting, exercise price, plan document.",
+        "One consolidated, polite list of questions."
+      ],
+      "say": "I'd read the full letter and annexures against what we agreed and send one consolidated set of questions. First, level and title, because they set my band and next promotion. Then pay: the fixed component, how the variable is decided, and the joining bonus clawback period and whether it's pro rata. Then notice and probation terms, and whether there's any training bond or penalty. Then the restrictive clauses: I'd ask for the IP clause to exclude personal projects built on my own time and equipment, and for any non-compete to be narrowed. And equity: if ESOPs were promised, I'd want the number of options, the vesting schedule, the exercise price and the plan document in writing, not 'as per policy'. None of this is adversarial. It's what I'd expect a careful engineer to do with any contract, and it saves both sides a difficult conversation after I join.",
+      "numbers": "No universal number. Check that every number you agreed verbally - fixed pay, variable target, bonus amount and clawback period, notice days, equity grant - appears in the letter with the same value.",
+      "wrong": "Signing quickly because the CTC is right and assuming the rest is standard. Clawbacks, broad IP clauses and missing equity terms are much harder to change after you have signed.",
+      "follow": "Our IP clause is standard and we can't change it. Will you still sign?",
+      "followAnswer": "I understand it's standard, and I'm not asking for anything unusual. My concern is narrow: open-source and personal projects I build on my own time and equipment that don't relate to the company's business. Could you confirm in writing that those are outside the clause, or tell me how the company handles them in practice? If there's a process to declare existing projects before joining, I'm happy to use it. With that clarity, I'm comfortable signing.",
+      "builds": [
+        "sd-29"
+      ],
+      "next": [
+        "sd-36",
+        "sd-32"
+      ],
+      "deeper": [],
+      "check": {
+        "kind": "judgement",
+        "q": "The offer letter says \"ESOPs as per company policy\". The recruiter had said 2,000 options over four years. What do you do?",
+        "options": [
+          "Sign - the recruiter's word is enough.",
+          "Ask for the grant size, vesting schedule, exercise price and plan document in writing before signing.",
+          "Refuse the offer as dishonest.",
+          "Ask for cash instead and drop the ESOPs."
+        ],
+        "answer": 1,
+        "why": "Unwritten equity is the most common offer-letter gap, and asking for specifics is routine and reasonable. Assuming good faith alone leaves you with nothing enforceable; treating it as dishonesty is an overreaction."
+      }
+    },
+    {
+      "id": "sd-36",
+      "q": "You prefer this offer but another company offered more. How do you negotiate without burning either bridge?",
+      "round": [
+        "hr"
+      ],
+      "level": "3-5",
+      "priority": "high",
+      "tags": [
+        "hr",
+        "behavioural",
+        "india"
+      ],
+      "why": "Goes beyond disclosing a competing offer: HR checks whether you can make one clear, evidence-based ask and keep your word afterwards.",
+      "quick": [
+        "Say this offer is your preference - only if true.",
+        "Make one specific ask, with the component and the reason.",
+        "Share evidence only if comfortable; never invent or inflate.",
+        "Give a real decision date and keep it.",
+        "Decline the other offer promptly and politely once you accept."
+      ],
+      "simple": "Negotiating with a competing offer works when it is specific, honest and single-round. Start with your preference: if this is the role you want, say so, because it tells the company the gap is closable. Then make one clear ask. Name the component and the amount - fixed pay is usually what matters most, while a joining bonus or extra equity can close a one-time gap - and tie it to evidence, such as the competing offer's fixed pay or the scope of the role. If you are comfortable, you can share the competing offer letter with confidential parts hidden; never invent an offer or inflate its numbers, because recruiters often check and the market is small.\n\nGive a real decision date and stick to it. Repeated rounds of \"they've gone up again\" make you look like you are running an auction, and offers do get withdrawn.\n\nFor example: \"This is my first choice. The other offer is 34 fixed against your 31. If you can get fixed to 33, I'll accept by Friday.\" Then follow through. Once you accept, tell the other company promptly and thank them - you may want to work there in three years, and the hiring manager will remember how you left it.",
+      "points": [
+        "Lead with genuine preference.",
+        "One ask: component, number, reason.",
+        "Evidence without fabrication.",
+        "Real deadline, single round.",
+        "Close the other process gracefully."
+      ],
+      "say": "I'd be straightforward. This role is my first choice because of the platform work, and I'd like to make it work. I do have another offer with fixed pay of 34 lakh, against 31 here. I'm not asking you to match the whole package - if you can bring the fixed pay to 33, I'll accept by Friday. If fixed is constrained, a joining bonus to bridge the first year would also work for me. I'm happy to share the other offer letter with personal details hidden if that helps your approval. Either way I'll give you my decision on Friday, as I've promised the other company an answer by then too. And once I accept, I'll close the other process the same day and thank them properly, because I'd like to keep that relationship.",
+      "numbers": "Keep the ask specific and modest relative to the evidence - a named component and amount - and give one real deadline. One negotiation round is normal; several rounds reads as an auction.",
+      "wrong": "\"Match their offer or I'm leaving\" - or quoting an inflated or invented figure. Ultimatums and fabrication are easy to check and can end both processes.",
+      "follow": "We can only reach 32. Will you accept?",
+      "followAnswer": "Thank you for going back for that. Let me be honest: 32 is close, and the role is what I want. Could we bridge the last lakh with a one-time joining bonus, or agree on a compensation review at the first appraisal cycle in writing? If either is possible, I'll accept today. If not, I'll take a day to think it over properly and give you a clear answer by tomorrow, as promised.",
+      "builds": [
+        "sd-13",
+        "sd-29"
+      ],
+      "next": [
+        "sd-31",
+        "sd-35"
+      ],
+      "deeper": [],
+      "check": {
+        "kind": "judgement",
+        "q": "Company A (your preference) offers 30 fixed; Company B offers 33. Which message to A lands best?",
+        "options": [
+          "B offered 36, so please beat that.",
+          "A is my first choice; B is 33 fixed. If you reach 32, I'll accept by Friday.",
+          "Match B exactly or I'll take it.",
+          "I'll keep both open and decide after joining dates are fixed."
+        ],
+        "answer": 1,
+        "why": "It states a genuine preference, a specific evidence-based ask and a real deadline. Inflating B's figure is fabrication, an ultimatum invites a no, and holding both open signals your acceptance is not a commitment."
+      }
     }
   ]
 };

@@ -24,7 +24,7 @@ window.IR.q["08-langchain"] = {
       "priority": "high",
       "tags": [
         "langchain",
-        "basics"
+        "trade-offs"
       ],
       "why": "Whether you can describe a tool's purpose without reciting its component list.",
       "quick": [
@@ -39,7 +39,30 @@ window.IR.q["08-langchain"] = {
       "numbers": "No number applies. The honest trade-off statement is what scores here.",
       "wrong": "Listing components - \"chains, agents, memory, retrievers, callbacks\". It answers what it contains, not what it solves, and every candidate says it.",
       "follow": "Where would you not use it?",
-      "followAnswer": "For a single prompt and one model call, where fifteen lines of direct API code are clearer than a dependency tree. Also in a latency-critical hot path where I want nothing between my code and the HTTP call, and when I need a new provider feature the wrapper has not exposed yet. In those places I call the SDK directly and keep LangChain for orchestration, tracing and integrations."
+      "followAnswer": "For a single prompt and one model call, where fifteen lines of direct API code are clearer than a dependency tree. Also in a latency-critical hot path where I want nothing between my code and the HTTP call, and when I need a new provider feature the wrapper has not exposed yet. In those places I call the SDK directly and keep LangChain for orchestration, tracing and integrations.",
+      "builds": [
+        "llm-20"
+      ],
+      "next": [
+        "lg-13",
+        "lg-11",
+        "rag-51"
+      ],
+      "deeper": [
+        "langchain-docs"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "In which situation does LangChain's standard model interface earn its keep most clearly?",
+        "options": [
+          "A single latency-critical call made 500 times a second.",
+          "A pipeline that must move between a hosted provider and a self-hosted model, changing configuration rather than code, then re-testing prompts.",
+          "A script that calls one model once a day.",
+          "Debugging an exact request payload sent to one provider."
+        ],
+        "answer": 1,
+        "why": "The common interface makes provider swaps a configuration change. On a hot single call or when you need exact payload control, the extra layer costs more than it saves. Prompts still need re-testing after any switch."
+      }
     },
     {
       "id": "lg-13",
@@ -52,9 +75,7 @@ window.IR.q["08-langchain"] = {
       "priority": "high",
       "tags": [
         "langchain",
-        "runnable",
-        "lcel",
-        "basics"
+        "python"
       ],
       "why": "The definition the rest of the LangChain vocabulary is built on. A vague answer here makes every later answer sound borrowed.",
       "quick": [
@@ -99,7 +120,33 @@ window.IR.q["08-langchain"] = {
       "numbers": "No number applies. This is a vocabulary question, and the code is the proof you have written it.",
       "wrong": "Defining a chain by an old class such as LLMChain. The useful concept is composition of runnables, not a particular legacy class name.",
       "follow": "So what does LCEL add on top of that?",
-      "followAnswer": "LCEL is the composition layer on top of the runnable interface. Once pieces are joined with the pipe, the chain gets streaming, batching, async, and retries or fallbacks through methods like with_retry and with_fallbacks, without extra code. A dictionary of branches runs in parallel automatically. So LCEL is not just syntax - it is what lets those behaviours work on any chain I compose."
+      "followAnswer": "LCEL is the composition layer on top of the runnable interface. Once pieces are joined with the pipe, the chain gets streaming, batching, async, and retries or fallbacks through methods like with_retry and with_fallbacks, without extra code. A dictionary of branches runs in parallel automatically. So LCEL is not just syntax - it is what lets those behaviours work on any chain I compose.",
+      "builds": [
+        "lg-01"
+      ],
+      "next": [
+        "lg-02",
+        "lg-03"
+      ],
+      "alsoIn": [
+        "riq-a07",
+        "riq-1206"
+      ],
+      "deeper": [
+        "langchain-docs"
+      ],
+      "check": {
+        "kind": "predict",
+        "q": "`chain = prompt | model | StrOutputParser()`. Without writing any extra code, which methods can you call on `chain`?",
+        "options": [
+          "Only `invoke`; streaming needs a custom subclass.",
+          "Only `invoke` and `batch`; async needs `LLMChain`.",
+          "`invoke`, `batch`, `stream` and their async versions, because the composed chain is itself a Runnable.",
+          "None until you wrap it in an agent."
+        ],
+        "answer": 2,
+        "why": "Composing Runnables yields a Runnable, so the whole interface comes free. Defining chains through legacy classes like LLMChain is the dated mental model this card warns against."
+      }
     },
     {
       "id": "lg-02",
@@ -111,8 +158,7 @@ window.IR.q["08-langchain"] = {
       "priority": "high",
       "tags": [
         "langchain",
-        "lcel",
-        "runnable"
+        "latency"
       ],
       "why": "Whether you understand the interface, or only copied the syntax from a tutorial.",
       "quick": [
@@ -177,9 +223,47 @@ window.IR.q["08-langchain"] = {
       },
       "say": "LCEL is LangChain Expression Language, and the pipe exists because every component shares one interface called Runnable. A prompt, a model, a parser, a retriever or a plain function all follow it, so you can join them with the pipe, and the result is itself a Runnable. The payoff isn't the syntax. Every chain you build gets streaming, batching, async methods, retries and fallbacks with no extra code. You call with_retry or with_fallbacks instead of writing try blocks. Parallelism comes free too. Compose two independent retrievers as a dictionary of branches and they run concurrently, so you wait for the slower one, not both added together. So the pipe isn't sugar, it's what makes those features work on any chain. LCEL is still the right tool for fixed pipelines. For agents, where the model picks the next step, current LangChain uses create_agent, which runs on LangGraph.",
       "numbers": "A dictionary of branches in LCEL runs those branches concurrently. Two independent retrievers cost roughly max(t1, t2), not t1 + t2.",
+      "verified": "2026-10",
       "wrong": "\"It's just a nicer way to write chains.\" True and shallow. The interviewer wants streaming, batching, async and parallelism named as the reason.",
       "follow": "How does streaming work through a chain that has an output parser at the end?",
-      "followAnswer": "It depends on the parser. StrOutputParser works on each chunk as it arrives, so tokens stream straight through. A parser that needs the whole output, like one that validates a complete JSON object against a schema, has to wait for the end, so streaming stops at that step. JsonOutputParser can emit partial objects as they build up. If validation must see everything, I stream a text field separately."
+      "followAnswer": "It depends on the parser. StrOutputParser works on each chunk as it arrives, so tokens stream straight through. A parser that needs the whole output, like one that validates a complete JSON object against a schema, has to wait for the end, so streaming stops at that step. JsonOutputParser can emit partial objects as they build up. If validation must see everything, I stream a text field separately.",
+      "builds": [
+        "lg-13"
+      ],
+      "next": [
+        "lg-03",
+        "lg-10",
+        "lg-18"
+      ],
+      "alsoIn": [
+        "riq-1206"
+      ],
+      "deeper": [
+        "langchain-docs"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "An LCEL chain runs a dict of two retrievers (0.8 s and 1.2 s) and then a model call (2.0 s). Ignoring overhead, what is the end-to-end latency?",
+        "options": [
+          "4.0 s",
+          "About 3.2 s",
+          "2.0 s",
+          "1.2 s"
+        ],
+        "answer": 1,
+        "why": "A dict of branches runs concurrently, so retrieval costs max(0.8, 1.2) = 1.2 s, then the model adds 2.0 s. Adding everything gives 4.0 s, which is what you get if you call the retrievers one after another."
+      },
+      "try": {
+        "title": "Time a parallel LCEL branch",
+        "minutes": 10,
+        "steps": [
+          "`pip install langchain-core` and run the starter.",
+          "Observe the parallel call taking about the slower branch (1.5 s), not the sum.",
+          "Observe the sequential pipe taking about 2.5 s.",
+          "Call `par.batch([\"a\", \"b\", \"c\"])` and observe that batching also runs inputs concurrently."
+        ],
+        "code": "import time\nfrom langchain_core.runnables import RunnableLambda, RunnableParallel\n\ndef slow(name, secs):\n    def f(q):\n        time.sleep(secs)\n        return f\"{name} hits for {q}\"\n    return RunnableLambda(f)\n\npar = RunnableParallel(policy=slow(\"policy\", 1.0), faq=slow(\"faq\", 1.5))\nt = time.time()\nprint(par.invoke(\"leave rules\"), round(time.time() - t, 2), \"s parallel\")\n\nseq = slow(\"policy\", 1.0) | slow(\"faq\", 1.5)\nt = time.time()\nprint(seq.invoke(\"leave rules\"), round(time.time() - t, 2), \"s sequential\")"
+      }
     },
     {
       "id": "lg-22",
@@ -192,10 +276,8 @@ window.IR.q["08-langchain"] = {
       "priority": "high",
       "tags": [
         "langchain",
-        "rag",
-        "loaders",
-        "splitters",
-        "retrievers"
+        "chunking",
+        "ingestion"
       ],
       "why": "The standard RAG-plumbing question for LangChain roles. It checks whether you know what each piece does and where the real decisions sit.",
       "quick": [
@@ -248,7 +330,43 @@ window.IR.q["08-langchain"] = {
       "numbers": "Splitter sizes are in characters by default, and English averages roughly four characters per token, so 800 characters is about 200 tokens. Treat any size, overlap and k as a starting point and tune them on a retrieval eval.",
       "wrong": "\"LangChain handles the chunking for you.\" It gives you a splitter with defaults; it does not know your documents. Shipping default sizes without measuring retrieval is how quiet retrieval failures reach production.",
       "follow": "Your PDFs contain tables and the answers about them are wrong. What do you change?",
-      "followAnswer": "The default loader flattens tables into jumbled text, so the fix starts at loading, not prompting. I would use a layout-aware parser that keeps table structure, store each table as its own chunk - often converted to Markdown, or to row-level text with the header repeated - and never split a table across chunks. Then I add table questions to the eval set to confirm it helped."
+      "followAnswer": "The default loader flattens tables into jumbled text, so the fix starts at loading, not prompting. I would use a layout-aware parser that keeps table structure, store each table as its own chunk - often converted to Markdown, or to row-level text with the header repeated - and never split a table across chunks. Then I add table questions to the eval set to confirm it helped.",
+      "builds": [
+        "rag-17",
+        "rag-18"
+      ],
+      "next": [
+        "rag-19",
+        "rag-04",
+        "rag-23"
+      ],
+      "deeper": [
+        "langchain-docs",
+        "unstructured"
+      ],
+      "check": {
+        "kind": "numbers",
+        "q": "You set `RecursiveCharacterTextSplitter(chunk_size=1000)` on English text. Roughly how many tokens is each chunk?",
+        "options": [
+          "About 1,000 tokens",
+          "About 4,000 tokens",
+          "It depends on the embedding dimension",
+          "About 250 tokens"
+        ],
+        "answer": 3,
+        "why": "The default length function counts characters, and English averages roughly four characters per token. Assuming the size is in tokens makes chunks four times smaller than intended. Use `from_tiktoken_encoder` if you want token-based sizes."
+      },
+      "try": {
+        "title": "See what the splitter actually produces",
+        "minutes": 15,
+        "steps": [
+          "Save a few pages of a real policy document as `policy.txt` and `pip install langchain-text-splitters tiktoken`.",
+          "Run the starter and compare chunk counts and average token sizes across settings.",
+          "Read where chunks end and observe the splitter preferring paragraph and sentence breaks.",
+          "Compare the token-measured splitter with the character one and note the size difference."
+        ],
+        "code": "from langchain_text_splitters import RecursiveCharacterTextSplitter\nimport tiktoken\n\ntext = open(\"policy.txt\", encoding=\"utf-8\").read()\nenc = tiktoken.get_encoding(\"cl100k_base\")\nfor size, overlap in [(400, 0), (800, 100), (1600, 200)]:\n    sp = RecursiveCharacterTextSplitter(chunk_size=size, chunk_overlap=overlap)\n    chunks = sp.split_text(text)\n    toks = [len(enc.encode(c)) for c in chunks]\n    print(size, overlap, len(chunks), \"chunks, avg tokens\", sum(toks) // len(toks))\n    print(\"   first chunk ends:\", repr(chunks[0][-60:]))\n\ntok_sp = RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=200, chunk_overlap=20)\nprint(len(tok_sp.split_text(text)), \"chunks when size is measured in tokens\")"
+      }
     },
     {
       "id": "lg-20",
@@ -262,8 +380,7 @@ window.IR.q["08-langchain"] = {
       "tags": [
         "langchain",
         "memory",
-        "checkpointer",
-        "conversation"
+        "langgraph"
       ],
       "why": "Very commonly asked, and the API changed. Older tutorials teach memory classes that are now legacy, so the answer shows whether your knowledge is current.",
       "quick": [
@@ -276,9 +393,45 @@ window.IR.q["08-langchain"] = {
       "simple": "In current LangChain, an agent's memory is its conversation state, saved by a checkpointer. You pass a checkpointer to create_agent and a thread ID with each call, and on the next turn the agent reloads that thread's earlier messages. The checkpointer saves state after each step, usually to Postgres in production, and the thread ID keeps each conversation separate. For example, a support chatbot might use each customer's conversation ID as the thread ID, so a follow-up picks up exactly where it left off.\n\nThe real design work is stopping history from growing forever. Every past message is sent again on every turn, so cost and latency climb with conversation length. You either trim to the last few turns or summarise older ones, which SummarizationMiddleware does automatically. And this is only short-term memory, so facts that should survive across conversations belong in a separate long-term store.",
       "say": "Today it's a checkpointer on create_agent plus a thread ID on every call. The checkpointer is a small storage component that saves the agent's state after each step, in memory for development and usually Postgres in production. The thread ID is the conversation's key, so on the next turn the agent reloads that thread's earlier messages, and two users never see each other's history. The old memory classes, like ConversationBufferMemory, are legacy now and live in the langchain-classic package, so I wouldn't build anything new on them. The real design work is stopping history growing forever. Every past message is resent to the model, which means cost and latency climb each turn. So I trim to the last few turns or summarise older ones, and SummarizationMiddleware does that automatically past a token threshold. All of this is short-term memory for one conversation. Facts that should survive across conversations belong in a separate long-term store.",
       "numbers": "History is resent every turn, so input tokens grow roughly in line with conversation length. Plot input tokens against turn number; a steady climb means you need trimming or summarisation.",
+      "verified": "2026-10",
       "wrong": "\"I use ConversationBufferMemory.\" It dates your knowledge to an older API, and a buffer that keeps everything has no answer for what happens on turn fifty.",
       "follow": "The user comes back next week and expects the assistant to remember their preferences. Is the checkpointer enough?",
-      "followAnswer": "No. The checkpointer is per thread, so a new conversation starts empty. Cross-conversation facts go in a long-term store keyed by user id - in LangGraph that is the Store, with namespaces and optional semantic search. The agent reads relevant memories at the start and writes new ones deliberately, with rules for what is worth keeping, when it expires, and how the user can delete it."
+      "followAnswer": "No. The checkpointer is per thread, so a new conversation starts empty. Cross-conversation facts go in a long-term store keyed by user id - in LangGraph that is the Store, with namespaces and optional semantic search. The agent reads relevant memories at the start and writes new ones deliberately, with rules for what is worth keeping, when it expires, and how the user can delete it.",
+      "builds": [
+        "ag-06"
+      ],
+      "next": [
+        "lg-24",
+        "lg-05",
+        "ag-21"
+      ],
+      "deeper": [
+        "langchain-short-term-memory",
+        "langgraph-persistence"
+      ],
+      "check": {
+        "kind": "spot-the-bug",
+        "q": "An agent is built with `create_agent(model, tools, checkpointer=PostgresSaver(...))`. Each API request calls it with `{\"configurable\": {\"thread_id\": str(uuid4())}}`. Users complain it forgets everything between messages. Why?",
+        "options": [
+          "Postgres checkpointers only store the last message.",
+          "A new random thread ID per request starts a fresh conversation every time; reuse the conversation's ID.",
+          "create_agent ignores checkpointers unless you also add memory middleware.",
+          "The model's context window is too small."
+        ],
+        "answer": 1,
+        "why": "The checkpointer keys state by thread ID, so a fresh UUID per call means an empty history every time. Use a stable conversation ID per chat. The checkpointer itself stores the full state."
+      },
+      "try": {
+        "title": "See thread memory and token growth",
+        "minutes": 15,
+        "steps": [
+          "`pip install langchain langchain-ollama langgraph`, pull `qwen2.5:7b` in Ollama, and run the starter.",
+          "Observe the third answer recalling name and city, because all turns share one thread ID.",
+          "Observe input tokens climbing every turn as history is re-sent.",
+          "Observe the second thread knowing nothing - that is the checkpointer's scope, and why cross-session facts need a store."
+        ],
+        "code": "from langchain.agents import create_agent\nfrom langgraph.checkpoint.memory import InMemorySaver\n\nagent = create_agent(\"ollama:qwen2.5:7b\", tools=[], checkpointer=InMemorySaver())\ncfg = {\"configurable\": {\"thread_id\": \"cust-42\"}}\nfor msg in [\"Hi, I'm Asha from Pune.\", \"I ordered a kettle.\", \"What's my name and city?\"]:\n    out = agent.invoke({\"messages\": [{\"role\": \"user\", \"content\": msg}]}, cfg)\n    last = out[\"messages\"][-1]\n    print(last.content[:80], \"| input tokens:\", last.usage_metadata[\"input_tokens\"])\n\nother = {\"configurable\": {\"thread_id\": \"cust-99\"}}\nreply = agent.invoke({\"messages\": [{\"role\": \"user\", \"content\": \"What's my name?\"}]}, other)\nprint(reply[\"messages\"][-1].content)"
+      }
     },
     {
       "id": "lg-21",
@@ -291,9 +444,8 @@ window.IR.q["08-langchain"] = {
       "priority": "high",
       "tags": [
         "langchain",
-        "create-agent",
-        "middleware",
-        "agents"
+        "agents",
+        "guardrails"
       ],
       "why": "The headline LangChain 1.x change. It shows whether your knowledge is current and whether you know where agent-wide rules belong.",
       "quick": [
@@ -351,9 +503,35 @@ window.IR.q["08-langchain"] = {
       },
       "say": "create_agent is the standard way to build an agent in LangChain 1.x, and middleware lets you change its loop without rewriting it. You give it a model, tools and a system prompt. It calls the model, runs any tools it asks for, feeds the results back, and stops when the model answers without a tool call. Underneath it's a LangGraph graph, so checkpointing and streaming come along. Middleware is a small piece of code that runs at a fixed point, before or after the model call, or wrapped around each model or tool call. The built-ins cover human approval, summarisation, PII redaction, retries, model fallback and call limits, and you can write your own with decorators. The reason it matters is enforcement. A rule like never send PII to the model, or stop after twenty tool calls, has to live in code that always runs. A prompt is something the model may ignore. So agent-wide policy goes in middleware.",
       "numbers": "No universal number. Set call limits from your own traces: see how many tool calls successful runs actually need, and put the cap comfortably above that.",
+      "verified": "2026-10",
       "wrong": "Describing agents with `initialize_agent` or `AgentExecutor`, or enforcing limits and redaction through prompt instructions. The first dates your knowledge; the second is a rule the model can ignore.",
       "follow": "Your agent must never send customer email addresses to the model provider. Where does that rule live?",
-      "followAnswer": "In middleware, not the prompt. I would add PIIMiddleware for email with a redact or mask strategy, applied to user input and to tool results, since tool output is where customer data usually enters. Then I test it: a unit test with a fake model that asserts no raw email reaches the model call, and a trace check in staging that the pattern never appears."
+      "followAnswer": "In middleware, not the prompt. I would add PIIMiddleware for email with a redact or mask strategy, applied to user input and to tool results, since tool output is where customer data usually enters. Then I test it: a unit test with a fake model that asserts no raw email reaches the model call, and a trace check in staging that the pattern never appears.",
+      "builds": [
+        "ag-14",
+        "ag-28"
+      ],
+      "next": [
+        "lg-14",
+        "lg-17",
+        "ag-08"
+      ],
+      "deeper": [
+        "langchain-middleware",
+        "langchain-docs"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Rule: customer email addresses must never be sent to the model provider. Where does it belong in a create_agent app?",
+        "options": [
+          "In the system prompt, in capital letters.",
+          "In each tool's description.",
+          "In middleware that redacts PII before every model call, so it runs whatever the model does.",
+          "In a nightly job that scrubs the logs."
+        ],
+        "answer": 2,
+        "why": "Middleware runs in code at a fixed point on every call, so the rule is enforced rather than requested. A prompt cannot stop data that is already in the request, and scrubbing logs afterwards does not undo what was sent."
+      }
     },
     {
       "id": "lg-09",
@@ -365,10 +543,9 @@ window.IR.q["08-langchain"] = {
       "level": "5-10",
       "priority": "high",
       "tags": [
-        "langsmith",
         "observability",
-        "tracing",
-        "llmops"
+        "langchain",
+        "evaluation"
       ],
       "why": "Whether you have debugged a chain in production or only in a notebook.",
       "quick": [
@@ -430,7 +607,31 @@ window.IR.q["08-langchain"] = {
       "numbers": "Traces show per-node token counts. It is common to find one retrieval-formatting step contributing a large share of prompt tokens that nobody had measured.",
       "wrong": "\"We use LangSmith for monitoring.\" Names the product without saying what it does. Describe the tree, the datasets and the comparison.",
       "follow": "Your traces contain customer PII. How do you keep using them?",
-      "followAnswer": "Mask it before it leaves the process. LangSmith can hide or anonymise inputs and outputs on the client side, so raw PII is never stored in traces. I redact known patterns, log ids instead of names, set a short retention period and restrict project access. If data residency rules apply, I use a regional or self-hosted deployment. Datasets built from traces get the same scrubbing."
+      "followAnswer": "Mask it before it leaves the process. LangSmith can hide or anonymise inputs and outputs on the client side, so raw PII is never stored in traces. I redact known patterns, log ids instead of names, set a short retention period and restrict project access. If data residency rules apply, I use a regional or self-hosted deployment. Datasets built from traces get the same scrubbing.",
+      "builds": [
+        "ops-02"
+      ],
+      "next": [
+        "ops-12",
+        "lg-08",
+        "gr-03"
+      ],
+      "deeper": [
+        "langsmith",
+        "langfuse"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "Your logs record each request's input, output, total latency and total tokens. What can they NOT tell you that a hierarchical trace can?",
+        "options": [
+          "Which nested step - retriever, prompt formatting, model call or sub-agent - consumed the tokens and the latency.",
+          "Whether the request succeeded.",
+          "How many requests ran per hour.",
+          "The average cost per request."
+        ],
+        "answer": 0,
+        "why": "Flat per-request lines aggregate away the structure. A trace tree shows each node's exact input, output, time and tokens, which is how you find the step that is slow or expensive. Success, volume and average cost are fine from flat logs."
+      }
     },
     {
       "id": "lg-11",
@@ -443,9 +644,7 @@ window.IR.q["08-langchain"] = {
       "priority": "high",
       "tags": [
         "langchain",
-        "judgement",
-        "trade-off",
-        "architecture"
+        "trade-offs"
       ],
       "why": "Framework independence. Panels are wary of candidates who can only work inside one library.",
       "quick": [
@@ -467,7 +666,33 @@ window.IR.q["08-langchain"] = {
       "numbers": "No number applies. This answer is judged on whether the reasoning is concrete.",
       "wrong": "\"LangChain is too heavy, I always call the API directly.\" Equally unhelpful in the other direction. You then have to explain why you rebuilt checkpointing and tracing yourself.",
       "follow": "You dropped it in the hot path. What did you have to rebuild?",
-      "followAnswer": "Less than people fear, but not nothing. Retries with backoff and timeouts, streaming handling, output parsing and validation, and tracing - I wrapped the direct call in our own span so it still appears in the same trace tree. Provider switching became a thin adapter of our own. The rule I kept was to rebuild only what that path actually used, not a mini framework."
+      "followAnswer": "Less than people fear, but not nothing. Retries with backoff and timeouts, streaming handling, output parsing and validation, and tracing - I wrapped the direct call in our own span so it still appears in the same trace tree. Provider switching became a thin adapter of our own. The rule I kept was to rebuild only what that path actually used, not a mini framework.",
+      "builds": [
+        "lg-01"
+      ],
+      "next": [
+        "ag-37",
+        "lg-10"
+      ],
+      "alsoIn": [
+        "riq-1012"
+      ],
+      "deeper": [
+        "anthropic-agents",
+        "langchain-docs"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "A product has a high-volume ticket classifier (one prompt, structured output) and a multi-step support agent that pauses for approvals. What is the sensible split?",
+        "options": [
+          "LangGraph for both, for consistency.",
+          "Direct API calls for both, rebuilding checkpointing yourself.",
+          "LCEL for the agent and LangGraph for the classifier.",
+          "A direct provider call for the classifier; LangGraph for the agent's orchestration and checkpointing."
+        ],
+        "answer": 3,
+        "why": "Use the framework where it saves real work - durable state and orchestration - and skip it on a simple hot path. Framework-everywhere adds layers to a one-call job; framework-nowhere means rebuilding checkpointing and tracing."
+      }
     },
     {
       "id": "lg-08",
@@ -479,10 +704,9 @@ window.IR.q["08-langchain"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "langchain",
         "testing",
-        "evaluation",
-        "ci"
+        "langchain",
+        "evaluation"
       ],
       "why": "Whether the code you wrote is production code or notebook code.",
       "quick": [
@@ -529,7 +753,42 @@ window.IR.q["08-langchain"] = {
       "numbers": "Aim for the ordinary pyramid: the large majority of tests mocked and fast, a small integration layer, and one evaluation gate. If every test needs an API key, the suite will not run in CI.",
       "wrong": "\"You cannot really unit test LLM apps, they are non-deterministic.\" Only the model call is non-deterministic. Everything around it - routing, parsing, error paths, termination - is deterministic and testable, and the follow-up will ask exactly how you tested those.",
       "follow": "How do you stop a prompt change from silently regressing quality?",
-      "followAnswer": "I treat the prompt like code behind a quality gate. It lives in version control, and every change runs the golden set in CI, posting a score comparison against main on the pull request. If the score falls below a threshold, or a critical case fails, the merge is blocked. In LangSmith I run both versions as experiments on the same dataset, so the reviewer sees the difference case by case. After release I log the prompt version per request and watch live metrics so I can roll back quickly."
+      "followAnswer": "I treat the prompt like code behind a quality gate. It lives in version control, and every change runs the golden set in CI, posting a score comparison against main on the pull request. If the score falls below a threshold, or a critical case fails, the merge is blocked. In LangSmith I run both versions as experiments on the same dataset, so the reviewer sees the difference case by case. After release I log the prompt version per request and watch live metrics so I can roll back quickly.",
+      "builds": [
+        "py-05",
+        "lg-13"
+      ],
+      "next": [
+        "ev-06",
+        "ag-30"
+      ],
+      "deeper": [
+        "langsmith",
+        "pytest"
+      ],
+      "check": {
+        "kind": "spot-the-bug",
+        "q": "Every test calls the real model and asserts `answer == \"Your refund is approved.\"`. The suite fails randomly and needs an API key. What is the main fix?",
+        "options": [
+          "Set temperature to zero and keep the exact-match asserts.",
+          "Delete the tests, since LLM apps cannot be unit tested.",
+          "Mock the model with scripted replies for most tests and assert on routing and state; keep a few real-model tests that check structure.",
+          "Retry each failing test three times."
+        ],
+        "answer": 2,
+        "why": "Only the model call is non-deterministic. With a fake model, routing, parsing and stop conditions are testable in milliseconds. Temperature zero does not guarantee identical wording, and retries just hide flakiness."
+      },
+      "try": {
+        "title": "Test a chain in milliseconds with a fake model",
+        "minutes": 15,
+        "steps": [
+          "Save the starter as `test_router.py`, `pip install langchain-core pytest`, and run `pytest -q`.",
+          "Observe both tests pass with no API key and no network.",
+          "Observe the second test documenting how a chatty reply falls back to the general queue.",
+          "Add a test for a reply like \"REFUND.\" and decide whether to normalise punctuation in `route`."
+        ],
+        "code": "from langchain_core.language_models.fake_chat_models import FakeListChatModel\nfrom langchain_core.output_parsers import StrOutputParser\nfrom langchain_core.prompts import ChatPromptTemplate\nfrom langchain_core.runnables import RunnableLambda\n\ndef route(label: str) -> str:\n    return \"refund_queue\" if label.strip().lower() == \"refund\" else \"general_queue\"\n\ndef build(model):\n    prompt = ChatPromptTemplate.from_messages(\n        [(\"system\", \"Classify the ticket as refund or other.\"), (\"human\", \"{ticket}\")])\n    return prompt | model | StrOutputParser() | RunnableLambda(route)\n\ndef test_refund_routes_to_refund_queue():\n    chain = build(FakeListChatModel(responses=[\"Refund\"]))\n    assert chain.invoke({\"ticket\": \"I want my money back\"}) == \"refund_queue\"\n\ndef test_unexpected_label_falls_back():\n    chain = build(FakeListChatModel(responses=[\"I think maybe refund?\"]))\n    assert chain.invoke({\"ticket\": \"hmm\"}) == \"general_queue\""
+      }
     },
     {
       "id": "lg-10",
@@ -540,10 +799,9 @@ window.IR.q["08-langchain"] = {
       "level": "5-10",
       "priority": "medium",
       "tags": [
-        "langchain",
         "cost",
         "latency",
-        "optimisation"
+        "langchain"
       ],
       "why": "Whether you have owned a production bill.",
       "quick": [
@@ -566,7 +824,32 @@ window.IR.q["08-langchain"] = {
       "numbers": "Moving routing and extraction steps to a small model commonly cuts total spend substantially, because those steps are high-volume and low-difficulty. Measure the split before you optimise.",
       "wrong": "\"We switched to a cheaper model.\" Across the whole pipeline this usually trades a cost problem for a quality problem. The senior answer is per-step, measured.",
       "follow": "Your p95 latency is 6 seconds and the budget is 3. Where do you cut?",
-      "followAnswer": "First I break the six seconds down by step in the trace, because the fix depends on where the time goes. Usually it is sequential model calls and long generation. So I remove or merge calls, run independent steps in parallel, move routing and classification to a small fast model, and cap output length. If time to first token is high, I cut retrieved chunks and cache the stable prefix. I also check for queueing or rate limiting, and stream the final answer."
+      "followAnswer": "First I break the six seconds down by step in the trace, because the fix depends on where the time goes. Usually it is sequential model calls and long generation. So I remove or merge calls, run independent steps in parallel, move routing and classification to a small fast model, and cap output length. If time to first token is high, I cut retrieved chunks and cache the stable prefix. I also check for queueing or rate limiting, and stream the final answer.",
+      "builds": [
+        "cl-01",
+        "lg-02"
+      ],
+      "next": [
+        "cl-02",
+        "cl-06",
+        "llm-15"
+      ],
+      "deeper": [
+        "langsmith",
+        "openai-prompt-caching"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "Traces show a ticket classifier on a frontier model is 30% of spend, and retrieved context is half of all input tokens. What do you do first?",
+        "options": [
+          "Move the whole pipeline to a cheaper model.",
+          "Move the classifier to a small model and rerank to fewer chunks, re-running the eval set after each change.",
+          "Remove retrieval entirely to save tokens.",
+          "Increase the cache TTL and change nothing else."
+        ],
+        "answer": 1,
+        "why": "Optimise the steps that dominate, per step and measured. Switching everything to a cheap model trades a cost problem for a quality problem, and dropping retrieval breaks the product."
+      }
     },
     {
       "id": "lg-18",
@@ -580,8 +863,7 @@ window.IR.q["08-langchain"] = {
       "tags": [
         "langchain",
         "langgraph",
-        "architecture",
-        "trade-off"
+        "system-design"
       ],
       "why": "The abstraction choice from lg-03, tested on concrete requirements. Panels use a scenario to see whether your rule survives a real backlog.",
       "quick": [
@@ -642,7 +924,31 @@ window.IR.q["08-langchain"] = {
       "numbers": "No number applies. This is an architecture-choice question.",
       "wrong": "Using StateGraph for every pipeline, or claiming LCEL cannot branch. A graph is valuable when durable state and custom orchestration justify the extra code, not because it sounds more senior.",
       "follow": "Where would you put a RAG pipeline that retries retrieval when the answer looks thin?",
-      "followAnswer": "That becomes a StateGraph, because it has a loop the application controls. I would have a retrieve node, a grading node that checks whether the documents are relevant and sufficient, and a conditional edge that either goes to generation or rewrites the query and retrieves again. State carries the query, the documents and a retry counter, so I can cap it at two or three attempts and then fall back to an honest answer that we don't know. LCEL can branch but does not loop cleanly."
+      "followAnswer": "That becomes a StateGraph, because it has a loop the application controls. I would have a retrieve node, a grading node that checks whether the documents are relevant and sufficient, and a conditional edge that either goes to generation or rewrites the query and retrieves again. State carries the query, the documents and a retry counter, so I can cap it at two or three attempts and then fall back to an honest answer that we don't know. LCEL can branch but does not loop cleanly.",
+      "builds": [
+        "lg-03",
+        "lg-14"
+      ],
+      "next": [
+        "lg-06",
+        "lg-12"
+      ],
+      "deeper": [
+        "langgraph-docs",
+        "langchain-docs"
+      ],
+      "check": {
+        "kind": "concept",
+        "q": "Which of these features genuinely needs a StateGraph with an interrupt and a durable checkpointer?",
+        "options": [
+          "A policy Q&A bot: retrieve, format, answer.",
+          "An order-lookup agent where the model picks tools in a loop.",
+          "A summarise-then-translate pipeline.",
+          "A refund flow: validate, check policy, wait hours for a manager's sign-off, then pay - surviving restarts."
+        ],
+        "answer": 3,
+        "why": "The refund flow has app-controlled steps, a long pause and state that must survive a restart. The Q&A bot and translate pipeline are fixed LCEL chains, and the lookup agent is exactly what create_agent already runs."
+      }
     },
     {
       "id": "lg-17",
@@ -655,10 +961,8 @@ window.IR.q["08-langchain"] = {
       "priority": "low",
       "tags": [
         "langchain",
-        "langgraph",
-        "migration",
-        "judgement",
-        "legacy"
+        "trade-offs",
+        "langgraph"
       ],
       "why": "A real situation at any firm with code older than about a year, and a question about judgement as much as API knowledge.",
       "quick": [
@@ -671,9 +975,33 @@ window.IR.q["08-langchain"] = {
       "simple": "AgentExecutor was the old way to run an agent loop in LangChain. It still works, but it is legacy and in LangChain 1.x it moved to the langchain-classic package, with create_agent as the current path. So should an inherited app be migrated? Not automatically.\n\nA working app nobody wants changed is not worth a sprint, because deprecation alone doesn't pay for a rewrite. What justifies it is a real requirement the old executor can't meet cleanly, such as a durable pause for approval or state that survives a restart. For example, if the business now wants a manager to approve any refund the agent issues, and that may take hours, that is a good reason.\n\nWhen you migrate, keep the tool definitions, move the loop to create_agent and check it behaves the same, then add the new feature. Don't hand-build a graph, since most AgentExecutor apps are a plain tool-calling loop.",
       "say": "Not automatically. I'd migrate when it needs something the old executor can't give cleanly. AgentExecutor still works, but it's legacy and lives in the langchain-classic package in LangChain 1.x. A working app that nobody is asking to change isn't worth a sprint, because deprecation alone doesn't pay for a rewrite. A real requirement does. That might be a durable pause for human approval, state that survives a restart, routing the application controls, or state richer than a message list. Streaming alone isn't a reason, since the old executor can already stream through callbacks. When I do migrate, the tool definitions carry over unchanged, and they're most of the code. I move the loop to create_agent first and check it behaves the same. Only then do I add the feature we migrated for. The trap is hand-building a graph, when most AgentExecutor apps are a plain tool-calling loop, which is exactly what create_agent is.",
       "numbers": "No number applies. This is a migration-judgement question.",
+      "verified": "2026-10",
       "wrong": "\"Yes, it's deprecated, so we rewrite it.\" Deprecation alone does not pay for a migration. The panel is listening for a requirement, and for the fact that tools carry over so the cost is smaller than it sounds.",
       "follow": "What is the first feature you would add once it is a graph?",
-      "followAnswer": "Usually human approval, since that is often the reason we migrated in the first place. With create_agent that means HumanInTheLoopMiddleware on the risky tools, such as issuing a refund, plus a durable checkpointer like Postgres, so the run pauses, survives a restart and resumes with the approver's decision. I would pair it with a tool call limit so a loop cannot run away, then test that the interrupt fires, resume works, and a rejected action never executes."
+      "followAnswer": "Usually human approval, since that is often the reason we migrated in the first place. With create_agent that means HumanInTheLoopMiddleware on the risky tools, such as issuing a refund, plus a durable checkpointer like Postgres, so the run pauses, survives a restart and resumes with the approver's decision. I would pair it with a tool call limit so a loop cannot run away, then test that the interrupt fires, resume works, and a rejected action never executes.",
+      "builds": [
+        "lg-21"
+      ],
+      "next": [
+        "lg-06",
+        "lg-14"
+      ],
+      "deeper": [
+        "langchain-v1-migration",
+        "langchain-docs"
+      ],
+      "check": {
+        "kind": "judgement",
+        "q": "You inherit a working AgentExecutor app. It is stable, users are happy, and no new features are planned. What do you do?",
+        "options": [
+          "Rewrite it as a hand-built StateGraph this sprint.",
+          "Switch to a different framework entirely.",
+          "Pin its dependencies, keep it running, and migrate to create_agent when a real requirement such as durable approvals appears.",
+          "Delete the tests so the upgrade is easier later."
+        ],
+        "answer": 2,
+        "why": "Deprecation alone does not pay for a rewrite. Pin, monitor and migrate when a requirement needs it. When you do, tools carry over and most AgentExecutor apps map to create_agent, not a hand-built graph."
+      }
     }
   ]
 };

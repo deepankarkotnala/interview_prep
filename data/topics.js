@@ -110,9 +110,13 @@ window.IR.topics = [
   { num: "18", slug: "system-design",
     title: "System design and your project story",
     blurb: "The 60-minute design round, the STAR story that survives follow-ups, and how to talk about a project you half-owned.",
+    status: "live" },
+
+  { num: "20", slug: "india",
+    title: "India: regulation and Indic AI",
+    blurb: "The India-specific layer: DPDP, RBI, SEBI, IRDAI and CERT-In expectations for a GenAI system, plus the engineering of Indic languages, voice and low-bandwidth users.",
     status: "live" }
 ];
-
 window.IR.rounds = [
   { key: "screening", label: "Screening",     hint: "20–30 min, recruiter or junior engineer" },
   { key: "tech1",     label: "Technical 1",   hint: "45–60 min, fundamentals and depth" },
@@ -125,3 +129,38 @@ window.IR.levels = [
   { key: "3-5",  label: "3–5 yrs" },
   { key: "5-10", label: "5–10 yrs" }
 ];
+
+/* Learn it first. Each topic page links to the lessons that teach the topic in
+   the sibling "Learn GenAI" portal (genai-main), so a weak area sends you to an
+   explanation, not just to more questions. learnBase is relative to this
+   portal's root and assumes the two folders sit side by side; change it here
+   (one place) if Learn GenAI is deployed somewhere else. */
+window.IR.learnBase = "../genai-main/";
+(function () {
+  var L = {
+    "00-rag-internal":   [["RAG from scratch", "learn-rag-mcp/02-rag.html"], ["RAG deep dive", "rag-deep-dive.html"]],
+    "01-llm-foundations":[["LLM mechanics", "lessons/0001-llm-mechanics.html"], ["LLMs, the basics", "learn-rag-mcp/01-llms.html"]],
+    "02-transformers":   [["Transformers", "docs/carryover/interview/transformers.html"]],
+    "03-prompting":      [["Foundations and prompting", "interview-prep/01-llm-foundations-prompting.html"], ["Context and memory", "lessons/0006-context-memory.html"]],
+    "04-embeddings":     [["Embeddings", "docs/carryover/interview/embeddings.html"], ["Vector databases", "docs/carryover/interview/vector-databases.html"]],
+    "05-rag":            [["RAG deep dive", "rag-deep-dive.html"], ["Build a simple RAG", "learn-rag-mcp/05-build-simple-rag.html"]],
+    "06-advanced-rag":   [["Retrieval", "lessons/0005-retrieval.html"], ["RAG deep dive", "rag-deep-dive.html"]],
+    "07-agents":         [["The agent loop", "lessons/0002-agent-loop.html"], ["Tool calling", "lessons/0003-tool-calling.html"], ["Multi-agent", "lessons/0013-multi-agent.html"]],
+    "08-langchain":      [["LangChain", "docs/carryover/interview/langchain.html"]],
+    "19-langgraph":      [["LangGraph", "langgraph.html"]],
+    "09-mcp":            [["MCP", "lessons/0012-mcp.html"], ["Agent protocols", "agent-protocols.html"]],
+    "10-fine-tuning":    [["Local LLMs", "docs/carryover/interview/local-llms.html"]],
+    "11-evaluation":     [["Evaluation", "lessons/0010-evaluation.html"], ["LLM evals", "llm-evals.html"]],
+    "12-llmops":         [["LLMOps", "llmops.html"], ["Tracing and cost", "lessons/0011-tracing-cost.html"], ["Langfuse", "langfuse.html"]],
+    "13-guardrails":     [["Guardrails", "guardrails.html"], ["Security", "lessons/0009-security.html"]],
+    "14-cost-latency":   [["Tracing and cost", "lessons/0011-tracing-cost.html"], ["Production GenAI", "docs/carryover/interview/production-genai.html"]],
+    "15-cloud":          [["Deployment", "lessons/0014-deployment.html"]],
+    "16-ml-fundamentals":[["Machine learning", "machine-learning/00-interview-landscape.html"]],
+    "17-python-coding":  [["DSA prep", "dsa-prep/index.html"], ["Python sync and async", "interview-labs/python-sync-async-interview.html"]],
+    "18-system-design":  [["System design", "interview-prep/10-system-design.html"], ["Project and behavioural", "interview-prep/08-project-behavioral.html"]]
+  };
+  window.IR.topics.forEach(function (t) {
+    var k = t.num + "-" + t.slug;
+    if (L[k]) t.learn = L[k].map(function (p) { return { title: p[0], href: p[1] }; });
+  });
+})();
