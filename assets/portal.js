@@ -522,6 +522,7 @@
   }
   IR.topicStats = topicStats;
 
+  var VIS_NAV_KEY = "ir.navVisuals";
   function buildSidebar() {
     var host = document.querySelector("[data-sidebar]");
     if (!host) return;
@@ -566,17 +567,26 @@
     h += link("tracks.html", "By employer type", "tracks");
     h += "</div>";
 
-    /* Visual explanations: the gallery, then one row per visual. */
-    if ((IR.visuals || []).length) {
+    /* Visual explanations: an outlined group showing only the gallery row; the
+       per-visual rows sit behind a toggle. Collapsed unless the reader opened it
+       last time or is on one of the visuals, so the current row stays in view. */
+    var hasVisuals = (IR.visuals || []).length;
+    if (hasVisuals) {
       var hereVisual = page === "visual" ? document.body.getAttribute("data-visual") : null;
-      h += '<div class="nav-group"><div class="nav-label">Visual explanations</div>';
-      h += link("visuals.html", "All visuals", "visuals");
+      var visOpen = !!hereVisual || store(VIS_NAV_KEY, false) === true;
+      h += '<div class="nav-group nav-visuals"><div class="nav-label">Visual explanations</div>';
+      h += '<div class="nav-vis-head">' + link("visuals.html", "All visuals", "visuals") +
+           '<button type="button" class="nav-vis-toggle" data-vis-toggle aria-controls="nav-vis-list" ' +
+           'aria-expanded="' + visOpen + '" aria-label="Show each visual explanation">' +
+           '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" ' +
+           'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>';
+      h += '<div class="nav-vis-list" id="nav-vis-list"' + (visOpen ? "" : " hidden") + '>';
       IR.visuals.forEach(function (v) {
         var on = hereVisual === v.slug;
         h += '<a class="nav-link nav-topic" href="' + base + "visuals/" + esc(v.slug) + '.html"' +
              (on ? ' aria-current="page"' : "") + '><span class="nav-title">' + esc(v.title) + '</span></a>';
       });
-      h += "</div>";
+      h += "</div></div>";
     }
 
     h += '<div class="nav-group"><div class="nav-label">Topics</div>';
@@ -591,6 +601,15 @@
     h += "</div></div>";
 
     host.innerHTML = h;
+    if (hasVisuals) {
+      var visBtn = host.querySelector("[data-vis-toggle]");
+      visBtn.addEventListener("click", function () {
+        var open = visBtn.getAttribute("aria-expanded") !== "true";
+        visBtn.setAttribute("aria-expanded", String(open));
+        host.querySelector("#nav-vis-list").hidden = !open;
+        save(VIS_NAV_KEY, open);
+      });
+    }
     buildSearch(host);
     refreshSidebarProgress();
   }

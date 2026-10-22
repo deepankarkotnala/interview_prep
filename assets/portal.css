@@ -3998,6 +3998,33 @@ html[data-reading-size] .brand-mark { width: 28px; height: 28px; }
 .nav-link[aria-current="page"] .nav-ico { color: var(--accent); }
 .nav-link .nav-title { flex: 1; min-width: 0; }
 .nav-topic { justify-content: space-between; }
+/* Visual explanations: the heading sits in an outlined, accent-tinted box so the
+   group stands out from the plain lists around it. Only "All visuals" shows
+   until the chevron opens the per-visual rows. */
+.nav-visuals .nav-label {
+  display: inline-block;
+  padding: 0.3125rem 0.625rem;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  color: var(--accent);
+}
+.nav-vis-head { display: flex; align-items: center; gap: 0.25rem; }
+.nav-vis-head .nav-link { flex: 1; min-width: 0; }
+.nav-vis-toggle {
+  flex: none;
+  display: grid; place-items: center;
+  width: 2rem; height: 2rem;
+  padding: 0; border: 1px solid var(--border); border-radius: 0.625rem;
+  background: var(--bg-elevated); color: var(--text-secondary);
+  cursor: pointer;
+  transition: background .18s var(--ease), color .18s var(--ease);
+}
+.nav-vis-toggle:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--bg-elevated)); }
+.nav-vis-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.nav-vis-toggle svg { transition: transform .2s var(--ease); }
+.nav-vis-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.nav-vis-list { margin-top: 0.125rem; padding-left: 0.5rem; border-left: 1px solid var(--border); margin-left: 1rem; }
 .nav-ring-wrap { flex: none; display: inline-flex; }
 .nav-ring circle { fill: none; stroke-width: 2.2; }
 .nav-ring-track { stroke: var(--border-strong); }
@@ -4533,6 +4560,34 @@ html[data-reading-width] .content.content-narrow { max-width: min(52rem, 100%); 
 }
 .q-card > summary .q-no, .q-card > summary .q-chev { border-radius: 0.375rem; }
 
+/* Tiles and notes: rounder corners and a soft shadow that falls below the card
+   (negative spread keeps it off the sides), deepening on hover. */
+:root {
+  --card-shadow: 0 1px 2px rgba(15, 35, 80, .03), 0 4px 10px -4px rgba(15, 35, 80, .07);
+  --card-shadow-hover: 0 2px 4px rgba(15, 35, 80, .04), 0 10px 22px -8px rgba(15, 35, 80, .13);
+}
+[data-theme="dark"] {
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, .30), 0 6px 14px -4px rgba(0, 0, 0, .40);
+  --card-shadow-hover: 0 2px 4px rgba(0, 0, 0, .32), 0 14px 28px -8px rgba(0, 0, 0, .55);
+}
+.tile, .note { border-radius: 0.875rem; box-shadow: var(--card-shadow); }
+.tile:hover, .tile:focus-visible { box-shadow: var(--card-shadow-hover); }
+/* A raised card face from inner shadows only - the fill stays one flat colour:
+   a lit top edge, and a soft shade pooling along the bottom and right edges. */
+:root {
+  --tile-bevel: inset 0 1px 0 rgba(255, 255, 255, 1),
+                inset 0 -5px 12px -6px rgba(15, 35, 80, .06),
+                inset -3px 0 8px -6px rgba(15, 35, 80, .04);
+}
+[data-theme="dark"] {
+  --tile-bevel: inset 0 1px 0 rgba(255, 255, 255, .05),
+                inset 0 -5px 12px -6px rgba(0, 0, 0, .22),
+                inset -3px 0 8px -6px rgba(0, 0, 0, .15);
+}
+.tile { background: var(--bg-elevated); box-shadow: var(--tile-bevel), var(--card-shadow); }
+.tile:hover, .tile:focus-visible { box-shadow: var(--tile-bevel), var(--card-shadow-hover); }
+.note-quiet { box-shadow: none; }
+
 /* =========================================================================
    Visual explanations (assets/visual.js, visuals/*.html)
    The SVG carries classes only; every colour is a token here, so the diagram
@@ -4689,6 +4744,31 @@ html[data-theme="dark"] .vx-play, html[data-theme="dark"] .vx-play:hover:not(:di
 }
 .vx-pcard:hover { border-color: color-mix(in srgb, var(--accent) 35%, var(--border-strong)); box-shadow: var(--shadow-sm); }
 .vx-pcard:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* The same raised face as the gallery tiles (--tile-bevel): the part cards and
+   the Previous / Next cards in full, the big player only its lit top and a
+   faint bottom shade so the diagram stage stays flat. */
+.vx-pcard, .vx-pager .pn-link { border-radius: 0.875rem; box-shadow: var(--tile-bevel), var(--card-shadow); }
+.vx-pcard:hover, .vx-pcard:focus-visible,
+.vx-pager .pn-link:hover, .vx-pager .pn-link:focus-visible { box-shadow: var(--tile-bevel), var(--card-shadow-hover); }
+/* The gallery tiles' 2px lift on hover, for the clickable cards here too. */
+.vx-pcard, .vx-practise li {
+  transition: transform .14s cubic-bezier(.2, .8, .2, 1), box-shadow .14s ease, border-color .12s ease;
+}
+.vx-pcard:hover, .vx-pcard:focus-visible, .vx-practise li:hover, .vx-practise li:focus-within {
+  transform: translateY(-2px);
+}
+.vx-practise li:hover, .vx-practise li:focus-within { box-shadow: var(--tile-bevel), var(--card-shadow-hover); }
+.vx-pcard:active { transform: translateY(0); transition-duration: .05s; }
+@media (prefers-reduced-motion: reduce) {
+  .vx-pcard:hover, .vx-pcard:focus-visible, .vx-practise li:hover, .vx-practise li:focus-within { transform: none; }
+}
+.vx {
+  border-radius: 0.875rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), inset 0 -5px 12px -6px rgba(15, 35, 80, .04), var(--card-shadow);
+}
+[data-theme="dark"] .vx {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), inset 0 -6px 14px -6px rgba(0, 0, 0, .3), var(--card-shadow);
+}
 .vx-pcard-t { color: var(--heading); font-size: 0.875rem; font-weight: 650; }
 .vx-pcard-b { color: var(--text-secondary); font-size: 0.8125rem; line-height: 1.5; }
 
@@ -4708,7 +4788,8 @@ html[data-theme="dark"] .vx-play, html[data-theme="dark"] .vx-play:hover:not(:di
 .vx-practise li {
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem;
   padding: 0.625rem 0.875rem;
-  border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-elevated);
+  border: 1px solid var(--border); border-radius: 0.75rem; background: var(--bg-elevated);
+  box-shadow: var(--tile-bevel), var(--card-shadow);
 }
 .vx-practise a { color: var(--heading); font-weight: 600; }
 .vx-practise a:hover { color: var(--accent); }
