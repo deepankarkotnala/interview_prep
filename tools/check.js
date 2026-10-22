@@ -261,6 +261,149 @@ if (fs.existsSync(tracksFile)) {
   console.log((IR.tracks || []).length + " employer tracks");
 }
 
+/* Visual explanations: data/visuals.js lists them; each has a page in visuals/
+   and a scene in data/v-<slug>.js. A scene is checked as data - every id
+   resolves, every part you can click has its explanation, every such part is
+   lit in at least one step, and the writing stays within the lengths the page
+   is laid out for (a tip is read in a hover, a step while it plays). */
+var VX_KINDS = {
+  box: ["shape", "rx", "lines"], stack: ["count", "badge"], db: [], doc: ["count"],
+  note: ["align", "lines"], tokens: ["items", "dir", "gap"],
+  vector: ["values", "n", "seed", "cell", "dir"],
+  matrix: ["rows", "cols", "values", "mask", "cell", "colLabels"],
+  bars: ["items", "rowH", "lw", "max", "fmt"],
+  col: ["cell", "items", "values", "n", "seed", "rows", "align", "cellSize"],
+  code: ["lines", "title"], msg: ["role", "text", "lines", "side"], scatter: ["points", "rings"], art: ["svg"]
+};
+var VX_COMMON = ["id", "kind", "x", "y", "w", "h", "label", "sub", "tone", "icon", "concept", "hidden", "keep"];
+var VX_LINK = ["id", "from", "to", "kind", "style", "via", "path", "label", "labelAt", "labelDx", "labelDy",
+               "dashed", "tone", "hidden", "arrow", "both", "rows"];
+var VX_ZONE = ["id", "x", "y", "w", "h", "label", "sub", "tone", "hidden"];
+var VX_STEP = ["title", "text", "focus", "flow", "packets", "set", "hl", "camera"];
+var VX_PACKET = ["on", "text", "tone", "with", "rev", "row"];
+var VX_CONCEPT = ["title", "tip", "detail", "oneLiner"];
+var VX_SCENE = ["view", "rows", "caption", "zones", "parts", "links", "concepts", "steps"];
+var VX_TONES = ["input", "model", "data", "tool", "guard", "output", "neutral", "q", "k", "v"];
+var VX_LIMITS = { tip: 30, para: 95, oneLiner: 40, step: 45 };
+function vxWords(s) { return String(s || "").trim().split(/\s+/).filter(Boolean).length; }
+function vxUnknown(obj, allowed, where) {
+  Object.keys(obj || {}).forEach(function (k) {
+    if (allowed.indexOf(k) < 0) problems.push(where + ": unknown key \"" + k + "\"");
+  });
+}
+var visualsFile = path.join(root, "data/visuals.js");
+if (fs.existsSync(visualsFile)) {
+  require(visualsFile);
+  var liveTopic = {};
+  IR.topics.forEach(function (t) { if (t.status === "live") liveTopic[t.num + "-" + t.slug] = 1; });
+  var vxSlugs = {};
+  (IR.visuals || []).forEach(function (v) {
+    var where = "visual " + (v.slug || "<no slug>");
+    ["slug", "title", "headline", "blurb"].forEach(function (f) { if (!v[f]) problems.push(where + ": missing " + f); });
+    if (!/^[a-z0-9-]+$/.test(v.slug || "")) problems.push(where + ": slug must be lower-case letters, digits and dashes");
+    if (vxSlugs[v.slug]) problems.push(where + ": duplicate slug");
+    vxSlugs[v.slug] = 1;
+    if (!(v.topics || []).length) problems.push(where + ": no topics");
+    (v.topics || []).forEach(function (k) { if (!liveTopic[k]) problems.push(where + ": topic \"" + k + "\" is not a live topic"); });
+    (v.practise || []).forEach(function (id) { if (!ids[id]) problems.push(where + ": practise names card \"" + id + "\", which does not exist"); });
+    if ((v.practise || []).length < 3) warnings.push(where + ": fewer than 3 practise questions");
+    if (!fs.existsSync(path.join(root, "visuals", v.slug + ".html"))) problems.push(where + ": no page - run: node tools/build-pages.js");
+    var sceneFile = path.join(root, "data/v-" + v.slug + ".js");
+    if (!fs.existsSync(sceneFile)) { problems.push(where + ": no scene file data/v-" + v.slug + ".js"); return; }
+    require(sceneFile);
+    var S = (IR.v || {})[v.slug];
+    if (!S) { problems.push(where + ": scene file did not register on window.IR.v[\"" + v.slug + "\"]"); return; }
+    vxUnknown(S, VX_SCENE, where);
+    var concepts = S.concepts || {}, parts = S.parts || [], links = S.links || [], zones = S.zones || [], steps = S.steps || [];
+    var partById = {}, linkById = {}, zoneById = {}, seen = {}, usedConcept = {}, lit = {};
+    function claim(id, what) {
+      if (!id) { problems.push(where + ": a " + what + " has no id"); return; }
+      if (seen[id]) problems.push(where + ": id \"" + id + "\" is used twice");
+      seen[id] = 1;
+    }
+    zones.forEach(function (z) { claim(z.id, "zone"); zoneById[z.id] = z; vxUnknown(z, VX_ZONE, where + " zone " + z.id); });
+    parts.forEach(function (p) {
+      claim(p.id, "part");
+      partById[p.id] = p;
+      var pw = where + " part " + p.id;
+      if (!VX_KINDS[p.kind]) { problems.push(pw + ": unknown kind \"" + p.kind + "\""); return; }
+      vxUnknown(p, VX_COMMON.concat(VX_KINDS[p.kind]), pw);
+      if (p.tone && VX_TONES.indexOf(p.tone) < 0) problems.push(pw + ": unknown tone \"" + p.tone + "\"");
+      if (p.concept) {
+        if (!concepts[p.concept]) problems.push(pw + ": concept \"" + p.concept + "\" is not defined");
+        usedConcept[p.concept] = 1;
+      }
+      /* Same estimate as assets/visual.js: an average advance per character. */
+      if ((p.kind === "box" || p.kind === "stack" || p.kind === "db") && p.label && p.w) {
+        var need = String(p.label).length * 16.5 * 0.58 + (p.icon ? 27 : 0) + 14;
+        if (need > p.w) warnings.push(pw + ": label \"" + p.label + "\" may not fit its " + p.w + "-wide box");
+      }
+    });
+    links.forEach(function (l) {
+      claim(l.id, "link");
+      linkById[l.id] = l;
+      var lw = where + " link " + l.id;
+      vxUnknown(l, VX_LINK, lw);
+      if (l.tone && VX_TONES.indexOf(l.tone) < 0) problems.push(lw + ": unknown tone \"" + l.tone + "\"");
+      if (!l.path) [l.from, l.to].forEach(function (end) {
+        if (Array.isArray(end)) return;
+        var id = String(end || "").split(/[:@]/)[0];
+        if (!partById[id] && !zoneById[id]) problems.push(lw + ": end \"" + end + "\" names no part or zone");
+      });
+    });
+    Object.keys(concepts).forEach(function (k) {
+      var c = concepts[k], cw = where + " concept " + k;
+      vxUnknown(c, VX_CONCEPT, cw);
+      if (!c.title) problems.push(cw + ": missing title");
+      if (!c.tip) problems.push(cw + ": missing tip");
+      else if (vxWords(c.tip) > VX_LIMITS.tip) problems.push(cw + ": tip is " + vxWords(c.tip) + " words (max " + VX_LIMITS.tip + ")");
+      var d = c.detail || [];
+      if (d.length < 3 || d.length > 4) problems.push(cw + ": detail has " + d.length + " paragraphs (want 3-4)");
+      d.forEach(function (para, i) {
+        if (vxWords(para) > VX_LIMITS.para) problems.push(cw + ": paragraph " + (i + 1) + " is " + vxWords(para) + " words (max " + VX_LIMITS.para + ")");
+      });
+      if (!c.oneLiner) problems.push(cw + ": missing oneLiner");
+      else if (vxWords(c.oneLiner) > VX_LIMITS.oneLiner) problems.push(cw + ": oneLiner is " + vxWords(c.oneLiner) + " words (max " + VX_LIMITS.oneLiner + ")");
+      if (!usedConcept[k]) problems.push(cw + ": no part uses it");
+    });
+    if (!steps.length) problems.push(where + ": no steps");
+    steps.forEach(function (s, i) {
+      var sw = where + " step " + (i + 1);
+      vxUnknown(s, VX_STEP, sw);
+      if (!s.title) problems.push(sw + ": missing title");
+      if (!s.text) problems.push(sw + ": missing text");
+      else if (vxWords(s.text) > VX_LIMITS.step) problems.push(sw + ": narration is " + vxWords(s.text) + " words (max " + VX_LIMITS.step + ")");
+      (s.focus || []).forEach(function (id) { if (!partById[id]) problems.push(sw + ": focus names \"" + id + "\", not a part"); else lit[id] = 1; });
+      (s.flow || []).forEach(function (id) { if (!linkById[id]) problems.push(sw + ": flow names \"" + id + "\", not a link"); });
+      (s.packets || []).forEach(function (pk) {
+        vxUnknown(pk, VX_PACKET, sw + " packet");
+        if (!linkById[pk.on]) problems.push(sw + ": packet rides \"" + pk.on + "\", not a link");
+        else if (pk.row != null && linkById[pk.on].kind !== "ribbon") problems.push(sw + ": packet row is only for ribbon links");
+      });
+      Object.keys(s.hl || {}).forEach(function (id) { if (!partById[id]) problems.push(sw + ": hl names \"" + id + "\", not a part"); });
+      Object.keys(s.set || {}).forEach(function (id) {
+        var target = partById[id] || linkById[id] || zoneById[id];
+        if (!target) { problems.push(sw + ": set names \"" + id + "\", which does not exist"); return; }
+        var allowed = partById[id] ? VX_COMMON.concat(VX_KINDS[partById[id].kind] || []) : (linkById[id] ? VX_LINK : VX_ZONE);
+        vxUnknown(s.set[id], allowed, sw + " set " + id);
+      });
+    });
+    parts.forEach(function (p) {
+      if (p.concept && !lit[p.id]) problems.push(where + " part " + p.id + ": never lit - focus it in at least one step");
+    });
+  });
+  [["visuals", /^(.+)\.html$/], ["data", /^v-(.+)\.js$/]].forEach(function (o) {
+    var dir = path.join(root, o[0]);
+    if (!fs.existsSync(dir)) return;
+    fs.readdirSync(dir).forEach(function (n) {
+      var m = o[1].exec(n);
+      if (m && !vxSlugs[m[1]]) problems.push(o[0] + "/" + n + ": orphan - not listed in data/visuals.js");
+    });
+  });
+  if (!fs.existsSync(path.join(root, "visuals.html"))) problems.push("visuals.html is missing");
+  console.log((IR.visuals || []).length + " visual explanations");
+}
+
 /* This portal must render standalone - copy the folder anywhere, open
    index.html, everything works. Two ways that silently breaks: a path that
    climbs out to a sibling directory, or a CDN URL. Both look fine on this

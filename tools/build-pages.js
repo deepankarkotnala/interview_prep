@@ -4,7 +4,9 @@
    1. Writes one topics/<key>.html per live topic in data/topics.js. Topic pages
       are pure shells - portal.js loads the topic's data and renders it - so
       they are generated rather than hand-edited.
-   2. Rewrites the block between <!-- head:start --> and <!-- head:end --> in
+   2. Writes one visuals/<slug>.html per entry in data/visuals.js, the same
+      kind of shell: assets/visual.js draws the scene from data/v-<slug>.js.
+   3. Rewrites the block between <!-- head:start --> and <!-- head:end --> in
       every root page, so all pages share one boot script, one stylesheet and
       one cache-busting version. The version lives in assets/portal.js (V) and
       is read from there, so bumping it in one place updates every page.
@@ -18,6 +20,7 @@ var path = require("path");
 var root = path.join(__dirname, "..");
 global.window = {};
 require(path.join(root, "data/topics.js"));
+require(path.join(root, "data/visuals.js"));
 var IR = global.window.IR;
 
 var V = (/var V = IR\.V = "([^"]+)"/.exec(fs.readFileSync(path.join(root, "assets/portal.js"), "utf8")) || [])[1];
@@ -48,6 +51,7 @@ function head(base, scripts, marker) {
     '<script>' + BOOT + '</script>\n' +
     '<link rel="stylesheet" href="' + base + 'assets/portal.css?v=' + V + '">\n' +
     '<script defer src="' + base + 'data/topics.js?v=' + V + '"></script>\n' +
+    '<script defer src="' + base + 'data/visuals.js?v=' + V + '"></script>\n' +
     '<script defer src="' + base + 'assets/portal.js?v=' + V + '"></script>\n' +
     scripts.map(function (s) { return '<script defer src="' + base + s + '?v=' + V + '"></script>\n'; }).join("") +
     "<!-- head:end -->";
@@ -85,7 +89,33 @@ IR.topics.forEach(function (t) {
   written++;
 });
 
-/* 2. root pages: refresh the shared head block */
+/* 2. visual explanation pages */
+var visualsDir = path.join(root, "visuals");
+if (!fs.existsSync(visualsDir)) fs.mkdirSync(visualsDir);
+var visualsWritten = 0;
+(IR.visuals || []).forEach(function (v) {
+  var html = '<!DOCTYPE html>\n<html lang="en" data-theme="light">\n<head>\n' +
+    head("../", ["assets/visual.js"], '<!-- head:start scripts="assets/visual.js" -->') + "\n" +
+    "<title>" + esc(v.title) + " - visual explanation | Interview Room</title>\n" +
+    '<meta name="description" content="' + esc(v.blurb) + '">\n' +
+    "</head>\n" +
+    '<body data-page="visual" data-visual="' + esc(v.slug) + '" data-depth="1">\n' +
+    '<a class="skip" href="#main">Skip to content</a>\n' +
+    '<div class="app">\n' +
+    '  <aside class="sidebar" data-sidebar></aside>\n' +
+    '  <div class="main">\n' +
+    '    <header class="topbar" data-topbar data-crumbs="Visual explanations@visuals.html|' + esc(v.title) + '"></header>\n' +
+    '    <main class="content" id="main">\n' +
+    '      <div data-visual-body></div>\n' +
+    '    </main>\n' +
+    '  </div>\n' +
+    '</div>\n' +
+    '</body>\n</html>\n';
+  fs.writeFileSync(path.join(visualsDir, v.slug + ".html"), html, "utf8");
+  visualsWritten++;
+});
+
+/* 3. root pages: refresh the shared head block */
 var refreshed = [];
 fs.readdirSync(root).filter(function (f) { return /\.html$/.test(f); }).forEach(function (f) {
   var p = path.join(root, f), s = fs.readFileSync(p, "utf8");
@@ -98,4 +128,5 @@ fs.readdirSync(root).filter(function (f) { return /\.html$/.test(f); }).forEach(
   refreshed.push(f);
 });
 
-console.log("build-pages: " + written + " topic pages written, root pages refreshed: " + refreshed.join(", ") + " (v" + V + ")");
+console.log("build-pages: " + written + " topic pages and " + visualsWritten + " visual pages written, root pages refreshed: " +
+  refreshed.join(", ") + " (v" + V + ")");

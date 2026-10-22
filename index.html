@@ -5,15 +5,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#f4f6fb">
-<link rel="icon" type="image/svg+xml" href="assets/brand/favicon.svg?v=40">
+<link rel="icon" type="image/svg+xml" href="assets/brand/favicon.svg?v=48">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/brand/favicon-32.png?v=8">
 <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png?v=9">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Interview Room">
 <script>(function(){try{var d=document.documentElement;var t=localStorage.getItem("ir.theme")||"light";d.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==="dark"?"#1b1b1b":"#f4f6fb";var r={};try{r=JSON.parse(localStorage.getItem("ir.reading"))||{};}catch(e){}var dz=matchMedia("(max-width:860px)").matches?"m":"s";d.setAttribute("data-reading-size",["xs","s","m","l","xl"].indexOf(r.size)<0?dz:r.size);var isF=localStorage.getItem("ir.focus")==="true";var defW=isF?"default":"wide";var wPref=isF?r.focusWidth:r.width;d.setAttribute("data-reading-width",["default","wide","full"].indexOf(wPref)<0?defW:wPref);d.setAttribute("data-reading-align",r.alignSet&&r.align==="justify"?"justify":"left");}catch(e){}})();</script>
-<link rel="stylesheet" href="assets/portal.css?v=40">
-<script defer src="data/topics.js?v=40"></script>
-<script defer src="assets/portal.js?v=40"></script>
+<link rel="stylesheet" href="assets/portal.css?v=48">
+<script defer src="data/topics.js?v=48"></script>
+<script defer src="data/visuals.js?v=48"></script>
+<script defer src="assets/portal.js?v=48"></script>
 <!-- head:end -->
 <title>Interview Room | GenAI interview preparation for senior engineers in India</title>
 <meta name="description" content="Current GenAI, AI and ML interview questions for senior engineer roles in India: the mechanism in plain language, the exact words to say in the room, and a spaced review that tells you what you really know.">
@@ -78,6 +79,10 @@
           <p>A bank, a healthcare payer, a services firm and an Indian startup press on different halves of the same answer.</p>
         </a>
       </div>
+
+      <h2 id="visuals">Visual explanations</h2>
+      <p class="section-sub">Each system animated from start to end. Hover any part for a quick explanation; click it for the full story.</p>
+      <div class="card-grid" data-visual-grid></div>
 
       <h2 id="topics">Topics</h2>
       <div class="card-grid" data-topic-grid></div>

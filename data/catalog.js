@@ -3,7 +3,7 @@
    Row: [id, topic, question, rounds, level, priority, dupOf?] */
 
 window.IR = window.IR || {};
-window.IR.catalog = {"built":"2026-10-21","cards":[
+window.IR.catalog = {"built":"2026-10-22","cards":[
 ["riq-a01","00-rag-internal","Transformers: what are the encoder and decoder, and how did transformers evolve?","screening,tech1","3-5","high"],
 ["riq-a02","00-rag-internal","What is positional encoding, and why do transformers need it?","tech1","3-5","high"],
 ["riq-a03","00-rag-internal","\"Attention Is All You Need\": the gist, the key learnings, and what interviewers ask","tech1,tech2","5-10","high"],
