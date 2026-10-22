@@ -16,7 +16,7 @@
   /* One cache-busting version for every dynamically loaded data file. Bump it
      whenever data/ changes; tools/build-pages.js writes the same value into
      the static pages. */
-  var V = IR.V = "40";
+  var V = IR.V = "48";
 
   var THEME_KEY = "ir.theme";
   var DONE_KEY = "ir.delivered";      /* legacy binary marks, migrated once */
@@ -211,7 +211,8 @@
      order while the files still download in parallel. A file requested twice
      (the drawer asking for a topic the page is already loading) waits on the
      first request instead of fetching again. */
-  var loaded = { "data/topics.js": true };
+  /* Both lists are static <script> tags in every page's <head>. */
+  var loaded = { "data/topics.js": true, "data/visuals.js": true };
   function loadScripts(files, done) {
     var want = files.filter(function (f) { return loaded[f] !== true; });
     if (!want.length) { if (done) done(); return; }
@@ -496,7 +497,8 @@
     mock: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
     rehearsal: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M10 2h4"/>',
     rounds: '<path d="M4 6h16M4 12h16M4 18h10"/>',
-    tracks: '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/>'
+    tracks: '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/>',
+    visuals: '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="m10 8 4.5 2.5L10 13z"/><path d="M8 21h8M12 17v4"/>'
   };
   /* The mark: a speech bubble with two lines of text - the room is where you
      speak. Drawn inline so it stays crisp at 28px and follows the theme. */
@@ -563,6 +565,19 @@
     h += link("rounds.html", "By interview round", "rounds");
     h += link("tracks.html", "By employer type", "tracks");
     h += "</div>";
+
+    /* Visual explanations: the gallery, then one row per visual. */
+    if ((IR.visuals || []).length) {
+      var hereVisual = page === "visual" ? document.body.getAttribute("data-visual") : null;
+      h += '<div class="nav-group"><div class="nav-label">Visual explanations</div>';
+      h += link("visuals.html", "All visuals", "visuals");
+      IR.visuals.forEach(function (v) {
+        var on = hereVisual === v.slug;
+        h += '<a class="nav-link nav-topic" href="' + base + "visuals/" + esc(v.slug) + '.html"' +
+             (on ? ' aria-current="page"' : "") + '><span class="nav-title">' + esc(v.title) + '</span></a>';
+      });
+      h += "</div>";
+    }
 
     h += '<div class="nav-group"><div class="nav-label">Topics</div>';
     (IR.topics || []).forEach(function (t) {
@@ -1018,7 +1033,10 @@
     var base = depth();
     var trail = host.getAttribute("data-crumbs") || "";
     var crumbs = '<a href="' + base + 'index.html">Interview Room</a>';
+    /* A crumb written "Label@page.html" links to that root page. */
     trail.split("|").filter(Boolean).forEach(function (c) {
+      var at = c.lastIndexOf("@");
+      if (at > 0) { crumbs += '<span>/</span><a href="' + base + esc(c.slice(at + 1)) + '">' + esc(c.slice(0, at)) + '</a>'; return; }
       crumbs += "<span>/</span><span>" + esc(c) + "</span>";
     });
 
@@ -1945,10 +1963,9 @@
 
     var s = el("summary");
     s.innerHTML =
+      (c.priority === "high" ? '<span class="q-hi" title="' + esc(PRIORITY.high.hint) + '"><span class="sr-only">High priority. </span></span>' : '') +
       '<span class="q-no" data-r="' + (x ? x.r : "") + '">' + num + '</span>' +
-      '<span class="q-head"><span class="q-title">' +
-        (c.priority === "high" ? '<span class="q-hi" title="' + esc(PRIORITY.high.hint) + '"><span class="sr-only">High priority. </span></span>' : '') +
-        fmt(c.q) + '</span>' +
+      '<span class="q-head"><span class="q-title">' + fmt(c.q) + '</span>' +
         '<span class="q-meta">' + meta.join('<span class="q-sep" aria-hidden="true"> · </span>') +
         (x && x.due <= today() ? '<span class="q-due">Due</span>' : '') +
         (c.dupOf ? '<span class="q-dup-tag">Answered elsewhere</span>' : '') + '</span>' +
@@ -2709,6 +2726,9 @@
       var learn = (topic.learn || []).map(function (l) {
         return '<a href="' + base + (IR.learnBase || "") + esc(l.href) + '">' + esc(l.title) + '</a>';
       }).join(", ");
+      var seeIt = (IR.visuals || []).filter(function (v) { return (v.topics || []).indexOf(key) >= 0; }).map(function (v) {
+        return '<a href="' + base + 'visuals/' + esc(v.slug) + '.html">' + esc(v.title) + ' →</a>';
+      }).join(", ");
       head.innerHTML =
         '<div class="eyebrow">Topic ' + esc(topic.num) + '</div>' +
         '<h1>' + esc(topic.title) + '</h1>' +
@@ -2716,7 +2736,8 @@
         '<button type="button" class="lede-more" aria-expanded="false" aria-controls="topic-lede" hidden>Read more</button></div>' +
         '<div class="topic-meta"><span>' + set.cards.length + ' questions</span>' +
         (set.grounding ? '<span>Grounded in ' + esc(set.grounding) + '</span>' : '') +
-        (learn ? '<span class="topic-learn">Learn it first: ' + learn + '</span>' : '') + '</div>' +
+        (learn ? '<span class="topic-learn">Learn it first: ' + learn + '</span>' : '') +
+        (seeIt ? '<span class="topic-visual">See it animated: ' + seeIt + '</span>' : '') + '</div>' +
         '<div data-topic-progress>' + progressBar(stats(set.cards)) + '</div>' +
         (set.svg ? '<details class="topic-figure"><summary>Show the pipeline diagram</summary>' +
           '<div class="topic-diagram">' + set.svg + '</div></details>' : '');
@@ -2821,7 +2842,22 @@
     }
     var c = document.querySelector("[data-total-count]");
     if (c) c.textContent = s.total;
+    renderVisualGrid();
   }
+
+  /* ---------- visual explanation tiles (home and visuals.html) ---------- */
+  function renderVisualGrid() {
+    var host = document.querySelector("[data-visual-grid]");
+    if (!host) return;
+    var base = depth();
+    host.innerHTML = (IR.visuals || []).map(function (v, i) {
+      return '<a class="tile" href="' + base + 'visuals/' + esc(v.slug) + '.html">' +
+        '<span class="tile-num">Visual ' + String(i + 1).padStart(2, "0") + '</span>' +
+        '<h3>' + esc(v.title) + '</h3>' +
+        '<p>' + esc(v.blurb) + '</p></a>';
+    }).join("");
+  }
+  function bootVisuals() { renderVisualGrid(); }
 
   /* ---------- page bootstrap: rounds ---------- */
   function bootRounds() {
@@ -2911,6 +2947,12 @@
   }
 
   IR.jumpToCard = jumpToCard;
+  /* A malformed escape in a hash (#50%) makes decodeURIComponent throw, which
+     used to abort the boot and leave the load bar stuck; use the raw text. */
+  function hashId(h) {
+    var raw = String(h || "").replace(/^#/, "");
+    try { return decodeURIComponent(raw); } catch (err) { return raw; }
+  }
   /* Same-page links to a question (#id, or this page with #id) scroll to it
      and open it, instead of the native jump that leaves it folded. */
   function setupSamePageJumps() {
@@ -2920,7 +2962,7 @@
       if (!a || a.target === "_blank" || a.closest(".toc")) return;
       var u; try { u = new URL(a.href, location.href); } catch (err) { return; }
       if (u.pathname !== location.pathname || u.search !== location.search) return;
-      var card = document.getElementById(decodeURIComponent(u.hash.slice(1)));
+      var card = document.getElementById(hashId(u.hash));
       if (!card || !card.classList.contains("q-card")) return;
       e.preventDefault();
       jumpToCard(card);
@@ -2928,7 +2970,7 @@
     });
   }
   function openFromHash() {
-    var id = decodeURIComponent((location.hash || "").slice(1));
+    var id = hashId(location.hash);
     var card = id && document.getElementById(id);
     if (card && card.classList.contains("q-card")) setTimeout(function () { jumpToCard(card); }, 60);
   }
@@ -3573,6 +3615,7 @@
     if (page === "topic") n.push(topicFile(document.body.getAttribute("data-topic")));
     else if (ALL_PAGES.test(page)) (IR.topics || []).forEach(function (t) { n.push(topicFile(topicKey(t))); });
     else if (page === "tracks") n.push("data/tracks.js");
+    else if (page === "visual") n.push("data/v-" + document.body.getAttribute("data-visual") + ".js");
     if (page === "topic" || ALL_PAGES.test(page)) n = n.concat(CARD_DEPS);
     return n;
   }
@@ -3604,6 +3647,7 @@
       else if (page === "home") bootIndex();
       else if (page === "rounds") bootRounds();
       else if (page === "tracks") bootTracks();
+      else if (page === "visuals") bootVisuals();
 
       buildRail();
       buildPager();

@@ -443,27 +443,21 @@ html[data-theme="dark"] .brand-mark { }
 [data-theme="dark"] .nav-link {
   color: #d1d5df;
 }
+/* Hover is a neutral grey wash, so it never reads as "selected". */
 .nav-link:hover {
-  background: var(--surface); color: var(--text); text-decoration: none;
-  transform: translateX(2px);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--heading); text-decoration: none;
 }
-/* The reference lets the tint plus the weight carry the current page; the thin
-   left bar this portal already used is kept, because with eighteen topic rows
-   a tint alone is easy to lose when scrolling. */
-.nav-link[aria-current="page"] {
-  background: var(--accent-soft); color: var(--text); font-weight: 600;
-  transform: none;
+/* The current page is the only accent-tinted row: accent text and weight on an
+   accent wash with a hairline ring, strong enough to spot in a long topic list
+   without a separate edge bar. */
+.nav-link[aria-current="page"],
+.nav-link[aria-current="page"]:hover {
+  background: var(--accent-soft); color: var(--accent); font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--accent-ring);
 }
-/* The active marker is mounted but collapsed, so it grows in rather than
-   popping when the current page changes. */
-.nav-link::before {
-  content: ""; position: absolute; left: 2px; top: 0.4375rem; bottom: 0.4375rem; width: 2px;
-  border-radius: 2px; background: var(--accent);
-  opacity: 0; transform: scaleY(.34); transform-origin: center;
-  transition: transform .24s var(--ease), opacity .2s ease;
-}
-.nav-link:hover::before { opacity: .45; transform: scaleY(.7); }
-.nav-link[aria-current="page"]::before { opacity: 1; transform: scaleY(1); }
+/* Inset so the sidebar's scroll box cannot clip it. */
+.nav-link:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 /* The reference's square-ish 1.5rem badge on an elevated ground. */
 .nav-num {
   flex: none;
@@ -1759,7 +1753,7 @@ tr:last-child td { border-bottom: 0; }
   /* Only the last crumb survives; the trail above it is the one thing on this
      row with nowhere to go on a phone. */
   .crumbs { margin-left: 0; font-size: 0.8125rem; }
-  .crumbs a:not(:last-of-type), .crumbs > span:not(:last-child) { display: none; }
+  .crumbs > :not(:last-child) { display: none; }
 }
 
 @media (max-width: 430px) {
@@ -4039,6 +4033,13 @@ html[data-theme="dark"] .nav-badge { color: #111; }
   grid-template-columns: 1.75rem minmax(0, 1fr) auto 1.5rem;
   gap: 0.875rem; align-items: center;
   padding: 0.875rem 1rem;
+  position: relative;
+}
+/* High priority: a dot in the card's top-right corner, centred over the chevron
+   (summary padding 1rem + half the 1.5rem chevron - half the dot). */
+.q-hi {
+  position: absolute; top: 0.625rem; right: calc(1rem + 0.75rem - 0.21875rem);
+  width: 0.4375rem; height: 0.4375rem; border-radius: 50%; background: var(--accent);
 }
 .q-no {
   width: 1.75rem; height: 1.75rem; border-radius: 50%;
@@ -4052,10 +4053,6 @@ html[data-theme="dark"] .nav-badge { color: #111; }
 html[data-theme="dark"] .q-card[open] .q-no { color: #111; }
 .q-head { display: block; min-width: 0; }
 .q-title { display: block; font-weight: 600; line-height: 1.45; }
-.q-hi {
-  display: inline-block; width: 0.4375rem; height: 0.4375rem; margin: 0 0.5rem 0.125rem 0;
-  border-radius: 50%; background: var(--accent); vertical-align: middle;
-}
 .q-meta {
   display: block; margin-top: 0.25rem;
   color: var(--text-muted); font-size: 0.75rem; font-weight: 450; line-height: 1.4;
@@ -4535,3 +4532,371 @@ html[data-reading-width] .content.content-narrow { max-width: min(52rem, 100%); 
   .tile:hover, .tile:focus-visible, .btn:active, .q-rate-btn:active { transform: none; }
 }
 .q-card > summary .q-no, .q-card > summary .q-chev { border-radius: 0.375rem; }
+
+/* =========================================================================
+   Visual explanations (assets/visual.js, visuals/*.html)
+   The SVG carries classes only; every colour is a token here, so the diagram
+   follows the theme. A part's tone class sets --t (line, text accents) and
+   --ts (soft fill); every shape reads those two.
+   ========================================================================= */
+:root {
+  --vx-ink: var(--text);
+  --vx-muted: var(--text-muted);
+  --vx-stage: #fbfcff;
+  --vx-paper: #ffffff;
+  --vx-wire: #b5c1d9;
+  --vx-neg: #e0614f;
+  --vx-on: #ffffff;
+  --vx-input: #2563eb;   --vx-input-soft: #eaf1fe;
+  --vx-model: #7c3aed;   --vx-model-soft: #f2ecfe;
+  --vx-data: #0f8f7e;    --vx-data-soft: #e4f5f1;
+  --vx-tool: #b45309;    --vx-tool-soft: #fdf3e2;
+  --vx-guard: #dc2626;   --vx-guard-soft: #fdeeee;
+  --vx-neutral: #64748b; --vx-neutral-soft: #f4f6fa;
+  --vx-q: #2563eb; --vx-k: #dc4a3d; --vx-v: #0f9d6b;
+}
+html[data-theme="dark"] {
+  --vx-stage: #1f1f1f;
+  --vx-paper: #262626;
+  --vx-wire: #4d5462;
+  --vx-neg: #ff8a7a;
+  --vx-on: #111111;
+  --vx-input: #7fa8ff;   --vx-input-soft: #1d2a45;
+  --vx-model: #b69cff;   --vx-model-soft: #2a2242;
+  --vx-data: #4fd1bd;    --vx-data-soft: #15312d;
+  --vx-tool: #f2b55e;    --vx-tool-soft: #3a2c16;
+  --vx-guard: #ff8c84;   --vx-guard-soft: #3e2020;
+  --vx-neutral: #a3acb9; --vx-neutral-soft: #2b2d31;
+  --vx-q: #7fa8ff; --vx-k: #ff8c84; --vx-v: #5fd6a4;
+}
+.vx-t-input   { --t: var(--vx-input);   --ts: var(--vx-input-soft); }
+.vx-t-model   { --t: var(--vx-model);   --ts: var(--vx-model-soft); }
+.vx-t-data    { --t: var(--vx-data);    --ts: var(--vx-data-soft); }
+.vx-t-tool    { --t: var(--vx-tool);    --ts: var(--vx-tool-soft); }
+.vx-t-guard   { --t: var(--vx-guard);   --ts: var(--vx-guard-soft); }
+.vx-t-output  { --t: var(--accent);     --ts: var(--accent-soft); }
+.vx-t-neutral { --t: var(--vx-neutral); --ts: var(--vx-neutral-soft); }
+.vx-t-q { --t: var(--vx-q); --ts: var(--vx-input-soft); }
+.vx-t-k { --t: var(--vx-k); --ts: var(--vx-guard-soft); }
+.vx-t-v { --t: var(--vx-v); --ts: var(--vx-data-soft); }
+
+/* ---- page ---- */
+.vx-head .vx-how { margin: 0.75rem 0 0; color: var(--text-muted); font-size: 0.8125rem; }
+.vx-how-touch { display: none; }
+@media (hover: none) { .vx-how-mouse { display: none; } .vx-how-touch { display: inline; } }
+.vx-how kbd {
+  display: inline-block; min-width: 1.4em; padding: 0 0.3em;
+  border: 1px solid var(--border-strong); border-bottom-width: 2px; border-radius: 0.3rem;
+  background: var(--bg-elevated); color: var(--text-secondary);
+  font: 600 0.72rem/1.35 var(--font-sans); text-align: center;
+}
+/* One card: controls on top, the diagram, then narration and timeline. */
+.vx {
+  margin: 0 0 2.75rem;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  scroll-margin-top: calc(var(--header-h) + 0.75rem);
+}
+.vx-stage {
+  position: relative;
+  border-block: 1px solid var(--border);
+  background: var(--vx-stage);
+}
+/* Capped so the whole card - controls, diagram, narration - fits on a laptop screen. */
+.vx-svg {
+  display: block; width: 100%; height: auto;
+  max-height: calc(100vh - var(--header-h) - 15.5rem);
+  min-height: 17rem;
+  font-family: var(--font-sans);
+  -webkit-user-select: none; user-select: none;
+  touch-action: manipulation;
+}
+@media (max-width: 720px) {
+  .vx-svg { height: min(62vh, 30rem); max-height: none; min-height: 0; }
+  .vx-svg.is-whole { height: auto; }
+  .vx-stage .vx-svg.is-whole + .vx-zoom { position: static; display: block; margin: 0 0.5rem 0.5rem auto; }
+}
+.vx-zoom {
+  position: absolute; top: 0.5rem; right: 0.5rem;
+  min-height: 1.875rem; padding: 0 0.75rem;
+  border: 1px solid var(--border-strong); border-radius: 999px;
+  background: var(--bg-elevated); color: var(--text-secondary);
+  font: 600 0.75rem/1 var(--font-sans); cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.vx-zoom[hidden] { display: none; }
+
+.vx-panel { padding: 0.125rem 1.125rem 0.875rem; }
+.vx-controls { display: flex; align-items: center; gap: 0.5rem; padding: 0.625rem 0.875rem; }
+.vx-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
+  min-height: 2.25rem; min-width: 2.25rem; padding: 0 0.75rem;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--bg-elevated); color: var(--text-secondary);
+  font: 600 0.8125rem/1 var(--font-sans); cursor: pointer;
+  transition: background-color .12s ease, border-color .12s ease, color .12s ease;
+}
+.vx-btn:hover:not(:disabled) { border-color: var(--text-muted); color: var(--text); background: var(--surface); }
+.vx-btn:disabled { opacity: .4; cursor: default; }
+.vx-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.vx-btn.vx-step-btn { padding: 0; }
+.vx-play { min-width: 6.75rem; border-color: var(--accent); background: var(--accent); color: #fff; }
+.vx-play:hover:not(:disabled) { border-color: var(--accent-hover); background: var(--accent-hover); color: #fff; }
+html[data-theme="dark"] .vx-play, html[data-theme="dark"] .vx-play:hover:not(:disabled) { color: #111; }
+.vx-play-ico {
+  width: 0; height: 0; border-style: solid;
+  border-width: 0.3125rem 0 0.3125rem 0.5rem;
+  border-color: transparent transparent transparent currentColor;
+}
+.vx-play[data-state="pause"] .vx-play-ico {
+  width: 0.5625rem; height: 0.625rem; border: 0;
+  border-left: 0.1875rem solid currentColor; border-right: 0.1875rem solid currentColor;
+}
+.vx-play[data-state="replay"] .vx-play-ico {
+  width: 0.6875rem; height: 0.6875rem; border: 0.125rem solid currentColor;
+  border-right-color: transparent; border-radius: 50%;
+}
+.vx-count { margin-left: auto; color: var(--text-muted); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+.vx-count b { color: var(--heading); }
+.vx-narr { min-height: 4.75rem; }
+.vx-narr-title { margin: 0.625rem 0 0.2rem; color: var(--heading); font-size: 1rem; font-weight: 700; }
+.vx-narr-text { margin: 0; max-width: 88ch; color: var(--text-secondary); line-height: 1.6; }
+.vx-narr-text code, .vx-steps code, .vx-d-body code, .vx-pcard code, .vx-tip code {
+  font-size: .86em; padding: .05em .3em; border-radius: .25rem; background: var(--surface-strong);
+}
+.vx-timeline { display: flex; gap: 0.25rem; margin-top: 0.625rem; }
+.vx-seg {
+  flex: 1; min-width: 0; height: 1.25rem; padding: 0;
+  display: flex; align-items: center;
+  border: 0; background: none; cursor: pointer;
+}
+.vx-seg-bar { display: block; width: 100%; height: 0.3125rem; border-radius: 99px; background: var(--surface-strong); overflow: hidden; }
+.vx-seg-fill { display: block; height: 100%; background: var(--accent); transform: scaleX(0); transform-origin: left center; }
+.vx-seg.is-done .vx-seg-fill { transform: scaleX(1); opacity: .5; }
+.vx-seg:hover .vx-seg-bar { background: var(--border-strong); }
+.vx-seg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.vx-caption { margin: 0.5rem 0 0; color: var(--text-muted); font-size: 0.75rem; }
+
+.vx-parts { display: grid; grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr)); gap: 0.625rem; margin: 0 0 2rem; }
+.vx-pcard {
+  display: flex; flex-direction: column; gap: 0.3rem; padding: 0.75rem 0.875rem;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg-elevated); color: inherit;
+  font: inherit; text-align: left; cursor: pointer;
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+.vx-pcard:hover { border-color: color-mix(in srgb, var(--accent) 35%, var(--border-strong)); box-shadow: var(--shadow-sm); }
+.vx-pcard:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.vx-pcard-t { color: var(--heading); font-size: 0.875rem; font-weight: 650; }
+.vx-pcard-b { color: var(--text-secondary); font-size: 0.8125rem; line-height: 1.5; }
+
+.vx-steps { margin: 0 0 2rem; padding-left: 1.5rem; }
+.vx-steps li { margin: 0 0 0.75rem; padding-left: 0.25rem; }
+.vx-steps li::marker { color: var(--text-muted); font-weight: 650; font-variant-numeric: tabular-nums; }
+.vx-steps p { margin: 0.15rem 0 0; max-width: 88ch; color: var(--text-secondary); }
+.vx-steps-go {
+  padding: 0; border: 0; background: none;
+  color: var(--heading); font: 650 0.9375rem/1.4 var(--font-sans);
+  text-align: left; cursor: pointer;
+}
+.vx-steps-go:hover { color: var(--accent); text-decoration: underline; }
+.vx-steps li.is-current .vx-steps-go, .vx-steps li.is-current::marker { color: var(--accent); }
+
+.vx-practise { margin: 0 0 0.75rem; padding: 0; list-style: none; display: grid; gap: 0.5rem; }
+.vx-practise li {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-elevated);
+}
+.vx-practise a { color: var(--heading); font-weight: 600; }
+.vx-practise a:hover { color: var(--accent); }
+.vx-practise-topic { color: var(--text-muted); font-size: 0.75rem; }
+.vx-alltopic { margin: 0 0 2rem; }
+.vx-alltopic a { color: var(--accent); font-weight: 600; }
+.topic-visual a { color: var(--accent); }
+
+/* ---- hover tip ---- */
+.vx-tip { max-width: min(19rem, calc(100vw - 16px)); padding: 0.625rem 0.75rem; }
+.vx-tip-t { display: block; margin-bottom: 0.2rem; color: var(--heading); font-size: 0.8125rem; font-weight: 700; }
+.vx-tip-b { display: block; color: var(--text-secondary); }
+.vx-tip-h { display: block; margin-top: 0.4rem; color: var(--accent); font-size: 0.71875rem; font-weight: 600; }
+
+/* ---- explanation popup ---- */
+html.vx-lock, html.vx-lock body { overflow: hidden; }
+.vx-dialog {
+  width: min(40rem, calc(100vw - 2rem)); max-width: none; max-height: min(85vh, 46rem);
+  padding: 0;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-lg, 0.625rem);
+  background: var(--bg-elevated); color: var(--text);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.vx-dialog[open] { display: flex; flex-direction: column; animation: vx-pop .18s var(--ease); }
+.vx-dialog::backdrop { background: rgba(15, 23, 42, .42); }
+html[data-theme="dark"] .vx-dialog::backdrop { background: rgba(0, 0, 0, .6); }
+.vx-d-inner { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.vx-d-head {
+  display: flex; align-items: flex-start; gap: 1rem;
+  padding: 1.125rem 1.25rem 0.875rem;
+  border-bottom: 1px solid var(--border);
+}
+.vx-d-heading { flex: 1; min-width: 0; }
+.vx-d-eyebrow {
+  margin-bottom: 0.3rem; color: var(--accent);
+  font-size: 0.625rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase;
+}
+.vx-d-title { margin: 0; padding: 0; border: 0; color: var(--heading); font-size: 1.25rem; line-height: 1.3; }
+.vx-d-close {
+  flex: none; display: grid; place-items: center; width: 2rem; height: 2rem;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg-elevated); color: var(--text-secondary); cursor: pointer;
+}
+.vx-d-close:hover { color: var(--text); border-color: var(--border-strong); background: var(--surface); }
+.vx-d-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.vx-d-body { flex: 1; min-height: 0; padding: 1rem 1.25rem 1.25rem; overflow-y: auto; line-height: 1.68; }
+.vx-d-body p { margin: 0 0 0.875rem; color: var(--text-secondary); }
+.vx-d-say {
+  margin-top: 1rem; padding: 0.75rem 0.9375rem;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--accent-soft);
+}
+.vx-d-say-l {
+  display: block; margin-bottom: 0.25rem; color: var(--accent);
+  font-size: 0.65rem; font-weight: 750; letter-spacing: .08em; text-transform: uppercase;
+}
+.vx-d-say p { margin: 0; color: var(--heading); font-weight: 550; }
+@keyframes vx-pop { from { opacity: 0; transform: translateY(6px) scale(.985); } to { opacity: 1; transform: none; } }
+@media (max-width: 720px) {
+  .vx-dialog { width: 100vw; max-height: 88vh; margin: auto 0 0; border-radius: 0.875rem 0.875rem 0 0; }
+}
+
+/* ---- the diagram ---- */
+.vx-svg text { fill: var(--vx-ink); }
+.vx-part, .vx-link, .vx-zone { transition: opacity .38s var(--ease); }
+.vx-part[data-concept] { cursor: pointer; }
+.vx-part:focus { outline: none; }
+.vx-body { fill: var(--ts); stroke: var(--t); stroke-width: 1.6; transition: stroke-width .25s ease; }
+.vx-part.is-on .vx-body { stroke-width: 2.2; }
+.vx-layer { fill: var(--ts); stroke: var(--t); stroke-width: 1.2; opacity: .6; }
+.vx-db-top { fill: color-mix(in srgb, var(--ts) 60%, var(--vx-paper)); }
+.vx-fold { fill: none; stroke: var(--t); stroke-width: 1.2; }
+.vx-page.is-back .vx-body { opacity: .65; }
+.vx-doc-line { fill: var(--t); opacity: .28; }
+.vx-label { font-size: 16.5px; font-weight: 650; fill: var(--vx-ink); }
+.vx-label.is-small { font-size: 14px; }
+.vx-sub { font-size: 13px; font-weight: 450; fill: var(--vx-muted); }
+.vx-svg .vx-cap { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; fill: var(--vx-muted); }
+.vx-note-l { font-size: 14px; font-weight: 650; }
+.vx-icon { fill: none; stroke: var(--t); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.vx-badge rect { fill: var(--t); }
+.vx-svg .vx-badge text { font-size: 12px; font-weight: 700; fill: var(--vx-on); }
+.vx-halo { fill: none; stroke: var(--t); stroke-width: 7; stroke-opacity: 0; transition: stroke-opacity .3s ease; }
+.vx-part.is-on .vx-halo { stroke-opacity: .2; }
+.vx-part[data-concept]:hover .vx-halo, .vx-part.is-peek .vx-halo { stroke-opacity: .34; }
+.vx-ring { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 5 4; opacity: 0; }
+.vx-part:focus-visible .vx-ring { opacity: 1; }
+.vx-hit { fill: transparent; }
+.vx-has-focus .vx-part:not(.is-on):not(.vx-keep):not(.is-peek) { opacity: .26; }
+.vx-part.is-hidden, .vx-link.is-hidden, .vx-zone.is-hidden { opacity: 0 !important; pointer-events: none; }
+.vx-part.is-pulse .vx-halo { animation: vx-pulse .9s ease-out 1; }
+@keyframes vx-pulse { 0% { stroke-opacity: .6; stroke-width: 15; } 100% { stroke-opacity: .2; stroke-width: 7; } }
+
+.vx-chip rect { fill: var(--vx-paper); stroke: var(--t); stroke-width: 1.3; transition: fill .25s ease; }
+.vx-svg .vx-chip-t { font-size: 14px; font-weight: 650; fill: var(--vx-ink); transition: fill .25s ease; }
+.vx-svg .vx-chip-t.is-mono, .vx-svg .vx-chip-s { font-family: var(--font-mono); }
+.vx-svg .vx-chip-s { font-size: 11.5px; fill: var(--vx-muted); }
+.vx-chip.is-hl rect { fill: var(--t); }
+.vx-svg .vx-chip.is-hl text { fill: var(--vx-on); }
+.vx-cell.is-pos { fill: var(--t); }
+.vx-cell.is-neg { fill: var(--vx-neg); }
+.vx-cell.is-hl { stroke: var(--vx-ink); stroke-width: 1.5; }
+.vx-svg .vx-mlabel { font-size: 12.5px; font-weight: 600; fill: var(--vx-muted); }
+.vx-mdot { fill: var(--t); }
+.vx-mdot.is-masked { fill: var(--vx-wire); }
+.vx-mrow-bg { fill: var(--ts); opacity: 0; transition: opacity .25s ease; }
+.vx-mrow.is-hl .vx-mrow-bg { opacity: 1; }
+.vx-svg .vx-mrow.is-hl .vx-mlabel { fill: var(--vx-ink); font-weight: 750; }
+.vx-svg .vx-bar-l { font-size: 14px; font-weight: 550; }
+.vx-svg .vx-bar-v { font-size: 13px; font-weight: 600; fill: var(--vx-muted); font-variant-numeric: tabular-nums; }
+.vx-bar-track { fill: var(--surface-strong); }
+.vx-bar {
+  fill: var(--t); opacity: .5;
+  transform-box: fill-box; transform-origin: left center;
+  transition: transform .6s var(--ease), opacity .25s ease;
+}
+.vx-barrow.is-hl .vx-bar { opacity: 1; }
+.vx-svg .vx-barrow.is-hl .vx-bar-l, .vx-svg .vx-barrow.is-hl .vx-bar-v { font-weight: 750; fill: var(--t); }
+.vx-svg .vx-col-t { font-size: 15px; font-weight: 600; }
+.vx-colchip { fill: var(--vx-paper); stroke: var(--t); stroke-width: 1.2; }
+.vx-crow-bg { fill: var(--ts); opacity: 0; transition: opacity .25s ease; }
+.vx-crow.is-hl .vx-crow-bg { opacity: 1; }
+.vx-svg .vx-crow.is-hl .vx-col-t { fill: var(--t); font-weight: 750; }
+.vx-qkv rect { fill: var(--ts); stroke: var(--t); stroke-width: 1.2; }
+.vx-svg .vx-qkv text { font-size: 12.5px; font-weight: 800; fill: var(--t); }
+.vx-coldot { fill: var(--t); }
+.vx-code-bg { fill: var(--vx-paper); stroke: var(--t); stroke-width: 1.3; }
+.vx-svg .vx-code-title { font: 700 11.5px var(--font-mono); letter-spacing: .04em; text-transform: uppercase; fill: var(--t); }
+.vx-code-rule { stroke: var(--t); stroke-opacity: .25; }
+.vx-svg .vx-code-t { font: 500 13px var(--font-mono); white-space: pre; }
+.vx-code-hl { fill: var(--ts); opacity: 0; transition: opacity .25s ease; }
+.vx-code-line.is-hl .vx-code-hl { opacity: 1; }
+.vx-svg .vx-role { font-size: 11.5px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; fill: var(--t); }
+.vx-svg .vx-msg-t { font-size: 14px; }
+.vx-tail { stroke-linejoin: round; }
+
+.vx-zone-box { fill: color-mix(in srgb, var(--t) 4%, transparent); stroke: var(--t); stroke-opacity: .35; stroke-width: 1.3; stroke-dasharray: 6 5; }
+.vx-svg .vx-zone-l { font-size: 12px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; fill: var(--t); }
+.vx-svg .vx-zone-s { font-size: 12.5px; fill: var(--vx-muted); }
+
+.vx-wire { fill: none; stroke: var(--vx-wire); stroke-width: 1.7; stroke-linecap: round; transition: stroke .3s ease, stroke-width .3s ease; }
+.vx-arrow { fill: var(--vx-wire); transition: fill .3s ease; }
+.vx-link.is-dashed .vx-wire { stroke-dasharray: 5 5; }
+.vx-link.is-flow .vx-wire { stroke: var(--t); stroke-width: 2.4; }
+.vx-link.is-flow .vx-arrow { fill: var(--t); }
+.vx-link.vx-t-neutral.is-flow .vx-wire { stroke: var(--accent); }
+.vx-link.vx-t-neutral.is-flow .vx-arrow { fill: var(--accent); }
+.vx-has-focus .vx-link:not(.is-flow) { opacity: .3; }
+/* Runs only while a packet travels this link, then the class comes off. */
+.vx-link.is-running .vx-wire { stroke-dasharray: 7 6; animation: vx-dash .55s linear infinite; }
+@keyframes vx-dash { to { stroke-dashoffset: -13; } }
+.vx-link-label rect { fill: var(--vx-stage); stroke: var(--vx-wire); stroke-width: 1; }
+.vx-svg .vx-link-label text { font-size: 12px; font-weight: 650; fill: var(--vx-muted); }
+.vx-svg .vx-link.is-flow .vx-link-label text { fill: var(--t); }
+.vx-ribbon .vx-wire { stroke: var(--t); stroke-opacity: .16; stroke-width: 9; }
+.vx-ribbon.is-flow .vx-wire { stroke: var(--t); stroke-opacity: .4; stroke-width: 9; }
+.vx-ribbon.is-running .vx-wire { stroke-dasharray: none; animation: none; }
+.vx-pk rect, .vx-pk circle { fill: var(--t); }
+.vx-svg .vx-pk text { font-size: 12px; font-weight: 700; fill: var(--vx-on); }
+
+.vx-debug { pointer-events: none; }
+.vx-debug line { stroke: rgba(220, 38, 38, .12); stroke-width: 1; }
+.vx-debug line.is-major { stroke: rgba(220, 38, 38, .3); }
+.vx-svg .vx-debug text { font-size: 9px; fill: rgba(220, 38, 38, .85); }
+.vx-dbg-box { fill: none; stroke: rgba(220, 38, 38, .6); stroke-dasharray: 3 3; }
+@media (prefers-reduced-motion: reduce) {
+  .vx-link.is-running .vx-wire { animation: none; stroke-dasharray: none; }
+  .vx-dialog[open] { animation: none; }
+}
+@media print {
+  .vx-controls, .vx-timeline, .vx-zoom { display: none; }
+  .vx-svg { max-height: none; }
+}
+.vx-plot { fill: var(--vx-paper); stroke: var(--t); stroke-opacity: .45; stroke-width: 1.2; }
+.vx-plot-ring { fill: color-mix(in srgb, var(--t) 7%, transparent); stroke: var(--t); stroke-width: 1.4; stroke-dasharray: 5 4; }
+.vx-pt circle { fill: var(--t); fill-opacity: .8; stroke: var(--vx-paper); stroke-width: 1.5; transition: r .3s ease; }
+.vx-svg .vx-pt text { font-size: 13px; font-weight: 550; fill: var(--vx-muted); }
+.vx-pt.is-query circle { fill: var(--vx-paper); stroke: var(--t); stroke-width: 3; fill-opacity: 1; }
+.vx-svg .vx-pt.is-query text { fill: var(--t); font-weight: 750; }
+.vx-pt.is-hl circle { stroke: var(--vx-ink); stroke-width: 2.2; fill-opacity: 1; }
+.vx-svg .vx-pt.is-hl text { fill: var(--vx-ink); font-weight: 700; }
+/* Classes for `art` parts (raw SVG in a scene): the part's tone drives them. */
+.vx-art-plane { fill: var(--ts); stroke: var(--t); stroke-opacity: .3; stroke-width: 1; }
+.vx-art-line { fill: none; stroke: var(--vx-wire); stroke-width: 1.4; }
+.vx-art-drop { fill: none; stroke: var(--vx-wire); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.vx-art-hot { fill: none; stroke: var(--t); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.vx-art-node { fill: var(--vx-paper); stroke: var(--t); stroke-width: 1.4; }
+.vx-art-node.is-hot { fill: var(--t); }
+.vx-art-node.is-goal { fill: var(--vx-ink); stroke: var(--vx-ink); }
+.vx-svg .vx-art-text { font-size: 11.5px; font-weight: 650; fill: var(--vx-muted); }
