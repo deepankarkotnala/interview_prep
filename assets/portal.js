@@ -16,7 +16,7 @@
   /* One cache-busting version for every dynamically loaded data file. Bump it
      whenever data/ changes; tools/build-pages.js writes the same value into
      the static pages. */
-  var V = IR.V = "48";
+  var V = IR.V = "50";
 
   var THEME_KEY = "ir.theme";
   var DONE_KEY = "ir.delivered";      /* legacy binary marks, migrated once */
@@ -1968,7 +1968,8 @@
 
   function renderCard(c, i, opts) {
     opts = opts || {};
-    var d = el("details", "q-card" + (c.dupOf ? " is-dup" : ""));
+    var isHigh = c.priority === "high";
+    var d = el("details", "q-card" + (c.dupOf ? " is-dup" : "") + (isHigh ? " is-hi" : ""));
     d.id = c.id;
     d.setAttribute("data-q", plain(c.q));
     var num = String(i + 1).padStart(2, "0");
@@ -1982,8 +1983,11 @@
 
     var s = el("summary");
     s.innerHTML =
-      (c.priority === "high" ? '<span class="q-hi" title="' + esc(PRIORITY.high.hint) + '"><span class="sr-only">High priority. </span></span>' : '') +
-      '<span class="q-no" data-r="' + (x ? x.r : "") + '">' + num + '</span>' +
+      '<span class="q-no' + (isHigh ? " is-hi" : "") + '" data-r="' + (x ? x.r : "") + '"' +
+        (isHigh ? ' title="' + esc(PRIORITY.high.hint) + '"' : '') + '>' +
+        (isHigh ? '<span class="sr-only">High priority. </span>' : '') +
+        num +
+      '</span>' +
       '<span class="q-head"><span class="q-title">' + fmt(c.q) + '</span>' +
         '<span class="q-meta">' + meta.join('<span class="q-sep" aria-hidden="true"> · </span>') +
         (x && x.due <= today() ? '<span class="q-due">Due</span>' : '') +
@@ -3450,7 +3454,7 @@
       var wrap = el("article", "cd-card");
       var title = d.querySelector(".q-head");
       var head = el("div", "cd-card-head");
-      head.appendChild(el("span", "q-no", String(i + 1).padStart(2, "0")));
+      head.appendChild(el("span", "q-no" + (c.priority === "high" ? " is-hi" : ""), String(i + 1).padStart(2, "0")));
       head.appendChild(title);
       wrap.appendChild(head);
       wrap.appendChild(d.querySelector(".q-body"));
